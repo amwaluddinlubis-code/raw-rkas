@@ -56,6 +56,11 @@ class DocumentTemplateUploadValidationTest extends TestCase
             '--path' => 'database/migrations/school/2026_09_19_000004_drop_duplicate_source_columns.php',
             '--force' => true,
         ]);
+        Artisan::call('migrate', [
+            '--database' => 'school',
+            '--path' => 'database/migrations/school/2026_09_20_000000_add_sort_order_to_document_templates.php',
+            '--force' => true,
+        ]);
 
         DB::connection('school')->table('fund_sources')->insert([
             'id' => 1,

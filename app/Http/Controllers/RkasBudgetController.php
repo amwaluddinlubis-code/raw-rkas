@@ -29,7 +29,7 @@ class RkasBudgetController extends Controller
         $db = DB::connection('school');
         $search = trim((string) $request->query('q'));
         $fundSourceId = (int) session('active_fund_source_id');
-        if (Schema::connection('school')->hasTable('arkas_mirror_rapbs')) {
+        if ($this->hasUsableMirrorBudget($db, $yearId, $fundSourceId)) {
             return app(ArkasMirrorBudgetService::class)->render($request, $yearId, $fundSourceId);
         }
         $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
@@ -378,6 +378,21 @@ class RkasBudgetController extends Controller
         }
 
         return compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel');
+    }
+
+    private function hasUsableMirrorBudget(object $db, int $yearId, int $fundSourceId): bool
+    {
+        if (! Schema::connection('school')->hasTable('arkas_mirror_rapbs')) {
+            return false;
+        }
+
+        $query = $db->table('arkas_mirror_rapbs');
+
+        if (Schema::connection('school')->hasColumn('arkas_mirror_rapbs', 'sx_tahun')) {
+            $query->where('sx_tahun', $yearId);
+        }
+
+        return $query->exists();
     }
 
     /**

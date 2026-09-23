@@ -10,6 +10,38 @@ Terakhir diperbarui: **2026-09-23** (workstream mirror ARKAS, folder `spj-bosp-w
 
 ---
 
+## Focused regression repair after audit (2026-09-24)
+
+Audit pada `raw-rkas` menemukan dan memperbaiki beberapa regression lokal:
+
+- partial rekonsiliasi kini mendefinisikan status paket terkunci sebelum dipakai
+  oleh Blade;
+- fallback RKAS legacy dipakai bila tabel mirror tersedia tetapi belum berisi
+  baris anggaran yang usable;
+- `ID_PERIODE` numerik tidak lagi dianggap sebagai nomor bulan tanpa konfirmasi
+  dari referensi periode canonical;
+- fixture upload template menjalankan migration `sort_order` terbaru;
+- fixture quarter audit memakai NPSN terisolasi agar tidak memilih database
+  managed nyata dari environment;
+- focused regression mencakup template upload, safe sync reconciliation, RKAS
+  scoped realization, pre-numbering, quarter audit, dan Livewire authorization.
+
+Evidence aktual pada environment Windows/PHP 8.5.5:
+
+```text
+FOCUSED REGRESSION : PASS / 148 assertions / 0 deprecated / 9.02s
+SPJ CRITICAL       : PASS / 329 tests / 2,568 assertions / 0 deprecated / 141.07s
+PHP SYNTAX         : PASS / 487 files
+THEME QA           : PASS
+GIT DIFF CHECK     : PASS
+```
+
+Gate SPJ Critical lokal sudah PASS pada PHP 8.5.5 tanpa deprecation. Full
+CI/PHP 8.3 tetap menjadi gate canonical; konstanta PDO MySQL deprecated sudah
+ditangani dengan fallback kompatibel untuk runtime PHP 8.3 sampai 8.5.
+
+---
+
 ## Workstream ARKAS full-mirror + refactor overlay (2026-09-19)
 
 Tujuan: ganti proses sinkronisasi dengan mirror penuh tabel ARKAS —

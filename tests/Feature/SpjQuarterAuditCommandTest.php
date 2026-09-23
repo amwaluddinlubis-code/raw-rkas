@@ -26,7 +26,8 @@ class SpjQuarterAuditCommandTest extends TestCase
 
     public function test_audit_quarter_reads_existing_tenant_without_changing_database_bytes(): void
     {
-        $school = School::create(['npsn' => '10208183', 'name' => 'SDN Audit']);
+        $npsn = '99000001';
+        $school = School::create(['npsn' => $npsn, 'name' => 'SDN Audit']);
         $this->tenantPath = storage_path('framework/testing/spj-quarter-audit-'.uniqid().'.sqlite');
         File::ensureDirectoryExists(dirname($this->tenantPath));
         $this->buildTenantFixture($this->tenantPath);
@@ -40,7 +41,7 @@ class SpjQuarterAuditCommandTest extends TestCase
         $hashBefore = hash_file('sha256', $this->tenantPath);
 
         $this->artisan('spj:audit-quarter', [
-            'npsn' => '10208183',
+            'npsn' => $npsn,
             '--quarter' => 1,
             '--year' => 2026,
         ])
@@ -56,7 +57,8 @@ class SpjQuarterAuditCommandTest extends TestCase
 
     public function test_audit_quarter_never_creates_a_missing_tenant_database(): void
     {
-        $school = School::create(['npsn' => '87654321', 'name' => 'SD Tanpa Database']);
+        $npsn = '99000002';
+        $school = School::create(['npsn' => $npsn, 'name' => 'SD Tanpa Database']);
         $missingPath = storage_path('framework/testing/missing-spj-audit-'.uniqid().'.sqlite');
         SchoolDatabase::create([
             'school_id' => $school->id,
@@ -65,7 +67,7 @@ class SpjQuarterAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('spj:audit-quarter', [
-            'npsn' => '87654321',
+            'npsn' => $npsn,
             '--quarter' => 1,
         ])
             ->expectsOutputToContain('tidak ditemukan')

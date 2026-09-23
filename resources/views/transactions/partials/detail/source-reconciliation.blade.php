@@ -5,6 +5,7 @@
     $resolutions = $reconciliation['resolutions'];
     $latestResolution = $reconciliation['latest_resolution'];
     $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: 'DRAFT'));
+    $packageLocked = in_array($packageStatus, ['NUMBERED', 'FINAL'], true);
     $latestHasChanges = $latest && $latest->changes !== [];
     $formatValue = function ($value) {
         if ($value === null || $value === '') {

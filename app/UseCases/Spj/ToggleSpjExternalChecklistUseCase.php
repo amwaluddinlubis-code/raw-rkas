@@ -30,7 +30,7 @@ class ToggleSpjExternalChecklistUseCase
                 ->with('error', 'Paket SPJ tidak ditemukan pada konteks sekolah, tahun anggaran, atau sumber dana aktif.');
         }
 
-        $role = $request->user()?->role ?? auth()->user()?->role;
+        $role = $request->user()?->role;
         if (! in_array($role, [User::ROLE_ADMIN, User::ROLE_OPERATOR], true)) {
             return $redirect->with('error', 'Hanya operator atau administrator yang dapat mengubah checklist bukti dukung.');
         }
@@ -52,7 +52,7 @@ class ToggleSpjExternalChecklistUseCase
 
         $nowChecked = ! (bool) ($tick->exists ? $tick->is_checked : false);
         $tick->is_checked = $nowChecked;
-        $tick->checked_by = $nowChecked ? ($request->user()?->id ?? auth()->id()) : null;
+        $tick->checked_by = $nowChecked ? $request->user()?->id : null;
         $tick->checked_at = $nowChecked ? Carbon::now() : null;
         $tick->save();
 

@@ -213,7 +213,12 @@ class SpjPackageValidationService
         $periodLabel = is_array($periodReference)
             ? ArkasMirrorResolver::field($periodReference, ['PERIODE', 'NAMA_PERIODE'])
             : null;
-        $month = is_numeric($periodId) && (int) $periodId >= 1 && (int) $periodId <= 12
+        // ID_PERIODE is an opaque ARKAS key in current mirror data. Only
+        // interpret a numeric value as a month when the canonical period
+        // reference confirms it; otherwise use the legacy RKAS-period
+        // fallback below instead of turning an arbitrary key like "1" into
+        // January.
+        $month = $periodReference !== null && is_numeric($periodId) && (int) $periodId >= 1 && (int) $periodId <= 12
             ? (int) $periodId
             : $this->periodMonthFromLabel($periodLabel);
 
