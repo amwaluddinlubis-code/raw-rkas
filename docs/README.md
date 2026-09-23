@@ -41,6 +41,7 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Jangan mempro
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, dan safe-sync semantics. |
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE / IMPLEMENTED BASELINE** — numbering, cancel, rollback, correction, dan registry contract. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
+| `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` | **ACTIVE REFERENCE / RVR** — transkrip 10 pola lampiran bukti dukung operasional + mapping kategori canonical; belum implementasi checklist otomatis. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
 | `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat kelompok/39 slot laporan periode, generator internal, browser print, PDF, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |

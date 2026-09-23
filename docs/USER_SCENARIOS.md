@@ -517,7 +517,21 @@ Pesan tidak boleh menyarankan operator mengarang data yang tidak tersedia.
 
 ---
 
-## 27. Batas interpretasi dokumen ini
+## 27. Referensi pola bukti dukung eksternal
+
+Dokumen operasional seperti undangan, SPT/SPPD, daftar hadir, notulen, SK,
+jadwal, laporan hasil perjalanan, berita acara serah terima, bukti transfer,
+faktur, nota pesanan/pembayaran, dan foto/dokumentasi kegiatan adalah
+checklist **eksternal manual** (tidak di-generate aplikasi).
+
+Acuan 10 pola “Lampiran Bukti Dukung SPJ” + pemetaan kategori canonical ada di
+`SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` (status RVR, belum validasi otomatis).
+Kategori canonical tetap 6 (`BARANG`, `KONSUMSI`, `PEMELIHARAAN`,
+`JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`); SiPlah tetap channel.
+
+---
+
+## 28. Batas interpretasi dokumen ini
 
 `USER_SCENARIOS.md` menjelaskan bagaimana pengguna seharusnya menjalankan workflow yang sudah dikontrak domain.
 

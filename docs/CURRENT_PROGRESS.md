@@ -1,11 +1,12 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-19** (workstream mirror ARKAS, folder tanpa-git `spj-bosp-web-arkas-mirror`)
+Terakhir diperbarui: **2026-09-23** (workstream mirror ARKAS, folder `spj-bosp-web-arkas-mirror`)
 
-> Catatan: folder ini adalah mirror tanpa git dari `spj-bosp-web-clean`
-> (branch `gui-standardization`). Status di bawah menjelaskan workstream
-> redesign sinkronisasi ARKAS menjadi mirror tetap. Status release canonical
-> tetap mengikuti gate CI #486 sampai gate baru dinyatakan hijau.
+> Catatan: folder ini adalah mirror dari `spj-bosp-web-clean`
+> (branch `gui-standardization`). Repo lokal sudah `git init` (branch `main`,
+> commit `22d2c7f`) dan terhubung ke remote
+> `https://github.com/amwaluddinlubis-code/raw-rkas.git`.
+> Status release canonical tetap mengikuti gate CI #486 sampai gate baru dinyatakan hijau.
 
 ---
 
@@ -601,6 +602,20 @@ Livewire Phase 2 hanya menambah role enforcement dan tidak memindahkan scope log
 **Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
 
 Importer stateful tidak menjadi target migrasi Livewire opportunistic.
+
+---
+
+## Referensi pola bukti dukung operasional (poster 10 pola) — 2026-09-23
+
+Status: **ACTIVE REFERENCE / RVR** — belum implementasi, tanpa perubahan source.
+
+Poster “Lampiran Bukti Dukung SPJ” ditranskripsikan ke `docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md`
+(10 pola: KKG, Rapat K3S, Honor GTT/PTT, Perjalanan Dinas, Belanja SiPlah,
+Makan Minum/Rapat, Honor Narasumber, Pengadaan/Penggandaan, Ekstrakurikuler,
+Jasa Tukang dll + catatan materai >Rp5 Jt dan kecocokan Nomor/Nilai BKU-Kwitansi).
+Pemetaan ke 6 kategori canonical + channel SiPlah ada di dokumen tersebut.
+Aturan ambang (materai, PPN >Rp2 Jt, PPh23 2% + pajak restoran 10%) belum menjadi
+validasi otomatis. Implementasi checklist `SOURCE_EXTERNAL` masih usulan.
 
 ---
 
