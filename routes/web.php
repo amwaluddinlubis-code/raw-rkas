@@ -26,6 +26,7 @@ use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
 use App\Http\Controllers\SourceReconciliationController;
 use App\Http\Controllers\SpjController;
+use App\Http\Controllers\SpjExternalChecklistController;
 use App\Http\Controllers\SpjNumberingCorrectionController;
 use App\Http\Controllers\SpjNumberingWorkflowController;
 use App\Http\Controllers\SpjPackageChecklistController;
@@ -124,6 +125,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/transaksi/{transactionId}/siapkan-spj', SpjPreparationController::class)->name('transactions.prepare-spj');
 
             Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
+            Route::post('/spj/paket/{packageId}/checklist-eksternal', SpjExternalChecklistController::class)->name('spj.external-checklist.toggle');
             Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
             Route::post('/spj/paket/{packageId}/nomor', [SpjController::class, 'assignNumber'])->name('spj.assign-number');
             Route::post('/spj/paket/{packageId}/dokumen/{documentType}/nomor', [SpjController::class, 'assignDocumentNumber'])->name('spj.documents.assign-number');

@@ -28,6 +28,11 @@ class SpjPackage extends Model
         return $this->hasMany(SpjDocument::class);
     }
 
+    public function externalChecklistTicks(): HasMany
+    {
+        return $this->hasMany(SpjExternalChecklistTick::class, 'spj_package_id');
+    }
+
     public function isEditable(): bool
     {
         return in_array($this->status, ['DRAFT', 'READY'], true);

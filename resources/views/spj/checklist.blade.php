@@ -92,6 +92,50 @@
             </section>
         @endif
 
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Bukti Dukung Eksternal ({{ $externalCheckedCount }}/{{ count($externalPatternItems) }})</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-[var(--ui-fg-muted)]">Checklist manual sesuai pola kegiatan — tidak memblokir penomoran. Dokumen yang dibuat aplikasi (A2) hanya informatif.</p>
+                </div>
+                <form method="GET" action="{{ route('spj.checklist', $package->id) }}" class="flex items-center gap-2">
+                    <x-ui.field label="Pola kegiatan">
+                        <x-ui.select name="pola" onchange="this.form.submit()">
+                            @foreach($externalPatterns as $patternKey => $pattern)
+                                <option value="{{ $patternKey }}" @selected($patternKey === $externalPatternKey)>{{ $pattern['label'] }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                </form>
+            </div>
+            <ul class="divide-y divide-[var(--ui-line)]">
+                @foreach($externalPatternItems as $itemKey)
+                    @php
+                        $item = $externalItems[$itemKey];
+                        $isGenerated = $item['source'] === 'generated';
+                        $isChecked = in_array($itemKey, $externalCheckedKeys, true);
+                    @endphp
+                    <li class="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full text-xs font-black {{ $isGenerated || $isChecked ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500' }}">{{ $isGenerated || $isChecked ? '✓' : '○' }}</span>
+                            <p class="min-w-0 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</p>
+                            <x-ui.badge variant="neutral">{{ $isGenerated ? 'Aplikasi' : 'Manual' }}</x-ui.badge>
+                        </div>
+                        @if(!$isGenerated && $canEdit && $package->isEditable())
+                            <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="shrink-0">
+                                @csrf
+                                <input type="hidden" name="item_key" value="{{ $itemKey }}">
+                                <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
+                                <x-ui.button variant="secondary" type="submit" class="text-xs">{{ $isChecked ? 'Batalkan tanda' : 'Tandai tersedia' }}</x-ui.button>
+                            </form>
+                        @elseif($isGenerated)
+                            <span class="shrink-0 text-xs text-[var(--ui-fg-muted)]">Ikut status A2 di atas</span>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+
         <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-strong)]">Sudah lengkap ({{ $doneCount }}) — klik untuk melihat</summary>
             <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">

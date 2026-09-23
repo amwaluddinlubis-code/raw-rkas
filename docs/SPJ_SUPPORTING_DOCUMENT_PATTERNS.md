@@ -2,7 +2,24 @@
 
 Terakhir diperbarui: **2026-09-23**
 
-Status: **ACTIVE REFERENCE / RVR** — dokumen referensi operator, bukan klaim implementasi.
+Status: **ACTIVE REFERENCE / FASE 1 IMPLEMENTED** — checklist manual tersedia di
+halaman checklist paket; tetap tidak memblokir penomoran.
+
+## Status implementasi (fase 1 — 2026-09-23)
+
+- Halaman `spj.checklist` menampilkan kartu “Bukti Dukung Eksternal” per pola
+  (pilihan pola via `?pola=`, default saran dari kategori + channel SiPlah).
+- Centang manual per item eksternal, tersimpan per paket
+  (`spj_external_checklist_ticks`, migrasi school `2026_09_23_000001`).
+- Guard: hanya OPERATOR/ADMIN, hanya paket DRAFT/READY, tenant
+  `School + Fiscal Year + Fund Source`, setiap toggle tercatat audit
+  (`SPJ_PACKAGE / CHECKLIST_EKSTERNAL`). Tidak menyentuh validator
+  penomoran, lifecycle, sync, maupun registry.
+- Item GENERATED (Kwitansi A2) hanya informatif mengikuti status A2.
+- RVR / belum: aturan ambang otomatis (materai >Rp5 Jt, PPN >Rp2 Jt,
+  PPh23 2% + pajak restoran 10%), cetak checklist pendamping.
+
+## Pemetaan ke kategori canonical (acuan implementasi, bukan kategori baru)
 
 Dokumen ini mentranskripsikan poster “LAMPIRAN BUKTI DUKUNG SPJ — LENGKAP – SAH – AKURAT – DAPAT DIPERTANGGUNGJAWABKAN / Kunci Lulus Dari Pemeriksaan” menjadi referensi checklist eksternal. Tidak mengubah kontrak bisnis di `SPJ_DESIGN_DECISIONS.md`, lifecycle/numbering, sync, maupun tenant boundary.
 
@@ -125,8 +142,9 @@ Dokumen eksternal di bawah ini: checklist manual operator (sebagian tidak dapat 
 | 9 Ekstrakurikuler | `JASA_LAINNYA` / `HONOR_PEGAWAI` | Tergantung pembina dihonor atau jasa kegiatan |
 | 10 Jasa Tukang dll | `PEMELIHARAAN` (+ `JASA_LAINNYA` bila jasa umum) | RAB/SPK/daftar pekerja tetap dari service canonical |
 
-## Status implementasi
+## Belum dikerjakan (fase berikutnya)
 
-- **RVR**: pola di atas belum diimplementasikan sebagai checklist/validasi otomatis di aplikasi. `SpjDocumentRequirementService` saat ini hanya mencakup dokumen yang di-generate aplikasi (A2, rincian, pesanan, BAP/BAST, RAB/SPK, travel, honor, peserta).
-- Aturan ambang (materai >Rp5 Jt, PPN >Rp2 Jt, PPh23 2% + pajak restoran 10%) belum menjadi validasi otomatis.
-- Usulan tanpa mengubah lifecycle: tambah layer checklist `SOURCE_EXTERNAL` centang manual + pengingat ambang otomatis. Perubahan apa pun mengikuti kontrak numbering/sync/tenant yang aktif.
+- Aturan ambang otomatis: materai >Rp5 Jt, PPN >Rp2 Jt, PPh23 2% + pajak
+  restoran 10% belum menjadi validasi otomatis.
+- Cetak checklist pendamping (`SPJ_CHECKLIST`) belum memuat pola eksternal.
+- Perubahan apa pun mengikuti kontrak numbering/sync/tenant yang aktif.
