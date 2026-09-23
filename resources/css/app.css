@@ -1,0 +1,6 @@
+/* Single CSS entrypoint for the application.
+   Order is intentional: framework/vendor → legacy compatibility → canonical theme system. */
+@import './app-base.css';
+@import './human-ui.css';
+@import './forms-standardization.css';
+@import './theme-system.css';

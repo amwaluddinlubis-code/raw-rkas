@@ -1,0 +1,166 @@
+/* Database Manager header + summary generalization.
+   Scope: visual/structural normalization only. Existing Blade actions and data stay unchanged. */
+
+main[data-page="database"] {
+    --db-header-surface: var(--ui-surface-base, var(--ui-component-surface, var(--ui-surface, #fff)));
+    --db-header-surface-soft: var(--ui-surface-muted, var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc)));
+    --db-header-line: var(--ui-line, var(--ui-component-border, var(--ui-border, #dbe3ec)));
+    --db-header-line-strong: var(--ui-line-strong, var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)));
+    --db-header-fg: var(--ui-fg, var(--ui-component-text, var(--text-comfort-primary, #334155)));
+    --db-header-fg-strong: var(--ui-fg-strong, var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937)));
+    --db-header-fg-muted: var(--ui-fg-muted, var(--ui-component-text-muted, var(--text-comfort-muted, #718096)));
+}
+
+/* Treat the legacy wrapper as a layout-only container. The hero and the
+   operational summary become independent generalized primitives. */
+main[data-page="database"]>div>section:first-of-type {
+    display: grid !important;
+    gap: var(--profile-section-gap, 1.5rem) !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Canonical page-header geometry. */
+main[data-page="database"]>div>section:first-of-type>div:first-child {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--db-header-line) !important;
+    border-radius: var(--profile-header-radius) !important;
+    padding: var(--profile-header-padding-y) var(--profile-header-padding-x) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>div:first-child>p:first-child {
+    margin: 0 0 .5rem !important;
+    color: var(--text-comfort-on-dark-soft) !important;
+    font-size: .6875rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .2em !important;
+    line-height: 1.25rem !important;
+    text-transform: uppercase;
+}
+
+main[data-page="database"]>div>section:first-of-type>div:first-child>h1 {
+    margin: 0 !important;
+    color: var(--text-comfort-on-dark) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    letter-spacing: -.025em !important;
+    line-height: 2rem !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>div:first-child>h1+p {
+    margin: .5rem 0 0 !important;
+    max-width: 48rem;
+    color: var(--text-comfort-on-dark-soft) !important;
+    font-size: .875rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5rem !important;
+}
+
+@media (min-width: 640px) {
+    main[data-page="database"]>div>section:first-of-type>div:first-child>h1 {
+        font-size: 1.875rem !important;
+        line-height: 2.25rem !important;
+    }
+
+    main[data-page="database"]>div>section:first-of-type>div:first-child>h1+p {
+        font-size: 1rem !important;
+    }
+}
+
+/* Summary follows the shared ui-stat language as a separate grid, not a
+   continuation strip attached to the hero. */
+main[data-page="database"]>div>section:first-of-type>.grid {
+    display: grid !important;
+    gap: .75rem !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid>div {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    border: 1px solid var(--db-header-line) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--db-header-surface) !important;
+    color: var(--db-header-fg) !important;
+    padding: 1rem 1.1rem !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid>div+div {
+    border-top: 1px solid var(--db-header-line) !important;
+    border-left: 1px solid var(--db-header-line) !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid>div::before {
+    position: absolute;
+    inset-block: .85rem;
+    left: 0;
+    width: 3px;
+    border-radius: 0 999px 999px 0;
+    background: var(--theme-content-accent, var(--theme-accent));
+    content: '';
+    opacity: .8;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid>div>p:first-child {
+    margin: 0 !important;
+    color: var(--db-header-fg-muted) !important;
+    font-size: .68rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .07em !important;
+    line-height: 1rem !important;
+    text-transform: uppercase;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid>div>p:nth-child(2) {
+    margin-top: .25rem !important;
+    color: var(--db-header-fg-strong) !important;
+    font-size: 1.125rem !important;
+    font-weight: 750 !important;
+    line-height: 1.5rem !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid>div>p:nth-child(n+3) {
+    margin-top: .35rem !important;
+    color: var(--db-header-fg-muted) !important;
+    font-size: .75rem !important;
+    line-height: 1.15rem !important;
+}
+
+/* Keep the three cards balanced and let long technical values truncate instead
+   of changing card height. */
+main[data-page="database"]>div>section:first-of-type>.grid>div>p {
+    min-width: 0;
+}
+
+/* Preserve semantic health states inside generalized stat cards. */
+main[data-page="database"]>div>section:first-of-type>.grid :is(.text-emerald-600, .text-emerald-700) {
+    color: var(--text-comfort-success) !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid :is(.text-amber-600, .text-amber-700) {
+    color: var(--text-comfort-warning) !important;
+}
+
+main[data-page="database"]>div>section:first-of-type>.grid :is(.text-rose-600, .text-rose-700) {
+    color: var(--text-comfort-danger) !important;
+}
+
+/* Give the workspace the same separation rhythm used by generalized pages. */
+main[data-page="database"] #db-tabs {
+    margin-top: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    main[data-page="database"]>div>section:first-of-type * {
+        transition: none !important;
+    }
+}

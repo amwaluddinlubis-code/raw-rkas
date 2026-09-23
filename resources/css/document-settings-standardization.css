@@ -1,0 +1,114 @@
+/* Document settings compatibility layer.
+   Covers numbering formats and document templates without changing configuration logic. */
+
+main[data-page="documents"] {
+    --doc-settings-surface: var(--ui-component-surface, var(--ui-surface, #fff));
+    --doc-settings-surface-soft: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+    --doc-settings-border: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    --doc-settings-border-strong: var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1));
+    --doc-settings-text: var(--ui-component-text, var(--text-comfort-primary, #334155));
+    --doc-settings-text-strong: var(--ui-component-text-strong, var(--text-comfort-strong, #1f2937));
+    --doc-settings-text-muted: var(--ui-component-text-muted, var(--text-comfort-muted, #64748b));
+}
+
+/* Numbering placeholder information becomes a theme-aware informational surface. */
+main[data-page="documents"] section.border-sky-200 {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--doc-settings-border)) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 26%, var(--doc-settings-surface)) !important;
+    color: var(--doc-settings-text) !important;
+}
+
+main[data-page="documents"] section.border-sky-200 :is(h2, strong) {
+    color: var(--doc-settings-text-strong) !important;
+}
+
+main[data-page="documents"] section.border-sky-200 code {
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 22%, var(--doc-settings-border)) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+/* Numbering format cards */
+main[data-page="documents"] article:has(form[action*="document-number-formats"]) {
+    border-color: var(--doc-settings-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--doc-settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main[data-page="documents"] article:has(form[action*="document-number-formats"])>div:first-child {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface-soft) !important;
+}
+
+main[data-page="documents"] article:has(form[action*="document-number-formats"])>div:first-child p:first-child,
+main[data-page="documents"] article:has(form[action*="document-number-formats"]) .font-mono.text-indigo-700 {
+    color: var(--theme-content-accent) !important;
+}
+
+main[data-page="documents"] article:has(form[action*="document-number-formats"]) .bg-slate-50 {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface-soft) !important;
+}
+
+/* Document Templates form/list panels */
+main[data-page="documents"] .ui-form-section,
+main[data-page="documents"] section:has(table[data-pagination="server"]),
+main[data-page="documents"] details {
+    border-color: var(--doc-settings-border) !important;
+    border-radius: var(--profile-card-radius) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--doc-settings-text) !important;
+    box-shadow: var(--profile-card-shadow) !important;
+}
+
+main[data-page="documents"] fieldset,
+main[data-page="documents"] form[method="GET"],
+main[data-page="documents"] details>div {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface-soft) !important;
+}
+
+main[data-page="documents"] :is(fieldset legend, section:has(table[data-pagination="server"]) h2, details summary) {
+    color: var(--doc-settings-text-strong) !important;
+}
+
+main[data-page="documents"] :is(.text-slate-500, .text-slate-600, .text-slate-700, .text-slate-800) {
+    color: var(--doc-settings-text) !important;
+}
+
+main[data-page="documents"] :is(.text-violet-700, .text-indigo-700) {
+    color: var(--theme-content-accent) !important;
+}
+
+main[data-page="documents"] table[data-pagination="server"] tbody tr {
+    background: var(--doc-settings-surface) !important;
+}
+
+main[data-page="documents"] table[data-pagination="server"] tbody tr:nth-child(even) {
+    background: var(--ui-table-row-alt) !important;
+}
+
+main[data-page="documents"] table[data-pagination="server"] tbody tr:hover {
+    background: var(--ui-table-row-hover) !important;
+}
+
+/* Placeholder reference panel */
+main[data-page="documents"] details code {
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--doc-settings-surface)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+/* Choice cards should remain clearly interactive across themes. */
+main[data-page="documents"] .ui-choice-card {
+    border-color: var(--doc-settings-border) !important;
+    background: var(--doc-settings-surface) !important;
+    color: var(--doc-settings-text) !important;
+}
+
+main[data-page="documents"] .ui-choice-card:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 34%, var(--doc-settings-border)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--doc-settings-surface)) !important;
+}

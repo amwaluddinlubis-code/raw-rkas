@@ -1,0 +1,64 @@
+<?php
+
+namespace Tests\Feature;
+
+use Tests\TestCase;
+
+class RkasBudgetUiTest extends TestCase
+{
+    public function test_rkas_filter_is_livewire_card_without_local_style_override(): void
+    {
+        $view = file_get_contents(resource_path('views/rkas-budget/index.blade.php'));
+
+        $this->assertStringNotContainsString('<style>', $view);
+        $this->assertStringNotContainsString('rkas-filter-grid', $view);
+        $this->assertStringContainsString("@include('rkas-budget.partials.filter')", $view);
+
+        $filterPartial = file_get_contents(resource_path('views/rkas-budget/partials/filter.blade.php'));
+
+        $this->assertStringContainsString('<livewire:rkas-budget-filter />', $filterPartial);
+    }
+
+    public function test_rkas_hierarchy_table_uses_theme_tokens_without_local_overrides(): void
+    {
+        $view = file_get_contents(resource_path('views/rkas-budget/index.blade.php'));
+
+        $this->assertStringContainsString('Rincian Hierarki RKAS', $view);
+        $this->assertStringContainsString('$hierarchyTree', $view);
+        $this->assertStringContainsString('$treeTotals', $view);
+        $this->assertStringContainsString('$filterContext', $view);
+        $this->assertStringContainsString('color-mix(in srgb, var(--theme-accent-soft)', $view);
+        $this->assertStringContainsString('<x-ui.icon name="chevron-down"', $view);
+        $this->assertStringContainsString('data-pagination="none"', $view);
+        $this->assertStringNotContainsString('<style>', $view);
+        $this->assertStringNotContainsString('server-pagination', $view);
+        $this->assertStringNotContainsString('rkasGroups', $view);
+        $this->assertStringNotContainsString('bg-pink-', $view);
+        $this->assertStringNotContainsString('bg-green-', $view);
+        $this->assertStringNotContainsString('bg-yellow-', $view);
+    }
+
+    public function test_rkas_filter_card_uses_canonical_primitives_and_theme_tokens(): void
+    {
+        $view = file_get_contents(resource_path('views/livewire/rkas-budget-filter.blade.php'));
+
+        $this->assertStringContainsString('class="ui-filter-panel"', $view);
+        $this->assertStringContainsString('<x-ui.select', $view);
+        $this->assertStringContainsString('<x-ui.input', $view);
+        $this->assertStringContainsString('<x-ui.button', $view);
+        $this->assertStringContainsString("\$set('mode',", $view);
+        $this->assertStringContainsString('wire:model.live="program"', $view);
+        $this->assertStringContainsString('wire:model.live="sub"', $view);
+        $this->assertStringContainsString('wire:model.live="kegiatan"', $view);
+        $this->assertStringContainsString('wire:model.live.debounce.300ms="q"', $view);
+        $this->assertStringContainsString('var(--theme-action-bg)', $view);
+        $this->assertStringNotContainsString('wire:model.live="tahun"', $view);
+        $this->assertStringNotContainsString('wire:model.live="dana"', $view);
+
+        $this->assertStringNotContainsString('<style>', $view);
+        $this->assertStringNotContainsString('bg-blue-700', $view);
+        $this->assertStringNotContainsString('border-gray-200', $view);
+        $this->assertStringNotContainsString('hover:bg-gray-50', $view);
+        $this->assertStringNotContainsString('class="input"', $view);
+    }
+}

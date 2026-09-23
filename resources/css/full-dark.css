@@ -1,0 +1,171 @@
+/* Legacy dark compatibility layer.
+   Canonical .ui-* components, tables and pagination are owned by later token/refinement layers.
+   This file only translates legacy light utilities and native controls into dark surfaces. */
+
+html[data-ui-appearance='dark'] {
+    color-scheme: dark;
+    --ui-page-bg: #030712;
+    --ui-surface: #111827;
+    --ui-surface-soft: #0f172a;
+    --ui-border: #1f2937;
+    --ui-border-strong: #374151;
+    --ui-text: #f3f4f6;
+    --ui-muted: #9ca3af;
+    --ui-form-header-bg: linear-gradient(135deg, #111827 0%, #0f172a 58%, #111827 100%);
+    --ui-form-header-border: #374151;
+}
+
+html[data-ui-appearance='dark'] body {
+    background: #030712 !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
+}
+
+html[data-ui-appearance='dark'] main {
+    background: #030712 !important;
+    color: var(--text-comfort-primary, #c4cfdd);
+}
+
+html[data-ui-appearance='dark'] main > header {
+    background: rgb(3 7 18 / .88) !important;
+    border-color: var(--ui-border, #1f2937) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
+    box-shadow: 0 1px 0 rgb(255 255 255 / .03), 0 12px 36px rgb(0 0 0 / .28) !important;
+}
+
+html[data-ui-appearance='dark'] .app-sidebar {
+    background: linear-gradient(180deg, var(--theme-sidebar) 0%, var(--theme-sidebar-deep) 100%) !important;
+    border-right: 1px solid color-mix(in srgb, var(--theme-accent) 22%, var(--ui-border, #1f2937));
+    color: var(--text-comfort-on-dark-soft, #c3cedc);
+    box-shadow: 10px 0 36px rgb(0 0 0 / .28);
+}
+
+/* Legacy light structural surfaces. */
+html[data-ui-appearance='dark'] main section[class*="bg-white"],
+html[data-ui-appearance='dark'] main div[class*="bg-white"][class*="rounded-"],
+html[data-ui-appearance='dark'] main article[class*="bg-white"],
+html[data-ui-appearance='dark'] main aside[class*="bg-white"] {
+    background-color: var(--ui-surface, #111827) !important;
+    border-color: var(--ui-border, #1f2937) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
+    box-shadow: 0 1px 0 rgb(255 255 255 / .025), 0 12px 30px rgb(0 0 0 / .18) !important;
+}
+
+html[data-ui-appearance='dark'] main section > div:first-child.border-b:not([class*="bg-gradient"]),
+html[data-ui-appearance='dark'] main section > header:not([class*="bg-gradient"]) {
+    background: var(--ui-surface-soft, #0f172a) !important;
+    border-color: var(--ui-border, #1f2937) !important;
+}
+
+html[data-ui-appearance='dark'] main .bg-white { background-color: var(--ui-surface, #111827) !important; }
+html[data-ui-appearance='dark'] main .bg-white\/95 { background-color: rgb(17 24 39 / .95) !important; }
+html[data-ui-appearance='dark'] main .bg-white\/90 { background-color: rgb(17 24 39 / .90) !important; }
+html[data-ui-appearance='dark'] main .bg-white\/80 { background-color: rgb(17 24 39 / .80) !important; }
+html[data-ui-appearance='dark'] main :is(.bg-slate-50,.bg-gray-50) { background-color: var(--ui-surface-soft, #0f172a) !important; }
+html[data-ui-appearance='dark'] main :is(.bg-slate-100,.bg-gray-100) { background-color: var(--ui-border, #1f2937) !important; }
+html[data-ui-appearance='dark'] main :is(.border-slate-100,.border-gray-100) { border-color: var(--ui-border, #1f2937) !important; }
+html[data-ui-appearance='dark'] main :is(.border-slate-200,.border-gray-200) { border-color: var(--ui-border-strong, #374151) !important; }
+html[data-ui-appearance='dark'] main :is(.border-slate-300,.border-gray-300) { border-color: #4b5563 !important; }
+
+/* Native/legacy controls only; .ui-input/.ui-select/.ui-textarea are canonical elsewhere. */
+html[data-ui-appearance='dark'] main input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not(.ui-input),
+html[data-ui-appearance='dark'] main select:not(.ui-select),
+html[data-ui-appearance='dark'] main textarea:not(.ui-textarea),
+html[data-ui-appearance='dark'] main .form-control,
+html[data-ui-appearance='dark'] main .form-select {
+    color-scheme: dark;
+    background-color: #0b1220 !important;
+    border-color: var(--ui-border-strong, #374151) !important;
+    color: var(--text-comfort-strong, #dce3ec) !important;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / .025) !important;
+}
+
+html[data-ui-appearance='dark'] main input:not(.ui-input)::placeholder,
+html[data-ui-appearance='dark'] main textarea:not(.ui-textarea)::placeholder {
+    color: var(--text-comfort-subtle, #788598) !important;
+}
+
+html[data-ui-appearance='dark'] main select:not(.ui-select) option,
+html[data-ui-appearance='dark'] .app-topbar-select option {
+    background: var(--ui-surface, #111827);
+    color: var(--text-comfort-strong, #dce3ec);
+}
+
+html[data-ui-appearance='dark'] main input:not(.ui-input):disabled,
+html[data-ui-appearance='dark'] main select:not(.ui-select):disabled,
+html[data-ui-appearance='dark'] main textarea:not(.ui-textarea):disabled {
+    background: var(--ui-surface, #111827) !important;
+    color: var(--text-comfort-subtle, #788598) !important;
+    border-color: var(--ui-border, #1f2937) !important;
+}
+
+html[data-ui-appearance='dark'] main input[type='checkbox'],
+html[data-ui-appearance='dark'] main input[type='radio'] {
+    color-scheme: dark;
+    accent-color: var(--theme-accent, #6366f1);
+}
+
+html[data-ui-appearance='dark'] main input[type='file']::file-selector-button {
+    background: var(--ui-border, #1f2937);
+    color: var(--text-comfort-primary, #c4cfdd);
+    border-color: var(--ui-border-strong, #374151);
+}
+
+/* Legacy neutral actions. Canonical .ui-btn-* is resolved later. */
+html[data-ui-appearance='dark'] main .btn-outline-secondary,
+html[data-ui-appearance='dark'] main .theme-btn-outline,
+html[data-ui-appearance='dark'] main button[class*="bg-white"]:not(.ui-btn),
+html[data-ui-appearance='dark'] main a[class*="bg-white"][class*="rounded-"]:not(.ui-btn) {
+    background: var(--ui-surface, #111827) !important;
+    border-color: var(--ui-border-strong, #374151) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
+}
+
+html[data-ui-appearance='dark'] main .btn-outline-secondary:hover,
+html[data-ui-appearance='dark'] main .theme-btn-outline:hover,
+html[data-ui-appearance='dark'] main button[class*="bg-white"]:not(.ui-btn):hover,
+html[data-ui-appearance='dark'] main a[class*="bg-white"][class*="rounded-"]:not(.ui-btn):hover {
+    background: var(--ui-border, #1f2937) !important;
+}
+
+/* Dialog/menu compatibility. */
+html[data-ui-appearance='dark'] :is([role='dialog'],[role='menu'],[role='listbox'],.fi-modal-window,.fi-dropdown-panel) {
+    color-scheme: dark;
+}
+
+html[data-ui-appearance='dark'] :is([role='dialog'],[role='menu'],[role='listbox']) [class*="bg-white"],
+html[data-ui-appearance='dark'] .fi-modal-window,
+html[data-ui-appearance='dark'] .fi-dropdown-panel {
+    background: var(--ui-surface, #111827) !important;
+    border-color: var(--ui-border-strong, #374151) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
+}
+
+html[data-ui-appearance='dark'] main :is(pre,code,kbd) {
+    background: #030712;
+    color: var(--text-comfort-primary, #c4cfdd);
+    border-color: var(--ui-border-strong, #374151);
+}
+
+html[data-ui-appearance='dark'] main [readonly] {
+    background-color: var(--ui-surface-soft, #0f172a) !important;
+    color: var(--text-comfort-muted, #8f9bad) !important;
+}
+
+/* Scrollbars. */
+html[data-ui-appearance='dark'] * { scrollbar-color: #374151 #030712; }
+html[data-ui-appearance='dark'] *::-webkit-scrollbar { width: 11px; height: 11px; }
+html[data-ui-appearance='dark'] *::-webkit-scrollbar-track { background: #030712; }
+html[data-ui-appearance='dark'] *::-webkit-scrollbar-thumb { background: #374151; border: 3px solid #030712; border-radius: 999px; }
+html[data-ui-appearance='dark'] *::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+/* Semantic feedback remains semantic in dark mode. */
+html[data-ui-appearance='dark'] main :is(.bg-emerald-50,.bg-green-50) { background-color: rgb(6 78 59 / .30) !important; }
+html[data-ui-appearance='dark'] main :is(.bg-amber-50,.bg-yellow-50) { background-color: rgb(120 53 15 / .30) !important; }
+html[data-ui-appearance='dark'] main :is(.bg-rose-50,.bg-red-50) { background-color: rgb(127 29 29 / .30) !important; }
+html[data-ui-appearance='dark'] main .bg-blue-50 { background-color: rgb(30 58 138 / .28) !important; }
+html[data-ui-appearance='dark'] main .bg-indigo-50 { background-color: rgb(49 46 129 / .28) !important; }
+html[data-ui-appearance='dark'] main :is(.text-emerald-900,.text-green-900,.text-emerald-800,.text-green-800) { color: #a7f3d0 !important; }
+html[data-ui-appearance='dark'] main :is(.text-amber-900,.text-yellow-900,.text-amber-800,.text-yellow-800) { color: #fde68a !important; }
+html[data-ui-appearance='dark'] main :is(.text-rose-900,.text-red-900,.text-rose-800,.text-red-800) { color: #fecdd3 !important; }
+html[data-ui-appearance='dark'] main :is(.text-blue-900,.text-blue-800) { color: #bfdbfe !important; }
+html[data-ui-appearance='dark'] main :is(.text-indigo-950,.text-indigo-900,.text-indigo-800,.text-indigo-700) { color: #c7d2fe !important; }

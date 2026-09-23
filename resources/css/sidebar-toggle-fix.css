@@ -1,0 +1,14 @@
+/* Keep the collapsed desktop sidebar compact when its toggle lives in the
+   application header. Expanded/mobile layouts stay unchanged. */
+
+@media (min-width: 1024px) {
+    .app-sidebar.app-sidebar-collapsed .app-nav {
+        justify-content: center;
+        gap: 0;
+        padding-inline: .5rem;
+    }
+
+    .app-sidebar.app-sidebar-collapsed .nav-label {
+        display: none !important;
+    }
+}

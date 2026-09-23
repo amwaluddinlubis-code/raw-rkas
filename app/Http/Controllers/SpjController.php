@@ -1,0 +1,223 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\UseCases\Spj\SpjBulkFinalizeUseCase;
+use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
+use App\UseCases\Spj\SpjDocumentUseCase;
+use App\UseCases\Spj\SpjFiscalPeriodUseCase;
+use App\UseCases\Spj\SpjNumberingRollbackUseCase;
+use App\UseCases\Spj\SpjPackageCategoryUseCase;
+use App\UseCases\Spj\SpjPackageLifecycleUseCase;
+use App\UseCases\Spj\SpjQuarterNumberingUseCase;
+use App\UseCases\Spj\SpjReportUseCase;
+use App\UseCases\Spj\SpjSettlementUseCase;
+use App\UseCases\Spj\SpjSingleNumberingUseCase;
+use App\UseCases\Spj\SpjWorkspaceUseCase;
+use App\UseCases\Spj\UpdateSpjPackageDetailsUseCase;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
+
+class SpjController extends Controller
+{
+    private const HONOR_REPORT_SELECTION_SESSION_KEY = 'spj_report_selection.honor';
+
+    private const SERVICE_REPORT_SELECTION_SESSION_KEY = 'spj_report_selection.service';
+
+    public function index(Request $request, SpjWorkspaceUseCase $useCase): View|RedirectResponse
+    {
+        return $useCase->handle($request);
+    }
+
+    public function assignNumber(string $packageId, SpjSingleNumberingUseCase $useCase): RedirectResponse
+    {
+        return $useCase->assignNumber($packageId);
+    }
+
+    public function markReady(string $packageId, SpjPackageLifecycleUseCase $useCase): RedirectResponse
+    {
+        return $useCase->markReady($packageId);
+    }
+
+    public function assignQuarterNumbers(Request $request, SpjQuarterNumberingUseCase $useCase): RedirectResponse
+    {
+        return $useCase->assignQuarterNumbers($request);
+    }
+
+    public function rollbackNumbering(Request $request, SpjNumberingRollbackUseCase $useCase): RedirectResponse
+    {
+        return $useCase->rollbackFromSequence($request);
+    }
+
+    public function cancelQuarterNumbering(Request $request, SpjNumberingRollbackUseCase $useCase): RedirectResponse
+    {
+        return $useCase->cancelQuarter($request);
+    }
+
+    public function assignDocumentNumber(Request $request, string $packageId, string $documentType, SpjSingleNumberingUseCase $useCase): RedirectResponse
+    {
+        return $useCase->assignDocumentNumber($request, $packageId, $documentType);
+    }
+
+    public function finalizeDocument(string $documentId, SpjDocumentLifecycleUseCase $useCase): RedirectResponse
+    {
+        return $useCase->finalizeDocument($documentId);
+    }
+
+    public function bulkFinalize(Request $request, SpjBulkFinalizeUseCase $useCase): RedirectResponse
+    {
+        return $useCase->handle($request);
+    }
+
+    public function cancelDocument(Request $request, string $documentId, SpjDocumentLifecycleUseCase $useCase): RedirectResponse
+    {
+        return $useCase->cancelDocument($request, $documentId);
+    }
+
+    public function replaceDocument(Request $request, string $documentId, SpjDocumentLifecycleUseCase $useCase): RedirectResponse
+    {
+        return $useCase->replaceDocument($request, $documentId);
+    }
+
+    public function closeQuarter(Request $request, SpjFiscalPeriodUseCase $useCase): RedirectResponse
+    {
+        return $useCase->closeQuarter($request);
+    }
+
+    public function reopenQuarter(Request $request, string $periodId, SpjFiscalPeriodUseCase $useCase): RedirectResponse
+    {
+        return $useCase->reopenQuarter($request, $periodId);
+    }
+
+    public function storePayment(Request $request, string $transactionId, SpjSettlementUseCase $useCase): RedirectResponse
+    {
+        return $useCase->storePayment($request, $transactionId);
+    }
+
+    public function storeGoodsReceipt(Request $request, string $transactionId, SpjSettlementUseCase $useCase): RedirectResponse
+    {
+        return $useCase->storeGoodsReceipt($request, $transactionId);
+    }
+
+    public function updateDetails(
+        string $packageId,
+        Request $request,
+        UpdateSpjPackageDetailsUseCase $useCase,
+        SpjPackageCategoryUseCase $categoryUseCase,
+    ): RedirectResponse|JsonResponse {
+        if ($request->boolean('category_switch')) {
+            return $categoryUseCase->switchCategory($packageId, $request);
+        }
+
+        try {
+            return DB::connection('school')->transaction(
+                fn (): RedirectResponse => $useCase->handle($packageId, $request),
+                3,
+            );
+        } catch (QueryException $exception) {
+            if (! str_contains(strtolower($exception->getMessage()), 'database is locked')) {
+                throw $exception;
+            }
+
+            return back()
+                ->withInput()
+                ->with('error', 'Database sekolah sedang digunakan proses lain. Tutup aplikasi yang membuka data ARKAS, lalu coba simpan kembali.');
+        }
+    }
+
+    public function download(string $packageId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->download($packageId);
+    }
+
+    public function downloadPackageExcel(string $packageId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->downloadPackageExcel($packageId);
+    }
+
+    public function previewPackage(string $packageId, SpjDocumentUseCase $useCase): View|RedirectResponse
+    {
+        return $useCase->previewPackage($packageId);
+    }
+
+    public function previewPackagePdf(string $packageId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->previewPackagePdf($packageId);
+    }
+
+    public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->downloadTemplate($packageId, $templateId);
+    }
+
+    public function downloadTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->downloadTemplatePdf($packageId, $templateId);
+    }
+
+    public function previewTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase): View|RedirectResponse
+    {
+        return $useCase->previewTemplate($packageId, $templateId);
+    }
+
+    public function previewTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->previewTemplatePdf($packageId, $templateId);
+    }
+
+    public function export(Request $request, string $format, SpjReportUseCase $useCase)
+    {
+        return $useCase->export($request, $format);
+    }
+
+    public function exportHonorPayments(Request $request, string $format, SpjReportUseCase $useCase)
+    {
+        return $useCase->exportHonorPayments($request, $format);
+    }
+
+    public function exportServiceRecipients(Request $request, string $format, SpjReportUseCase $useCase)
+    {
+        return $useCase->exportServiceRecipients($request, $format);
+    }
+
+    public function selectServiceRecipients(Request $request, SpjReportUseCase $useCase): View
+    {
+        return $useCase->selectServiceRecipients($request);
+    }
+
+    public function composeServiceRecipients(Request $request, SpjReportUseCase $useCase): View
+    {
+        $this->hydrateReportSelection($request, self::SERVICE_REPORT_SELECTION_SESSION_KEY);
+
+        return $useCase->composeServiceRecipients($request);
+    }
+
+    public function selectHonorPayments(Request $request, SpjReportUseCase $useCase)
+    {
+        return $useCase->selectHonorPayments($request);
+    }
+
+    public function composeHonorPayments(Request $request, SpjReportUseCase $useCase)
+    {
+        $this->hydrateReportSelection($request, self::HONOR_REPORT_SELECTION_SESSION_KEY);
+
+        return $useCase->composeHonorPayments($request);
+    }
+
+    private function hydrateReportSelection(Request $request, string $sessionKey): void
+    {
+        if ($request->has('transaction_ids')) {
+            $request->session()->forget($sessionKey);
+
+            return;
+        }
+
+        $request->merge([
+            'transaction_ids' => $request->session()->pull($sessionKey, []),
+        ]);
+    }
+}

@@ -1,0 +1,332 @@
+/* Cross-theme accessibility contract.
+   This layer is intentionally loaded last. It provides contrast-safe semantic
+   foregrounds and visible keyboard focus without changing each theme's identity. */
+
+:root {
+    --theme-action-bg: var(--theme-accent);
+    --theme-action-fg: #0f172a;
+    --theme-content-accent: var(--theme-sidebar);
+    --theme-focus-ring: var(--theme-sidebar);
+    --theme-focus-halo: color-mix(in srgb, var(--theme-accent) 24%, transparent);
+}
+
+/* Public/auth/setup pages use light surfaces and must not inherit the
+   on-dark heading hierarchy used by application chrome. */
+html[data-ui-appearance='light'] .public-layout-main :is(h1, h2, h3, h4, h5, h6) {
+    color: #1f2937 !important;
+}
+
+html[data-ui-appearance='light'] .public-layout-main :is(p, li, label, legend) {
+    color: #334155;
+}
+
+html[data-ui-appearance='dark'] .public-layout-main :is(h1, h2, h3, h4, h5, h6) {
+    color: #dce3ec !important;
+}
+
+html[data-ui-appearance='dark'] .public-layout-main :is(p, li, label, legend) {
+    color: #c4cfdd;
+}
+
+/* Neutral/dark accents are dark enough to carry light foreground text. */
+html[data-theme='dark'],
+html[data-theme='slate'],
+html[data-theme='gray'],
+html[data-theme='zinc'],
+html[data-theme='neutral'],
+html[data-theme='stone'] {
+    --theme-action-fg: #f8fafc;
+}
+
+/* Indigo and violet sit in the WCAG AA no-man's-land on their base accent:
+   neither white nor slate-950 reaches 4.5:1, so use the stronger shade. */
+html[data-theme='indigo'],
+html[data-theme='violet'] {
+    --theme-action-bg: var(--theme-accent-strong);
+    --theme-action-fg: #f8fafc;
+}
+
+html[data-ui-appearance='dark'] {
+    --theme-content-accent: #cbd5e1;
+    --theme-focus-ring: #cbd5e1;
+    --theme-focus-halo: rgb(203 213 225 / .24);
+}
+
+/* Primary/accent surfaces must use the semantic foreground instead of assuming white. */
+.ui-btn-primary,
+.btn-primary,
+.theme-btn,
+.app-sidebar .app-nav-active,
+html[data-theme] nav[aria-label='Pagination'] button[aria-current='page'],
+html[data-theme] .pagination .active span {
+    background-color: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+.ui-btn-primary:hover,
+.btn-primary:hover,
+.theme-btn:hover,
+.app-sidebar .app-nav-active:hover {
+    background-color: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-action-fg) 14%, transparent),
+        0 5px 14px color-mix(in srgb, var(--theme-action-bg) 22%, transparent);
+}
+
+.app-sidebar-brand-mark {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+/* Legacy safety net: a light/white interactive surface must never keep a white
+   foreground. Scope this to light appearance so bg-white remapped to dark
+   surfaces in dark mode is not accidentally given a dark foreground. */
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-slate-50.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-gray-50.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-zinc-50.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/80.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/90.text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/95.text-white {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-slate-50 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-gray-50 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-zinc-50 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/80 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/90 .text-white,
+html:not([data-ui-appearance='dark']) main :is(a, button).bg-white\/95 .text-white {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
+/* Accent used as content text must be darker than decorative accent tokens. */
+.theme-text,
+.module-breadcrumb a,
+.ui-badge-theme,
+.app-runtime-badge,
+main :is(.text-indigo-500, .text-indigo-600, .text-indigo-700, .text-indigo-800, .text-indigo-900,
+    .text-violet-500, .text-violet-600, .text-violet-700, .text-violet-800, .text-violet-900,
+    .text-blue-500, .text-blue-600, .text-blue-700, .text-blue-800, .text-blue-900,
+    .text-sky-500, .text-sky-600, .text-sky-700, .text-sky-800, .text-sky-900,
+    .text-cyan-500, .text-cyan-600, .text-cyan-700, .text-cyan-800, .text-cyan-900) {
+    color: var(--theme-content-accent) !important;
+}
+
+html[data-theme] table thead th,
+html[data-theme] .table th,
+html[data-theme] .fi-ta-header-ctn th {
+    color: var(--theme-content-accent) !important;
+}
+
+/* Soft page headers sit on pale surfaces, so decorative accent shades are not
+   safe as text for bright themes such as yellow/amber. Use content contrast. */
+html[data-ui-header='soft'] .page-header-main :is(.page-header-title, .page-header-kicker) {
+    color: var(--theme-content-accent) !important;
+}
+
+html[data-ui-header='soft'] .page-header-description {
+    color: var(--text-comfort-primary, #334155) !important;
+}
+
+/* Yellow Bright is a true soft header: keep the hard→soft visual direction,
+   but use bright accent → pale accent-soft so dark header copy remains readable
+   across the entire gradient. This intentionally overrides the generic dark
+   sidebar gradient used by non-soft page headers. */
+html[data-theme='yellow'][data-ui-header='soft'] .page-header-main {
+    background: linear-gradient(112deg,
+            var(--theme-accent) 0%,
+            color-mix(in srgb, var(--theme-accent) 58%, var(--theme-accent-soft)) 46%,
+            color-mix(in srgb, var(--theme-accent) 26%, var(--theme-accent-soft)) 76%,
+            var(--theme-accent-soft) 100%) !important;
+}
+
+/* Legacy transaction/SPJ heroes predate the canonical .page-header-actions
+   wrapper. Scope by stable page markers rather than wrapper depth so Livewire
+   and localized routes cannot break the contrast safety net. */
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href*='/data-sinkron/bku'],
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a[href='/transaksi'] {
+    border: 1px solid color-mix(in srgb, var(--theme-sidebar) 42%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 76%, white) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href*='/data-sinkron/bku']:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a[href='/transaksi']:hover {
+    border-color: color-mix(in srgb, var(--theme-sidebar) 58%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 58%, white) !important;
+    color: #0f172a !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href='/spj'],
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button[data-tab='monitoring'] {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 68%, #0f172a) !important;
+    background: var(--theme-action-bg) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a[href='/spj']:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button[data-tab='monitoring']:hover {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 52%, #0f172a) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 86%, white) !important;
+    color: #0f172a !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) :is(a[href*='/data-sinkron/bku'], a[href='/spj']) :is(svg, .app-nav-icon),
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] :is(a[href='/transaksi'], button[data-tab='monitoring']) :is(svg, .app-nav-icon) {
+    color: currentColor !important;
+}
+
+/* Deterministic Yellow Bright fallback for legacy action class pairs that are
+   still emitted by Transactions/SPJ Blade. This intentionally keys off the
+   concrete legacy utility combinations instead of href shape or wrapper depth. */
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white,
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a.bg-white\/10.text-white {
+    border: 1px solid color-mix(in srgb, var(--theme-sidebar) 48%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 72%, white) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] a.bg-white\/10.text-white:hover {
+    border-color: color-mix(in srgb, var(--theme-sidebar) 62%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 54%, white) !important;
+    color: #0f172a !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900,
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button.bg-white.text-indigo-900 {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 66%, #0f172a) !important;
+    background: var(--theme-action-bg) !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+html[data-theme='yellow'][data-ui-header='soft'] main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900:hover,
+html[data-theme='yellow'][data-ui-header='soft'] main[data-page='spj'] button.bg-white.text-indigo-900:hover {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 48%, #0f172a) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 84%, white) !important;
+    color: #0f172a !important;
+}
+
+/* All light themes need the same semantic treatment for these legacy hero
+   utility pairs. Secondary actions use a pale theme surface with dark content
+   accent; primary actions use the canonical action background/foreground pair. */
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white,
+html:not([data-ui-appearance='dark']) main[data-page='spj'] a.bg-white\/10.text-white {
+    border: 1px solid color-mix(in srgb, var(--theme-content-accent) 34%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 72%, white) !important;
+    color: var(--theme-content-accent) !important;
+    box-shadow: none !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white\/10.text-white:hover,
+html:not([data-ui-appearance='dark']) main[data-page='spj'] a.bg-white\/10.text-white:hover {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 48%, var(--theme-accent-soft)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 54%, white) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900,
+html:not([data-ui-appearance='dark']) main[data-page='spj'] button.bg-white.text-indigo-900 {
+    border: 1px solid color-mix(in srgb, var(--theme-action-bg) 68%, var(--theme-action-fg)) !important;
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+    box-shadow: none !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) a.bg-white.text-indigo-900:hover,
+html:not([data-ui-appearance='dark']) main[data-page='spj'] button.bg-white.text-indigo-900:hover {
+    border-color: color-mix(in srgb, var(--theme-action-bg) 54%, var(--theme-action-fg)) !important;
+    background: color-mix(in srgb, var(--theme-action-bg) 88%, var(--theme-action-fg)) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+html:not([data-ui-appearance='dark']) main:has(a[href*='/data-sinkron/bku']) :is(a.bg-white\/10.text-white, a.bg-white.text-indigo-900) :is(svg, .app-nav-icon),
+html:not([data-ui-appearance='dark']) main[data-page='spj'] :is(a.bg-white\/10.text-white, button.bg-white.text-indigo-900) :is(svg, .app-nav-icon) {
+    color: currentColor !important;
+}
+
+/* Keyboard focus: 2px foreground ring + halo remains visible on light and dark surfaces. */
+:is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--theme-focus-ring) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px var(--theme-focus-halo) !important;
+}
+
+:is(.ui-input, .ui-select, .ui-textarea, .app-topbar-select):focus-visible {
+    border-color: var(--theme-focus-ring) !important;
+}
+
+/* Never communicate disabled state by opacity alone: retain readable text and cursor cue. */
+.ui-btn:disabled,
+[aria-disabled='true'].ui-btn,
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+    opacity: .64;
+}
+
+/* Underline text links in content on interaction so color is not the only cue. */
+main a:not(.ui-btn):not(.btn):not(.app-nav):not([class*='button']):focus-visible,
+main a:not(.ui-btn):not(.btn):not(.app-nav):not([class*='button']):hover {
+    text-decoration-thickness: .09em;
+    text-underline-offset: .18em;
+}
+
+/* Users requesting stronger contrast receive clearer boundaries. */
+@media (prefers-contrast: more) {
+    :root {
+        --ui-component-border: var(--ui-component-border-strong, #94a3b8);
+        --profile-card-shadow: none;
+    }
+
+    .app-topbar,
+    .ui-section-card,
+    .ui-form-section,
+    .ui-modal,
+    .ui-toolbar,
+    .ui-table-container,
+    .page-header-shell {
+        border-width: 2px !important;
+    }
+
+    .app-sidebar .app-nav-active {
+        outline: 2px solid var(--theme-action-fg);
+        outline-offset: -3px;
+    }
+}
+
+/* Respect operating-system high-contrast palettes. */
+@media (forced-colors: active) {
+    :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+        outline: 2px solid Highlight !important;
+        box-shadow: none !important;
+    }
+
+    .ui-btn-primary,
+    .btn-primary,
+    .theme-btn,
+    .app-sidebar .app-nav-active,
+    .app-sidebar-brand-mark {
+        forced-color-adjust: auto;
+        border: 1px solid ButtonText !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

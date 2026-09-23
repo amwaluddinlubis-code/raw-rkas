@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\DocumentTemplate;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use RuntimeException;
+use Throwable;
+
+class DocumentTemplateReplacementService
+{
+    public function __construct(private readonly DocumentTemplateStoragePathService $storagePaths) {}
+
+    /**
+     * Persist a validated template without exposing the active record to a missing file.
+     *
+     * The previous file is intentionally retained until the school-database transaction
+     * commits. If the database write fails, the newly stored file is removed and the
+     * previous template remains fully usable.
+     *
+     * @param  array<int, string>  $applicableCategories
+     */
+    public function replace(
+        int $fiscalYearId,
+        string $documentType,
+        string $name,
+        UploadedFile $uploaded,
+        string $extension,
+        array $applicableCategories = [],
+        ?bool $isSiplah = null,
+    ): DocumentTemplate {
+        $newPath = $uploaded->storeAs(
+            $this->storagePaths->directory($fiscalYearId),
+            'tpl_'.Str::uuid()->toString().'.'.$extension,
+            'local',
+        );
+
+        if (! is_string($newPath) || $newPath === '') {
+            throw new RuntimeException('File template gagal disimpan.');
+        }
+
+        try {
+            [$template, $oldPath] = DB::connection('school')->transaction(function () use (
+                $fiscalYearId,
+                $documentType,
+                $name,
+                $extension,
+                $applicableCategories,
+                $isSiplah,
+                $newPath,
+            ): array {
+                $existing = DocumentTemplate::query()
+                    ->where([
+                        'fiscal_year_id' => $fiscalYearId,
+                        'document_type' => $documentType,
+                        'format' => $extension,
+                    ])
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($existing) {
+                    $oldPath = $existing->file_path;
+                    $existing->fill([
+                        'name' => $name,
+                        'file_path' => $newPath,
+                    ])->save();
+
+                    return [$existing, $oldPath];
+                }
+
+                $template = DocumentTemplate::query()->create([
+                    'fiscal_year_id' => $fiscalYearId,
+                    'document_type' => $documentType,
+                    'format' => $extension,
+                    'name' => $name,
+                    'file_path' => $newPath,
+                    'applicable_categories' => $applicableCategories,
+                    'is_siplah' => $isSiplah,
+                    'is_active' => true,
+                ]);
+
+                return [$template, null];
+            });
+        } catch (Throwable $exception) {
+            $this->deleteQuietly($newPath);
+
+            throw $exception;
+        }
+
+        if (is_string($oldPath) && $oldPath !== '' && $oldPath !== $newPath) {
+            $this->deleteQuietly($oldPath);
+        }
+
+        return $template;
+    }
+
+    private function deleteQuietly(string $path): void
+    {
+        try {
+            Storage::disk('local')->delete($path);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+}

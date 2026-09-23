@@ -1,0 +1,273 @@
+<laravel-boost-guidelines>
+=== foundation rules ===
+
+# Laravel Boost Guidelines
+
+The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.
+
+## Foundational Context
+
+This application is a Laravel application with a PHP `^8.3` runtime contract. Composer dependency resolution is pinned to the PHP 8.3 platform floor so development on newer PHP versions must remain compatible with the minimum supported runtime. You are an expert with the Laravel ecosystem. Always use the APIs that match the installed major version of each package — do not assume a version.
+
+Before relying on a package's API, confirm its installed version:
+- PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
+- JS packages: check `package.json` for the installed versions.
+
+## Conventions
+
+- You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
+- Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
+- Check for existing components to reuse before writing a new one.
+
+## Verification Scripts
+
+- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
+
+## Application Structure & Architecture
+
+- Stick to existing directory structure; don't create new base folders without approval.
+- Do not change the application's dependencies without approval.
+
+## Frontend Bundling
+
+- If the user doesn't see a frontend change reflected in the UI, it could mean they need to run `npm run build`, `npm run dev`, or `composer run dev`. Ask them.
+
+## Documentation Files
+
+- You must only create documentation files if explicitly requested by the user or required by the repository documentation-maintenance policy.
+- Before changing source, read `docs/README.md`, `docs/DOCUMENTATION_MAINTENANCE.md`, `docs/CURRENT_PROGRESS.md`, `docs/DEVELOPMENT_ROADMAP.md`, and relevant domain/feature documentation.
+- Do not hard-code the current project priority in agent instructions. Derive current status and priority from `docs/CURRENT_PROGRESS.md` and `docs/DEVELOPMENT_ROADMAP.md`.
+- Before declaring work complete, perform the **Documentation Impact Review** required by `docs/DOCUMENTATION_MAINTENANCE.md`.
+- When behavior changes materially, update impacted project documentation in the same work so `README.md`, `docs/CURRENT_PROGRESS.md`, design decisions, architecture, user scenarios, GUI/CSS guidance, feature guides, and roadmap do not contradict the active code.
+- If no documentation files need changes, still verify that existing documentation remains accurate and note that the impact review was performed.
+- Never claim tests, CI, browser/runtime, or real-data verification without actual evidence.
+- Treat stale or contradictory documentation as a defect, not a cosmetic issue.
+
+## Replies
+
+- Be concise in your explanations - focus on what's important rather than explaining obvious details.
+
+=== boost rules ===
+
+# Laravel Boost
+
+## Project Rules
+
+- This project contains committed, area-grouped rules in `.ai/rules` when that directory exists (settled decisions, non-obvious traps, standing constraints). Framework and package guidelines that only apply to specific paths (testing, frontend, components) also live there, under `.ai/rules/boost` — this is not just recorded decisions, it is load-bearing guidance you have not seen inline. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
+- Documentation governance is canonical in `docs/DOCUMENTATION_MAINTENANCE.md`. All AI/coding agents must follow it before declaring work complete.
+
+## Artisan
+
+- Run Artisan commands directly via the command line (e.g., `php artisan route:list`). Use `php artisan list` to discover available commands and `php artisan [command] --help` to check parameters.
+- Inspect routes with `php artisan route:list`. Filter with: `--method=GET`, `--name=users`, `--path=api`, `--except-vendor`, `--only-vendor`.
+- Read configuration values using dot notation: `php artisan config:show app.name`, `php artisan config:show database.default`. Or read config files directly from the `config/` directory.
+
+## Tinker
+
+- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
+- Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
+  - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
+
+=== php rules ===
+
+# PHP
+
+- Always use curly braces for control structures, even for single-line bodies.
+- Use PHP 8 constructor property promotion: `public function __construct(public GitHub $github) { }`. Do not leave empty zero-parameter `__construct()` methods unless the constructor is private.
+- Use explicit return type declarations and type hints for all method parameters: `function isAccessible(User $user, ?string $path = null): bool`
+- Use TitleCase for Enum keys: `FavoritePerson`, `BestLake`, `Monthly`.
+- Prefer PHPDoc blocks over inline comments. Only add inline comments for exceptionally complex logic.
+- Use array shape type definitions in PHPDoc blocks.
+
+=== deployments rules ===
+
+# Deployment
+
+- Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
+
+=== laravel/core rules ===
+
+# Do Things the Laravel Way
+
+- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using `php artisan list` and check their parameters with `php artisan [command] --help`.
+- If you're creating a generic PHP class, use `php artisan make:class`.
+- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
+
+### Model Creation
+
+- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
+
+## APIs & Eloquent Resources
+
+- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
+
+## URL Generation
+
+- When generating links to other pages, prefer named routes and the `route()` function.
+
+## Testing
+
+- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
+- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
+- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
+
+## Vite Error
+
+- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
+
+=== laravel/v13 rules ===
+
+# Laravel 13
+
+- Laravel 13 uses the streamlined application structure adopted in modern Laravel versions. Follow the structure present in this repository instead of restoring legacy Kernel-based conventions.
+
+## Laravel 13 Structure
+
+- Middleware are not registered in `app/Http/Kernel.php` in this project.
+- Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
+- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
+- `bootstrap/providers.php` contains application specific service providers.
+- The `app/Console/Kernel.php` file does not exist; use `bootstrap/app.php` or `routes/console.php` for console configuration.
+- Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
+
+## Database
+
+- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they may be dropped and lost.
+
+- Limit eagerly loaded records with framework-native query capabilities rather than adding an external package when the installed Laravel version already supports the requirement.
+
+### Models
+
+- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
+
+=== livewire/core rules ===
+
+# Livewire
+
+- Livewire allows you to build dynamic, reactive interfaces in PHP without writing JavaScript.
+- You can use Alpine.js for client-side interactions instead of JavaScript frameworks.
+- Keep state server-side so the UI reflects it. Validate and authorize in actions as you would in HTTP requests.
+
+=== pint/core rules ===
+
+# Laravel Pint Code Formatter
+
+- If you have modified any PHP files, you must run `vendor/bin/pint --dirty --format agent` before finalizing changes to ensure your code matches the project's expected style.
+- Do not run `vendor/bin/pint --test --format agent`, simply run `vendor/bin/pint --format agent` to fix any formatting issues.
+
+=== phpunit/core rules ===
+
+# PHPUnit
+
+- This project uses PHPUnit 12. Create tests with `php artisan make:test --phpunit {name}`.
+- Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
+- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
+
+## Running Tests
+
+- Run the narrowest set of tests that covers the change. Pass a file path or `--filter=testName` to `php artisan test --compact`.
+- Rerun a test after each change to it.
+- Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
+
+=== project/gui rules ===
+
+# SPJ BOSP GUI Standardization
+
+Before changing Blade, Livewire UI, Tailwind classes, layout, or frontend interaction, read **both**:
+
+```text
+docs/GUI_STANDARDIZATION.md
+docs/CSS_USAGE_GUIDE.md
+```
+
+Preserve the decisions documented there.
+
+## Page Structure
+
+- Use one global breadcrumb source. Do not add page-local breadcrumbs inside page headers or sections.
+- The global breadcrumb must remain humanized, bordered, and sticky below the global header while scrolling.
+- Sticky breadcrumb offset must follow the actual global header height; do not hard-code a fragile top offset.
+- Page header and directly related summary/statistics may share one bordered card.
+- Do not wrap the whole page slot in a global card. Forms, filters, tables, and detailed sections remain separate cards.
+- Sibling panels at the same hierarchy level must have visually distinct boundaries and consistent spacing.
+
+## Forms
+
+- Reuse `x-ui.field`, `x-ui.input`, `x-ui.select`, `x-ui.textarea`, `x-ui.button`, and `x-ui.form-section` before introducing new form primitives.
+- Keep control sizing medium and consistent, with visible labels, hints/errors below controls, clear focus state, and muted readonly/disabled states.
+- Split long forms into meaningful workflow sections rather than one giant grid.
+- A sticky action bar is allowed for long forms when it improves access to Save/Cancel actions.
+- Preserve the global fallback form styling for legacy forms until they are explicitly migrated.
+- Theme-aware controls must use token/component surfaces; do not introduce new hard-coded `bg-white`/`text-slate-*` styling for general controls.
+
+## Transaction Workspace
+
+- Treat Transaction Detail as an operator workspace, not a generic detail page.
+- Visually separate `Data ARKAS/BKU` from `Data SPJ Operator`.
+- ARKAS/BKU source fields are readonly reference data and should never look editable.
+- SPJ operator fields are editable and should be grouped as Data Umum SPJ, Detail Kategori, Kelengkapan, then Buat Paket.
+- For `KONSUMSI`/`SPPD`, participant auto-fill uses the unified employee master (ARKAS + Dapodik + Manual); the Dapodik-only constraint is revoked — see `docs/CURRENT_PROGRESS.md` contracts.
+- Do not let frontend cleanup silently change sync, locking, numbering, validation, or document lifecycle business rules.
+
+## SPJ Package Workspace
+
+- Internal package tabs are `Rincian`, `Isian Manual`, `Rincian Pajak`, and `Penomoran`.
+- `Rincian` contains two distinct sibling panels: `Rincian Transaksi` and `Dokumen & Template`.
+- Keep `Dokumen & Template` compact and inside the `Rincian` tab so it does not lengthen Isian Manual/Penomoran.
+- Panel headers, hover states, backgrounds, and text must follow the selected theme via `--ui-*`, `--theme-*`, or `--spj-*` tokens.
+- `resources/css/spj-package-theme-fix.css` and `spj-package-document-placement.css` are compatibility layers for the current large Blade view; new markup should prefer canonical primitives rather than duplicating legacy color utilities.
+
+## TALL Ownership
+
+- Tailwind owns visual styling/layout utilities.
+- Alpine owns lightweight client-only UI interaction.
+- Livewire owns reactive server-backed state/data.
+- Laravel owns routes, authorization, validation, persistence, and business rules.
+- Avoid Alpine and Livewire owning the same state.
+
+## Frontend Verification
+
+- After frontend changes, run `npm run build` or instruct the user to do so.
+- After backend changes, run the narrowest relevant Laravel tests.
+- Browser-check representative desktop and mobile pages after structural UI changes.
+- Do not claim mobile verification while `docs/MOBILE_VISUAL_QA_TODO.md` remains open.
+
+=== project/strict rules ===
+
+# SPJ BOSP Strict Project Rules (reality-verified 2026-09-14)
+
+Stack: PHP ^8.3, Laravel 13, Livewire 3, Alpine 3, Tailwind 4, pure TALL frontend,
+SQLite multi-DB, session auth. Filament and Laravel Sail are not active dependencies. No `routes/api.php`, no Sanctum/Passport/JWT.
+
+## Architecture (must follow)
+
+- Thin controllers → `app/UseCases/Spj/*` → `app/Services/*` → Models. Never move orchestration back to controllers.
+- Every tenant read/write uses `ActiveSpjContext`: `matchesTransaction()` (year + fund source; school via connection). Never use year-only checks where fund scope applies.
+- `SpjPackage::isEditable()` = DRAFT/READY only. NUMBERED carve-out: ONLY `payment_description` + `item_description` editable; FINAL fully locked. See `docs/SPJ_DESIGN_DECISIONS.md` §4.2/§4.4.
+- Every sensitive mutation records `OperationalAuditService`. Tenant boundary: `School + Fiscal Year + Fund Source`.
+- Canonical categories: BARANG, KONSUMSI, PEMELIHARAAN, JASA_LAINNYA, SPPD, HONOR_PEGAWAI. SiPlah is a channel, never a category.
+- Preview/download never issues numbers. Numbering registry: `app/Services/SpjNumberingDocumentRegistry.php`.
+
+## Agent prohibitions
+
+- Do NOT edit migrations that already ran; new changes need new migration files.
+- Do NOT delete functions/endpoints without explicit user confirmation.
+- Do NOT restore/reset/stash/checkout/commit the protected files without explicit instruction:
+  `resources/views/dashboard.blade.php`, `resources/views/students/index.blade.php`
+  (keep `spj-bosp-web-console.code-workspace` untracked — verify exact name before touching).
+- Do NOT commit secrets; never force-push, skip hooks, or amend failed commits.
+- Do NOT change dependencies, git config, or create new top-level folders without approval.
+- Do NOT touch other parties' uncommitted/conflicted files. Unmerged paths block your commit — report, don't resolve by guessing.
+- Do NOT fabricate data, tests, or verification evidence. No PASS claims without actual runs.
+
+## Workflow (commit & test)
+
+- Before committing: inspect `git status`, `git diff`, `git log --oneline -10`; stage only intended files.
+- After PHP changes: `vendor/bin/pint --dirty --format agent` (fix, not `--test`).
+- Before declaring done: narrowest `php artisan test --compact <file|filter>` + `git diff --check`; full suite only for broad changes.
+- For dependency changes, preserve the PHP 8.3 minimum-platform contract and keep `composer.lock` installable by the canonical PHP 8.3 CI gate; never hide incompatibility with `--ignore-platform-req=php`.
+- Docs are Definition of Done: perform the Documentation Impact Review (`docs/DOCUMENTATION_MAINTENANCE.md`); behavior changes update impacted docs in the same work; stale/contradictory docs are defects.
+- Status/priority always derive from `docs/CURRENT_PROGRESS.md` + `docs/DEVELOPMENT_ROADMAP.md`; never hard-code.
+- Concise replies; `file_path:line_number` when referencing code.
+
+</laravel-boost-guidelines>

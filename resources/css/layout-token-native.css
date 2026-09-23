@@ -1,0 +1,372 @@
+/* Token-native contract for the authenticated application layout.
+   The global chrome consumes semantic theme/profile/comfort tokens directly.
+   No structural color in this file depends on Tailwind palette names. */
+
+:root {
+    --app-sidebar-text: #cbd5e1;
+    --app-sidebar-text-strong: #f1f5f9;
+    --app-sidebar-text-muted: #aab6c5;
+    --app-sidebar-hover: rgb(255 255 255 / .075);
+    --app-sidebar-line: rgb(255 255 255 / .11);
+    --app-sidebar-danger: #e7a3ad;
+    --app-overlay-bg: color-mix(in srgb, var(--theme-sidebar-deep) 62%, transparent);
+}
+
+.app-body {
+    min-height: 100%;
+    color: var(--text-comfort-primary, #334155);
+    font-family: var(--font-sans, 'Instrument Sans', ui-sans-serif, system-ui, sans-serif);
+}
+
+@media (min-width: 1024px) {
+    .app-shell-collapsed .app-sidebar {
+        width: 5.25rem !important;
+    }
+
+    .app-shell-expanded .app-sidebar {
+        width: 17rem !important;
+    }
+
+    .app-shell-collapsed > main {
+        padding-left: 5.25rem !important;
+    }
+
+    .app-shell-expanded > main {
+        padding-left: 17rem !important;
+    }
+}
+
+.app-sidebar-overlay {
+    background: var(--app-overlay-bg) !important;
+}
+
+/* Mesh glow Apple di sidebar: lapisan di bawah konten navigasi. */
+.app-sidebar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(120% 45% at 50% 0%,
+            color-mix(in srgb, var(--theme-accent) 16%, transparent),
+            transparent 70%);
+}
+
+.app-sidebar > * {
+    position: relative;
+    z-index: 1;
+}
+
+.app-sidebar {
+    color: var(--app-sidebar-text) !important;
+}
+
+.app-sidebar-brand {
+    color: var(--app-sidebar-text-strong) !important;
+    padding: .375rem .75rem .375rem .375rem;
+    background: #ffffff !important;
+    box-shadow: 0 5px 14px rgb(15 23 42 / .12);
+}
+
+.app-sidebar-brand-mark {
+    border-radius: var(--profile-control-radius);
+    background: color-mix(in srgb, var(--theme-accent) 84%, var(--theme-sidebar)) !important;
+    color: #f8fafc !important;
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-accent) 20%, transparent);
+}
+
+.app-sidebar-brand-wordmark {
+    color: #1f2937 !important;
+    font-size: .8rem;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.025em;
+    white-space: nowrap;
+}
+
+.app-sidebar-brand-spj {
+    color: #1f63e9 !important;
+}
+
+.app-sidebar-brand-bos {
+    color: #dc2626 !important;
+}
+
+.app-sidebar-brand-p {
+    color: #eab308 !important;
+}
+
+.app-sidebar .app-nav {
+    color: var(--app-sidebar-text) !important;
+    border-radius: var(--profile-sidebar-item-radius, var(--profile-control-radius)) !important;
+    font-size: var(--ui-font-body, .875rem) !important;
+    line-height: 1.25rem !important;
+}
+
+.app-sidebar .app-nav:hover {
+    background: var(--app-sidebar-hover) !important;
+    color: var(--app-sidebar-text-strong) !important;
+}
+
+.app-sidebar .app-nav-active {
+    background: var(--theme-accent) !important;
+    color: #f8fafc !important;
+}
+
+.app-nav-section-active {
+    color: var(--app-sidebar-text-strong) !important;
+}
+
+.app-nav-submenu {
+    border-color: var(--app-sidebar-line) !important;
+}
+
+.app-nav-danger {
+    color: var(--app-sidebar-danger) !important;
+}
+
+.app-nav-danger:hover {
+    background: color-mix(in srgb, var(--app-sidebar-danger) 11%, transparent) !important;
+    color: color-mix(in srgb, var(--app-sidebar-danger) 82%, #f8fafc) !important;
+}
+
+.app-topbar {
+    min-height: 3.625rem !important;
+    padding-block: .5rem !important;
+    border-bottom: 1px solid var(--theme-topbar-border) !important;
+    background:
+        radial-gradient(130% 220% at 85% 0%,
+            color-mix(in srgb, var(--theme-accent) 14%, transparent),
+            transparent 60%),
+        radial-gradient(120% 220% at 100% 100%,
+            color-mix(in srgb, #8b5cf6 10%, transparent),
+            transparent 55%),
+        color-mix(in srgb, var(--theme-topbar-bg) 96%, transparent) !important;
+    color: var(--text-comfort-primary, #334155) !important;
+    box-shadow: var(--theme-topbar-shadow) !important;
+    backdrop-filter: blur(16px) saturate(112%);
+    transition: background .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.app-topbar-school {
+    color: var(--text-comfort-primary, #334155) !important;
+}
+
+.app-topbar-title {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
+.app-topbar-meta {
+    color: var(--text-comfort-muted, #718096) !important;
+}
+
+.app-topbar-menu,
+.app-topbar-select {
+    min-height: var(--profile-control-height);
+    border: 1px solid var(--ui-component-border-strong, var(--ui-border-strong, #cbd5e1)) !important;
+    border-radius: var(--profile-control-radius) !important;
+    background: color-mix(in srgb, var(--ui-component-surface, #fff) 88%, var(--theme-accent-soft)) !important;
+    color: var(--text-comfort-primary, #334155) !important;
+    box-shadow: var(--profile-card-shadow);
+    transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+
+.app-topbar-menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-topbar-menu:hover,
+.app-topbar-select:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--ui-component-border-strong, #cbd5e1)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 32%, var(--ui-component-surface, #fff)) !important;
+}
+
+.app-topbar-select:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--theme-accent) 58%, var(--ui-component-border-strong, #cbd5e1)) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 12%, transparent) !important;
+}
+
+.app-fiscal-year-select {
+    max-width: min(28rem, 60vw);
+}
+
+.app-theme-select {
+    min-width: 10.5rem;
+}
+
+.app-runtime-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 18%, var(--ui-component-border, #dbe3ec));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-accent-soft) 52%, var(--ui-component-surface, #fff));
+    color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--text-comfort-primary, #334155));
+}
+
+/* Shared medium-desktop chrome contract. Feature pages inherit this shell
+   behavior instead of each adding a topbar-specific :has() selector. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+    main[data-page] .app-topbar {
+        flex-wrap: nowrap !important;
+        gap: .5rem !important;
+        padding: .5rem .75rem !important;
+    }
+
+    main[data-page] .app-topbar>.flex.min-w-0 {
+        flex: 1 1 auto;
+        gap: .5rem !important;
+    }
+
+    main[data-page] .app-topbar-school {
+        max-width: 12.5rem;
+    }
+
+    main[data-page] .app-topbar-title {
+        font-size: 1rem !important;
+    }
+
+    main[data-page] .app-fiscal-year-select {
+        max-width: 10.5rem;
+        padding-inline: .5rem !important;
+    }
+
+    main[data-page] .app-theme-select {
+        min-width: 8.5rem;
+        max-width: 8.5rem;
+        padding-inline: .5rem !important;
+    }
+
+    main[data-page] .app-runtime-badge {
+        width: 2.5rem;
+        justify-content: center;
+        padding-inline: .5rem !important;
+    }
+
+    main[data-page] .app-runtime-badge>span {
+        display: none;
+    }
+}
+
+.app-main-content {
+    color: var(--text-comfort-primary, #334155);
+}
+
+#app-scroll-to-top {
+    border-color: var(--ui-component-border-strong, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--ui-component-surface, var(--ui-surface-base)) 94%, transparent) !important;
+    color: var(--ui-component-text, var(--ui-fg)) !important;
+    box-shadow: var(--profile-floating-shadow) !important;
+}
+
+#app-scroll-to-top:hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 28%, var(--ui-component-border-strong, var(--ui-line-strong))) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 24%, var(--ui-component-surface, var(--ui-surface-base))) !important;
+    color: var(--ui-component-text-strong, var(--ui-fg-strong)) !important;
+}
+
+#app-scroll-to-top:focus-visible {
+    outline: none;
+    border-color: color-mix(in srgb, var(--theme-accent) 58%, var(--ui-component-border-strong, var(--ui-line-strong))) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent) 16%, transparent), var(--profile-floating-shadow) !important;
+}
+
+/* Global confirmation dialog also belongs to application chrome. */
+.app-dialog-backdrop {
+    background: color-mix(in srgb, var(--theme-sidebar-deep) 58%, transparent) !important;
+}
+
+.app-dialog-panel {
+    border: 1px solid var(--ui-component-border, var(--ui-border, #dbe3ec));
+    border-radius: var(--profile-card-radius);
+    background: var(--ui-component-surface, var(--ui-surface, #fff));
+    color: var(--text-comfort-primary, #334155);
+    box-shadow: var(--profile-floating-shadow);
+}
+
+.app-dialog-header,
+.app-dialog-actions {
+    border-color: var(--ui-component-border, var(--ui-border, #dbe3ec));
+    background: var(--ui-component-surface-soft, var(--ui-surface-soft, #f8fafc));
+}
+
+.app-dialog-title {
+    color: var(--text-comfort-strong, #1f2937);
+}
+
+.app-dialog-message {
+    color: var(--text-comfort-primary, #334155);
+}
+
+html[data-ui-personality='minimal'] .app-topbar {
+    box-shadow: none !important;
+}
+
+html[data-ui-personality='premium'] .app-topbar {
+    box-shadow: 0 5px 20px color-mix(in srgb, var(--theme-accent) 9%, transparent) !important;
+}
+
+html[data-ui-sidebar='soft'] {
+    --app-sidebar-text: #e1e7ef;
+    --app-sidebar-text-strong: #f8fafc;
+    --app-sidebar-text-muted: #c1cad6;
+    --app-sidebar-hover: rgb(255 255 255 / .09);
+}
+
+html[data-ui-appearance='dark'] {
+    --app-sidebar-text: #c3cedb;
+    --app-sidebar-text-strong: #e5ebf2;
+    --app-sidebar-text-muted: #96a4b6;
+    --app-sidebar-hover: rgb(255 255 255 / .055);
+    --app-sidebar-line: rgb(255 255 255 / .08);
+    --app-sidebar-danger: #d69aa5;
+}
+
+html[data-ui-appearance='dark'] .app-topbar-school,
+html[data-ui-appearance='dark'] .app-topbar-title {
+    color: var(--text-comfort-strong, #dce3ec) !important;
+}
+
+html[data-ui-appearance='dark'] .app-topbar-meta {
+    color: var(--text-comfort-muted, #8f9bad) !important;
+}
+
+html[data-ui-appearance='dark'] .app-topbar-menu,
+html[data-ui-appearance='dark'] .app-topbar-select {
+    background: color-mix(in srgb, var(--ui-component-surface, #111827) 92%, var(--theme-accent-soft)) !important;
+    color: var(--text-comfort-primary, #c4cfdd) !important;
+}
+
+html[data-ui-appearance='dark'] .app-runtime-badge {
+    background: color-mix(in srgb, var(--theme-accent-soft) 34%, var(--ui-component-surface, #111827));
+    color: var(--text-comfort-primary, #c4cfdd);
+}
+
+html[data-ui-appearance='dark'] .app-dialog-title {
+    color: var(--text-comfort-strong, #dce3ec);
+}
+
+html[data-ui-appearance='dark'] .app-dialog-message {
+    color: var(--text-comfort-primary, #c4cfdd);
+}
+
+@media (max-width: 640px) {
+    .app-fiscal-year-select {
+        max-width: 72vw;
+    }
+
+    .app-theme-select {
+        min-width: 8.75rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .app-topbar,
+    .app-topbar-menu,
+    .app-topbar-select {
+        transition: none !important;
+    }
+}

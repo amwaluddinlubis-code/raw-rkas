@@ -1,0 +1,236 @@
+/* Transaction list action treatment.
+   Mirrors the clearer SPJ table action hierarchy while keeping the list
+   readable in light and dark theme profiles. */
+
+/* Header summary and filtered summary use exactly the same semantic palette.
+   These selectors deliberately outrank the canonical page-header neutral value
+   color so the transaction meanings stay visible in both summary locations. */
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-slate-800 {
+    color: var(--text-comfort-strong, #1f2937) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-indigo-700 {
+    color: #4338ca !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-amber-600 {
+    color: #d97706 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-emerald-700 {
+    color: #047857 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-slate-600 {
+    color: #475569 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-indigo-600 {
+    color: #4f46e5 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-amber-600 {
+    color: #d97706 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-icon.text-emerald-600 {
+    color: #059669 !important;
+}
+
+/* Filter summary is one outer card, not four independent cards.
+   Only the outer panel owns radius, and only on its bottom corners. */
+main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel {
+    overflow: hidden !important;
+    border-radius: 0 0 .75rem .75rem !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child {
+    overflow: hidden;
+    border-radius: 0 0 .75rem .75rem !important;
+    background: var(--ui-surface-base) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* Coloured separators make each subtotal category readable without turning
+   every statistic into its own rounded card. */
+@media (min-width: 640px) and (max-width: 1023px) {
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(1),
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(3) {
+        border-right: 2px solid color-mix(in srgb, #64748b 46%, var(--ui-line)) !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(1) {
+        border-right: 2px solid color-mix(in srgb, #64748b 46%, var(--ui-line)) !important;
+    }
+
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(2) {
+        border-right: 2px solid color-mix(in srgb, #4f46e5 48%, var(--ui-line)) !important;
+    }
+
+    main:has(a[href*="/data-sinkron/bku"]) .ui-filter-panel > .grid:last-child > .ui-stat:nth-child(3) {
+        border-right: 2px solid color-mix(in srgb, #d97706 52%, var(--ui-line)) !important;
+    }
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-column,
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-cell {
+    border-left: 1px solid color-mix(in srgb, var(--theme-content-accent) 18%, var(--ui-line)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 5%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) thead .transaction-action-column {
+    background: color-mix(in srgb, var(--theme-content-accent) 9%, var(--ui-surface-soft)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button {
+    display: inline-flex;
+    width: 5.25rem; /* keep the requested 3x button width */
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: .5rem;
+    padding: .375rem .625rem;
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1rem;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+/* Make the action column tighter without shrinking the action buttons themselves. */
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] colgroup col:last-child {
+    width: 11.5rem !important; /* 184px, down from 200px */
+}
+
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] td.transaction-action-column {
+    padding-inline: .25rem !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) table[data-pagination="server"] td.transaction-action-column > div {
+    gap: .25rem !important;
+}
+
+/* The global table baseline is 14px, but action labels are compact controls and
+   intentionally follow the approved 13px small-table rule. */
+main:has(a[href*="/data-sinkron/bku"]) table .transaction-action-button span {
+    font-size: var(--ui-table-small-font-size, .8125rem) !important;
+    line-height: 1rem !important;
+    color: inherit !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-edit {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 38%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 10%, var(--ui-surface-base)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-edit:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 62%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 17%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail {
+    border-color: color-mix(in srgb, #059669 42%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #10b981 10%, var(--ui-surface-base)) !important;
+    color: #047857 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail:hover {
+    border-color: color-mix(in srgb, #059669 66%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #10b981 18%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending {
+    border-color: color-mix(in srgb, #d97706 42%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #f59e0b 10%, var(--ui-surface-base)) !important;
+    color: #b45309 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending:hover {
+    border-color: color-mix(in srgb, #d97706 66%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, #f59e0b 18%, var(--ui-surface-base)) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) .transaction-action-button:disabled {
+    cursor: not-allowed;
+    opacity: .48;
+    transform: none;
+}
+
+/* Match the SPJ footer pattern: page information at the start, one compact
+   pagination group at the end. Existing Livewire actions remain unchanged. */
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav {
+    display: inline-flex !important;
+    align-items: stretch !important;
+    gap: 0 !important;
+    overflow: hidden;
+    border: 1px solid var(--ui-line) !important;
+    border-radius: .5rem !important;
+    background: var(--ui-surface-base) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button {
+    margin: 0 !important;
+    min-width: 2.25rem !important;
+    height: 2.25rem !important;
+    border: 0 !important;
+    border-right: 1px solid var(--ui-line) !important;
+    border-radius: 0 !important;
+    background: var(--ui-surface-base) !important;
+    color: var(--ui-fg-muted) !important;
+    box-shadow: none !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button:last-child {
+    border-right: 0 !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button:hover:not(:disabled):not([aria-current="page"]) {
+    background: var(--ui-surface-soft) !important;
+    color: var(--ui-fg) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button[aria-current="page"] {
+    background: var(--theme-action-bg) !important;
+    color: var(--theme-action-fg) !important;
+}
+
+main:has(a[href*="/data-sinkron/bku"]) section:has(table[data-pagination="server"]) > div:last-child > nav > button:disabled {
+    background: var(--ui-surface-soft) !important;
+    color: var(--ui-fg-muted) !important;
+    opacity: .55 !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-indigo-700 {
+    color: #a5b4fc !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-amber-600 {
+    color: #fbbf24 !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) :is(.page-header-summary, .ui-filter-panel) .ui-stat-value.text-emerald-700 {
+    color: #6ee7b7 !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transaction-action-detail {
+    color: #6ee7b7 !important;
+}
+
+html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending {
+    color: #fbbf24 !important;
+}

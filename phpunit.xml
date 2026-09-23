@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory>tests/Feature</directory>
+        </testsuite>
+        <testsuite name="SPJ Critical">
+            <file>tests/Unit/SpjScenarioFactoryTest.php</file>
+            <file>tests/Unit/QuarterNumberingPlaceholderTest.php</file>
+            <file>tests/Unit/ArkasSourceKeyResolverTest.php</file>
+            <file>tests/Unit/RoutineHonorRegisterServiceTest.php</file>
+            <file>tests/Unit/SpjTemplatePackageImporterExtractionTest.php</file>
+            <file>tests/Unit/SpjTemplateWorkbookPreservationTest.php</file>
+            <file>tests/Feature/ActiveSpjContextTest.php</file>
+            <file>tests/Feature/ArkasGenericImportSourceKeyTest.php</file>
+            <file>tests/Feature/ArkasGenericImportSyncModeTest.php</file>
+            <file>tests/Feature/ArkasGenericImportReleaseSafetyTest.php</file>
+            <file>tests/Feature/ArkasImportHardeningTest.php</file>
+            <file>tests/Feature/ArkasImporterTenantBoundaryTest.php</file>
+            <file>tests/Feature/ArkasImporterRuntimeGuardTest.php</file>
+            <file>tests/Feature/ArkasImportQueueTenantTest.php</file>
+            <file>tests/Feature/CriticalDocumentWorkflowTest.php</file>
+            <file>tests/Feature/DocumentNumberingWorkflowTest.php</file>
+            <file>tests/Feature/DocumentNumberFormatSettingsTest.php</file>
+            <file>tests/Feature/DocumentTemplateControllerArchitectureTest.php</file>
+            <file>tests/Feature/DocumentTemplateSiplahMappingTest.php</file>
+            <file>tests/Feature/DocumentTemplateUploadValidationTest.php</file>
+            <file>tests/Feature/DocumentTemplateUploadRoutingRegressionTest.php</file>
+            <file>tests/Feature/EmployeeIdentityMergeTest.php</file>
+            <file>tests/Feature/EmployeeIndexThemePrimitiveUiTest.php</file>
+            <file>tests/Feature/GuiAudit09To13SourceReadinessTest.php</file>
+            <file>tests/Feature/IndonesianDateInputUiTest.php</file>
+            <file>tests/Feature/LegacySpjRuntimeNormalizationTest.php</file>
+            <file>tests/Feature/OperatorAssistantTest.php</file>
+            <file>tests/Feature/RkasScopedRealizationTest.php</file>
+            <file>tests/Feature/SafeArkasSynchronizationTest.php</file>
+            <file>tests/Feature/SchoolDatabaseMaintenanceHardeningTest.php</file>
+            <file>tests/Feature/SchoolDatabaseResetServiceTest.php</file>
+            <file>tests/Feature/SecurityHardeningTest.php</file>
+            <file>tests/Feature/ServiceRecipientReconciliationTest.php</file>
+            <file>tests/Feature/SiplahMarketplaceDocumentPolicyTest.php</file>
+            <file>tests/Feature/SpjActiveContractsGuardTest.php</file>
+            <file>tests/Feature/SpjAuditDiffCommandTest.php</file>
+            <file>tests/Feature/SpjAuthorizationContextHardeningTest.php</file>
+            <file>tests/Feature/LivewireMutationAuthorizationTest.php</file>
+            <file>tests/Feature/SpjAutomaticNumberingPolicyTest.php</file>
+            <file>tests/Feature/SpjCategoryLifecycleRegressionTest.php</file>
+            <file>tests/Feature/SpjConsumptionParticipantUiTest.php</file>
+            <file>tests/Feature/SpjDateChronologyValidationTest.php</file>
+            <file>tests/Feature/SpjDocumentGeneratorHardeningTest.php</file>
+            <file>tests/Feature/SpjGeneratedDocumentValidatorTest.php</file>
+            <file>tests/Feature/SpjLifecycleHardeningTest.php</file>
+            <file>tests/Feature/SpjMaintenanceLinkWorkspaceTest.php</file>
+            <file>tests/Feature/SpjMainTabsRenderingTest.php</file>
+            <file>tests/Feature/SpjNonGoodsInputValidationTest.php</file>
+            <file>tests/Feature/SpjNumberingRollbackTest.php</file>
+            <file>tests/Feature/SpjOwnershipMigrationTest.php</file>
+            <file>tests/Feature/SpjPackageNavigationContextTest.php</file>
+            <file>tests/Feature/SpjPackageTransactionBoundaryTest.php</file>
+            <file>tests/Feature/SpjPeriodicReportPrintableTest.php</file>
+            <file>tests/Feature/SpjPreNumberingRegressionTest.php</file>
+            <file>tests/Feature/SpjPreviewExcelParityTest.php</file>
+            <file>tests/Feature/SpjQuarterAuditCommandTest.php</file>
+            <file>tests/Feature/SpjQuarterAuditPolicyTest.php</file>
+            <file>tests/Feature/SpjReceiptPreNumberingRegressionTest.php</file>
+            <file>tests/Feature/SpjRoleAuthorizationMiddlewareTest.php</file>
+            <file>tests/Feature/SpjSafeSyncReconciliationHardeningTest.php</file>
+            <file>tests/Feature/SpjSchoolIsolationTest.php</file>
+            <file>tests/Feature/SpjSixCategoryE2eTest.php</file>
+            <file>tests/Feature/SpjSourceReconciliationResolutionTest.php</file>
+            <file>tests/Feature/SpjSupplementaryTemplateContractTest.php</file>
+            <file>tests/Feature/StudentIndexThemePrimitiveUiTest.php</file>
+            <file>tests/Feature/StudentFormDetailThemePrimitiveUiTest.php</file>
+            <file>tests/Feature/SyncedDataThemePrimitiveUiTest.php</file>
+            <file>tests/Feature/SyncProgressUiTest.php</file>
+            <file>tests/Feature/TransactionPurchaseDateValidationTest.php</file>
+            <file>tests/Feature/UnifiedEmployeeMasterTest.php</file>
+            <file>tests/Feature/SpjVerifyCommandTest.php</file>
+            <file>tests/Feature/SpjWorkspaceMigrationTest.php</file>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array"/>
+        <!-- SAFETY: force agar env shell/OS (mis. DB_DATABASE mengarah ke
+             database.sqlite produksi) tidak pernah bisa mengalihkan test ke
+             database utama. Lihat audit reset database 2026-09-21. -->
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value="database/testing.sqlite" force="true"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="PULSE_ENABLED" value="false"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+        <env name="TELESCOPE_ENABLED" value="false"/>
+    </php>
+</phpunit>

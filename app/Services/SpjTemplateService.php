@@ -1,0 +1,1109 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\DocumentTemplate;
+use App\Models\FiscalYear;
+use App\Models\School;
+use App\Models\SpjPackage;
+use App\Models\Transaction;
+use App\Models\TransactionItem;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Drawing as SharedDrawing;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Font;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Writer\Html;
+use PhpOffice\PhpWord\TemplateProcessor;
+
+class SpjTemplateService
+{
+    private const DEFAULT_EXCEL_PRINT_WIDTH = 610;
+
+    public const PLACEHOLDER_SCOPE_UMUM = 'umum';
+
+    public const PLACEHOLDER_SCOPE_TRANSAKSIONAL = 'transaksional';
+
+    public const PLACEHOLDER_SCOPE_KHUSUS = 'khusus';
+
+    /** @return array<string,array<int,string>> */
+    public static function placeholderGroups(): array
+    {
+        return [
+            'Dokumen & periode' => ['NOMOR_SPJ', 'NOMOR_DOKUMEN', 'NO_BUKTI', 'NOMOR_BUKTI', 'TANGGAL_TRANSAKSI', 'TANGGAL_DOKUMEN', 'TAHUN_ANGGARAN', 'SUMBER_DANA', 'SUMBER_DANA_PERIODE', 'TRIWULAN', 'SEMESTER', 'JENIS_SPJ'],
+            'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'DESA', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG'],
+            'Acara konsumsi' => ['NAMA_ACARA', 'TANGGAL_ACARA', 'TEMPAT_ACARA'],
+            'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
+            'Transaksi & pembayaran' => ['KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
+            'Pembelian SiPLah' => ['SIPLAH_MARKETPLACE', 'SIPLAH_TRANSACTION_ID', 'SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_ALAMAT_PENYEDIA', 'SIPLAH_NPWP_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_TANGGAL_PEMBAYARAN', 'SIPLAH_REFERENSI_BAYAR', 'SIPLAH_STATUS_DQ', 'SIPLAH_STATUS_MAPPING', 'SIPLAH_RINCIAN_ITEM'],
+            'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_BAP', 'TANGGAL_BAP', 'NOMOR_BAST', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'NILAI_BAHAN', 'NILAI_BAHAN_TERBILANG', 'NILAI_UPAH', 'NILAI_UPAH_TERBILANG', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
+            'Nilai & pajak' => ['NILAI_BRUTO', 'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'NILAI_TERBILANG_BRUTO', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD', 'TOTAL_PAJAK', 'POTONGAN_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO'],
+            'Ringkasan' => ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'],
+            'Baris rincian barang' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH', 'ITEM_KODE_REKENING', 'ITEM_NAMA_REKENING'],
+            'Baris upah/honor' => ['UPAH_NO', 'UPAH_NAMA', 'UPAH_PEKERJAAN', 'UPAH_HARI', 'UPAH_TARIF_HARI', 'UPAH_JUMLAH', 'UPAH_PENERIMA_KUITANSI'],
+        ];
+    }
+
+    /**
+     * Scope Umum / Transaksional / Khusus per nama grup katalog.
+     * Keys wajib identik dengan placeholderGroups() agar Blade, inspector,
+     * dan validator tidak berubah kontrak. Resolver nilai tidak berubah.
+     *
+     * - umum: berlaku lintas kategori (sekolah, periode, transaksi dasar, pajak).
+     * - transaksional: struktur repeating/ringkasan dari transaction detail.
+     * - khusus: kategori/channel tertentu (pesanan/pekerjaan, SiPLah, konsumsi).
+     *
+     * @return array<string,string>
+     */
+    public static function placeholderGroupScopes(): array
+    {
+        return [
+            'Dokumen & periode' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Sekolah & pejabat' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Penerima & penyedia' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Transaksi & pembayaran' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Pembelian SiPLah' => self::PLACEHOLDER_SCOPE_KHUSUS,
+            'Pesanan & pekerjaan' => self::PLACEHOLDER_SCOPE_KHUSUS,
+            'Nilai & pajak' => self::PLACEHOLDER_SCOPE_UMUM,
+            'Ringkasan' => self::PLACEHOLDER_SCOPE_TRANSAKSIONAL,
+            'Baris rincian barang' => self::PLACEHOLDER_SCOPE_TRANSAKSIONAL,
+            'Baris upah/honor' => self::PLACEHOLDER_SCOPE_TRANSAKSIONAL,
+        ];
+    }
+
+    /**
+     * Scope per marker: pakai registry dinamis bila marker terdaftar pada
+     * definisi dokumen, fallback ke scope grup katalog untuk marker extended
+     * (mis. KONSUMSI_* dari ExtendedSpjTemplateService).
+     */
+    public static function placeholderScope(string $marker): string
+    {
+        $normalized = strtoupper(trim($marker));
+
+        $groupFallback = null;
+        foreach (static::placeholderGroups() as $groupName => $markers) {
+            if (in_array($normalized, $markers, true)) {
+                $groupFallback = static::placeholderGroupScopes()[$groupName] ?? null;
+                break;
+            }
+        }
+
+        // Marker repeating/ringkasan selalu transaksional.
+        if (str_starts_with($normalized, 'ITEM_') || str_starts_with($normalized, 'UPAH_')) {
+            return self::PLACEHOLDER_SCOPE_TRANSAKSIONAL;
+        }
+
+        if (in_array($normalized, ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'], true)) {
+            return self::PLACEHOLDER_SCOPE_TRANSAKSIONAL;
+        }
+
+        $applicable = SpjDocumentTypeRegistry::placeholderApplicableCategories($normalized);
+
+        if ($applicable !== []) {
+            return count($applicable) >= count(SpjDocumentTypeRegistry::categories())
+                ? self::PLACEHOLDER_SCOPE_UMUM
+                : self::PLACEHOLDER_SCOPE_KHUSUS;
+        }
+
+        return $groupFallback ?? self::PLACEHOLDER_SCOPE_KHUSUS;
+    }
+
+    /**
+     * Katalog dikelompokkan per scope untuk UI (Umum / Transaksional / Khusus).
+     * Nilai marker identik dengan placeholderGroups(), hanya pengelompokan beda.
+     *
+     * @return array<string,array<string,array<int,string>>>
+     */
+    public static function placeholderGroupsByScope(): array
+    {
+        $grouped = [
+            self::PLACEHOLDER_SCOPE_UMUM => [],
+            self::PLACEHOLDER_SCOPE_TRANSAKSIONAL => [],
+            self::PLACEHOLDER_SCOPE_KHUSUS => [],
+        ];
+
+        foreach (static::placeholderGroups() as $groupName => $markers) {
+            $scope = static::placeholderGroupScopes()[$groupName] ?? self::PLACEHOLDER_SCOPE_KHUSUS;
+            $grouped[$scope][$groupName] = $markers;
+        }
+
+        return $grouped;
+    }
+
+    /** @return array<string,string> */
+    public function placeholders(SpjPackage $package, School $school): array
+    {
+        $transaction = $package->transaction;
+        $transaction->loadMissing(['items', 'goods', 'workOrder', 'workers', 'serviceRecipients']);
+        $transaction = $transaction->withMirrorSource();
+        $package->setRelation('transaction', $transaction);
+        $year = FiscalYear::query()->findOrFail($transaction->fiscal_year_id);
+        $profile = DB::connection('school')->table('school_profiles')->where('fiscal_year_id', $year->id)->first();
+        $activityHierarchy = app(ArkasActivityHierarchyResolver::class)->resolve($transaction);
+        $goods = $transaction->goods->first();
+        $workOrder = $transaction->workOrder;
+        $items = $transaction->items->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->sourceValue('description')).' | '.$item->sourceValue('quantity').' '.($item->sourceValue('unit') ?: '—').' | '.app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('amount')))->implode("\n");
+        $services = $transaction->serviceRecipients->map(fn ($recipient, $index) => ($index + 1).'. '.$recipient->name.' | '.$recipient->service_type.' | '.$recipient->quantity.' '.$recipient->unit.' × '.$recipient->rental_days.' hari | '.app(SpjPlaceholderValueFormatter::class)->amount($recipient->amount))->implode("\n");
+
+        $transactionDate = (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->translatedFormat('d F Y') : null) ?: '';
+        $orderDate = $goods?->order_date?->translatedFormat('d F Y') ?: '';
+        $spkDate = $workOrder?->spk_date?->translatedFormat('d F Y') ?: '';
+        $rabDate = $workOrder?->rab_date?->translatedFormat('d F Y') ?: '';
+        $workStarted = $workOrder?->work_started_at?->translatedFormat('d F Y') ?: '';
+        $workCompleted = $workOrder?->work_completed_at?->translatedFormat('d F Y') ?: '';
+        $handoverDate = $goods?->bast_date?->translatedFormat('d F Y') ?: ($workCompleted ?: $transactionDate);
+        $vendorName = (string) ($transaction->vendor_name ?: $transaction->effective_receipt_recipient_name);
+        $paymentMethod = $this->paymentMethodLabel((string) $transaction->payment_method);
+        $siplahResponse = data_get($transaction->siplah_metadata, 'siplahResponse', []);
+        $siplahMerchant = (string) (data_get($siplahResponse, 'merchant') ?: $transaction->vendor_name ?: '');
+        $siplahAddress = (string) ($transaction->siplah_merchant_address ?: data_get($siplahResponse, 'merchant_address', ''));
+        $siplahNpwp = (string) ($transaction->vendor_npwp ?: data_get($siplahResponse, 'merchant_npwp', ''));
+        $siplahPaymentDate = $transaction->siplah_payment_date?->translatedFormat('d F Y H:i') ?: '';
+        $siplahItems = $transaction->items->map(function ($item, $index): string {
+            $name = $item->siplah_item_name ?: $item->item_description ?: $item->sourceValue('description');
+            $quantity = $item->siplah_quantity_received ?? $item->siplah_mapped_quantity ?? $item->sourceValue('quantity');
+            $price = $item->siplah_unit_price ?? $item->sourceValue('unit_price');
+
+            return ($index + 1).'. '.$name.' | diterima '.$quantity.' '.($item->sourceValue('unit') ?: '—').' | harga '.app(SpjPlaceholderValueFormatter::class)->amount($price).' | MPID '.($item->siplah_item_mpid ?: '-');
+        })->implode("\n");
+        $siplahMappingStatus = empty($siplahResponse)
+            ? ''
+            : ((bool) $transaction->siplah_budget_mapping_rejected
+                ? 'Pemetaan anggaran ditolak'
+                : ((bool) $transaction->siplah_partially_mapped ? 'Pemetaan sebagian' : 'Pemetaan lengkap'));
+        $spjCategoryLabel = match (strtoupper((string) $transaction->spj_category)) {
+            'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
+            'JASA_LAINNYA' => 'Jasa Lainnya',
+            'BARANG' => 'Barang',
+            'KONSUMSI' => 'Konsumsi',
+            'PEMELIHARAAN' => 'Pemeliharaan',
+            'SPPD' => 'SPPD',
+            default => ucwords(strtolower(str_replace('_', ' ', (string) $transaction->spj_category))),
+        };
+        $maintenanceSplit = $this->maintenanceValueSplit($package, (float) $transaction->sourceValue('gross_amount'));
+
+        $values = [
+            'NOMOR_SPJ' => (string) $package->document_number,
+            'NO_BUKTI' => (string) $transaction->sourceValue('no_bukti'),
+            'TANGGAL_TRANSAKSI' => $transactionDate,
+            'TAHUN_ANGGARAN' => (string) $year->year,
+            'SUMBER_DANA' => (string) $year->fund_source,
+            'TRIWULAN' => (string) $package->quarter_code,
+            'SEMESTER' => (string) $package->semester_code,
+            'NAMA_SEKOLAH' => (string) $school->name,
+            'NPSN' => (string) $school->npsn,
+            'ALAMAT_SEKOLAH' => (string) $school->address,
+            'DESA' => (string) $school->desa,
+            'KECAMATAN' => (string) $school->district,
+            'KABUPATEN_KOTA' => (string) $school->regency,
+            'PROVINSI' => (string) $school->province,
+            'NAMA_KEPALA_SEKOLAH' => (string) ($profile->principal_name ?? ''),
+            'NIP_KEPALA_SEKOLAH' => (string) ($profile->principal_nip ?? ''),
+            'NAMA_BENDAHARA_BOSP' => (string) ($profile->treasurer_name ?? ''),
+            'NIP_BENDAHARA_BOSP' => (string) ($profile->treasurer_nip ?? ''),
+            'NAMA_ACARA' => (string) ($transaction->event_name ?? ''),
+            'TANGGAL_ACARA' => $transaction->event_date?->translatedFormat('d F Y') ?: '',
+            'TEMPAT_ACARA' => (string) ($transaction->event_location ?? ''),
+            'NAMA_PENGURUS_BARANG' => (string) ($profile->inventory_manager_name ?? ''),
+            'NIP_PENGURUS_BARANG' => (string) ($profile->inventory_manager_nip ?? ''),
+            'NAMA_PENERIMA' => (string) $transaction->effective_receipt_recipient_name,
+            'NAMA_PENERIMA_BKU' => (string) $transaction->sourceValue('recipient_name'),
+            'NAMA_PENERIMA_KUITANSI' => (string) $transaction->effective_receipt_recipient_name,
+            'PENERIMA_PENYEDIA' => $vendorName,
+            'NAMA_PENYEDIA' => $vendorName,
+            'NPWP_PENYEDIA' => (string) $transaction->vendor_npwp,
+            'KODE_PROGRAM' => (string) ($activityHierarchy['program_code'] ?? ''),
+            'NAMA_PROGRAM' => (string) ($activityHierarchy['program_name'] ?? ''),
+            'KODE_SUB_PROGRAM' => (string) ($activityHierarchy['sub_program_code'] ?? ''),
+            'NAMA_SUB_PROGRAM' => (string) ($activityHierarchy['sub_program_name'] ?? ''),
+            'KODE_KEGIATAN' => (string) $transaction->sourceValue('activity_code'),
+            'NAMA_KEGIATAN' => (string) $transaction->sourceValue('activity_name'),
+            'KODE_REKENING' => (string) $transaction->sourceValue('account_code'),
+            'URAIAN_TRANSAKSI' => (string) $transaction->sourceValue('description'),
+            'UNTUK_PEMBAYARAN' => (string) ($transaction->payment_description ?: $transaction->sourceValue('description')),
+            'CARA_BAYAR' => $paymentMethod,
+            'REFERENSI_BAYAR' => (string) $transaction->payment_reference,
+            'SIPLAH_NOMOR_PESANAN' => (string) $transaction->siplah_order_number,
+            'SIPLAH_MARKETPLACE' => (string) (data_get($siplahResponse, 'marketplace_displayname') ?: $transaction->siplah_marketplace ?: ''),
+            'SIPLAH_TRANSACTION_ID' => (string) (data_get($siplahResponse, 'transaction_id') ?: $transaction->siplah_transaction_id ?: ''),
+            'SIPLAH_PENYEDIA' => $siplahMerchant,
+            'SIPLAH_ALAMAT_PENYEDIA' => $siplahAddress,
+            'SIPLAH_NPWP_PENYEDIA' => $siplahNpwp,
+            'SIPLAH_NOMOR_INVOICE' => (string) $transaction->invoice_number,
+            'SIPLAH_TANGGAL_INVOICE' => $transaction->invoice_date?->translatedFormat('d F Y') ?: '',
+            'SIPLAH_TANGGAL_PEMBAYARAN' => $siplahPaymentDate,
+            'SIPLAH_REFERENSI_BAYAR' => (string) $transaction->payment_reference,
+            'SIPLAH_STATUS_DQ' => $transaction->siplah_dq_passed === null ? '' : ($transaction->siplah_dq_passed ? 'Lulus' : 'Belum lulus'),
+            'SIPLAH_STATUS_MAPPING' => $siplahMappingStatus,
+            'SIPLAH_RINCIAN_ITEM' => $siplahItems,
+            'NOMOR_PESANAN' => (string) ($goods?->order_number ?: ''),
+            'TANGGAL_PESANAN' => $orderDate,
+            'NOMOR_BAP' => (string) ($goods?->bap_number ?: ''),
+            'TANGGAL_BAP' => $goods?->bap_date?->translatedFormat('d F Y') ?: '',
+            'NOMOR_BAST' => (string) ($goods?->bast_number ?: ''),
+            'NOMOR_INVOICE' => (string) $transaction->invoice_number,
+            'TANGGAL_INVOICE' => $transaction->invoice_date?->translatedFormat('d F Y') ?: '',
+            'STATUS_INVOICE' => (string) $transaction->invoice_status,
+            'NOMOR_SPK' => (string) ($workOrder?->spk_number ?: ''),
+            'TANGGAL_SPK' => $spkDate,
+            'NOMOR_RAB' => (string) ($workOrder?->rab_number ?: ''),
+            'TANGGAL_RAB' => $rabDate ?: $transactionDate,
+            'URAIAN_PEKERJAAN' => (string) ($workOrder?->work_description ?: $transaction->payment_description ?: $transaction->sourceValue('description')),
+            'LOKASI_PEKERJAAN' => (string) ($workOrder?->work_location ?: ''),
+            'TANGGAL_MULAI' => $workStarted,
+            'TANGGAL_SELESAI' => $workCompleted,
+            'TANGGAL_TANDA_TANGAN' => $transactionDate,
+            'TANGGAL_PENYERAHAN' => $handoverDate,
+            'TEMPAT_PENYERAHAN' => (string) ($workOrder?->work_location ?: $transaction->event_location ?: $school->address),
+            'NAMA_PENANDATANGAN' => (string) ($transaction->signatory_name ?: $transaction->effective_receipt_recipient_name),
+            'JABATAN_PENANDATANGAN' => (string) $transaction->signatory_role,
+            'NILAI_BRUTO' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('gross_amount')),
+            'PPN' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('ppn')),
+            'PPH21' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('pph21')),
+            'PPH22' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('pph22')),
+            'PPH23' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('pph23')),
+            'PPH4' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('pph4')),
+            'SSPD' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('sspd')),
+            'TOTAL_PAJAK' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('tax_total')),
+            'NILAI_DIBAYARKAN' => app(SpjPlaceholderValueFormatter::class)->amount($transaction->sourceValue('net_amount')),
+            'RINCIAN_BELANJA' => $items,
+            'RINCIAN_JASA' => $services,
+            'RINCIAN_UPAH' => $transaction->workers->map(fn ($worker, $index) => ($index + 1).'. '.$worker->name.' | '.$worker->job_description.' | '.$worker->work_days.' hari × '.app(SpjPlaceholderValueFormatter::class)->amount($worker->daily_rate).' = '.app(SpjPlaceholderValueFormatter::class)->amount($worker->amount))->implode("\n"),
+        ];
+
+        $allValues = $values + [
+            'NOMOR_DOKUMEN' => $values['NOMOR_SPJ'],
+            'TANGGAL_DOKUMEN' => $values['TANGGAL_TRANSAKSI'],
+            'NOMOR_BUKTI' => $values['NO_BUKTI'],
+            'SUMBER_DANA_PERIODE' => trim($values['SUMBER_DANA'].' / '.$values['TAHUN_ANGGARAN'].' / '.$values['TRIWULAN']),
+            'JENIS_SPJ' => $spjCategoryLabel,
+            'POTONGAN_PAJAK' => $values['TOTAL_PAJAK'],
+            'NAMA_SATUAN_PENDIDIKAN' => $values['NAMA_SEKOLAH'],
+            'SUDAH_TERIMA_DARI' => 'Bendahara Dana BOSP '.$values['NAMA_SEKOLAH'],
+            'CARA_BAYAR_REFERENSI' => trim($values['CARA_BAYAR'].' / '.($values['REFERENSI_BAYAR'] ?: 'Belum ada referensi'), ' /'),
+            'TERBILANG_NETO' => $this->terbilang((float) $transaction->sourceValue('net_amount')),
+            'NILAI_TERBILANG_BRUTO' => $this->terbilang((float) $transaction->sourceValue('gross_amount')),
+            'NILAI_BAHAN' => app(SpjPlaceholderValueFormatter::class)->amount($maintenanceSplit['bahan']),
+            'NILAI_BAHAN_TERBILANG' => $this->terbilang($maintenanceSplit['bahan']),
+            'NILAI_UPAH' => app(SpjPlaceholderValueFormatter::class)->amount($maintenanceSplit['upah']),
+            'NILAI_UPAH_TERBILANG' => $this->terbilang($maintenanceSplit['upah']),
+            'NILAI_PEKERJAAN' => app(SpjPlaceholderValueFormatter::class)->amount($maintenanceSplit['bahan'] + $maintenanceSplit['upah']),
+            'NILAI_PEKERJAAN_TERBILANG' => $this->terbilang($maintenanceSplit['bahan'] + $maintenanceSplit['upah']),
+            'JENIS_RAB' => 'RAB Pemeliharaan',
+            'TOTAL_RAB' => $values['NILAI_BRUTO'],
+            'NAMA_REKENING' => (string) $transaction->sourceValue('account_name'),
+            // Field ini belum tersedia pada schema transaksi saat ini. Tetap dipetakan
+            // sebagai placeholder resmi agar template tidak menyisakan marker mentah.
+            'ALAMAT_PENYEDIA' => $siplahAddress,
+            'TELEPON_PENYEDIA' => '',
+            // KOP_SURAT ditangani sebagai gambar oleh fillExcelLetterhead().
+            'KOP_SURAT' => '',
+        ];
+
+        return $this->normalizeScalarPlaceholders($allValues);
+    }
+
+    /**
+     * Nilai scalar kosong selalu dirender sebagai "-". Placeholder baris dinamis
+     * dengan awalan ITEM_ dan UPAH_ diproses terpisah; KOP_SURAT adalah gambar.
+     *
+     * @param  array<string,string|null>  $values
+     * @return array<string,string>
+     */
+    private function normalizeScalarPlaceholders(array $values): array
+    {
+        foreach ($values as $key => $value) {
+            if ($key === 'KOP_SURAT') {
+                $values[$key] = '';
+
+                continue;
+            }
+
+            $stringValue = (string) ($value ?? '');
+            $values[$key] = trim($stringValue) === ''
+                ? SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE
+                : $stringValue;
+        }
+
+        return $values;
+    }
+
+    public function download(DocumentTemplate $template, SpjPackage $package, School $school)
+    {
+        $output = $this->filledTemplateFile($template, $package, $school);
+        $extension = strtolower($template->format);
+
+        try {
+            (new SpjUnresolvedPlaceholderGuard)->assertResolved((string) $template->document_type, $output, $extension);
+        } catch (\Throwable $exception) {
+            if (is_file($output)) {
+                @unlink($output);
+            }
+            throw $exception;
+        }
+
+        $fileName = $this->safeName($template->document_type.'-'.$package->document_number.'.'.$extension);
+        $stored = app(DocumentStoragePathService::class)->persist($output, $package, $fileName);
+        @unlink($output);
+
+        return response()->download($stored, $fileName);
+    }
+
+    /**
+     * Fill template placeholders into a temp file. The caller owns cleanup.
+     * Shared by download and preview so both render the same filled input.
+     */
+    public function filledTemplateFile(DocumentTemplate $template, SpjPackage $package, School $school): string
+    {
+        $source = $this->templateSourcePath($template);
+        if (! is_file($source)) {
+            throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
+        }
+        $values = $this->placeholders($package, $school);
+        $extension = strtolower($template->format);
+        $output = storage_path('app/generated-documents/'.uniqid('spj_', true).'.'.$extension);
+        if (! is_dir(dirname($output))) {
+            mkdir(dirname($output), 0775, true);
+        }
+
+        if ($extension === 'docx') {
+            $document = new TemplateProcessor($source);
+            $document->setMacroChars('{{', '}}');
+            $this->fillWordItems($document, $package, $template);
+            $this->fillWordWorkers($document, $package);
+            foreach ($values as $key => $value) {
+                $document->setValue($key, $value);
+            }
+            $document->saveAs($output);
+        } elseif ($extension === 'xlsx') {
+            $spreadsheet = IOFactory::load($source);
+            foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+                $this->fillExcelItems($sheet, $package, $template);
+                $this->fillExcelWorkers($sheet, $package);
+                $this->fillExcelLetterhead($sheet, $school);
+                foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+                    $cell = $sheet->getCell($coordinate);
+                    if (! is_string($cell->getValue())) {
+                        continue;
+                    }
+                    $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
+                }
+                $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
+            }
+            $spreadsheet = $this->singleDocumentSpreadsheet($spreadsheet, $template);
+            IOFactory::createWriter($spreadsheet, 'Xlsx')->save($output);
+        } else {
+            throw new \RuntimeException('Format template tidak didukung.');
+        }
+
+        return $output;
+    }
+
+    /**
+     * PDF bytes for print-worthy preview. Same engine and same filled input
+     * as the download path, so the operator prints exactly what gets archived.
+     * Null only when LibreOffice is required (Word template) but unavailable.
+     */
+    public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    {
+        if (strtolower($template->format) === 'xlsx') {
+            return $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($this->filledSpreadsheet($template, $package, $school), $template));
+        }
+
+        $filled = $this->filledTemplateFile($template, $package, $school);
+
+        try {
+            return app(SpjSpreadsheetPdfConverter::class)->convertFile($filled);
+        } finally {
+            @unlink($filled);
+        }
+    }
+
+    /** Menghasilkan HTML dari template Excel untuk pratinjau di browser. */
+    public function previewHtml(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    {
+        if (strtolower($template->format) !== 'xlsx') {
+            return null;
+        }
+
+        return $this->spreadsheetHtml($template, $package, $school);
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    public function downloadPackagePdf(Collection $templates, SpjPackage $package, School $school)
+    {
+        return $this->pdfResponse($this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school)), 'PAKET-SPJ-'.$package->document_number.'.pdf', $package);
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    public function downloadPackageExcel(Collection $templates, SpjPackage $package, School $school)
+    {
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-xlsx-');
+        if ($temporaryFile === false) {
+            throw new \RuntimeException('File sementara Excel tidak dapat dibuat.');
+        }
+
+        try {
+            IOFactory::createWriter($this->packageSpreadsheet($templates, $package, $school), 'Xlsx')->save($temporaryFile);
+
+            $fileName = $this->safeName('PAKET-SPJ-'.$package->document_number.'.xlsx');
+            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $fileName);
+            @unlink($temporaryFile);
+
+            return response()->download($stored, $fileName);
+        } catch (\Throwable $exception) {
+            @unlink($temporaryFile);
+
+            throw $exception;
+        }
+    }
+
+    /**
+     * Combined package PDF bytes for print-worthy preview. Same engine and
+     * same filled input as downloadPackagePdf, so preview matches the archive.
+     *
+     * @param  Collection<int, DocumentTemplate>  $templates
+     */
+    public function packagePreviewPdfBytes(Collection $templates, SpjPackage $package, School $school): string
+    {
+        return $this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school));
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    public function packagePreviewHtml(Collection $templates, SpjPackage $package, School $school): string
+    {
+        $pages = $templates->map(function (DocumentTemplate $template) use ($package, $school): string {
+            if (strtolower($template->format) !== 'xlsx') {
+                return '';
+            }
+
+            $html = $this->spreadsheetHtml($template, $package, $school);
+            preg_match_all('/<style[^>]*>.*?<\/style>/is', $html, $styles);
+            preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body);
+
+            return implode('', $styles[0] ?? []).'<div class="spj-preview-page">'.($body[1] ?? '').'</div>';
+        })->filter()->implode('<div style="page-break-after: always;"></div>');
+
+        return '<!doctype html><html><head><meta charset="utf-8"><style>.spj-preview-page{margin:0 auto 24px;width:max-content;max-width:none}.spj-preview-page table{background:white}@media print{.spj-preview-page{margin:0}}</style></head><body>'.$pages.'</body></html>';
+    }
+
+    public function downloadPdf(DocumentTemplate $template, SpjPackage $package, School $school)
+    {
+        if (strtolower($template->format) !== 'xlsx') {
+            throw new \RuntimeException('Unduh PDF saat ini hanya tersedia untuk template Excel.');
+        }
+
+        $spreadsheet = $this->filledSpreadsheet($template, $package, $school);
+
+        return $this->pdfResponse(
+            $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($spreadsheet, $template)),
+            $template->document_type.'-'.$package->document_number.'.pdf',
+            $package,
+        );
+    }
+
+    private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school): string
+    {
+        return $this->spreadsheetHtmlFromWorkbook(
+            $this->filledSpreadsheet($template, $package, $school),
+            $template,
+        );
+    }
+
+    private function spreadsheetHtmlFromWorkbook(Spreadsheet $spreadsheet, DocumentTemplate $template): string
+    {
+        $writer = new Html($spreadsheet);
+        $writer
+            ->setSheetIndex($this->previewSheetIndex($spreadsheet, $template))
+            ->setEmbedImages(true)
+            ->setUseInlineCss(true);
+
+        return $writer->generateHtmlAll();
+    }
+
+    private function previewSheetIndex(Spreadsheet $spreadsheet, DocumentTemplate $template): int
+    {
+        $canonical = SpjDocumentTypeRegistry::canonical((string) $template->document_type);
+        $definition = $canonical ? SpjDocumentTypeRegistry::definition($canonical) : null;
+        $expectedSheet = trim((string) ($definition['sheet'] ?? ''));
+
+        if ($expectedSheet !== '') {
+            foreach ($spreadsheet->getAllSheets() as $index => $sheet) {
+                if (strcasecmp($sheet->getTitle(), $expectedSheet) === 0) {
+                    return $index;
+                }
+            }
+        }
+
+        $technicalSheets = array_fill_keys(
+            array_map('strtoupper', SpjDocumentTypeRegistry::technicalSheets()),
+            true,
+        );
+        $candidates = [];
+        foreach ($spreadsheet->getAllSheets() as $index => $sheet) {
+            if (! isset($technicalSheets[strtoupper($sheet->getTitle())])) {
+                $candidates[] = $index;
+            }
+        }
+
+        if (count($candidates) === 1) {
+            return $candidates[0];
+        }
+
+        $sheetLabel = $expectedSheet !== '' ? $expectedSheet : (string) $template->document_type;
+
+        throw new \RuntimeException(
+            'Preview Excel tidak dapat menentukan sheet canonical '.$sheetLabel.' dari workbook template.'
+        );
+    }
+
+    private function singleDocumentSpreadsheet(Spreadsheet $source, DocumentTemplate $template): Spreadsheet
+    {
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+        $spreadsheet->addExternalSheet($source->getSheet($this->previewSheetIndex($source, $template)));
+
+        return $spreadsheet;
+    }
+
+    private function filledSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    {
+        $source = $this->templateSourcePath($template);
+        if (! is_file($source)) {
+            throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
+        }
+        $values = $this->placeholders($package, $school);
+        $spreadsheet = IOFactory::load($source);
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            $this->fillExcelItems($sheet, $package, $template);
+            $this->fillExcelWorkers($sheet, $package);
+            $this->fillExcelLetterhead($sheet, $school);
+            foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+                $cell = $sheet->getCell($coordinate);
+                if (is_string($cell->getValue())) {
+                    $cell->setValue(strtr($cell->getValue(), array_combine(array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)), array_values($values))));
+                }
+            }
+            $this->replaceExcelHeaderFooterPlaceholders($sheet, $values);
+        }
+
+        return $spreadsheet;
+    }
+
+    /** @param Collection<int, DocumentTemplate> $templates */
+    private function packageSpreadsheet(Collection $templates, SpjPackage $package, School $school): Spreadsheet
+    {
+        if ($templates->isEmpty()) {
+            throw new \RuntimeException('Belum ada template dokumen aktif yang sesuai dengan kategori paket ini.');
+        }
+
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+
+        foreach ($templates as $template) {
+            if (strtolower($template->format) !== 'xlsx') {
+                throw new \RuntimeException('Paket dokumen saat ini hanya mendukung template Excel aktif.');
+            }
+
+            $filled = $this->filledSpreadsheet($template, $package, $school);
+            $spreadsheet->addExternalSheet($filled->getSheet($this->previewSheetIndex($filled, $template)));
+        }
+
+        return $spreadsheet;
+    }
+
+    private function spreadsheetPdfContents(Spreadsheet $spreadsheet): string
+    {
+        $nativePdf = app(SpjSpreadsheetPdfConverter::class)->convert($spreadsheet);
+        if ($nativePdf !== null) {
+            return $nativePdf;
+        }
+
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
+        if ($temporaryFile === false) {
+            throw new \RuntimeException('File sementara PDF tidak dapat dibuat.');
+        }
+
+        try {
+            $writer = new SpjSpreadsheetPdfWriter($spreadsheet);
+            $writer->writeAllSheets()->save($temporaryFile);
+
+            return (string) file_get_contents($temporaryFile);
+        } finally {
+            @unlink($temporaryFile);
+        }
+    }
+
+    private function pdfResponse(string $contents, string $fileName, ?SpjPackage $package = null)
+    {
+        if ($package) {
+            $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
+            if ($temporaryFile === false || file_put_contents($temporaryFile, $contents) === false) {
+                throw new \RuntimeException('File sementara PDF tidak dapat disimpan.');
+            }
+            $downloadName = $this->safeName($fileName);
+            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $downloadName);
+            @unlink($temporaryFile);
+
+            return response($contents, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
+                'Content-Length' => (string) strlen($contents),
+                'Cache-Control' => 'private, no-store, max-age=0',
+            ]);
+        }
+
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$this->safeName($fileName).'"',
+            'Content-Length' => (string) strlen($contents),
+            'Cache-Control' => 'private, no-store, max-age=0',
+        ]);
+    }
+
+    private function paymentMethodLabel(string $value): string
+    {
+        return match (strtolower(trim($value))) {
+            'transfer_bank' => 'Transfer Bank (CMS / Non Tunai)',
+            'siplah' => 'SiPLah Kemdikbud',
+            'tunai' => 'Tunai Kas BOS',
+            default => $value,
+        };
+    }
+
+    /** Resolve unggahan pada disk local Laravel, dengan fallback template legacy. */
+    private function templateSourcePath(DocumentTemplate $template): string
+    {
+        return $this->sourcePath($template);
+    }
+
+    /**
+     * Lokasi file source template pada disk `local`. Public agar preflight
+     * dapat memeriksa template tanpa me-render workbook.
+     */
+    public function sourcePath(DocumentTemplate $template): string
+    {
+        $relativePath = ltrim((string) $template->file_path, '/\\');
+        $disk = Storage::disk('local');
+        if ($disk->exists($relativePath)) {
+            return $disk->path($relativePath);
+        }
+
+        return storage_path('app/'.$relativePath);
+    }
+
+    private function safeName(string $name): string
+    {
+        return preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?: 'dokumen-spj';
+    }
+
+    /** Sisipkan gambar kop selebar area cetak tanpa mengubah rasio gambar. */
+    protected function fillExcelLetterhead(Worksheet $sheet, School $school): void
+    {
+        $relativePath = $school->letterhead_path;
+        $disk = Storage::disk('local');
+        if (blank($relativePath) || ! $disk->exists($relativePath)) {
+            return;
+        }
+        $path = $disk->path($relativePath);
+        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+            if (trim((string) $sheet->getCell($coordinate)->getValue()) !== '{{KOP_SURAT}}') {
+                continue;
+            }
+            $sheet->setCellValue($coordinate, '');
+            $drawing = new Drawing;
+            $drawing->setPath($path);
+            $drawing->setCoordinates($coordinate);
+            $dimensions = @getimagesize($path);
+            if (! is_array($dimensions) || ($dimensions[0] ?? 0) < 1 || ($dimensions[1] ?? 0) < 1) {
+                return;
+            }
+
+            $targetWidth = $this->excelPrintAreaWidth($sheet);
+            $targetHeight = max(1, (int) round($targetWidth * $dimensions[1] / $dimensions[0]));
+            $drawing->setWidth($targetWidth);
+            $drawing->setResizeProportional(true);
+            $drawing->setCoordinates('A1');
+            $drawing->setOffsetX(0);
+            $drawing->setOffsetY(0);
+            $drawing->setWorksheet($sheet);
+
+            $currentHeight = $sheet->getRowDimension(1)->getRowHeight();
+            $sheet->getRowDimension(1)->setRowHeight(max(
+                $currentHeight > 0 ? $currentHeight : 0,
+                SharedDrawing::pixelsToPoints($targetHeight) + 4,
+            ));
+            break;
+        }
+    }
+
+    private function excelPrintAreaWidth(Worksheet $sheet): int
+    {
+        $printArea = (string) $sheet->getPageSetup()->getPrintArea();
+        preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/', $printArea, $matches);
+        if (! isset($matches[2])) {
+            return self::DEFAULT_EXCEL_PRINT_WIDTH;
+        }
+
+        $lastColumn = $matches[2];
+        $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
+        $width = 0;
+
+        for ($column = 1; $column <= $lastColumnIndex; $column++) {
+            $letter = Coordinate::stringFromColumnIndex($column);
+            $columnWidth = $sheet->getColumnDimension($letter)->getWidth();
+            $width += SharedDrawing::cellDimensionToPixels(
+                $columnWidth > 0 ? $columnWidth : 8.43,
+                new Font(false),
+            );
+        }
+
+        return max(1, $width - 4);
+    }
+
+    /** @param array<string,string> $values */
+    protected function replaceExcelHeaderFooterPlaceholders(Worksheet $sheet, array $values): void
+    {
+        $replacements = array_combine(
+            array_map(fn ($key) => '{{'.$key.'}}', array_keys($values)),
+            array_values($values),
+        );
+        $headerFooter = $sheet->getHeaderFooter();
+
+        foreach ([
+            'getOddHeader', 'getEvenHeader', 'getFirstHeader',
+            'getOddFooter', 'getEvenFooter', 'getFirstFooter',
+        ] as $getter) {
+            $content = $headerFooter->{$getter}();
+            if (! is_string($content) || $content === '') {
+                continue;
+            }
+
+            $setter = 'set'.substr($getter, 3);
+            $headerFooter->{$setter}(strtr($content, $replacements));
+        }
+    }
+
+    /** Konversi nilai rupiah ke terbilang Indonesia untuk kuitansi dan SPK. */
+    private function terbilang(float $amount): string
+    {
+        $number = (int) round(abs($amount));
+        if ($number === 0) {
+            return 'Nol rupiah';
+        }
+        $words = $this->terbilangNumber($number);
+
+        return ucfirst(trim($words)).' rupiah';
+    }
+
+    private function terbilangNumber(int $number): string
+    {
+        $basic = ['', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'];
+        if ($number < 12) {
+            return $basic[$number];
+        }
+        if ($number < 20) {
+            return $this->terbilangNumber($number - 10).' belas';
+        }
+        if ($number < 100) {
+            return $this->terbilangNumber(intdiv($number, 10)).' puluh '.$this->terbilangNumber($number % 10);
+        }
+        if ($number < 200) {
+            return 'seratus '.$this->terbilangNumber($number - 100);
+        }
+        if ($number < 1000) {
+            return $this->terbilangNumber(intdiv($number, 100)).' ratus '.$this->terbilangNumber($number % 100);
+        }
+        if ($number < 2000) {
+            return 'seribu '.$this->terbilangNumber($number - 1000);
+        }
+        if ($number < 1000000) {
+            return $this->terbilangNumber(intdiv($number, 1000)).' ribu '.$this->terbilangNumber($number % 1000);
+        }
+        if ($number < 1000000000) {
+            return $this->terbilangNumber(intdiv($number, 1000000)).' juta '.$this->terbilangNumber($number % 1000000);
+        }
+        if ($number < 1000000000000) {
+            return $this->terbilangNumber(intdiv($number, 1000000000)).' miliar '.$this->terbilangNumber($number % 1000000000);
+        }
+
+        return $this->terbilangNumber(intdiv($number, 1000000000000)).' triliun '.$this->terbilangNumber($number % 1000000000000);
+    }
+
+    private function itemValues(SpjPackage $package, int $index): array
+    {
+        $item = $package->transaction->items[$index - 1];
+
+        return [
+            'ITEM_NO' => (string) $index,
+            'ITEM_URAIAN' => (string) ($item->item_description ?: $item->sourceValue('description')),
+            'JENIS_RAB' => $this->rabItemKind($package, $item),
+            'ITEM_VOLUME' => app(SpjPlaceholderValueFormatter::class)->quantity($item->sourceValue('quantity')),
+            'ITEM_SATUAN' => (string) ($item->sourceValue('unit') ?: '—'),
+            'ITEM_HARGA_SATUAN' => app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('unit_price')),
+            'ITEM_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('amount')),
+            'ITEM_KODE_REKENING' => (string) ($item->sourceValue('account_code') ?: $package->transaction->sourceValue('account_code')),
+            'ITEM_NAMA_REKENING' => (string) ($item->sourceValue('account_name') ?: $package->transaction->sourceValue('account_name')),
+        ];
+    }
+
+    /**
+     * Rincian nilai pekerjaan pemeliharaan: bahan dari transaksi belanja
+     * barang (material), upah dari transaksi pemeliharaan (tenaga kerja)
+     * itu sendiri. Di luar linkage/kategori tersebut, seluruh bruto
+     * dianggap bahan dan upah nol sehingga NILAI_PEKERJAAN tetap sama
+     * dengan bruto seperti sebelumnya.
+     *
+     * @return array{bahan:float,upah:float}
+     */
+    protected function maintenanceValueSplit(SpjPackage $package, float $gross): array
+    {
+        $transaction = $package->transaction;
+
+        if (strtoupper((string) $transaction->spj_category) !== 'PEMELIHARAAN') {
+            return ['bahan' => $gross, 'upah' => 0.0];
+        }
+
+        $materialId = (int) ($transaction->getAttribute('maintenance_material_source_id') ?? 0);
+        $laborId = (int) ($transaction->getAttribute('maintenance_labor_source_id') ?? 0);
+
+        if ($materialId === 0 && $laborId === 0) {
+            $materialId = (int) ($transaction->maintenanceMaterialTransaction?->getKey() ?? 0);
+            $laborId = (int) ($transaction->maintenanceLaborTransaction?->getKey() ?? 0);
+        }
+
+        if ($materialId === 0 && $laborId === 0) {
+            return ['bahan' => $gross, 'upah' => 0.0];
+        }
+
+        $bahan = $materialId === (int) $transaction->getKey()
+            ? $gross
+            : (float) (Transaction::query()->find($materialId)?->sourceValue('gross_amount') ?? 0);
+        $upah = $laborId === (int) $transaction->getKey()
+            ? $gross
+            : (float) ($laborId !== 0 ? (Transaction::query()->find($laborId)?->sourceValue('gross_amount') ?? 0) : 0);
+
+        return ['bahan' => $bahan, 'upah' => $upah];
+    }
+
+    /**
+     * Jenis baris RAB per rincian: "Bahan" bila rincian milik transaksi
+     * belanja barang (material), "UPAH" bila milik transaksi pemeliharaan
+     * (tenaga kerja) itu sendiri. Tanpa info linkage, default "Bahan"
+     * karena rincian RAB pada umumnya adalah belanja bahan. Di luar
+     * kategori PEMELIHARAAN, pertahankan nilai scalar lama.
+     */
+    protected function rabItemKind(SpjPackage $package, TransactionItem $item): string
+    {
+        $transaction = $package->transaction;
+
+        if (strtoupper((string) $transaction->spj_category) !== 'PEMELIHARAAN') {
+            return 'RAB Pemeliharaan';
+        }
+
+        $ownerId = (int) $item->transaction_id;
+        $laborId = (int) ($transaction->getAttribute('maintenance_labor_source_id') ?? 0);
+
+        if ($laborId !== 0 && $ownerId === $laborId) {
+            return 'UPAH';
+        }
+
+        return 'Bahan';
+    }
+
+    /**
+     * Rincian untuk render RAB: gabungan rincian belanja barang (material)
+     * dan rincian milik transaksi pemeliharaan (tenaga kerja) itu sendiri,
+     * tanpa duplikat dan tanpa mengubah database.
+     *
+     * @return Collection<int, TransactionItem>
+     */
+    protected function rabCombinedItems(SpjPackage $package): Collection
+    {
+        $transaction = $package->transaction;
+        $items = $transaction->items;
+        $laborId = (int) ($transaction->getAttribute('maintenance_labor_source_id') ?? 0);
+
+        if ($laborId === 0) {
+            return $items;
+        }
+
+        $laborOwn = TransactionItem::query()
+            ->where('transaction_id', $laborId)
+            ->orderBy('id')
+            ->get();
+
+        return $items->concat($laborOwn)->unique(fn (TransactionItem $item) => $item->getKey())->values();
+    }
+
+    /**
+     * Jalankan render dengan relasi items diganti gabungan RAB khusus
+     * untuk template RAB_PEMELIHARAAN; relasi asli dikembalikan setelahnya.
+     * Template lain tidak tersentuh.
+     */
+    protected function withRabItemsForTemplate(SpjPackage $package, ?DocumentTemplate $template, callable $render): mixed
+    {
+        $canonical = $template ? SpjDocumentTypeRegistry::canonical((string) $template->document_type) : null;
+        if ($canonical !== SpjDocumentTypeRegistry::RAB_PEMELIHARAAN) {
+            return $render();
+        }
+
+        $transaction = $package->transaction;
+        $hadItems = $transaction->relationLoaded('items');
+        $original = $hadItems ? $transaction->items : null;
+        $transaction->setRelation('items', $this->rabCombinedItems($package));
+
+        try {
+            return $render();
+        } finally {
+            if ($hadItems && $original) {
+                $transaction->setRelation('items', $original);
+            } else {
+                $transaction->unsetRelation('items');
+            }
+        }
+    }
+
+    private function fillWordItems(TemplateProcessor $document, SpjPackage $package, ?DocumentTemplate $template = null): void
+    {
+        $this->withRabItemsForTemplate($package, $template, function () use ($document, $package): void {
+            $items = $package->transaction->items;
+            if ($items->isEmpty() || ! in_array('ITEM_NO', $document->getVariables(), true)) {
+                return;
+            }
+            $document->cloneRow('ITEM_NO', $items->count());
+            foreach ($items as $index => $item) {
+                foreach ($this->itemValues($package, $index + 1) as $key => $value) {
+                    $document->setValue($key.'#'.($index + 1), $value);
+                }
+            }
+        });
+    }
+
+    private function fillExcelItems(Worksheet $sheet, SpjPackage $package, ?DocumentTemplate $template = null): void
+    {
+        $this->withRabItemsForTemplate($package, $template, function () use ($sheet, $package): void {
+            $rows = [];
+            foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+                if (str_contains((string) $sheet->getCell($coordinate)->getValue(), '{{ITEM_NO}}')) {
+                    $rows[] = $sheet->getCell($coordinate)->getRow();
+                }
+            }
+            $rows = array_values(array_unique($rows));
+            $items = $package->transaction->items;
+            if (empty($rows) || $items->isEmpty()) {
+                return;
+            }
+            $row = $rows[0];
+            $highestColumn = $sheet->getHighestColumn();
+            $lastColumn = Coordinate::columnIndexFromString($highestColumn);
+            $original = [];
+            for ($column = 1; $column <= $lastColumn; $column++) {
+                $original[$column] = $sheet->getCell(Coordinate::stringFromColumnIndex($column).$row)->getValue();
+            }
+            if ($items->count() > count($rows)) {
+                $extra = $items->count() - count($rows);
+                $insertAt = max($rows) + 1;
+                $sheet->insertNewRowBefore($insertAt, $extra);
+                for ($copyRow = $insertAt; $copyRow < $insertAt + $extra; $copyRow++) {
+                    $sheet->duplicateStyle($sheet->getStyle($row), 'A'.$copyRow.':'.$highestColumn.$copyRow);
+                    $sheet->getRowDimension($copyRow)->setRowHeight($sheet->getRowDimension($row)->getRowHeight());
+                    $rows[] = $copyRow;
+                }
+            }
+            sort($rows);
+            foreach ($items as $index => $item) {
+                $replacements = [];
+                foreach ($this->itemValues($package, $index + 1) as $key => $value) {
+                    $replacements['{{'.$key.'}}'] = $value;
+                }
+                foreach ($original as $column => $value) {
+                    if (is_string($value)) {
+                        $sheet->getCell(Coordinate::stringFromColumnIndex($column).$rows[$index])->setValue(strtr($value, $replacements));
+                    }
+                }
+            }
+            foreach (array_slice($rows, $items->count()) as $emptyRow) {
+                foreach ($original as $column => $value) {
+                    if (is_string($value) && str_contains($value, '{{ITEM_')) {
+                        $sheet->getCell(Coordinate::stringFromColumnIndex($column).$emptyRow)->setValue('');
+                    }
+                }
+            }
+        });
+    }
+
+    private function workerValues(SpjPackage $package, int $index): array
+    {
+        $worker = $package->transaction->workers[$index - 1];
+
+        return [
+            'UPAH_NO' => (string) $index,
+            'UPAH_NAMA' => (string) $worker->name,
+            'UPAH_PEKERJAAN' => (string) $worker->job_description,
+            'UPAH_HARI' => (string) $worker->work_days,
+            'UPAH_TARIF_HARI' => app(SpjPlaceholderValueFormatter::class)->amount($worker->daily_rate),
+            'UPAH_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($worker->amount),
+            'UPAH_PENERIMA_KUITANSI' => $worker->is_receipt_recipient ? 'YA' : 'TIDAK',
+        ];
+    }
+
+    private function fillWordWorkers(TemplateProcessor $document, SpjPackage $package): void
+    {
+        $workers = $package->transaction->workers;
+        if ($workers->isEmpty() || ! in_array('UPAH_NO', $document->getVariables(), true)) {
+            return;
+        }
+        $document->cloneRow('UPAH_NO', $workers->count());
+        foreach ($workers as $index => $worker) {
+            foreach ($this->workerValues($package, $index + 1) as $key => $value) {
+                $document->setValue($key.'#'.($index + 1), $value);
+            }
+        }
+    }
+
+    private function fillExcelWorkers(Worksheet $sheet, SpjPackage $package): void
+    {
+        $row = null;
+        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+            if (str_contains((string) $sheet->getCell($coordinate)->getValue(), '{{UPAH_NO}}')) {
+                $row = $sheet->getCell($coordinate)->getRow();
+                break;
+            }
+        }
+        $workers = $package->transaction->workers;
+        if (! $row || $workers->isEmpty()) {
+            return;
+        }
+        $highestColumn = $sheet->getHighestColumn();
+        $lastColumn = Coordinate::columnIndexFromString($highestColumn);
+        $original = [];
+        for ($column = 1; $column <= $lastColumn; $column++) {
+            $original[$column] = $sheet->getCell(Coordinate::stringFromColumnIndex($column).$row)->getValue();
+        }
+        if ($workers->count() > 1) {
+            $sheet->insertNewRowBefore($row + 1, $workers->count() - 1);
+            for ($copyRow = $row + 1; $copyRow < $row + $workers->count(); $copyRow++) {
+                $sheet->duplicateStyle($sheet->getStyle($row), 'A'.$copyRow.':'.$highestColumn.$copyRow);
+                $sheet->getRowDimension($copyRow)->setRowHeight($sheet->getRowDimension($row)->getRowHeight());
+            }
+        }
+        foreach ($workers as $index => $worker) {
+            $replacements = [];
+            foreach ($this->workerValues($package, $index + 1) as $key => $value) {
+                $replacements['{{'.$key.'}}'] = $value;
+            }
+            foreach ($original as $column => $value) {
+                if (is_string($value)) {
+                    $sheet->getCell(Coordinate::stringFromColumnIndex($column).($row + $index))->setValue(strtr($value, $replacements));
+                }
+            }
+        }
+    }
+}

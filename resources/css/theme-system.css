@@ -1,0 +1,33 @@
+/* Single ordered entrypoint for the application theme system.
+   Keep cascade order explicit here; feature/runtime JavaScript must not import CSS. */
+@import './theme-profiles.css';
+@import './theme-profile-components.css';
+@import './comfortable-text.css';
+@import './theme-soft-surfaces.css';
+@import './full-dark.css';
+@import './dark-theme-refinement.css';
+@import './token-native-components.css';
+@import './layout-token-native.css';
+@import './page-header-unified.css';
+@import './audit-report-standardization.css';
+@import './transactions-standardization.css';
+@import './transaction-list-actions.css';
+@import './transaction-detail-normalization.css';
+@import './spj-workspace-standardization.css';
+@import './dashboard-standardization.css';
+@import './settings-database-standardization.css';
+@import './database-header-generalization.css';
+@import './document-settings-standardization.css';
+@import './theme-accessibility.css';
+@import './arkas-theme-profiles.css';
+@import './apple-theme-profiles.css';
+@import './sidebar-toggle-fix.css';
+@import './dark-form-controls.css';
+@import './spj-package-theme-fix.css';
+@import './spj-package-document-placement.css';
+@import './view-theme-hardening.css';
+@import './semantic-status-colors.css';
+@import './minimum-font-size.css';
+@import './auth-login-standardization.css';
+@import './public-context-standardization.css';
+@import './top-progress.css';
