@@ -91,6 +91,12 @@ jobs:
       - name: SPJ critical tests
         run: php artisan test --testsuite="SPJ Critical" --compact
 
+      - name: Reset test database before unit suite
+        shell: bash
+        run: |
+          rm -f database/testing.sqlite database/testing.sqlite-shm database/testing.sqlite-wal
+          touch database/testing.sqlite
+
       - name: Full unit test suite
         shell: bash
         run: |
