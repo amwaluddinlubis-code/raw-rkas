@@ -40,7 +40,7 @@
             </div>
         </x-page-header>
 
-        @if($blockingCount > 0)
+        <?php if ($blockingCount > 0): ?>
             <section class="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
                 <p class="font-bold">Belum siap diberi nomor — {{ $blockingCount }} hal perlu dilengkapi.</p>
                 <p class="mt-0.5">Kerjakan berurutan dari nomor 1. Setiap baris menunjukkan di mana memperbaikinya (Paket atau Transaksi).</p>
@@ -79,18 +79,18 @@
                     @endforeach
                 </ol>
             </section>
-        @else
+        <?php else: ?>
             <section class="rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">
                 <p class="font-bold">Semua kebutuhan wajib lengkap — paket siap dilanjutkan.</p>
-                @if($canMarkReady)
+                <?php if ($canMarkReady): ?>
                     <p class="mt-0.5">Gunakan tombol “Tandai siap diproses” di atas untuk melanjutkan ke penomoran.</p>
-                @elseif($package->status !== 'DRAFT')
+                <?php elseif ($package->status !== 'DRAFT'): ?>
                     <p class="mt-2"><x-ui.status-badge :status="$package->status" /></p>
-                @elseif(!$canEdit)
+                <?php elseif (! $canEdit): ?>
                     <p class="mt-0.5">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
-                @endif
+                <?php endif; ?>
             </section>
-        @endif
+        <?php endif; ?>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -147,7 +147,7 @@
             </ul>
         </details>
 
-        @if($optionalMissing->isNotEmpty() || $notApplicable->isNotEmpty())
+        <?php if ($optionalMissing->isNotEmpty() || $notApplicable->isNotEmpty()): ?>
             <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-muted)]">Opsional / tidak berlaku ({{ $optionalMissing->count() + $notApplicable->count() }}) — tidak memblokir</summary>
                 <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">
@@ -159,6 +159,6 @@
                     @endforeach
                 </ul>
             </details>
-        @endif
+        <?php endif; ?>
     </div>
 </x-layouts.tailwind-app>
