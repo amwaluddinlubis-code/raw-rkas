@@ -89,21 +89,30 @@ jobs:
         run: php artisan view:cache --no-interaction
 
       - name: Compile checklist diagnostic
-        shell: bash
-        run: |
-          php -r 'require "vendor/autoload.php"; $app = require "bootstrap/app.php"; $app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); $compiled = $app["blade.compiler"]->compileString(file_get_contents(resource_path("views/spj/checklist.blade.php"))); file_put_contents(storage_path("logs/checklist-compiled.php"), $compiled);'
-
-      - name: Lint checklist diagnostic
         continue-on-error: true
         shell: bash
-        run: php -l storage/logs/checklist-compiled.php 2>&1 | tee storage/logs/checklist-compile-lint.log
+        run: |
+          php artisan tinker --execute='$source = file_get_contents(resource_path("views/spj/checklist.blade.php")); $compiled = app("blade.compiler")->compileString($source); file_put_contents(storage_path("logs/checklist-compiled.php"), $compiled);' 2>&1 | tee storage/logs/checklist-compile-command.log
+
+      - name: Lint checklist diagnostic
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          if [ -f storage/logs/checklist-compiled.php ]; then
+            php -l storage/logs/checklist-compiled.php 2>&1 | tee storage/logs/checklist-compile-lint.log
+          else
+            echo "compiled checklist file missing" | tee storage/logs/checklist-compile-lint.log
+          fi
 
       - name: Upload checklist diagnostic
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: checklist-compile-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             storage/logs/checklist-compiled.php
+            storage/logs/checklist-compile-command.log
             storage/logs/checklist-compile-lint.log
           if-no-files-found: error
           retention-days: 2
