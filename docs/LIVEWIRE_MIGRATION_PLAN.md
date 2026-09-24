@@ -1,10 +1,10 @@
 # Rencana Migrasi Livewire (TALL) — Status, Audit Boundary, dan Urutan
 
-Terakhir diverifikasi: **2026-09-15** pada branch `gui-standardization`, dengan pembaruan stack Laravel 13 + pure TALL terverifikasi lokal pada `a4dd395`.
+Terakhir disinkronkan terhadap source repository: **2026-09-25**. Riwayat migrasi awal berasal dari branch `gui-standardization`; branch audit aktif adalah `hardening/raw-rkas-audit`.
 
 Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status release keseluruhan berada di `CURRENT_PROGRESS.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; evidence gate berada di `P0_VERIFICATION_KIT.md`.
 
-> Evidence saat ini: Phase 2 authorization hardening sudah selesai dan tetap PASS pada green repository gate. SPJ Critical, full Unit, dan full Feature semuanya hijau. Stack naik ke Laravel 13 + pure TALL (Filament/Sail mati dicopot pada `a4dd395`, terverifikasi lokal: 288/60/412 PASS, build + view:cache PASS). Canonical: CI #486 (di atas PHP 8.3 platform floor). Browser/operator runtime tetap RVR.
+> Evidence migrasi/authorization tetap valid sebagai historical regression baseline. Namun current audit HEAD `6746a205` mempunyai workflow `35993431668` yang FAIL pada Full Unit setelah SPJ Critical PASS; karena itu dokumen ini tidak boleh dibaca sebagai klaim bahwa HEAD sekarang hijau. Stack aktif tetap Laravel 13 + pure TALL; Filament/Sail tidak aktif. Browser/operator runtime tetap RVR.
 
 ## 1. Prinsip canonical migrasi
 
@@ -33,7 +33,7 @@ Temuan Phase 1 tentang `HARDENING REQUIRED` telah ditutup pada Phase 2. Route mi
 
 **Status: COMPLETE (SOURCE AUDIT), 2026-09-14.**
 
-Inventaris `app/Livewire/` pada audit terbaru berisi **27 component**. Setelah pencopotan Filament mati dan penambahan workspace detail transaksi, component aktif yang relevan bertambah pada area transaksi tanpa mengubah boundary domain.
+Inventaris tree branch audit 2026-09-25 berisi **32 component** di `app/Livewire/`. Pertumbuhan component mencakup dashboard, laporan periodik, database, transaksi, RKAS, dan workspace lain tanpa mengubah boundary domain canonical.
 
 ### 3.1 Mutation/context boundaries setelah Phase 2
 
@@ -105,7 +105,7 @@ Business rule tidak diduplikasi di component; guard hanya enforcement permission
 
 ## 5. Phase 2 — Authorization hardening
 
-**Status: COMPLETE / REGRESSION PASS / FULL CODE GATE PASS / BROWSER RVR.**
+**Status: AUTHORIZATION HARDENING COMPLETE / HISTORICAL REGRESSION PASS / CURRENT HEAD INTEGRATION RED / BROWSER RVR.**
 
 Source commit:
 
@@ -158,7 +158,9 @@ Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, tenant ownership, atau ro
 
 ## 7. Repository integration gate setelah Phase 2
 
-**Status: COMPLETE / GREEN.**
+**Status: HISTORICAL GREEN BASELINE / CURRENT AUDIT HEAD RED.**
+
+Gate #480/#486 di bawah tetap penting sebagai bukti fase migrasi pada commit terkait, tetapi bukan status HEAD terkini. Audit branch `hardening/raw-rkas-audit@6746a205` menjalankan workflow `35993431668`: SPJ Critical PASS, Full Unit FAIL, Full Feature SKIPPED.
 
 Phase 2 awalnya PASS pada CI #478, tetapi workflow tersebut membuka dua stale regression non-authorization. Keduanya ditutup pada:
 
@@ -192,13 +194,13 @@ Full Feature   : 411 PASS / 2972 assertions
 Pint           : ADVISORY / 5 pre-existing style issues
 ```
 
-P0 integration gate tidak lagi menghalangi pekerjaan operator/runtime berikutnya.
+Pada historical gate #480 integrasi tidak lagi menghalangi pekerjaan operator/runtime. Untuk HEAD audit saat ini, Full Unit failure harus ditutup lebih dulu sebelum migration/polish baru diprioritaskan.
 
 Perubahan stack setelah historical gate #480 (Laravel 12 → 13 pada `3582cef`, pencopotan Filament/Sail mati menuju pure TALL pada `a4dd395`) kini tercakup oleh canonical gate CI #486; angka gate #480 di atas tetap authoritative hanya untuk run tersebut. Verifikasi lokal L13 tercatat di `CURRENT_PROGRESS.md`.
 
 ## 8. Kandidat migrasi setelah stabilization gate
 
-Integration gate sudah hijau, tetapi migrasi Livewire baru bukan prioritas otomatis. P1 generated-document, browser/operator, dan Office/PDF QA lebih bernilai saat ini.
+Migrasi Livewire baru bukan prioritas otomatis. Current audit HEAD terlebih dahulu harus kembali ke blocking CI hijau; setelah itu P1 generated-document, browser/operator, dan Office/PDF QA tetap lebih bernilai daripada migrasi kosmetik tambahan.
 
 Jika operator/runtime flow sudah stabil dan manfaatnya jelas, urutan kandidat read-only:
 
@@ -225,7 +227,7 @@ Tetap OUT OF SCOPE tanpa instruksi/kebutuhan khusus:
 [x] negative role regression Phase 2 tersedia dan PASS
 [x] focused critical test dijalankan
 [x] frontend build / Blade compile PASS pada canonical gate #480
-[x] repository code gate hijau
+[ ] current HEAD repository code gate hijau — audit run 35993431668 masih FAIL di Full Unit
 [x] documentation impact review Phase 2 + integration repair selesai
 [ ] browser/runtime — tetap RVR sampai benar-benar diuji
 ```

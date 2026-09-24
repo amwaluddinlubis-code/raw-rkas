@@ -1,6 +1,10 @@
 # APP-SPJ — Implementation Verification 2026-09-15
 
-Dokumen ini mencatat verifikasi pekerjaan generator dokumen SPJ yang ditutup pada branch `gui-standardization` tanggal 2026-09-15. Catatan ini melengkapi `CURRENT_PROGRESS.md`, `TEMPLATE_MASTER_WORKFLOW.md`, dan `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` sampai dokumen canonical tersebut diselaraskan pada maintenance pass berikutnya.
+Status dokumen: **HISTORICAL SNAPSHOT / NON-CANONICAL FOR CURRENT HEAD**
+
+> Dokumen ini mempertahankan evidence yang benar untuk commit dan workflow 2026-09-15. Ia tidak menyatakan status branch saat ini. Untuk HEAD/gate terbaru gunakan `CURRENT_PROGRESS.md` dan `P0_VERIFICATION_KIT.md`; audit 2026-09-25 mencatat current audit HEAD masih merah pada Full Unit suite.
+
+Dokumen ini mencatat verifikasi pekerjaan generator dokumen SPJ yang ditutup pada branch `gui-standardization` tanggal 2026-09-15. Catatan ini merekam kondisi historis saat pekerjaan ditutup. Dokumen canonical kini sudah diselaraskan pada maintenance pass berikutnya; gunakan dokumen canonical tersebut untuk contract/status aktif.
 
 ## Baseline terverifikasi
 

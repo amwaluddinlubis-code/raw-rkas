@@ -1,6 +1,6 @@
 # Sinkronisasi Data — ARKAS/BKU, Dapodik, Reconciliation, dan Identity
 
-Terakhir diverifikasi: **2026-09-11** terhadap branch `gui-standardization`.
+Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`).
 
 Status dokumen: **ACTIVE TECHNICAL GUIDE**.
 
