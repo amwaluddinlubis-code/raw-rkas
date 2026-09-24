@@ -24,7 +24,7 @@ class RkasPlanningSuggestionService
      */
     public function build(int $yearId, int $fundSourceId): array
     {
-        if (Schema::connection('school')->hasTable('arkas_mirror_rapbs')) {
+        if ($this->hasUsableMirrorRows()) {
             return $this->buildFromMirror($yearId, $fundSourceId);
         }
 
@@ -35,6 +35,12 @@ class RkasPlanningSuggestionService
             'initial' => $this->initialBudgetSuggestions($yearId, $fundSourceId, $current),
             'remaining' => $this->remainingBudgetSuggestions($yearId, $fundSourceId),
         ];
+    }
+
+    private function hasUsableMirrorRows(): bool
+    {
+        return Schema::connection('school')->hasTable('arkas_mirror_rapbs')
+            && DB::connection('school')->table('arkas_mirror_rapbs')->exists();
     }
 
     /**

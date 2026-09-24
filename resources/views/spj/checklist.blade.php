@@ -114,6 +114,7 @@
                         $item = $externalItems[$itemKey];
                         $isGenerated = $item['source'] === 'generated';
                         $isChecked = in_array($itemKey, $externalCheckedKeys, true);
+                        $canToggleExternal = ! $isGenerated && $canEdit && $package->isEditable();
                     @endphp
                     <li class="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-center gap-2.5">
@@ -121,15 +122,15 @@
                             <p class="min-w-0 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</p>
                             <x-ui.badge variant="neutral">{{ $isGenerated ? 'Aplikasi' : 'Manual' }}</x-ui.badge>
                         </div>
-                        @if(!$isGenerated && $canEdit && $package->isEditable())
+                        @if($isGenerated)
+                            <span class="shrink-0 text-xs text-[var(--ui-fg-muted)]">Ikut status A2 di atas</span>
+                        @elseif($canToggleExternal)
                             <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="shrink-0">
                                 @csrf
                                 <input type="hidden" name="item_key" value="{{ $itemKey }}">
                                 <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
                                 <x-ui.button variant="secondary" type="submit" class="text-xs">{{ $isChecked ? 'Batalkan tanda' : 'Tandai tersedia' }}</x-ui.button>
                             </form>
-                        @elseif($isGenerated)
-                            <span class="shrink-0 text-xs text-[var(--ui-fg-muted)]">Ikut status A2 di atas</span>
                         @endif
                     </li>
                 @endforeach
