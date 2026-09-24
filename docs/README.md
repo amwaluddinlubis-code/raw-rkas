@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-15**
+Terakhir diperbarui: **2026-09-25**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
@@ -27,7 +27,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Jangan mempromosikan source change baru menjadi FUNCTIONAL PASS sebelum CI/test aktual pada head terkait selesai hijau.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Audit 2026-09-25 menemukan workflow pada HEAD `hardening/raw-rkas-audit` merah di Full Unit suite setelah SPJ Critical PASS. Jangan mempromosikan source change baru menjadi FUNCTIONAL PASS sebelum CI/test aktual pada head terkait selesai hijau.
 
 ## Dokumen aktif utama
 
@@ -41,7 +41,7 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Jangan mempro
 | `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, dan safe-sync semantics. |
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE / IMPLEMENTED BASELINE** — numbering, cancel, rollback, correction, dan registry contract. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
-| `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` | **ACTIVE REFERENCE / RVR** — transkrip 10 pola lampiran bukti dukung operasional + mapping kategori canonical; belum implementasi checklist otomatis. |
+| `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` | **ACTIVE REFERENCE / FASE 1 IMPLEMENTED** — 10 pola bukti dukung + mapping kategori/channel; checklist manual per paket sudah tersedia dan sengaja non-blocking. Aturan otomatis/threshold lanjutan masih RVR. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
 | `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat kelompok/39 slot laporan periode, generator internal, browser print, PDF, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
@@ -58,7 +58,7 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 | `ARKAS_IMPORTER.md` | **ACTIVE** — Generic ARKAS Importer, source key, profile-driven import, hardening, dan operator-data verification. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder registry/usage dan template contract. |
 | `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE** — lifecycle import paket, update individual template, single-sheet download, dan master recomposition. |
-| `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command dan successful canonical release-safety gate. |
+| `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command release-safety, historical green baseline, dan status gate HEAD terbaru. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — six-category source/real-data audit guidance. |
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk numbering/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Untuk penutupan GUI, baca `GUI_STANDARDIZATION.md` lalu `GUI_RUNTIME_QA.md`.

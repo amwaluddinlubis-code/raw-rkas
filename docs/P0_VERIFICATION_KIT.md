@@ -1,6 +1,6 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-25**
 
 Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release authoritative berada di `CURRENT_PROGRESS.md`.
 
@@ -8,7 +8,22 @@ Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang.
 
 Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini dan tidak boleh mempromosikan commit docs-only sebagai code gate baru.
 
-Latest completed green source gate:
+Current HEAD gate status (audit branch):
+
+```text
+branch        : hardening/raw-rkas-audit
+commit        : 6746a2052398cb098b76028e7aa08efe2aa48d37
+CI run        : 35993431668
+workflow      : SPJ Critical Verification
+result        : FAILURE
+passed through: SPJ Critical tests
+failed at     : Full Unit test suite
+not executed  : Full Feature test suite
+```
+
+Status ini **mengalahkan historical green baseline untuk klaim tentang HEAD saat ini**. Sampai unit failure ditutup dan workflow diulang hijau, HEAD audit tidak boleh disebut release-gate PASS.
+
+Latest historical completed green source gate:
 
 ```text
 commit        : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
@@ -92,9 +107,9 @@ test: align description UI contract with service delegation
 
 CI #480 menjadi historical green baseline sebelum Laravel 13/TALL migration. Tidak ada lifecycle, numbering, safe-sync, tenant ownership, atau authorization rule yang diubah untuk membuat gate tersebut hijau. Current canonical gate sekarang #486.
 
-### Coverage penting yang dipertahankan gate #486
+### Coverage penting historical gate #486
 
-Current SPJ Critical/Unit/Feature gate mencakup dan mempertahankan functional regression untuk:
+Historical green SPJ Critical/Unit/Feature gate #486 mencakup functional regression untuk:
 
 - six-category SPJ lifecycle;
 - NUMBERED/FINAL description correction contract;

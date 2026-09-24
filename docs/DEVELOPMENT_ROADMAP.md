@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-25**
 
 Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
@@ -18,7 +18,9 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: COMPLETE / CI #486 GREEN.**
+**Status: HISTORICAL GREEN BASELINE COMPLETE / CURRENT AUDIT HEAD CI RED.**
+
+CI #486 tetap historical green baseline untuk dependency/platform + authorization hardening. Namun HEAD branch `hardening/raw-rkas-audit` pada 2026-09-25 mempunyai run `35993431668` yang gagal di **Full Unit test suite** setelah SPJ Critical PASS. Full Feature suite tidak dijalankan. Karena itu pekerjaan P0 release-safety aktif kembali sampai HEAD memperoleh blocking gate hijau.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -95,7 +97,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-P0-00 code/dependency integration gate bukan lagi blocker. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis, tetapi **current HEAD integration gate kembali menjadi blocker** karena run audit terbaru merah. Setelah Full Unit failure ditutup dan CI hijau, browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 

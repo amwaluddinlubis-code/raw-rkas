@@ -1,18 +1,38 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-24** (workstream mirror ARKAS, repository `raw-rkas`)
+Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchronization, `raw-rkas`)
 
-> Catatan: folder ini adalah mirror dari `spj-bosp-web-clean`
-> (branch `gui-standardization`). Repo lokal sudah `git init` (branch `main`,
-> commit `22d2c7f`) dan terhubung ke remote
-> `https://github.com/amwaluddinlubis-code/raw-rkas.git`.
-> Status release canonical tetap mengikuti gate CI #486 sampai gate baru dinyatakan hijau.
+> Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dengan default branch `main`.
+> Audit/hardening aktif berada di `hardening/raw-rkas-audit`. Catatan asal mirror
+> `spj-bosp-web-clean/gui-standardization` dipertahankan hanya sebagai sejarah migrasi,
+> bukan sebagai branch kerja aktif.
 
 ---
 
+## Repository + documentation audit (2026-09-25)
+
+Status: **AUDIT COMPLETE / DOCS SYNCHRONIZED / CURRENT AUDIT HEAD CI RED**.
+
+Evidence GitHub untuk `hardening/raw-rkas-audit@6746a2052398cb098b76028e7aa08efe2aa48d37`:
+
+```text
+WORKFLOW        : SPJ Critical Verification
+RUN             : 35993431668 (attempt 2)
+ARTIFACT GUARD  : PASS
+COMPOSER CHECKS : PASS
+FRONTEND BUILD  : PASS
+BLADE COMPILE   : PASS
+SPJ CRITICAL    : PASS
+FULL UNIT       : FAIL
+FULL FEATURE    : SKIPPED
+RESULT          : FAILURE
+```
+
+Implikasi: historical green gate tetap berguna sebagai baseline, tetapi **bukan evidence bahwa HEAD audit saat ini hijau**. Prioritas release-safety pertama adalah mengidentifikasi dan memperbaiki kegagalan Full Unit pada run tersebut, lalu menjalankan kembali workflow sampai seluruh blocking gate PASS. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
+
 ## Repository containment hardening (2026-09-24)
 
-Status: **SOURCE HARDENING APPLIED / CI PENDING**.
+Status: **SOURCE HARDENING APPLIED / ARTIFACT GUARD PASS / FULL CI FAILS AT UNIT SUITE**.
 
 Audit repository menemukan dump ARKAS/BKU dan backup archive terlacak di bawah
 `public/`, serta archive migration dan shortcut lokal Windows yang tidak
@@ -28,8 +48,7 @@ Riwayat Git masih memuat artefak pada commit awal. History rewrite dan rotasi
 token/kredensial, bila diperlukan setelah pemeriksaan pemilik data, belum
 dijalankan. Verifikasi lokal yang tersedia: artifact guard PASS, theme QA PASS,
 JavaScript syntax PASS, JSON metadata parse PASS, dan `git diff --check` PASS.
-PHP/Composer verification serta GitHub Actions tetap pending karena runtime
-tersebut tidak tersedia pada workspace audit dan perubahan belum dipush.
+GitHub Actions kemudian berjalan pada PR branch audit. Semua langkah sampai SPJ Critical PASS, tetapi Full Unit suite FAIL dan Full Feature suite SKIPPED; lihat audit 2026-09-25 di atas.
 
 ---
 

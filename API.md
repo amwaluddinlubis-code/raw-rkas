@@ -1,6 +1,6 @@
 # API / Route Reference
 
-Digenerate dari `php artisan route:list --json` pada **2026-09-12**. Total **126 route**, seluruhnya di `routes/web.php` (+ `routes/console.php` untuk schedule). **Tidak ada `routes/api.php`** — aplikasi ini murni session-authenticated web routes.
+Diverifikasi ulang terhadap `routes/web.php` pada **2026-09-25**. Aplikasi tetap memakai session-authenticated web routes dan **tidak memiliki `routes/api.php`**. Angka total route historis tidak lagi dipertahankan di dokumen ini karena route Livewire/vendor dan feature routes dapat berubah; gunakan `php artisan route:list --json` bila membutuhkan hitungan runtime yang presisi.
 
 Regenerasi: `php artisan route:list --path=<prefix> -v --no-interaction`.
 
@@ -77,6 +77,14 @@ ADMINISTRATOR lifecycle/maintenance/sensitive action.
 
 Catatan: `spj.unlock` sengaja dinonaktifkan di UseCase (selalu error, mengarahkan ke Koreksi Penomoran).
 
+## `/laporan-periode` (3)
+
+| Method | URI | Name | Action | Middleware |
+|---|---|---|---|---|
+| GET\|HEAD | `/laporan-periode` | spj.periodic-reports.index | view `periodic-reports.index` | auth, active-school, active-year, spj-active-context |
+| GET\|HEAD | `/laporan-periode/{scope}/{report}/cetak` | spj.periodic-reports.print | `PeriodicReportController@show` | auth, active-school, active-year, spj-active-context |
+| GET\|HEAD | `/laporan-periode/{scope}/{report}/pdf` | spj.periodic-reports.pdf | `PeriodicReportController@pdf` | auth, active-school, active-year, spj-active-context |
+
 ## `/penganggaran-rkas` (3)
 
 | Method | URI | Name | Action | Middleware |
@@ -129,5 +137,4 @@ Seluruhnya `auth` + `administrator`; yang menyentuh tenant menambah `active-scho
 
 ## Vendor (bukan kontrak aplikasi)
 
-`/livewire/*` (Livewire assets/update/upload), `/filament/*` (export/import download),
-`/storage/*` (Closure), `/up` (health), `POST /_boost/browser-logs` (dev tooling).
+`/livewire/*` (Livewire assets/update/upload), `/storage/*` (framework/storage surface), `/up` (health), dan development tooling yang diaktifkan environment. Filament bukan dependency/runtime aktif.
