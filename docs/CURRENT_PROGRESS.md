@@ -1,12 +1,35 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-23** (workstream mirror ARKAS, folder `spj-bosp-web-arkas-mirror`)
+Terakhir diperbarui: **2026-09-24** (workstream mirror ARKAS, repository `raw-rkas`)
 
 > Catatan: folder ini adalah mirror dari `spj-bosp-web-clean`
 > (branch `gui-standardization`). Repo lokal sudah `git init` (branch `main`,
 > commit `22d2c7f`) dan terhubung ke remote
 > `https://github.com/amwaluddinlubis-code/raw-rkas.git`.
 > Status release canonical tetap mengikuti gate CI #486 sampai gate baru dinyatakan hijau.
+
+---
+
+## Repository containment hardening (2026-09-24)
+
+Status: **SOURCE HARDENING APPLIED / CI PENDING**.
+
+Audit repository menemukan dump ARKAS/BKU dan backup archive terlacak di bawah
+`public/`, serta archive migration dan shortcut lokal Windows yang tidak
+merupakan source aplikasi. Hardening yang diterapkan:
+
+- dump SQL dan backup archive dikeluarkan dari current tree;
+- archive migration dan shortcut lokal dikeluarkan dari current tree;
+- `.gitignore` menolak pola artefak tersebut agar tidak masuk kembali;
+- workflow `SPJ Critical Verification` mencakup push/PR ke `main` dan menolak
+  private/backup artifacts yang terlacak.
+
+Riwayat Git masih memuat artefak pada commit awal. History rewrite dan rotasi
+token/kredensial, bila diperlukan setelah pemeriksaan pemilik data, belum
+dijalankan. Verifikasi lokal yang tersedia: artifact guard PASS, theme QA PASS,
+JavaScript syntax PASS, JSON metadata parse PASS, dan `git diff --check` PASS.
+PHP/Composer verification serta GitHub Actions tetap pending karena runtime
+tersebut tidak tersedia pada workspace audit dan perubahan belum dipush.
 
 ---
 
@@ -289,7 +312,7 @@ data — baris usang tetap di mirror, hanya tidak dihitung. Regression tercakup
 
 ---
 
-Dokumen ini adalah sumber status release utama untuk branch `gui-standardization`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Dokumen ini adalah sumber status release utama untuk branch `main` di repository mirror `raw-rkas`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Definisi status:
 

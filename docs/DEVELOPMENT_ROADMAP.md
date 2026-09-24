@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-14**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 

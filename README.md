@@ -1,6 +1,6 @@
 # SPJ BOSP Web
 
-Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
+Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch aktif repository mirror ini: `main`.
 
 Terakhir diverifikasi terhadap kode: **2026-09-14**.
 
@@ -40,7 +40,7 @@ FINAL RELEASE   : NOT YET
 
 - PHP 8.3+ dengan ekstensi `sqlite3`, `mbstring`, `xml`, `gd`/`imagick` (untuk render dokumen), `zip`
 - Composer 2, Node.js 18+ (CI memakai Node.js 22; Vite 6 + Tailwind 4)
-- Git (branch kerja: `gui-standardization`)
+- Git (branch aktif repository mirror: `main`)
 
 ## Instalasi lokal
 

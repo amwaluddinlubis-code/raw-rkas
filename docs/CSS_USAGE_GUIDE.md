@@ -2,7 +2,7 @@
 
 Terakhir diverifikasi: **2026-09-11**
 
-Dokumen ini adalah contract praktis CSS branch `gui-standardization`. Gunakan bersama `GUI_STANDARDIZATION.md`.
+Dokumen ini adalah contract praktis CSS branch aktif `main` di repository mirror `raw-rkas`. Gunakan bersama `GUI_STANDARDIZATION.md`.
 
 ---
 

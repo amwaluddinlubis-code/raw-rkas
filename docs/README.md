@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-15**
 
-Dokumen ini adalah indeks dokumentasi untuk branch aktif `gui-standardization`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
+Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
 ## Urutan sumber kebenaran
 

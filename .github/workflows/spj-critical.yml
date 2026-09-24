@@ -3,12 +3,14 @@ name: SPJ Critical Verification
 on:
   push:
     branches:
+      - main
       - gui-standardization
     paths-ignore:
       - 'docs/**'
       - '*.md'
   pull_request:
     branches:
+      - main
       - gui-standardization
     paths-ignore:
       - 'docs/**'
@@ -31,6 +33,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Reject tracked private and backup artifacts
+        shell: bash
+        run: |
+          prohibited_files="$(git ls-files | grep -Ei '(^public/.*\.(sql|rar)$|^database/migrations/.*\.rar$|^config/.*\.lnk$)' || true)"
+          if [ -n "$prohibited_files" ]; then
+            echo "Tracked private or backup artifacts are not allowed:"
+            echo "$prohibited_files"
+            exit 1
+          fi
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

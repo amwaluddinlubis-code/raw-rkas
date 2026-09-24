@@ -2,7 +2,7 @@
 
 Terakhir diverifikasi: **2026-09-12**
 
-Dokumen ini adalah acuan visual dan UX untuk branch `gui-standardization`.
+Dokumen ini adalah acuan visual dan UX untuk branch aktif `main` di repository mirror `raw-rkas`.
 
 ## 1. Prinsip utama
 
