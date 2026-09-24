@@ -60,7 +60,7 @@ jobs:
       - name: Prepare Laravel environment
         run: |
           cp .env.example .env
-          mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views
+          mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
           touch database/testing.sqlite
 
       - name: Validate Composer metadata
@@ -92,7 +92,19 @@ jobs:
         run: php artisan test --testsuite="SPJ Critical" --compact
 
       - name: Full unit test suite
-        run: php artisan test --testsuite="Unit" --compact
+        shell: bash
+        run: |
+          set -o pipefail
+          php artisan test --testsuite="Unit" --compact 2>&1 | tee storage/logs/unit-test-output.log
+
+      - name: Upload unit failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-failure-${{ github.run_id }}-${{ github.run_attempt }}
+          path: storage/logs/unit-test-output.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Full feature test suite
         run: php artisan test --testsuite="Feature" --compact
