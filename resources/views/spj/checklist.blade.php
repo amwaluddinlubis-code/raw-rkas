@@ -102,7 +102,7 @@
                     <x-ui.field label="Pola kegiatan">
                         <x-ui.select name="pola" onchange="this.form.submit()">
                             @foreach($externalPatterns as $patternKey => $pattern)
-                                <option value="{{ $patternKey }}" @selected($patternKey === $externalPatternKey)>{{ $pattern['label'] }}</option>
+                                <option value="{{ $patternKey }}" {{ $patternKey === $externalPatternKey ? 'selected' : '' }}>{{ $pattern['label'] }}</option>
                             @endforeach
                         </x-ui.select>
                     </x-ui.field>
@@ -122,16 +122,14 @@
                             <p class="min-w-0 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</p>
                             <x-ui.badge variant="neutral">{{ $isGenerated ? 'Aplikasi' : 'Manual' }}</x-ui.badge>
                         </div>
-                        @if($isGenerated)
-                            <span class="shrink-0 text-xs text-[var(--ui-fg-muted)]">Ikut status A2 di atas</span>
-                        @elseif($canToggleExternal)
-                            <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="shrink-0">
-                                @csrf
-                                <input type="hidden" name="item_key" value="{{ $itemKey }}">
-                                <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
-                                <x-ui.button variant="secondary" type="submit" class="text-xs">{{ $isChecked ? 'Batalkan tanda' : 'Tandai tersedia' }}</x-ui.button>
-                            </form>
-                        @endif
+                        <span class="{{ $isGenerated ? 'shrink-0 text-xs text-[var(--ui-fg-muted)]' : 'hidden' }}">Ikut status A2 di atas</span>
+                        <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="{{ $canToggleExternal ? 'shrink-0' : 'hidden' }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="item_key" value="{{ $itemKey }}">
+                            <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
+                            <x-ui.button variant="secondary" type="submit" class="text-xs">{{ $isChecked ? 'Batalkan tanda' : 'Tandai tersedia' }}</x-ui.button>
+                        </form>
+                        <span class="{{ ! $isGenerated && ! $canToggleExternal ? 'shrink-0 text-xs text-[var(--ui-fg-muted)]' : 'hidden' }}">Tidak dapat diubah pada status/peran saat ini</span>
                     </li>
                 @endforeach
             </ul>
