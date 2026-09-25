@@ -48,15 +48,15 @@
                             aria-current="{{ $isActive ? 'true' : 'false' }}"
                             title="{{ $tab['status'] === 'pending' ? 'Pengajuan menunggu persetujuan' : 'Revisi disetujui' }} · Pagu Rp {{ number_format((float) $tab['amount'], 0, ',', '.') }}"
                             class="{{ $tabIndex > 0 ? '-ml-px' : '' }} whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm no-underline transition {{ $isActive ? 'font-bold text-[var(--theme-content-accent)]' : 'font-medium text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg-strong)]' }}"
-                            style="{{ $isActive ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">{{ $tab['status'] === 'pending' ? 'Pengajuan' : 'Persetujuan' }} {{ $tab['dateLabel'] }}</a>
+                            style="{{ $isActive ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">{{ $tab['status'] === 'pending' ? 'Pengajuan' : 'Pengesahan' }} ke-{{ $tab['seq'] ?? ($tabIndex + 1) }}</a>
                     @endforeach
                 </div>
                 <div class="min-w-0 text-xs leading-5 text-[var(--ui-fg-muted)]">
                     @if(($activeRev['status'] ?? '') === 'pending')
                         <x-ui.status-badge status="PENDING" size="xs" />
-                        <span class="ml-1">Pengajuan {{ $activeRev['dateLabel'] }} (menunggu persetujuan).</span>
+                        <span class="ml-1">Pengajuan ke-{{ $activeRev['seq'] ?? '' }} · {{ $activeRev['dateLabel'] }} (menunggu persetujuan).</span>
                     @elseif($activeRev)
-                        <span>Disetujui {{ $activeRev['dateLabel'] }}.</span>
+                        <span>Pengesahan ke-{{ $activeRev['seq'] ?? '' }} · {{ $activeRev['dateLabel'] }}.</span>
                     @else
                         <span>Belum ada revisi tersinkron pada konteks ini.</span>
                     @endif
