@@ -242,6 +242,33 @@ class EmployeeCertificateTest extends TestCase
         $this->assertNotContains('operator-or-administrator', $downloadRoute->gatherMiddleware());
     }
 
+    public function test_employee_delete_removes_certificate_files(): void
+    {
+        $employee = $this->employee();
+        $operator = $this->operator();
+
+        $this->actingAs($operator)
+            ->withoutMiddleware()
+            ->post(route('employees.certificates.store', $employee), [
+                'kind' => EmployeeCertificate::KIND_SK_GTT_PTT,
+                'number' => '800/123/2026',
+                'file' => UploadedFile::fake()->create('sk.pdf', 100, 'application/pdf'),
+            ])
+            ->assertRedirect(route('employees.show', $employee));
+
+        $certificate = EmployeeCertificate::query()->firstOrFail();
+        $storedPath = $certificate->file_path;
+        $this->assertFileExists($storedPath);
+
+        $this->actingAs($operator)
+            ->withoutMiddleware()
+            ->delete(route('employees.destroy', $employee))
+            ->assertRedirect(route('employees.index'));
+
+        $this->assertSame(0, EmployeeCertificate::query()->count());
+        $this->assertFileDoesNotExist($storedPath);
+    }
+
     public function test_employee_mutations_are_audited(): void
     {
         $this->actingAs($this->operator())

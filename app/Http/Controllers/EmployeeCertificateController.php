@@ -78,8 +78,9 @@ class EmployeeCertificateController extends Controller
         $certificate = EmployeeCertificate::with('employee')->findOrFail($certificateId);
         $employee = $certificate->employee;
         $label = EmployeeCertificate::label($certificate->kind).($certificate->number ? ' '.$certificate->number : '');
-        $storage->deleteEmployeeCertificateFile($certificate->file_path);
+        $filePath = $certificate->file_path;
         $certificate->delete();
+        $storage->deleteEmployeeCertificateFile($filePath);
         $audit->record(
             session('active_fiscal_year_id'),
             'EMPLOYEE_SK',

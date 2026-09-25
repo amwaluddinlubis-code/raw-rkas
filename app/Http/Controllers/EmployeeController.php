@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\SpjHonor;
+use App\Services\DocumentStoragePathService;
 use App\Services\OperationalAuditService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -57,12 +58,18 @@ class EmployeeController extends Controller
         return redirect()->route('employees.show', $employee)->with('success', 'Data pegawai berhasil diperbarui. Koreksi operator akan dipertahankan saat sinkronisasi berikutnya.');
     }
 
-    public function destroy(int $employeeId, OperationalAuditService $audit): RedirectResponse
+    public function destroy(int $employeeId, OperationalAuditService $audit, DocumentStoragePathService $storage): RedirectResponse
     {
-        $employee = Employee::findOrFail($employeeId);
+        $employee = Employee::with('certificates:id,employee_id,file_path')->findOrFail($employeeId);
         $sourceLabel = $employee->source_label;
         $name = $employee->name;
+        $certificateFiles = $employee->certificates->pluck('file_path')->filter()->values();
         $employee->delete();
+
+        foreach ($certificateFiles as $certificateFile) {
+            $storage->deleteEmployeeCertificateFile($certificateFile);
+        }
+
         $audit->record(session('active_fiscal_year_id'), 'EMPLOYEE', $employeeId, 'HAPUS', 'Pegawai '.$name.' dihapus operator.');
 
         $message = $sourceLabel === 'Manual'
