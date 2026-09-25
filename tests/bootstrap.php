@@ -12,7 +12,7 @@ require __DIR__.'/../vendor/autoload.php';
 if (file_exists(__DIR__.'/../bootstrap/cache/config.php')) {
     fwrite(
         STDERR,
-        'REFUSED: bootstrap/cache/config.php aktif. Jalankan `php artisan config:clear` sebelum testing agar suite tidak menyentuh database utama.' . PHP_EOL
+        'REFUSED: bootstrap/cache/config.php aktif. Jalankan `php artisan config:clear` sebelum testing agar suite tidak menyentuh database utama.'.PHP_EOL
     );
     exit(1);
 }
