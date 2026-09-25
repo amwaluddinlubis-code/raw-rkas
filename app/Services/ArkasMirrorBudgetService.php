@@ -258,12 +258,37 @@ final class ArkasMirrorBudgetService
         // tahun+sumber dana yang sama. BKU ARKAS menaut ke rapbs revisi
         // berjalan, sehingga tab revisi lama nol realisasi tanpa fallback ini.
         $rapbsIdentity = [];
+        // Scope tahun+sumber dana lewat record anggaran (payload rapbs skema
+        // huruf kecil tidak selalu membawa tahun/dana sendiri).
+        $anggaranScope = [];
+        if (Schema::connection('school')->hasTable('arkas_mirror_anggaran')) {
+            foreach ($db->table('arkas_mirror_anggaran')->get(['source_key', 'payload']) as $anggaran) {
+                $anggaranPayload = json_decode((string) $anggaran->payload, true);
+                if (! is_array($anggaranPayload)
+                    || (int) (ArkasMirrorResolver::field($anggaranPayload, ['SOFT_DELETE', 'IS_DELETED']) ?? 0) === 1) {
+                    continue;
+                }
+                $anggaranScope[(string) (ArkasMirrorResolver::field($anggaranPayload, ['ID_ANGGARAN']) ?: $anggaran->source_key)] = [
+                    'year' => (int) (ArkasMirrorResolver::field($anggaranPayload, ['TAHUN_ANGGARAN', 'TAHUN']) ?? 0),
+                    'fund' => (int) (ArkasMirrorResolver::field($anggaranPayload, ['ID_REF_SUMBER_DANA', 'SUMBER_DANA_ID']) ?? 0),
+                ];
+            }
+        }
         foreach ($rapbsRecords as $record) {
             $payload = json_decode((string) $record->payload, true);
-            if (! is_array($payload) || ! $this->fundMatches($payload, $fundSourceId) || ! $this->yearMatches($payload, $year)) {
+            if (! is_array($payload)) {
                 continue;
             }
             if ((int) (ArkasMirrorResolver::field($payload, ['SOFT_DELETE', 'IS_DELETED']) ?? 0) === 1) {
+                continue;
+            }
+            $rowAnggaranId = (string) (ArkasMirrorResolver::field($payload, ['ID_ANGGARAN']) ?? '');
+            $scope = $anggaranScope[$rowAnggaranId] ?? null;
+            if ($scope !== null) {
+                if (($scope['year'] > 0 && $scope['year'] !== $year) || ($scope['fund'] > 0 && $scope['fund'] !== $fundSourceId)) {
+                    continue;
+                }
+            } elseif (! $this->fundMatches($payload, $fundSourceId) || ! $this->yearMatches($payload, $year)) {
                 continue;
             }
             $rapbsIdentity[(string) $record->source_key] = self::lineIdentityKey(

@@ -193,6 +193,23 @@ class RkasRevisionModesTest extends TestCase
         $this->assertSame('rim', $item->unit);
     }
 
+    public function test_identity_fallback_ignores_other_years_money(): void
+    {
+        $this->seedAnggaran('ANG-OLD', ['ID_ANGGARAN' => 'ANG-OLD', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-05-06 08:00:00', 'CREATE_DATE' => '2026-04-16 05:00:00']);
+        $this->seedAnggaran('ANG-NEW', ['ID_ANGGARAN' => 'ANG-NEW', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-09-18 20:00:00', 'CREATE_DATE' => '2026-09-17 12:00:00']);
+        $this->seedAnggaran('ANG-2024', ['ID_ANGGARAN' => 'ANG-2024', 'TAHUN_ANGGARAN' => 2024, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2024-10-12 08:00:00', 'CREATE_DATE' => '2024-06-10 05:00:00']);
+        // Baris rapbs skema huruf kecil tanpa tahun sendiri (ikut scope anggaran).
+        $this->seedRapbs('OLD-1', ['id_rapbs' => 'OLD-1', 'id_anggaran' => 'ANG-OLD', 'id_ref_kode' => 'REF-1', 'kode_rekening' => '5.1.02.01', 'uraian' => 'Batu Kali', 'jumlah' => 500000]);
+        $this->seedRapbs('NEW-1', ['id_rapbs' => 'NEW-1', 'id_anggaran' => 'ANG-NEW', 'id_ref_kode' => 'REF-1', 'kode_rekening' => '5.1.02.01', 'uraian' => 'Batu Kali', 'jumlah' => 500000]);
+        $this->seedRapbs('Y24-1', ['id_rapbs' => 'Y24-1', 'id_anggaran' => 'ANG-2024', 'id_ref_kode' => 'REF-1', 'kode_rekening' => '5.1.02.01', 'uraian' => 'Batu Kali', 'jumlah' => 9000000]);
+        $this->seedKas('KAS-NEW', ['ID_RAPBS' => 'NEW-1', 'KATEGORI_BKU' => 'BELANJA', 'ID_REF_SUMBER_DANA' => 1, 'JUMLAH' => 200000]);
+        $this->seedKas('KAS-2024', ['ID_RAPBS' => 'Y24-1', 'KATEGORI_BKU' => 'BELANJA', 'ID_REF_SUMBER_DANA' => 1, 'JUMLAH' => 8000000]);
+
+        $old = app(ArkasMirrorBudgetService::class)->snapshot(1, 2026, ['ANG-OLD']);
+
+        $this->assertSame(200000.0, $old['realization_fallback']['OLD-1']);
+    }
+
     public function test_soft_deleted_periode_splits_are_excluded_from_snapshot(): void
     {
         $this->seedRapbs('RAPBS-1', ['ID_RAPBS' => 'RAPBS-1', 'ID_ANGGARAN' => 'ANG-1', 'KODE_REKENING' => '5.1.02.01', 'JUMLAH' => 1000000]);
