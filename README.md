@@ -1,13 +1,12 @@
 # SPJ BOSP Web
 
-Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Default branch repository adalah `main`; audit/hardening aktif saat pembaruan ini berada di `hardening/raw-rkas-audit`.
+Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Repository menggunakan satu branch aktif: `main`.
 
 Terakhir diverifikasi terhadap source repository: **2026-09-25**.
 
 ## Status branch saat ini
 
-Audit repository 2026-09-25 memverifikasi bahwa branch `hardening/raw-rkas-audit` berada pada commit `6746a2052398cb098b76028e7aa08efe2aa48d37`. Workflow **SPJ Critical Verification** run `35993431668` selesai **FAILURE**: artifact guard, dependency install, frontend build, Blade compile, dan SPJ Critical tests PASS; kegagalan terjadi pada **Full Unit test suite**, sehingga Full Feature suite tidak dijalankan. Karena itu HEAD audit **belum boleh dipromosikan sebagai green release gate**. Historical green gate tetap dicatat di `docs/P0_VERIFICATION_KIT.md`.
-
+Repository dikonsolidasikan ke satu branch aktif: `main`. Perubahan audit/hardening telah digabung melalui PR #1; evidence source gate hijau sebelum merge tetap dicatat di `docs/P0_VERIFICATION_KIT.md`. Status release aktif mengikuti `docs/CURRENT_PROGRESS.md`.
 
 Root README adalah entry point project, bukan sumber angka/checkpoint release yang harus dipelihara terpisah. Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke berkas ini karena cepat menjadi stale.
 
