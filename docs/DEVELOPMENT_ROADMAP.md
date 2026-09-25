@@ -18,9 +18,9 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: HISTORICAL GREEN BASELINE COMPLETE / CURRENT AUDIT HEAD CI RED.**
+**Status: HISTORICAL GREEN BASELINE COMPLETE / CURRENT AUDIT SOURCE GATE GREEN.**
 
-CI #486 tetap historical green baseline untuk dependency/platform + authorization hardening. Namun HEAD branch `hardening/raw-rkas-audit` pada 2026-09-25 mempunyai run `35993431668` yang gagal di **Full Unit test suite** setelah SPJ Critical PASS. Full Feature suite tidak dijalankan. Karena itu pekerjaan P0 release-safety aktif kembali sampai HEAD memperoleh blocking gate hijau.
+CI #486 tetap historical green baseline untuk dependency/platform + authorization hardening. Source commit terbaru branch `hardening/raw-rkas-audit` yang mengubah aplikasi adalah `2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`; GitHub Actions run `36112716405` (#15) selesai **SUCCESS** dengan artifact guard, Composer/platform, frontend build, Blade compile, checklist compiled-PHP lint, SPJ Critical (329), Full Unit (79), dan Full Feature (563) semuanya PASS. Blocker integration audit sudah tertutup; browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -97,7 +97,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis, tetapi **current HEAD integration gate kembali menjadi blocker** karena run audit terbaru merah. Setelah Full Unit failure ditutup dan CI hijau, browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis, dan **current audit source gate kembali hijau** pada run #15. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 
