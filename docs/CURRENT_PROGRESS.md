@@ -2,10 +2,8 @@
 
 Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchronization, `raw-rkas`)
 
-> Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dengan default branch `main`.
-> Audit/hardening aktif berada di `hardening/raw-rkas-audit`. Catatan asal mirror
-> `spj-bosp-web-clean/gui-standardization` dipertahankan hanya sebagai sejarah migrasi,
-> bukan sebagai branch kerja aktif.
+> Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
+> Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
 ---
 
@@ -13,7 +11,7 @@ Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchroniz
 
 Status: **AUDIT COMPLETE / DOCS SYNCHRONIZED / CURRENT AUDIT SOURCE GATE GREEN**.
 
-Evidence GitHub untuk source commit `hardening/raw-rkas-audit@2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`:
+Evidence GitHub untuk source commit audit `2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`, yang kemudian digabung ke `main` melalui PR #1:
 
 ```text
 WORKFLOW              : SPJ Critical Verification
@@ -29,7 +27,7 @@ FULL FEATURE          : PASS / 563 tests / 4,005 assertions
 RESULT                : SUCCESS
 ```
 
-Regression yang menahan run sebelumnya berada di `resources/views/spj/checklist.blade.php`: directive inline `@php(...)` menghasilkan PHP terkompilasi yang tidak tertutup dan baru gagal pada token `else`. Assignment `$fixUrl` kini memakai blok `@php ... @endphp`; artifact diagnostic run #15 membuktikan `php -l` pada hasil compile tidak lagi menemukan syntax error, dan `WebRouteSmokeTest` kembali lewat sebagai bagian Full Feature suite. Historical green gate tetap dipertahankan sebagai baseline lama, sedangkan run #15 menjadi evidence source gate terbaru untuk branch audit. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
+Regression yang menahan run sebelumnya berada di `resources/views/spj/checklist.blade.php`: directive inline `@php(...)` menghasilkan PHP terkompilasi yang tidak tertutup dan baru gagal pada token `else`. Assignment `$fixUrl` kini memakai blok `@php ... @endphp`; artifact diagnostic run #15 membuktikan `php -l` pada hasil compile tidak lagi menemukan syntax error, dan `WebRouteSmokeTest` kembali lewat sebagai bagian Full Feature suite. Historical green gate tetap dipertahankan sebagai baseline lama, sedangkan run #15 menjadi evidence source gate audit sebelum konsolidasi ke `main`. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
 
 ## Repository containment hardening (2026-09-24)
 
