@@ -8,20 +8,25 @@ Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang.
 
 Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini dan tidak boleh mempromosikan commit docs-only sebagai code gate baru.
 
-Current HEAD gate status (audit branch):
+Latest source gate status (audit branch):
 
 ```text
-branch        : hardening/raw-rkas-audit
-commit        : 6746a2052398cb098b76028e7aa08efe2aa48d37
-CI run        : 35993431668
-workflow      : SPJ Critical Verification
-result        : FAILURE
-passed through: SPJ Critical tests
-failed at     : Full Unit test suite
-not executed  : Full Feature test suite
+branch             : hardening/raw-rkas-audit
+source commit      : 2b854f1b9f6a7f7501a3803acbaacb2035cd85f3
+CI run             : 36112716405 (#15)
+workflow           : SPJ Critical Verification
+result             : SUCCESS
+artifact guard     : PASS
+composer/platform  : PASS
+frontend build     : PASS
+blade compile      : PASS
+checklist PHP lint : PASS
+SPJ Critical       : PASS / 329 tests / 2,568 assertions
+Full Unit          : PASS / 79 tests / 281 assertions
+Full Feature       : PASS / 563 tests / 4,005 assertions
 ```
 
-Status ini **mengalahkan historical green baseline untuk klaim tentang HEAD saat ini**. Sampai unit failure ditutup dan workflow diulang hijau, HEAD audit tidak boleh disebut release-gate PASS.
+Run #15 menutup regression parse pada `resources/views/spj/checklist.blade.php`. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak dianggap sebagai code gate baru. Historical green baseline tetap dipertahankan untuk konteks dependency/platform lama.
 
 Latest historical completed green source gate:
 
