@@ -76,6 +76,44 @@ class SpjQuarterAuditCommandTest extends TestCase
         $this->assertFileDoesNotExist($missingPath);
     }
 
+    public function test_audit_quarter_rejects_incomplete_tenant_schema(): void
+    {
+        $npsn = '99000003';
+        $school = School::create(['npsn' => $npsn, 'name' => 'SD Schema Tidak Lengkap']);
+        $this->tenantPath = storage_path('framework/testing/incomplete-spj-audit-'.uniqid().'.sqlite');
+        File::ensureDirectoryExists(dirname($this->tenantPath));
+
+        $pdo = new PDO('sqlite:'.$this->tenantPath, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $pdo->exec(<<<'SQL'
+            CREATE TABLE fiscal_years (
+                id INTEGER PRIMARY KEY,
+                year INTEGER NOT NULL
+            );
+            CREATE TABLE transactions (
+                id INTEGER PRIMARY KEY,
+                fiscal_year_id INTEGER NOT NULL
+            );
+            CREATE TABLE spj_packages (
+                id INTEGER PRIMARY KEY
+            );
+        SQL);
+        $pdo = null;
+
+        SchoolDatabase::create([
+            'school_id' => $school->id,
+            'database_path' => $this->tenantPath,
+            'status' => 'READY',
+        ]);
+
+        $this->artisan('spj:audit-quarter', [
+            'npsn' => $npsn,
+            '--quarter' => 1,
+            '--year' => 2026,
+        ])
+            ->expectsOutputToContain('Audit gagal: Schema tenant belum lengkap. Tabel wajib tidak ditemukan: transaction_items')
+            ->assertExitCode(1);
+    }
+
     private function buildTenantFixture(string $path): void
     {
         $pdo = new PDO('sqlite:'.$path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);

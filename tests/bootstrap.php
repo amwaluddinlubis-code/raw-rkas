@@ -7,9 +7,9 @@
  * membuat <env> DB_DATABASE phpunit.xml diabaikan sehingga RefreshDatabase
  * menghajar database.sqlite utama alih-alih database/testing.sqlite.
  */
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__.'/../vendor/autoload.php';
 
-if (file_exists(__DIR__ . '/../bootstrap/cache/config.php')) {
+if (file_exists(__DIR__.'/../bootstrap/cache/config.php')) {
     fwrite(
         STDERR,
         'REFUSED: bootstrap/cache/config.php aktif. Jalankan `php artisan config:clear` sebelum testing agar suite tidak menyentuh database utama.' . PHP_EOL
