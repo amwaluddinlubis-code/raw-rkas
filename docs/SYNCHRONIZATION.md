@@ -1,6 +1,6 @@
 # Sinkronisasi Data — ARKAS/BKU, Dapodik, Reconciliation, dan Identity
 
-Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`).
+Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch `main`).
 
 Status dokumen: **ACTIVE TECHNICAL GUIDE**.
 
@@ -427,6 +427,9 @@ satu pegawai -> banyak SK (kind, nomor, tanggal terbit, berlaku s.d., catatan)
 badge: Kedaluwarsa / Berakhir <30 hari / Berlaku / Belum ada
 tab kanonis per jenis SK (ui-tabs) + toggle lipat panel
 pindaian: PDF/JPG/PNG maks 10 MB di {folder-dokumen}/SK/{nama-pegawai}/
+validasi pindaian: ekstensi + MIME server; nama simpan memakai suffix random
+replace pindaian: file baru + update DB harus sukses sebelum file lama dihapus
+hapus SK/pegawai: row DB dihapus lebih dulu, lalu file pindaian terkait dibersihkan
 unduh untuk semua peran baca; unggah/ubah/hapus operator-or-administrator
 ```
 

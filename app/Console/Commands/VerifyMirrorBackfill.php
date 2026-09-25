@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\School;
+use App\Models\Transaction;
 use App\Services\SchoolDatabaseManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -40,13 +41,15 @@ class VerifyMirrorBackfill extends Command
             $exp = $expected[$tx->id] ?? null;
             if (! $exp) {
                 $this->warn("Transaksi {$tx->id} tidak ada di backup (data baru pasca-backup).");
+
                 continue;
             }
-            $model = \App\Models\Transaction::query()->with('items')->find($tx->id);
+            $model = Transaction::query()->with('items')->find($tx->id);
             $source = $model->mirrorSource();
             if (! $source) {
                 $this->error("Transaksi {$tx->id}: mirror KOSONG.");
                 $mismatch++;
+
                 continue;
             }
             $checked++;

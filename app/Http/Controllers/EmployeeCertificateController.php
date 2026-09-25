@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
 class EmployeeCertificateController extends Controller
 {
@@ -17,10 +18,17 @@ class EmployeeCertificateController extends Controller
     {
         $employee = Employee::findOrFail($employeeId);
         $data = $this->validated($request);
+        $fileData = $request->hasFile('file')
+            ? $this->persistFileData($request, $employee, (string) $data['kind'], $storage)
+            : [];
+        unset($data['file']);
 
-        $certificate = $employee->certificates()->create($data + ['created_by' => auth()->id()]);
-        if ($request->hasFile('file')) {
-            $this->storeFile($request, $certificate, $storage);
+        try {
+            $certificate = $employee->certificates()->create($data + $fileData + ['created_by' => auth()->id()]);
+        } catch (Throwable $exception) {
+            $storage->deleteEmployeeCertificateFile($fileData['file_path'] ?? null);
+
+            throw $exception;
         }
         $audit->record(
             session('active_fiscal_year_id'),
@@ -36,10 +44,23 @@ class EmployeeCertificateController extends Controller
     public function update(Request $request, int $certificateId, OperationalAuditService $audit, DocumentStoragePathService $storage): RedirectResponse
     {
         $certificate = EmployeeCertificate::with('employee')->findOrFail($certificateId);
-        $certificate->update($this->validated($request));
-        if ($request->hasFile('file')) {
-            $storage->deleteEmployeeCertificateFile($certificate->file_path);
-            $this->storeFile($request, $certificate, $storage);
+        $data = $this->validated($request);
+        $previousFilePath = $certificate->file_path;
+        $fileData = $request->hasFile('file')
+            ? $this->persistFileData($request, $certificate->employee, (string) $data['kind'], $storage)
+            : [];
+        unset($data['file']);
+
+        try {
+            $certificate->update($data + $fileData);
+        } catch (Throwable $exception) {
+            $storage->deleteEmployeeCertificateFile($fileData['file_path'] ?? null);
+
+            throw $exception;
+        }
+
+        if ($fileData !== []) {
+            $storage->deleteEmployeeCertificateFile($previousFilePath);
         }
         $audit->record(
             session('active_fiscal_year_id'),
@@ -57,8 +78,9 @@ class EmployeeCertificateController extends Controller
         $certificate = EmployeeCertificate::with('employee')->findOrFail($certificateId);
         $employee = $certificate->employee;
         $label = EmployeeCertificate::label($certificate->kind).($certificate->number ? ' '.$certificate->number : '');
-        $storage->deleteEmployeeCertificateFile($certificate->file_path);
+        $filePath = $certificate->file_path;
         $certificate->delete();
+        $storage->deleteEmployeeCertificateFile($filePath);
         $audit->record(
             session('active_fiscal_year_id'),
             'EMPLOYEE_SK',
@@ -83,20 +105,22 @@ class EmployeeCertificateController extends Controller
         );
     }
 
-    private function storeFile(Request $request, EmployeeCertificate $certificate, DocumentStoragePathService $storage): void
+    /** @return array{file_path:string,file_name:string,mime_type:?string} */
+    private function persistFileData(Request $request, Employee $employee, string $kind, DocumentStoragePathService $storage): array
     {
         $file = $request->file('file');
         $stored = $storage->persistEmployeeCertificate(
             $file->getRealPath(),
-            $certificate->employee,
-            $certificate->kind,
+            $employee,
+            $kind,
             $file->getClientOriginalName()
         );
-        $certificate->forceFill([
+
+        return [
             'file_path' => $stored,
             'file_name' => $file->getClientOriginalName(),
-            'mime_type' => $file->getClientMimeType(),
-        ])->save();
+            'mime_type' => $file->getMimeType() ?: $file->getClientMimeType(),
+        ];
     }
 
     /** @return array<string,mixed> */
@@ -108,7 +132,7 @@ class EmployeeCertificateController extends Controller
             'issued_date' => ['nullable', 'date'],
             'valid_until' => ['nullable', 'date', 'after_or_equal:issued_date'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'file' => ['nullable', 'file', 'extensions:pdf,jpg,jpeg,png', 'max:10240'],
+            'file' => ['nullable', 'file', 'mimetypes:application/pdf,image/jpeg,image/png', 'extensions:pdf,jpg,jpeg,png', 'max:10240'],
         ]);
     }
 }

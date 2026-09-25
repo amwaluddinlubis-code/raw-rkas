@@ -27,7 +27,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Source commit audit `2b854f1b9f6a7f7501a3803acbaacb2035cd85f3` telah melewati workflow `SPJ Critical Verification` run `36112716405` (#15) dengan hasil SUCCESS, kemudian digabung ke `main` melalui PR #1. Commit docs-only sesudah gate tersebut tidak dipromosikan sebagai code gate baru.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Current source gate `main@ac75b5bed646be70a4a2688512f75fbc6b55c46a` telah melewati workflow `SPJ Critical Verification` run `36120237766` (#25) dengan hasil SUCCESS: Repository Pint 495 file PASS, SPJ Critical 330, Full Unit 79, dan Full Feature 569 test PASS. Commit docs-only sesudah gate tersebut tidak dipromosikan sebagai code gate baru.
 
 ## Dokumen aktif utama
 

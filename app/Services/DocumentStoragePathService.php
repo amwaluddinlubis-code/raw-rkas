@@ -114,7 +114,7 @@ class DocumentStoragePathService
         $directory = $this->employeeCertificateDirectory($employee);
         $baseName = pathinfo($fileName, PATHINFO_FILENAME);
         $extension = pathinfo($fileName, PATHINFO_EXTENSION);
-        $unique = $this->safeSegment($kind).'-'.date('Ymd-His').'-'.$this->safeSegment($baseName ?: 'sk');
+        $unique = $this->safeSegment($kind).'-'.date('Ymd-His').'-'.bin2hex(random_bytes(4)).'-'.$this->safeSegment($baseName ?: 'sk');
         $destination = $directory.DIRECTORY_SEPARATOR.$unique.($extension !== '' ? '.'.$this->safeSegment($extension) : '');
         $this->copyWithRetry($source, $destination);
 
