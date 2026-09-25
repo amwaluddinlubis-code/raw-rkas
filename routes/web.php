@@ -10,6 +10,7 @@ use App\Http\Controllers\DapodikIntegrationController;
 use App\Http\Controllers\DatabaseManagerController;
 use App\Http\Controllers\DocumentNumberFormatController;
 use App\Http\Controllers\DocumentTemplateController;
+use App\Http\Controllers\EmployeeCertificateController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InitialSetupController;
@@ -113,6 +114,9 @@ Route::middleware('auth')->group(function () {
             Route::get('/pegawai/{employeeId}/ubah', [EmployeeController::class, 'edit'])->name('employees.edit');
             Route::put('/pegawai/{employeeId}', [EmployeeController::class, 'update'])->name('employees.update');
             Route::delete('/pegawai/{employeeId}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+            Route::post('/pegawai/{employeeId}/sk', [EmployeeCertificateController::class, 'store'])->name('employees.certificates.store');
+            Route::put('/pegawai/sk/{certificateId}', [EmployeeCertificateController::class, 'update'])->name('employees.certificates.update');
+            Route::delete('/pegawai/sk/{certificateId}', [EmployeeCertificateController::class, 'destroy'])->name('employees.certificates.destroy');
             Route::get('/siswa/tambah/baru', [StudentController::class, 'create'])->name('students.create');
             Route::post('/siswa', [StudentController::class, 'store'])->name('students.store');
             Route::get('/siswa/{studentId}/ubah', [StudentController::class, 'edit'])->name('students.edit');

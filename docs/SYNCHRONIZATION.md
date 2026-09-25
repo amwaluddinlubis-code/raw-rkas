@@ -417,6 +417,22 @@ Empty feed juga tidak boleh dianggap otomatis berarti seluruh pegawai harus dino
 
 ---
 
+## 14.1. SK penugasan pegawai (data operator)
+
+SK (GTT/PTT, Pembagian Tugas, Penetapan Narasumber, Pembina Ekstrakurikuler, lainnya)
+adalah data operator pada tabel `employee_certificates`, bukan feed sinkronisasi:
+
+```text
+satu pegawai -> banyak SK (kind, nomor, tanggal terbit, berlaku s.d., catatan)
+badge: Kedaluwarsa / Berakhir <30 hari / Berlaku / Belum ada
+```
+
+CRUD SK dan mutasi pegawai (tambah/ubah/hapus) tercatat `OperationalAuditService`
+(`EMPLOYEE_SK`, `EMPLOYEE`). SK tidak memblokir lifecycle SPJ; ia adalah
+checklist kelengkapan bukti dukung honor.
+
+---
+
 ## 15. Student synchronization
 
 Student saat ini bersumber dari Dapodik.
