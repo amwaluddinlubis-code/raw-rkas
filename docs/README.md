@@ -27,7 +27,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Source commit terbaru branch `hardening/raw-rkas-audit` yang mengubah aplikasi (`2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`) telah melewati workflow `SPJ Critical Verification` run `36112716405` (#15) dengan hasil SUCCESS, termasuk compiled-checklist PHP lint, SPJ Critical, Full Unit, dan Full Feature. Commit docs-only setelah gate tersebut tidak dipromosikan sebagai code gate baru.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Source commit audit `2b854f1b9f6a7f7501a3803acbaacb2035cd85f3` telah melewati workflow `SPJ Critical Verification` run `36112716405` (#15) dengan hasil SUCCESS, kemudian digabung ke `main` melalui PR #1. Commit docs-only sesudah gate tersebut tidak dipromosikan sebagai code gate baru.
 
 ## Dokumen aktif utama
 
