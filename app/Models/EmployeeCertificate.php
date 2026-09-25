@@ -20,7 +20,7 @@ class EmployeeCertificate extends Model
 
     public const KIND_LAINNYA = 'LAINNYA';
 
-    protected $fillable = ['employee_id', 'kind', 'number', 'issued_date', 'valid_until', 'notes', 'created_by'];
+    protected $fillable = ['employee_id', 'kind', 'number', 'issued_date', 'valid_until', 'notes', 'created_by', 'file_path', 'file_name', 'mime_type'];
 
     /** @return array<string,string> */
     public static function kinds(): array

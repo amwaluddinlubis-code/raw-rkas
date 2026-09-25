@@ -147,6 +147,7 @@ Route::middleware('auth')->group(function () {
         });
 
         Route::get('/pegawai/{employeeId}', [EmployeeController::class, 'show'])->whereNumber('employeeId')->name('employees.show');
+        Route::get('/pegawai/sk/{certificateId}/unduh', [EmployeeCertificateController::class, 'download'])->whereNumber('certificateId')->name('employees.certificates.download');
         Route::get('/siswa/{studentId}', [StudentController::class, 'show'])->whereNumber('studentId')->name('students.show');
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');

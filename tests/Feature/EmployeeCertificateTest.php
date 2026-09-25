@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Employee;
 use App\Models\EmployeeCertificate;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -93,6 +94,38 @@ class EmployeeCertificateTest extends TestCase
         $this->assertFalse($later->isExpiringSoon());
         $this->assertFalse($indefinite->isExpired());
         $this->assertFalse($indefinite->isExpiringSoon());
+    }
+
+    public function test_sk_file_can_be_uploaded_downloaded_and_deleted(): void
+    {
+        $employee = $this->employee();
+
+        $this->actingAs($this->operator())
+            ->withoutMiddleware()
+            ->post(route('employees.certificates.store', $employee), [
+                'kind' => EmployeeCertificate::KIND_SK_GTT_PTT,
+                'number' => '800/123/2026',
+                'file' => UploadedFile::fake()->create('sk.pdf', 100, 'application/pdf'),
+            ])
+            ->assertRedirect(route('employees.show', $employee));
+
+        $certificate = EmployeeCertificate::query()->first();
+        $this->assertNotNull($certificate->file_path);
+        $this->assertFileExists($certificate->file_path);
+        $this->assertStringContainsString('SK', $certificate->file_path);
+
+        $this->actingAs($this->operator())
+            ->withoutMiddleware()
+            ->get(route('employees.certificates.download', $certificate))
+            ->assertOk();
+
+        $storedPath = $certificate->file_path;
+        $this->actingAs($this->operator())
+            ->withoutMiddleware()
+            ->delete(route('employees.certificates.destroy', $certificate))
+            ->assertRedirect(route('employees.show', $employee));
+
+        $this->assertFileDoesNotExist($storedPath);
     }
 
     public function test_employee_mutations_are_audited(): void

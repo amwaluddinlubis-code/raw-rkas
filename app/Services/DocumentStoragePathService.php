@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AppSetting;
+use App\Models\Employee;
 use App\Models\FiscalYear;
 use App\Models\SpjPackage;
 use Illuminate\Support\Facades\Schema;
@@ -103,6 +104,68 @@ class DocumentStoragePathService
         $this->copyWithRetry($source, $destination);
 
         return $destination;
+    }
+
+    /**
+     * Simpan pindaian SK pegawai: {base}/SK/{nama-pegawai}/{kind-timestamp.ext}.
+     */
+    public function persistEmployeeCertificate(string $source, Employee $employee, string $kind, string $fileName): string
+    {
+        $directory = $this->employeeCertificateDirectory($employee);
+        $baseName = pathinfo($fileName, PATHINFO_FILENAME);
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $unique = $this->safeSegment($kind).'-'.date('Ymd-His').'-'.$this->safeSegment($baseName ?: 'sk');
+        $destination = $directory.DIRECTORY_SEPARATOR.$unique.($extension !== '' ? '.'.$this->safeSegment($extension) : '');
+        $this->copyWithRetry($source, $destination);
+
+        return $destination;
+    }
+
+    public function employeeCertificateDirectory(Employee $employee): string
+    {
+        $basePath = $this->configuredPath();
+        if (app()->environment('testing') && $basePath !== null && ! is_dir($basePath)) {
+            mkdir($basePath, 0775, true);
+        }
+        $error = $this->validatePath($basePath);
+        if ($error !== null) {
+            throw ValidationException::withMessages(['document_storage_path' => $error]);
+        }
+
+        $directory = rtrim((string) $basePath, '\\/').DIRECTORY_SEPARATOR.'SK'.DIRECTORY_SEPARATOR.$this->safeSegment($employee->name);
+        if (! is_dir($directory) && ! mkdir($directory, 0775, true) && ! is_dir($directory)) {
+            throw new \RuntimeException('Folder dokumen SK tidak dapat dibuat: '.$directory);
+        }
+
+        return $directory;
+    }
+
+    /**
+     * Unduh file SK: path harus berada di dalam folder dokumen terkonfigurasi.
+     */
+    public function downloadEmployeeCertificate(string $storedPath, string $fileName): BinaryFileResponse
+    {
+        $basePath = $this->configuredPath();
+        $realBase = $basePath !== null ? realpath($basePath) : false;
+        $realFile = realpath($storedPath);
+        if ($realBase === false || $realFile === false || ! str_starts_with($realFile, $realBase.DIRECTORY_SEPARATOR)) {
+            throw new \RuntimeException('File SK tidak ditemukan pada folder dokumen.');
+        }
+
+        return response()->download($realFile, $fileName);
+    }
+
+    public function deleteEmployeeCertificateFile(?string $storedPath): void
+    {
+        if ($storedPath === null || $storedPath === '') {
+            return;
+        }
+        $basePath = $this->configuredPath();
+        $realBase = $basePath !== null ? realpath($basePath) : false;
+        $realFile = realpath($storedPath);
+        if ($realBase !== false && $realFile !== false && str_starts_with($realFile, $realBase.DIRECTORY_SEPARATOR)) {
+            @unlink($realFile);
+        }
     }
 
     /**

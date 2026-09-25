@@ -425,6 +425,9 @@ adalah data operator pada tabel `employee_certificates`, bukan feed sinkronisasi
 ```text
 satu pegawai -> banyak SK (kind, nomor, tanggal terbit, berlaku s.d., catatan)
 badge: Kedaluwarsa / Berakhir <30 hari / Berlaku / Belum ada
+tab kanonis per jenis SK (ui-tabs) + toggle lipat panel
+pindaian: PDF/JPG/PNG maks 10 MB di {folder-dokumen}/SK/{nama-pegawai}/
+unduh untuk semua peran baca; unggah/ubah/hapus operator-or-administrator
 ```
 
 CRUD SK dan mutasi pegawai (tambah/ubah/hapus) tercatat `OperationalAuditService`
