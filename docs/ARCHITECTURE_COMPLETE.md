@@ -1,8 +1,8 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-14** terhadap kontrak/domain source aktif dan dokumentasi status canonical branch `gui-standardization`.
+Terakhir diverifikasi: **2026-09-14** terhadap kontrak/domain source aktif dan dokumentasi status canonical sebelum repository mirror memakai branch `main`.
 
-Dokumen ini menjelaskan arsitektur aktif branch `gui-standardization`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk evidence functional gate gunakan `P0_VERIFICATION_KIT.md` §1; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
+Dokumen ini menjelaskan arsitektur aktif branch `main` di repository mirror `raw-rkas`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk evidence functional gate gunakan `P0_VERIFICATION_KIT.md` §1; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
 
 Dokumen arsitektur tidak menyimpan hash commit, nomor CI, atau jumlah test/assertion agar tidak menjadi stale ketika code gate bergerak.
 

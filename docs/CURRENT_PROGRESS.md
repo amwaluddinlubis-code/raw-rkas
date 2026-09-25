@@ -1,12 +1,55 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-23** (workstream mirror ARKAS, folder `spj-bosp-web-arkas-mirror`)
+Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchronization, `raw-rkas`)
 
-> Catatan: folder ini adalah mirror dari `spj-bosp-web-clean`
-> (branch `gui-standardization`). Repo lokal sudah `git init` (branch `main`,
-> commit `22d2c7f`) dan terhubung ke remote
-> `https://github.com/amwaluddinlubis-code/raw-rkas.git`.
-> Status release canonical tetap mengikuti gate CI #486 sampai gate baru dinyatakan hijau.
+> Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dengan default branch `main`.
+> Audit/hardening aktif berada di `hardening/raw-rkas-audit`. Catatan asal mirror
+> `spj-bosp-web-clean/gui-standardization` dipertahankan hanya sebagai sejarah migrasi,
+> bukan sebagai branch kerja aktif.
+
+---
+
+## Repository + documentation audit (2026-09-25)
+
+Status: **AUDIT COMPLETE / DOCS SYNCHRONIZED / CURRENT AUDIT SOURCE GATE GREEN**.
+
+Evidence GitHub untuk source commit `hardening/raw-rkas-audit@2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`:
+
+```text
+WORKFLOW              : SPJ Critical Verification
+RUN                   : 36112716405 (#15)
+ARTIFACT GUARD        : PASS
+COMPOSER CHECKS       : PASS
+FRONTEND BUILD        : PASS
+BLADE COMPILE         : PASS
+CHECKLIST PHP LINT    : PASS
+SPJ CRITICAL          : PASS / 329 tests / 2,568 assertions
+FULL UNIT             : PASS / 79 tests / 281 assertions
+FULL FEATURE          : PASS / 563 tests / 4,005 assertions
+RESULT                : SUCCESS
+```
+
+Regression yang menahan run sebelumnya berada di `resources/views/spj/checklist.blade.php`: directive inline `@php(...)` menghasilkan PHP terkompilasi yang tidak tertutup dan baru gagal pada token `else`. Assignment `$fixUrl` kini memakai blok `@php ... @endphp`; artifact diagnostic run #15 membuktikan `php -l` pada hasil compile tidak lagi menemukan syntax error, dan `WebRouteSmokeTest` kembali lewat sebagai bagian Full Feature suite. Historical green gate tetap dipertahankan sebagai baseline lama, sedangkan run #15 menjadi evidence source gate terbaru untuk branch audit. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
+
+## Repository containment hardening (2026-09-24)
+
+Status: **SOURCE HARDENING APPLIED / ARTIFACT GUARD PASS / CURRENT SOURCE GATE GREEN**.
+
+Audit repository menemukan dump ARKAS/BKU dan backup archive terlacak di bawah
+`public/`, serta archive migration dan shortcut lokal Windows yang tidak
+merupakan source aplikasi. Hardening yang diterapkan:
+
+- dump SQL dan backup archive dikeluarkan dari current tree;
+- archive migration dan shortcut lokal dikeluarkan dari current tree;
+- `.gitignore` menolak pola artefak tersebut agar tidak masuk kembali;
+- workflow `SPJ Critical Verification` mencakup push/PR ke `main` dan menolak
+  private/backup artifacts yang terlacak.
+
+Riwayat Git masih memuat artefak pada commit awal. History rewrite dan rotasi
+token/kredensial, bila diperlukan setelah pemeriksaan pemilik data, belum
+dijalankan. Verifikasi lokal yang tersedia: artifact guard PASS, theme QA PASS,
+JavaScript syntax PASS, JSON metadata parse PASS, dan `git diff --check` PASS.
+GitHub Actions terbaru pada PR branch audit sekarang hijau sampai Full Feature suite; lihat evidence run #15 pada audit 2026-09-25 di atas.
 
 ---
 
@@ -289,7 +332,7 @@ data — baris usang tetap di mirror, hanya tidak dihitung. Regression tercakup
 
 ---
 
-Dokumen ini adalah sumber status release utama untuk branch `gui-standardization`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Dokumen ini adalah sumber status release utama untuk branch `main` di repository mirror `raw-rkas`. Detail gate/command verification berada di `P0_VERIFICATION_KIT.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; kontrak bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Definisi status:
 
@@ -719,7 +762,7 @@ Audit static route terhadap 132 route non-vendor menemukan ketidakkonsistenan su
 
 Evidence timing dari `storage/logs/performance-2026-09-19.log` menunjukkan masalah performa nyata masih perlu RVR/browser follow-up: `transactions.index` 9--12 detik, `spj.index` maksimum 28,9 detik, `references.index` maksimum 13,7 detik, dan `database-manager.index` maksimum 9,4 detik. Penyebab terbesar yang teridentifikasi adalah scan JSON tanpa indeks pada referensi, agregasi mirror berulang pada halaman SPJ, dan route penganggaran-RKAS yang masih memakai tabel normalisasi legacy.
 
-Update: `ArkasMirrorBudgetService` sekarang menjadi adapter utama untuk `/penganggaran-rkas` dan `RkasBudgetFilter`. Pagu, periode, realisasi, hierarki, filter program/subprogram/kegiatan, dan pencarian membaca `arkas_mirror_rapbs`, `arkas_mirror_rapbs_periode`, `arkas_mirror_kas_umum`, serta `arkas_mirror_ref_kode`. Snapshot mirror melakukan preload referensi dan cache per request. Snapshot memilih revisi RKAS terakhir dengan kontrak ARKASBridge: per tahun+sumber dana, urut `IS_AKTIF`, `IS_APPROVE`, `LAST_UPDATE`, lalu `CREATE_DATE`, kemudian hanya memakai `rapbs` yang menunjuk ke `ID_ANGGARAN` tersebut. Jalur tabel legacy masih ada sebagai fallback untuk database yang belum memiliki mirror; pada database dengan `arkas_mirror_rapbs`, jalur tersebut tidak dieksekusi. Regression runtime mirror tetap RVR karena database testing lokal mengalami `disk I/O`/`no such table: schools` setelah batch test sebelumnya.
+Update: `ArkasMirrorBudgetService` sekarang menjadi adapter utama untuk `/penganggaran-rkas` dan `RkasBudgetFilter`. Pagu, periode, realisasi, hierarki, filter program/subprogram/kegiatan, dan pencarian membaca `arkas_mirror_rapbs`, `arkas_mirror_rapbs_periode`, `arkas_mirror_kas_umum`, serta `arkas_mirror_ref_kode`. Snapshot mirror melakukan preload referensi dan cache per request. Snapshot memilih revisi RKAS terakhir dengan kontrak ARKASBridge: per tahun+sumber dana, urut `IS_AKTIF`, `IS_APPROVE`, `LAST_UPDATE`, lalu `CREATE_DATE`, kemudian hanya memakai `rapbs` yang menunjuk ke `ID_ANGGARAN` tersebut. Kontrak tampilan direvisi 2026-09-24 (permintaan operator): halaman penganggaran menampilkan tab per revisi — seluruh revisi yang disetujui (kronologis) ditambah tab pengajuan terakhir bila masih ada yang belum disetujui; default tab persetujuan terakhir; satu tab = satu snapshot `ID_ANGGARAN` (`ArkasMirrorBudgetService::revisions()`). Label tab "Pengesahan ke-N"/"Pengajuan ke-N" tanpa tanggal (tanggal di teks info + tooltip); tanggal pengesahan dari kolom `tanggal_pengesahan`, pengajuan dari `tanggal_pengajuan`. Revisi: BKU menaut ke rapbs revisi berjalan sehingga tab lama nol realisasi — ditambah fallback identitas pos (`ID_REF_KODE|rekening|uraian`, sisa proporsional pagu, direct didahulukan; total tetap pas, view terbaru tidak berubah; scope identitas lewat record anggaran agar uang tahun lain tidak bocor lintas tahun). Volume tahunan fallback `VOLUME_TOTAL` → `VOLUME` untuk payload skema huruf kecil. Jalur tabel legacy masih ada sebagai fallback untuk database yang belum memiliki mirror; pada database dengan `arkas_mirror_rapbs`, jalur tersebut tidak dieksekusi. Regression runtime mirror tetap RVR karena database testing lokal mengalami `disk I/O`/`no such table: schools` setelah batch test sebelumnya.
 
 Hierarki RKAS memprioritaskan relasi `arkas_mirror_rapbs.ID_REF_KODE` ke `arkas_mirror_ref_kode.ID_REF_KODE`; kode dan nama kegiatan diambil dari referensi tersebut, sedangkan `KODE_PROGRAM`, `NAMA_PROGRAM`, `KODE_SUB_PROGRAM`, dan `NAMA_SUB_PROGRAM` diambil dari payload RAPBS lalu memakai referensi parent sebagai fallback. `ID_LEVEL_KODE` ikut dibawa sebagai metadata level referensi.
 

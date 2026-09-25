@@ -164,6 +164,10 @@ Homestead.yaml
 /database/*.sqlite-shm
 /database/*.wiped-backup-*
 *.wiped-backup-*
+/public/**/*.sql
+/public/**/*.rar
+/database/migrations/*.rar
+/config/*.lnk
 helpme.txt
 status
 test-write.tmp

@@ -21,6 +21,9 @@ use Livewire\Component;
  */
 class RkasBudgetFilter extends Component
 {
+    /** @var array{rows:Collection,names:array<string,string>,realization:array<string,float>}|null */
+    private ?array $mirrorSnapshotCache = null;
+
     #[Url(except: 'semua')]
     public string $mode = 'semua';
 
@@ -80,7 +83,11 @@ class RkasBudgetFilter extends Component
             $this->mode = 'semua';
         }
 
-        if (! in_array($this->revisi, ['persetujuan', 'pengajuan'], true)) {
+        // Revisi: 'persetujuan' (default), 'pengajuan', atau ID anggaran
+        // spesifik dari daftar tab revisi. Nilai tak dikenal disanitasi
+        // menjadi default oleh service saat render.
+        $this->revisi = trim($this->revisi);
+        if ($this->revisi === '' || strlen($this->revisi) > 80 || ! preg_match('/^[A-Za-z0-9_.~-]+$/', $this->revisi)) {
             $this->revisi = 'persetujuan';
         }
 
@@ -536,16 +543,24 @@ class RkasBudgetFilter extends Component
 
     protected function mirrorEnabled(): bool
     {
-        return Schema::connection('school')->hasTable('arkas_mirror_rapbs');
+        if (! Schema::connection('school')->hasTable('arkas_mirror_rapbs')) {
+            return false;
+        }
+
+        return $this->mirrorSnapshot()['rows']->isNotEmpty();
     }
 
     /** @return array{rows:Collection,names:array<string,string>,realization:array<string,float>} */
     protected function mirrorSnapshot(): array
     {
+        if ($this->mirrorSnapshotCache !== null) {
+            return $this->mirrorSnapshotCache;
+        }
+
         $yearId = $this->fiscalYearId();
         $fundSourceId = $this->effectiveFundSourceId();
 
-        return app(ArkasMirrorBudgetService::class)->snapshot(
+        return $this->mirrorSnapshotCache = app(ArkasMirrorBudgetService::class)->snapshot(
             $fundSourceId ?? 0,
             (int) (FiscalYear::query()->whereKey($yearId)->value('year') ?: now()->year),
         );

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Employee;
 use App\Models\SpjHonor;
+use App\Services\OperationalAuditService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +22,7 @@ class EmployeeController extends Controller
 
     public function show(int $employeeId): View
     {
-        $employee = Employee::findOrFail($employeeId);
+        $employee = Employee::with('certificates')->findOrFail($employeeId);
         $honors = $this->honorsFor([$employee])->get($this->identityKey($employee), collect())
             ->sortByDesc(fn (SpjHonor $honor) => (($d = $honor->item?->transaction?->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null));
 
@@ -38,27 +39,31 @@ class EmployeeController extends Controller
         return view('employees.form', ['employee' => Employee::findOrFail($employeeId)]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, OperationalAuditService $audit): RedirectResponse
     {
         $employee = new Employee;
         $this->persist($request, $employee);
+        $audit->record(session('active_fiscal_year_id'), 'EMPLOYEE', $employee->id, 'TAMBAH', 'Pegawai '.$employee->name.' ditambahkan manual.');
 
         return redirect()->route('employees.show', $employee)->with('success', 'Pegawai berhasil ditambahkan.');
     }
 
-    public function update(Request $request, int $employeeId): RedirectResponse
+    public function update(Request $request, int $employeeId, OperationalAuditService $audit): RedirectResponse
     {
         $employee = Employee::findOrFail($employeeId);
         $this->persist($request, $employee);
+        $audit->record(session('active_fiscal_year_id'), 'EMPLOYEE', $employee->id, 'UBAH', 'Data pegawai '.$employee->name.' diperbarui operator (dikunci dari sync).');
 
         return redirect()->route('employees.show', $employee)->with('success', 'Data pegawai berhasil diperbarui. Koreksi operator akan dipertahankan saat sinkronisasi berikutnya.');
     }
 
-    public function destroy(int $employeeId): RedirectResponse
+    public function destroy(int $employeeId, OperationalAuditService $audit): RedirectResponse
     {
         $employee = Employee::findOrFail($employeeId);
         $sourceLabel = $employee->source_label;
+        $name = $employee->name;
         $employee->delete();
+        $audit->record(session('active_fiscal_year_id'), 'EMPLOYEE', $employeeId, 'HAPUS', 'Pegawai '.$name.' dihapus operator.');
 
         $message = $sourceLabel === 'Manual'
             ? 'Pegawai berhasil dihapus.'

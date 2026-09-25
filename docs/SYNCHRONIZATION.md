@@ -1,6 +1,6 @@
 # Sinkronisasi Data — ARKAS/BKU, Dapodik, Reconciliation, dan Identity
 
-Terakhir diverifikasi: **2026-09-11** terhadap branch `gui-standardization`.
+Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`).
 
 Status dokumen: **ACTIVE TECHNICAL GUIDE**.
 
@@ -414,6 +414,22 @@ operator-locked/manual identity
 ```
 
 Empty feed juga tidak boleh dianggap otomatis berarti seluruh pegawai harus dinonaktifkan.
+
+---
+
+## 14.1. SK penugasan pegawai (data operator)
+
+SK (GTT/PTT, Pembagian Tugas, Penetapan Narasumber, Pembina Ekstrakurikuler, lainnya)
+adalah data operator pada tabel `employee_certificates`, bukan feed sinkronisasi:
+
+```text
+satu pegawai -> banyak SK (kind, nomor, tanggal terbit, berlaku s.d., catatan)
+badge: Kedaluwarsa / Berakhir <30 hari / Berlaku / Belum ada
+```
+
+CRUD SK dan mutasi pegawai (tambah/ubah/hapus) tercatat `OperationalAuditService`
+(`EMPLOYEE_SK`, `EMPLOYEE`). SK tidak memblokir lifecycle SPJ; ia adalah
+checklist kelengkapan bukti dukung honor.
 
 ---
 

@@ -19,16 +19,21 @@ final class ArkasMirrorBudgetService
     {
         $year = (int) (FiscalYear::query()->whereKey($yearId)->value('year') ?: now()->year);
         $revisionModes = $this->revisionModes($fundSourceId, $year);
-        $revision = trim((string) $request->query('revisi', 'persetujuan'));
-        if ($revision !== 'pengajuan' || ! $revisionModes['hasPendingSubmission']) {
-            $revision = 'persetujuan';
+        $revisions = $this->revisions($fundSourceId, $year);
+        $allowedIds = collect($revisions)->pluck('id')->all();
+        // Tab terakhir yang disetujui adalah default; urutan kronologis menaik.
+        $latestApprovedId = collect($revisions)->where('status', 'approved')->last()['id'] ?? null;
+        $requested = trim((string) $request->query('revisi', ''));
+        if ($requested === '' || $requested === 'persetujuan') {
+            $selectedId = $latestApprovedId;
+        } elseif ($requested === 'pengajuan') {
+            $selectedId = $revisionModes['hasPendingSubmission'] ? $revisionModes['submitted']['id'] : $latestApprovedId;
+        } else {
+            $selectedId = in_array($requested, $allowedIds, true) ? $requested : $latestApprovedId;
         }
-        $anggaranIds = $revision === 'pengajuan' && $revisionModes['submitted'] !== null
-            ? [$revisionModes['submitted']['id']]
-            : null;
-        $snapshot = $anggaranIds === null
-            ? $this->snapshot($fundSourceId, $year)
-            : $this->snapshot($fundSourceId, $year, $anggaranIds);
+        $revision = $selectedId;
+        $anggaranIds = $selectedId === null ? null : [$selectedId];
+        $snapshot = $this->snapshot($fundSourceId, $year, $anggaranIds);
         $scope = $this->scope($request);
         $search = trim((string) $request->query('q'));
         $program = trim((string) $request->query('program'));
@@ -118,7 +123,7 @@ final class ArkasMirrorBudgetService
         };
         $fundName = (string) (DB::connection('school')->table('fund_sources')->where('id', $fundSourceId)->value('name') ?: '');
 
-        return ['hierarchyTree' => $tree, 'treeTotals' => ['amount' => array_sum(array_column($tree, 'amount')), 'realization' => array_sum(array_column($tree, 'realization')), 'remaining' => array_sum(array_column($tree, 'remaining')), 'items' => $rows->count()], 'filterContext' => 'pada '.$periodLabel, 'search' => $search, 'budget' => $budget, 'spent' => $budget - $remaining, 'remaining' => $remaining, 'overBudget' => max(0, -$remaining), 'underBudget' => max(0, $remaining), 'activityCount' => $snapshot['rows']->pluck('activity_code')->unique()->count(), 'scope' => $scope['scope'], 'scopeValue' => $scope['value'], 'periodLabel' => $periodLabel, 'programFilter' => $program, 'subprogramFilter' => $subprogram, 'activityFilter' => $activity, 'contextLabel' => trim($year.' · '.$fundName, ' ·'), 'revision' => $revision, 'revisionModes' => $revisionModes];
+        return ['hierarchyTree' => $tree, 'treeTotals' => ['amount' => array_sum(array_column($tree, 'amount')), 'realization' => array_sum(array_column($tree, 'realization')), 'remaining' => array_sum(array_column($tree, 'remaining')), 'items' => $rows->count()], 'filterContext' => 'pada '.$periodLabel, 'search' => $search, 'budget' => $budget, 'spent' => $budget - $remaining, 'remaining' => $remaining, 'overBudget' => max(0, -$remaining), 'underBudget' => max(0, $remaining), 'activityCount' => $snapshot['rows']->pluck('activity_code')->unique()->count(), 'scope' => $scope['scope'], 'scopeValue' => $scope['value'], 'periodLabel' => $periodLabel, 'programFilter' => $program, 'subprogramFilter' => $subprogram, 'activityFilter' => $activity, 'contextLabel' => trim($year.' · '.$fundName, ' ·'), 'revision' => $revision, 'revisions' => $revisions, 'latestApprovedId' => $latestApprovedId, 'revisionModes' => $revisionModes];
     }
 
     /** @return array{scope:string,value:int} */
@@ -135,7 +140,7 @@ final class ArkasMirrorBudgetService
         return ['scope' => $scope, 'value' => $value];
     }
 
-    /** @return array{rows:Collection<int,array>,names:array<string,string>,realization:array<string,float>,realization_period:array<string,array<string,float>>} */
+    /** @return array{rows:Collection<int,array>,names:array<string,string>,realization:array<string,float>,realization_period:array<string,array<string,float>>,realization_fallback:array<string,float>,realization_fallback_month:array<string,array<int,float>>} */
     public function snapshot(int $fundSourceId, int $year, ?array $anggaranIds = null): array
     {
         $overrideIds = $anggaranIds === null ? null : array_values(array_unique(array_filter(array_map(strval(...), $anggaranIds))));
@@ -186,13 +191,16 @@ final class ArkasMirrorBudgetService
             $refId = (string) (ArkasMirrorResolver::field($payload, ['ID_REF_KODE']) ?? '');
             $reference = $references[$refId] ?? [];
             $activityCode = trim((string) (ArkasMirrorResolver::field($reference, ['ID_KODE']) ?: ArkasMirrorResolver::field($payload, ['KODE_KEGIATAN', 'ID_KODE']) ?? ''), '.');
+            $accountCode = (string) (ArkasMirrorResolver::field($payload, ['KODE_REKENING']) ?? '');
+            $lineDescription = (string) (ArkasMirrorResolver::field($payload, ['URAIAN', 'DESCRIPTION']) ?? '');
+            $identityKey = self::lineIdentityKey($refId, $accountCode, $lineDescription);
             $parts = $activityCode === '' ? [] : explode('.', $activityCode);
             $programCode = trim((string) (ArkasMirrorResolver::field($payload, ['KODE_PROGRAM']) ?: ($parts[0] ?? '')), '.');
             $subprogramCode = trim((string) (ArkasMirrorResolver::field($payload, ['KODE_SUB_PROGRAM']) ?: (count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : '')), '.');
             $programReference = $referencesByCode[$programCode] ?? [];
             $subprogramReference = $referencesByCode[$subprogramCode] ?? [];
             $activityName = (string) (ArkasMirrorResolver::field($payload, ['NAMA_KEGIATAN']) ?: ArkasMirrorResolver::field($reference, ['URAIAN_KODE', 'NAMA', 'URAIAN']) ?? 'Kegiatan belum diisi');
-            $rows->push(['source_rapbs_id' => (string) $record->source_key, 'activity_code' => $activityCode, 'activity_name' => $activityName, 'program_code' => $programCode, 'program_name' => (string) (ArkasMirrorResolver::field($payload, ['NAMA_PROGRAM']) ?: ArkasMirrorResolver::field($programReference, ['URAIAN_KODE', 'NAMA', 'URAIAN']) ?? ''), 'subprogram_code' => $subprogramCode, 'subprogram_name' => (string) (ArkasMirrorResolver::field($payload, ['NAMA_SUB_PROGRAM']) ?: ArkasMirrorResolver::field($subprogramReference, ['URAIAN_KODE', 'NAMA', 'URAIAN']) ?? ''), 'level_code' => (string) (ArkasMirrorResolver::field($reference, ['ID_LEVEL_KODE']) ?: ArkasMirrorResolver::field($payload, ['ID_LEVEL_KODE']) ?? ''), 'account_code' => (string) (ArkasMirrorResolver::field($payload, ['KODE_REKENING']) ?? ''), 'account_name' => (string) (ArkasMirrorResolver::field($payload, ['NAMA_REKENING', 'URAIAN']) ?? ''), 'description' => (string) (ArkasMirrorResolver::field($payload, ['URAIAN', 'DESCRIPTION']) ?? ''), 'amount' => (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0), 'payload' => $payload]);
+            $rows->push(['source_rapbs_id' => (string) $record->source_key, 'activity_code' => $activityCode, 'activity_name' => $activityName, 'program_code' => $programCode, 'program_name' => (string) (ArkasMirrorResolver::field($payload, ['NAMA_PROGRAM']) ?: ArkasMirrorResolver::field($programReference, ['URAIAN_KODE', 'NAMA', 'URAIAN']) ?? ''), 'subprogram_code' => $subprogramCode, 'subprogram_name' => (string) (ArkasMirrorResolver::field($payload, ['NAMA_SUB_PROGRAM']) ?: ArkasMirrorResolver::field($subprogramReference, ['URAIAN_KODE', 'NAMA', 'URAIAN']) ?? ''), 'level_code' => (string) (ArkasMirrorResolver::field($reference, ['ID_LEVEL_KODE']) ?: ArkasMirrorResolver::field($payload, ['ID_LEVEL_KODE']) ?? ''), 'account_code' => $accountCode, 'account_name' => (string) (ArkasMirrorResolver::field($payload, ['NAMA_REKENING', 'URAIAN']) ?? ''), 'description' => $lineDescription, 'amount' => (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0), 'identity_key' => $identityKey, 'payload' => $payload]);
             if (is_array($reference)) {
                 $refCode = trim((string) ArkasMirrorResolver::field($reference, ['ID_KODE']), '.');
                 $refName = (string) (ArkasMirrorResolver::field($reference, ['URAIAN_KODE', 'NAMA']) ?? '');
@@ -246,6 +254,59 @@ final class ArkasMirrorBudgetService
         })->values();
         $realization = [];
         $realizationPeriod = [];
+        // Indeks identitas pos lintas revisi (rapbs id -> identitas) dalam
+        // tahun+sumber dana yang sama. BKU ARKAS menaut ke rapbs revisi
+        // berjalan, sehingga tab revisi lama nol realisasi tanpa fallback ini.
+        $rapbsIdentity = [];
+        // Scope tahun+sumber dana lewat record anggaran (payload rapbs skema
+        // huruf kecil tidak selalu membawa tahun/dana sendiri).
+        $anggaranScope = [];
+        if (Schema::connection('school')->hasTable('arkas_mirror_anggaran')) {
+            foreach ($db->table('arkas_mirror_anggaran')->get(['source_key', 'payload']) as $anggaran) {
+                $anggaranPayload = json_decode((string) $anggaran->payload, true);
+                if (! is_array($anggaranPayload)
+                    || (int) (ArkasMirrorResolver::field($anggaranPayload, ['SOFT_DELETE', 'IS_DELETED']) ?? 0) === 1) {
+                    continue;
+                }
+                $anggaranScope[(string) (ArkasMirrorResolver::field($anggaranPayload, ['ID_ANGGARAN']) ?: $anggaran->source_key)] = [
+                    'year' => (int) (ArkasMirrorResolver::field($anggaranPayload, ['TAHUN_ANGGARAN', 'TAHUN']) ?? 0),
+                    'fund' => (int) (ArkasMirrorResolver::field($anggaranPayload, ['ID_REF_SUMBER_DANA', 'SUMBER_DANA_ID']) ?? 0),
+                ];
+            }
+        }
+        foreach ($rapbsRecords as $record) {
+            $payload = json_decode((string) $record->payload, true);
+            if (! is_array($payload)) {
+                continue;
+            }
+            if ((int) (ArkasMirrorResolver::field($payload, ['SOFT_DELETE', 'IS_DELETED']) ?? 0) === 1) {
+                continue;
+            }
+            $rowAnggaranId = (string) (ArkasMirrorResolver::field($payload, ['ID_ANGGARAN']) ?? '');
+            $scope = $anggaranScope[$rowAnggaranId] ?? null;
+            if ($scope !== null) {
+                if (($scope['year'] > 0 && $scope['year'] !== $year) || ($scope['fund'] > 0 && $scope['fund'] !== $fundSourceId)) {
+                    continue;
+                }
+            } elseif (! $this->fundMatches($payload, $fundSourceId) || ! $this->yearMatches($payload, $year)) {
+                continue;
+            }
+            $rapbsIdentity[(string) $record->source_key] = self::lineIdentityKey(
+                (string) (ArkasMirrorResolver::field($payload, ['ID_REF_KODE']) ?? ''),
+                (string) (ArkasMirrorResolver::field($payload, ['KODE_REKENING']) ?? ''),
+                (string) (ArkasMirrorResolver::field($payload, ['URAIAN', 'DESCRIPTION']) ?? ''),
+            );
+        }
+        // Periode kas -> bulan kalender untuk fallback per periode.
+        $periodMonth = [];
+        foreach ($periods as $period) {
+            $periodId = (string) (ArkasMirrorResolver::field($period, ['ID_RAPBS_PERIODE']) ?? '');
+            if ($periodId !== '' && (int) ($period['__MONTH_NUMBER'] ?? 0) > 0) {
+                $periodMonth[$periodId] = (int) $period['__MONTH_NUMBER'];
+            }
+        }
+        $identityTotal = [];
+        $identityMonth = [];
         foreach ($db->table('arkas_mirror_kas_umum')->get(['payload']) as $record) {
             $payload = json_decode((string) $record->payload, true);
             if (! is_array($payload) || strtoupper((string) ArkasMirrorResolver::field($payload, ['KATEGORI_BKU'])) !== 'BELANJA' || ! $this->fundMatches($payload, $fundSourceId)) {
@@ -253,16 +314,98 @@ final class ArkasMirrorBudgetService
             }
             $rapbsId = (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS']) ?? '');
             $rapbsId = $rapbsId !== '' ? $rapbsId : ($periodToRkas[(string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS_PERIODE']) ?? '')] ?? '');
-            if ($rapbsId !== '') {
-                $realization[$rapbsId] = ($realization[$rapbsId] ?? 0) + (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0);
-                $periodId = (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS_PERIODE']) ?? '');
-                if ($periodId !== '') {
-                    $realizationPeriod[$rapbsId][$periodId] = ($realizationPeriod[$rapbsId][$periodId] ?? 0) + (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0);
+            if ($rapbsId === '') {
+                continue;
+            }
+            $amount = (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0);
+            $realization[$rapbsId] = ($realization[$rapbsId] ?? 0) + $amount;
+            $periodId = (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS_PERIODE']) ?? '');
+            if ($periodId !== '') {
+                $realizationPeriod[$rapbsId][$periodId] = ($realizationPeriod[$rapbsId][$periodId] ?? 0) + $amount;
+            }
+            $identity = $rapbsIdentity[$rapbsId] ?? '';
+            if ($identity === '') {
+                continue;
+            }
+            $identityTotal[$identity] = ($identityTotal[$identity] ?? 0) + $amount;
+            $month = $periodMonth[$periodId] ?? 0;
+            if ($month > 0) {
+                $identityMonth[$identity][$month] = ($identityMonth[$identity][$month] ?? 0) + $amount;
+            }
+        }
+
+        ['fallback' => $realizationFallback, 'fallbackMonth' => $realizationFallbackMonth] = $this->identityFallbackShares($rows, $realization, $realizationPeriod, $identityTotal, $identityMonth);
+
+        return $this->snapshotCache[$cacheKey] = ['rows' => $rows, 'names' => $names, 'realization' => $realization, 'realization_period' => $realizationPeriod, 'realization_fallback' => $realizationFallback, 'realization_fallback_month' => $realizationFallbackMonth];
+    }
+
+    private static function lineIdentityKey(string $refId, string $accountCode, string $description): string
+    {
+        $normalized = mb_strtolower(trim((string) preg_replace('/\s+/', ' ', $description)));
+
+        $key = trim($refId).'|'.trim($accountCode).'|'.$normalized;
+
+        return $key === '||' ? '' : $key;
+    }
+
+    /**
+     * Bagi sisa realisasi identitas yang belum teratribusi langsung ke baris
+     * tampil beridentitas sama, proporsional pagu. Menjamin total tetap pas
+     * (tidak ganda) dan view revisi terbaru tidak berubah (direct didahulukan).
+     *
+     * @param  Collection<int,array>  $rows
+     * @return array{fallback:array<string,float>,fallbackMonth:array<string,array<int,float>>}
+     */
+    private function identityFallbackShares(Collection $rows, array $realization, array $realizationPeriod, array $identityTotal, array $identityMonth): array
+    {
+        $byIdentity = [];
+        foreach ($rows as $row) {
+            $identity = (string) ($row['identity_key'] ?? '');
+            if ($identity === '') {
+                continue;
+            }
+            $byIdentity[$identity][] = $row;
+        }
+
+        $fallback = [];
+        $fallbackMonth = [];
+        foreach ($byIdentity as $identity => $group) {
+            $paguTotal = array_sum(array_map(fn (array $row): float => (float) ($row['amount'] ?? 0), $group));
+            if ($paguTotal <= 0) {
+                continue;
+            }
+            $directTotal = 0.0;
+            $directMonth = [];
+            foreach ($group as $row) {
+                $rid = (string) $row['source_rapbs_id'];
+                $directTotal += (float) ($realization[$rid] ?? 0);
+                foreach ($row['periods'] as $period) {
+                    $pid = (string) (ArkasMirrorResolver::field($period, ['ID_RAPBS_PERIODE']) ?? '');
+                    $month = (int) ($period['__MONTH_NUMBER'] ?? 0);
+                    if ($pid === '' || $month <= 0) {
+                        continue;
+                    }
+                    $directMonth[$month] = ($directMonth[$month] ?? 0) + (float) ($realizationPeriod[$rid][$pid] ?? 0);
+                }
+            }
+            $residual = max(0.0, ($identityTotal[$identity] ?? 0) - $directTotal);
+            $residualMonth = [];
+            for ($month = 1; $month <= 12; $month++) {
+                $residualMonth[$month] = max(0.0, ($identityMonth[$identity][$month] ?? 0) - ($directMonth[$month] ?? 0));
+            }
+            foreach ($group as $row) {
+                $rid = (string) $row['source_rapbs_id'];
+                $weight = ((float) ($row['amount'] ?? 0)) / $paguTotal;
+                $fallback[$rid] = $residual * $weight;
+                foreach ($residualMonth as $month => $value) {
+                    if ($value > 0) {
+                        $fallbackMonth[$rid][$month] = $value * $weight;
+                    }
                 }
             }
         }
 
-        return $this->snapshotCache[$cacheKey] = ['rows' => $rows, 'names' => $names, 'realization' => $realization, 'realization_period' => $realizationPeriod];
+        return ['fallback' => $fallback, 'fallbackMonth' => $fallbackMonth];
     }
 
     /** @return array<string, array{name:?string,month:?int,quarter:?int,semester:?int}> */
@@ -419,6 +562,77 @@ final class ArkasMirrorBudgetService
         ];
     }
 
+    /**
+     * Daftar tab revisi RKAS per tahun+sumber dana untuk kontrak baru:
+     * seluruh revisi yang disetujui (kronologis menaik) ditambah pengajuan
+     * terakhir bila masih ada yang belum disetujui.
+     *
+     * @return array<int,array{id:string,status:string,seq:int,dateLabel:string,revisionNo:int,amount:float}>
+     */
+    public function revisions(int $fundSourceId, int $year): array
+    {
+        $entries = [];
+        if (Schema::connection('school')->hasTable('arkas_mirror_anggaran')) {
+            foreach (DB::connection('school')->table('arkas_mirror_anggaran')->get(['source_key', 'payload']) as $record) {
+                $payload = json_decode((string) $record->payload, true);
+                if (! is_array($payload)
+                    || (int) (ArkasMirrorResolver::field($payload, ['TAHUN_ANGGARAN', 'TAHUN']) ?? 0) !== $year
+                    || ! $this->fundMatches($payload, $fundSourceId)
+                    || (int) (ArkasMirrorResolver::field($payload, ['SOFT_DELETE', 'IS_DELETED']) ?? 0) === 1) {
+                    continue;
+                }
+                $entries[] = [
+                    'id' => (string) (ArkasMirrorResolver::field($payload, ['ID_ANGGARAN']) ?: $record->source_key),
+                    'approved' => (int) (ArkasMirrorResolver::field($payload, ['IS_APPROVE', 'IS_APPROVED', 'APPROVED']) ?? 0),
+                    'updated' => $this->sourceTimestamp(ArkasMirrorResolver::field($payload, ['LAST_UPDATE', 'UPDATED_AT'])),
+                    'created' => $this->sourceTimestamp(ArkasMirrorResolver::field($payload, ['CREATE_DATE', 'CREATED_AT'])),
+                    'approvedAt' => $this->sourceTimestamp(ArkasMirrorResolver::field($payload, ['TANGGAL_PENGESAHAN', 'TGL_PENGESAHAN'])),
+                    'submittedAt' => $this->sourceTimestamp(ArkasMirrorResolver::field($payload, ['TANGGAL_PENGAJUAN', 'TGL_PENGAJUAN'])),
+                    'revisionNo' => (int) (ArkasMirrorResolver::field($payload, ['IS_REVISI', 'REVISI']) ?? 0),
+                    'amount' => (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0),
+                ];
+            }
+        }
+
+        usort($entries, fn (array $left, array $right): int => [$left['updated'], $left['created']] <=> [$right['updated'], $right['created']]);
+
+        $dateLabel = static fn (array $entry, string $kind): string => match (true) {
+            $kind === 'approved' && $entry['approvedAt'] > 0 => date('d-m-Y', $entry['approvedAt']),
+            $kind === 'pending' && $entry['submittedAt'] > 0 => date('d-m-Y', $entry['submittedAt']),
+            max($entry['updated'], $entry['created']) > 0 => date('d-m-Y', max($entry['updated'], $entry['created'])),
+            default => '-',
+        };
+
+        $approved = array_values(array_filter($entries, fn (array $entry): bool => $entry['approved'] === 1));
+        $latest = end($entries) ?: null;
+        $pending = $latest !== false && $latest !== null && $latest['approved'] !== 1 ? $latest : null;
+
+        $tabs = [];
+        foreach ($approved as $index => $entry) {
+            $tabs[] = [
+                'id' => $entry['id'],
+                'status' => 'approved',
+                'seq' => $index + 1,
+                'dateLabel' => $dateLabel($entry, 'approved'),
+                'revisionNo' => $entry['revisionNo'],
+                'amount' => $entry['amount'],
+            ];
+        }
+
+        if ($pending !== null) {
+            $tabs[] = [
+                'id' => $pending['id'],
+                'status' => 'pending',
+                'seq' => count($tabs) + 1,
+                'dateLabel' => $dateLabel($pending, 'pending'),
+                'revisionNo' => $pending['revisionNo'],
+                'amount' => $pending['amount'],
+            ];
+        }
+
+        return $tabs;
+    }
+
     private function sourceTimestamp(mixed $value): int
     {
         if ($value === null || trim((string) $value) === '') {
@@ -484,7 +698,7 @@ final class ArkasMirrorBudgetService
     private function scopedVolume(array $row, string $scope, int $value): float
     {
         if ($scope === 'year') {
-            return (float) (ArkasMirrorResolver::field($row['payload'], ['VOLUME_TOTAL']) ?? 0);
+            return (float) (ArkasMirrorResolver::field($row['payload'], ['VOLUME_TOTAL', 'VOLUME']) ?? 0);
         }
         $months = $scope === 'month' ? [$value] : ($scope === 'quarter' ? range(($value - 1) * 3 + 1, $value * 3) : range(($value - 1) * 6 + 1, $value * 6));
 
@@ -493,8 +707,11 @@ final class ArkasMirrorBudgetService
 
     private function scopedRealization(array $row, array $snapshot, string $scope, int $value): float
     {
+        $rapbsId = (string) ($row['source_rapbs_id'] ?? '');
         if ($scope === 'year') {
-            return $snapshot['realization'][$row['source_rapbs_id']] ?? 0.0;
+            $direct = (float) ($snapshot['realization'][$rapbsId] ?? 0);
+
+            return $direct > 0 ? $direct : (float) ($snapshot['realization_fallback'][$rapbsId] ?? 0);
         }
 
         $periodIds = collect($row['periods'])
@@ -506,7 +723,30 @@ final class ArkasMirrorBudgetService
             ->map(fn (array $period): string => (string) (ArkasMirrorResolver::field($period, ['ID_RAPBS_PERIODE']) ?? ''))
             ->filter();
 
-        return $periodIds->sum(fn (string $periodId): float => $snapshot['realization_period'][$row['source_rapbs_id']][$periodId] ?? 0.0);
+        $direct = $periodIds->sum(fn (string $periodId): float => (float) ($snapshot['realization_period'][$rapbsId][$periodId] ?? 0));
+        if ($direct > 0) {
+            return $direct;
+        }
+
+        $month = $scope === 'month' ? $value : 0;
+        if ($month <= 0) {
+            $representative = $row['periods'][0] ?? null;
+            $month = (int) ($representative['__MONTH_NUMBER'] ?? 0);
+            if ($month <= 0 || count($periodIds) !== 1 && $scope !== 'month') {
+                // Kuartal/semester multi-bulan: jumlahkan fallback per bulan.
+                return collect($row['periods'])
+                    ->filter(function (array $period) use ($scope, $value): bool {
+                        $periodNumber = $scope === 'quarter' ? ($period['__QUARTER_NUMBER'] ?? null) : ($period['__SEMESTER_NUMBER'] ?? null);
+
+                        return (int) $periodNumber === $value;
+                    })
+                    ->map(fn (array $period): int => (int) ($period['__MONTH_NUMBER'] ?? 0))
+                    ->unique()
+                    ->sum(fn (int $monthNumber): float => (float) ($snapshot['realization_fallback_month'][$rapbsId][$monthNumber] ?? 0));
+            }
+        }
+
+        return (float) ($snapshot['realization_fallback_month'][$rapbsId][$month] ?? 0);
     }
 
     /** @param Collection<int,array> $rows */

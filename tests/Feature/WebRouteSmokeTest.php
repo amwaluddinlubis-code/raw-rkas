@@ -225,11 +225,20 @@ class WebRouteSmokeTest extends TestCase
 
     public function test_first_activation_provisions_database_record_without_hang(): void
     {
-        // Sekolah tanpa SchoolDatabase record: activate() harus membuat
-        // record sekali lalu berhenti (regresi rekursi provision↔activate).
-        $this->get('/pajak')->assertOk();
+        // Buat sekolah kedua tanpa SchoolDatabase record, lalu aktivasi
+        // langsung. Ini benar-benar menguji regresi rekursi provision↔activate
+        // tanpa bergantung pada fixture sekolah utama yang sudah diprovision.
+        $school = School::query()->create([
+            'npsn' => '99887767',
+            'school_code' => 'SCH-SMK-2',
+            'name' => 'SD Smoke Baru',
+        ]);
 
-        $this->assertDatabaseHas('school_databases', ['school_id' => School::query()->firstOrFail()->id]);
+        $this->assertDatabaseMissing('school_databases', ['school_id' => $school->id]);
+
+        app(SchoolDatabaseManager::class)->activate($school);
+
+        $this->assertDatabaseHas('school_databases', ['school_id' => $school->id]);
     }
 
     /** @param list<string> $cases */

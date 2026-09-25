@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-25**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `gui-standardization`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -18,7 +18,9 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: COMPLETE / CI #486 GREEN.**
+**Status: HISTORICAL GREEN BASELINE COMPLETE / CURRENT AUDIT SOURCE GATE GREEN.**
+
+CI #486 tetap historical green baseline untuk dependency/platform + authorization hardening. Source commit terbaru branch `hardening/raw-rkas-audit` yang mengubah aplikasi adalah `2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`; GitHub Actions run `36112716405` (#15) selesai **SUCCESS** dengan artifact guard, Composer/platform, frontend build, Blade compile, checklist compiled-PHP lint, SPJ Critical (329), Full Unit (79), dan Full Feature (563) semuanya PASS. Blocker integration audit sudah tertutup; browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -95,7 +97,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-P0-00 code/dependency integration gate bukan lagi blocker. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis, dan **current audit source gate kembali hijau** pada run #15. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 

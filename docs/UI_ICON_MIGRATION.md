@@ -1,6 +1,6 @@
 # Migrasi Icon Canonical
 
-Terakhir diverifikasi: **2026-09-12** terhadap implementasi icon aktif pada branch `gui-standardization`.
+Terakhir disinkronkan terhadap implementasi icon aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`).
 
 Status: **PARTIAL MIGRATION / CANONICAL GLOBAL LAYOUT / COMPATIBILITY BRIDGE MASIH DIPAKAI.**
 

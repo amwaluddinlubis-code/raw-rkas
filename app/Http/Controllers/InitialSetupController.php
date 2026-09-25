@@ -16,9 +16,7 @@ class InitialSetupController extends Controller
 {
     public function create(): View
     {
-        // TEMP-SCREENSHOT: dibuka sementara agar /setup bisa di-screenshot.
-        // KEMBALIKAN abort_if di bawah sebelum selesai!
-        // abort_if(User::query()->exists(), 404);
+        abort_if(User::query()->exists(), 404);
 
         return view('setup');
     }

@@ -33,35 +33,30 @@
             </div>
         </x-page-header>
 
-        @php($revModes = $revisionModes ?? null)
-        @if($revModes && ($revModes['approved'] || $revModes['submitted']))
+        @php($revTabs = $revisions ?? [])
+        @if(count($revTabs) > 0)
             @php($revQuery = array_filter(array_merge(request()->query(), ['revisi' => null])))
-            <section aria-label="Mode revisi RKAS"
+            @php($activeRevId = $revision ?? ($latestApprovedId ?? null))
+            @php($activeRev = collect($revTabs)->firstWhere('id', $activeRevId) ?? collect($revTabs)->last())
+            <section aria-label="Revisi RKAS"
                 class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                <div class="ui-segment-group flex w-fit max-w-full overflow-x-auto" role="group" aria-label="Mode revisi RKAS">
-                    <a href="{{ route('rkas-budget.index', $revQuery) }}" wire:navigate
-                        aria-current="{{ ($revision ?? 'persetujuan') === 'persetujuan' ? 'true' : 'false' }}"
-                        class="whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm no-underline transition {{ ($revision ?? 'persetujuan') === 'persetujuan' ? 'font-bold text-[var(--theme-content-accent)]' : 'font-medium text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg-strong)]' }}"
-                        style="{{ ($revision ?? 'persetujuan') === 'persetujuan' ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">Persetujuan Terakhir</a>
-                    @if($revModes['hasPendingSubmission'])
-                        <a href="{{ route('rkas-budget.index', array_merge($revQuery, ['revisi' => 'pengajuan'])) }}" wire:navigate
-                            aria-current="{{ ($revision ?? '') === 'pengajuan' ? 'true' : 'false' }}"
-                            class="-ml-px whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm no-underline transition {{ ($revision ?? '') === 'pengajuan' ? 'font-bold text-[var(--theme-content-accent)]' : 'font-medium text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg-strong)]' }}"
-                            style="{{ ($revision ?? '') === 'pengajuan' ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">Pengajuan Terakhir</a>
-                    @else
-                        <span title="Belum ada pengajuan yang lebih baru dari persetujuan"
-                            class="-ml-px cursor-not-allowed whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2 text-sm font-medium text-[var(--ui-fg-muted)]">Pengajuan Terakhir</span>
-                    @endif
+                <div class="ui-segment-group flex w-fit max-w-full overflow-x-auto" role="group" aria-label="Revisi RKAS">
+                    @foreach($revTabs as $tabIndex => $tab)
+                        @php($isActive = $tab['id'] === ($activeRev['id'] ?? null))
+                        @php($isDefault = $tab['id'] === ($latestApprovedId ?? null))
+                        <a href="{{ $isDefault ? route('rkas-budget.index', $revQuery) : route('rkas-budget.index', array_merge($revQuery, ['revisi' => $tab['id']])) }}" wire:navigate
+                            aria-current="{{ $isActive ? 'true' : 'false' }}"
+                            title="{{ $tab['status'] === 'pending' ? 'Pengajuan menunggu persetujuan' : 'Revisi disetujui' }} · Pagu Rp {{ number_format((float) $tab['amount'], 0, ',', '.') }}"
+                            class="{{ $tabIndex > 0 ? '-ml-px' : '' }} whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm no-underline transition {{ $isActive ? 'font-bold text-[var(--theme-content-accent)]' : 'font-medium text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg-strong)]' }}"
+                            style="{{ $isActive ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">{{ $tab['status'] === 'pending' ? 'Pengajuan' : 'Pengesahan' }} ke-{{ $tab['seq'] ?? ($tabIndex + 1) }}</a>
+                    @endforeach
                 </div>
                 <div class="min-w-0 text-xs leading-5 text-[var(--ui-fg-muted)]">
-                    @if(($revision ?? 'persetujuan') === 'pengajuan' && $revModes['submitted'])
+                    @if(($activeRev['status'] ?? '') === 'pending')
                         <x-ui.status-badge status="PENDING" size="xs" />
-                        <span class="ml-1">Pengajuan {{ $revModes['submitted']['dateLabel'] }} · is_aktif 1 / is_approve 0 (menunggu persetujuan).</span>
-                    @elseif($revModes['approved'])
-                        <span>Disetujui {{ $revModes['approved']['dateLabel'] }}.</span>
-                        @if(! $revModes['hasPendingSubmission'])
-                            <span>Tidak ada pengajuan yang lebih baru.</span>
-                        @endif
+                        <span class="ml-1">Pengajuan ke-{{ $activeRev['seq'] ?? '' }} · {{ $activeRev['dateLabel'] }} (menunggu persetujuan).</span>
+                    @elseif($activeRev)
+                        <span>Pengesahan ke-{{ $activeRev['seq'] ?? '' }} · {{ $activeRev['dateLabel'] }}.</span>
                     @else
                         <span>Belum ada revisi tersinkron pada konteks ini.</span>
                     @endif

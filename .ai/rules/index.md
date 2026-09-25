@@ -179,7 +179,7 @@ resources/views/students/index.blade.php
 File berikut harus tetap untracked:
 
 ```text
-spj-bosp-web.code-workspace
+spj-bosp-web-console.code-workspace
 ```
 
 ## 11. Change scope discipline

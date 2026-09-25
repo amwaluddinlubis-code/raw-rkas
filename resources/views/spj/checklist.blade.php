@@ -40,7 +40,7 @@
             </div>
         </x-page-header>
 
-        @if($blockingCount > 0)
+        <?php if ($blockingCount > 0): ?>
             <section class="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900">
                 <p class="font-bold">Belum siap diberi nomor — {{ $blockingCount }} hal perlu dilengkapi.</p>
                 <p class="mt-0.5">Kerjakan berurutan dari nomor 1. Setiap baris menunjukkan di mana memperbaikinya (Paket atau Transaksi).</p>
@@ -64,7 +64,11 @@
                         </li>
                     @endforeach
                     @foreach($blockingRequirements as $index => $item)
-                        @php($fixUrl = $item['key'] === 'transaction_details' ? $transactionUrl.'#rincian-transaksi' : $packageUrl.'#spj-manual-form')
+                        @php
+                            $fixUrl = $item['key'] === 'transaction_details'
+                                ? $transactionUrl.'#rincian-transaksi'
+                                : $packageUrl.'#spj-manual-form';
+                        @endphp
                         <li class="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 gap-3">
                                 <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-black text-amber-800">{{ $failedChecks->count() + $index + 1 }}</span>
@@ -79,18 +83,18 @@
                     @endforeach
                 </ol>
             </section>
-        @else
+        <?php else: ?>
             <section class="rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-4 text-sm leading-6 text-emerald-900">
                 <p class="font-bold">Semua kebutuhan wajib lengkap — paket siap dilanjutkan.</p>
-                @if($canMarkReady)
+                <?php if ($canMarkReady): ?>
                     <p class="mt-0.5">Gunakan tombol “Tandai siap diproses” di atas untuk melanjutkan ke penomoran.</p>
-                @elseif($package->status !== 'DRAFT')
+                <?php elseif ($package->status !== 'DRAFT'): ?>
                     <p class="mt-2"><x-ui.status-badge :status="$package->status" /></p>
-                @elseif(!$canEdit)
+                <?php elseif (! $canEdit): ?>
                     <p class="mt-0.5">Mode pemeriksa: data dapat dilihat, tetapi status paket tidak dapat diubah.</p>
-                @endif
+                <?php endif; ?>
             </section>
-        @endif
+        <?php endif; ?>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -102,7 +106,7 @@
                     <x-ui.field label="Pola kegiatan">
                         <x-ui.select name="pola" onchange="this.form.submit()">
                             @foreach($externalPatterns as $patternKey => $pattern)
-                                <option value="{{ $patternKey }}" @selected($patternKey === $externalPatternKey)>{{ $pattern['label'] }}</option>
+                                <option value="{{ $patternKey }}" {{ $patternKey === $externalPatternKey ? 'selected' : '' }}>{{ $pattern['label'] }}</option>
                             @endforeach
                         </x-ui.select>
                     </x-ui.field>
@@ -114,6 +118,7 @@
                         $item = $externalItems[$itemKey];
                         $isGenerated = $item['source'] === 'generated';
                         $isChecked = in_array($itemKey, $externalCheckedKeys, true);
+                        $canToggleExternal = ! $isGenerated && $canEdit && $package->isEditable();
                     @endphp
                     <li class="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-center gap-2.5">
@@ -121,16 +126,14 @@
                             <p class="min-w-0 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $item['label'] }}</p>
                             <x-ui.badge variant="neutral">{{ $isGenerated ? 'Aplikasi' : 'Manual' }}</x-ui.badge>
                         </div>
-                        @if(!$isGenerated && $canEdit && $package->isEditable())
-                            <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="shrink-0">
-                                @csrf
-                                <input type="hidden" name="item_key" value="{{ $itemKey }}">
-                                <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
-                                <x-ui.button variant="secondary" type="submit" class="text-xs">{{ $isChecked ? 'Batalkan tanda' : 'Tandai tersedia' }}</x-ui.button>
-                            </form>
-                        @elseif($isGenerated)
-                            <span class="shrink-0 text-xs text-[var(--ui-fg-muted)]">Ikut status A2 di atas</span>
-                        @endif
+                        <span class="{{ $isGenerated ? 'shrink-0 text-xs text-[var(--ui-fg-muted)]' : 'hidden' }}">Ikut status A2 di atas</span>
+                        <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="{{ $canToggleExternal ? 'shrink-0' : 'hidden' }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="item_key" value="{{ $itemKey }}">
+                            <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
+                            <x-ui.button variant="secondary" type="submit" class="text-xs">{{ $isChecked ? 'Batalkan tanda' : 'Tandai tersedia' }}</x-ui.button>
+                        </form>
+                        <span class="{{ ! $isGenerated && ! $canToggleExternal ? 'shrink-0 text-xs text-[var(--ui-fg-muted)]' : 'hidden' }}">Tidak dapat diubah pada status/peran saat ini</span>
                     </li>
                 @endforeach
             </ul>
@@ -148,7 +151,7 @@
             </ul>
         </details>
 
-        @if($optionalMissing->isNotEmpty() || $notApplicable->isNotEmpty())
+        <?php if ($optionalMissing->isNotEmpty() || $notApplicable->isNotEmpty()): ?>
             <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <summary class="cursor-pointer px-5 py-3 text-sm font-bold text-[var(--ui-fg-muted)]">Opsional / tidak berlaku ({{ $optionalMissing->count() + $notApplicable->count() }}) — tidak memblokir</summary>
                 <ul class="divide-y divide-[var(--ui-line)] border-t border-[var(--ui-line)]">
@@ -160,6 +163,6 @@
                     @endforeach
                 </ul>
             </details>
-        @endif
+        <?php endif; ?>
     </div>
 </x-layouts.tailwind-app>

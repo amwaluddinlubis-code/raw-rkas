@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Skenario Pengguna & Alur Kerja
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-25**
 
 Dokumen ini menjelaskan alur aplikasi dari perspektif pengguna, terutama operator sekolah. Dokumen ini bukan sumber status release. Gunakan:
 
@@ -525,7 +525,7 @@ faktur, nota pesanan/pembayaran, dan foto/dokumentasi kegiatan adalah
 checklist **eksternal manual** (tidak di-generate aplikasi).
 
 Acuan 10 pola “Lampiran Bukti Dukung SPJ” + pemetaan kategori canonical ada di
-`SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` (status RVR, belum validasi otomatis).
+`SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` (fase 1 checklist manual sudah implemented dan non-blocking; aturan/validasi otomatis lanjutan masih RVR).
 Kategori canonical tetap 6 (`BARANG`, `KONSUMSI`, `PEMELIHARAAN`,
 `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`); SiPlah tetap channel.
 

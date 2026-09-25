@@ -1,24 +1,24 @@
 # ARCHITECTURE
 
-Terverifikasi terhadap kode: **2026-09-12**. Detail arsitektur lengkap tetap di `docs/ARCHITECTURE_COMPLETE.md`; berkas ini adalah peta ringkas yang digenerate dari struktur riil.
+Terverifikasi ulang terhadap tree/source branch audit: **2026-09-25**. Detail arsitektur lengkap tetap di `docs/ARCHITECTURE_COMPLETE.md`; berkas ini adalah peta ringkas yang digenerate dari struktur riil.
 
 ## Struktur folder (`app/`)
 
 ```text
 app/
-├── Console/Commands/   # 11 command operasional spj:*, arkas:*, employees:*
+├── Console/Commands/   # 13 command operasional/domain
 ├── Http/
 │   ├── Controllers/    # thin controller: validasi ringan → delegasi UseCase
 │   └── Middleware/     # EnsureActiveSchool, EnsureActiveFiscalYear,
 │                       # EnsureSpjActiveContext, EnsureAdministrator,
 │                       # EnsureOperatorOrAdministrator (+ global MeasureRequestPerformance)
-├── Livewire/           # 4 komponen: TransactionsTable, RkasTable,
-│                       # RkasBudgetTable, RkasBudgetFilter
+├── Livewire/           # 32 component aktif: dashboard, transaksi, SPJ,
+│                       # laporan, database, pegawai, pajak, RKAS, dll.
 ├── Models/             # Eloquent central (default) & tenant (connection school)
-├── Services/           # ~50 service: sync, numbering, template, identity, audit
+├── Services/           # 79 service: mirror/sync, numbering, template, report, identity, audit, dll.
 ├── Support/            # ActiveSpjContext (konteks tenant per-request)
 └── UseCases/
-    ├── Spj/            # 15 use case domain SPJ (lifecycle, numbering,
+    ├── Spj/            # 19 use case domain SPJ (lifecycle, numbering,
     │                   # rollback, settlement, report, workspace, ...)
     └── DocumentTemplates/
 ```

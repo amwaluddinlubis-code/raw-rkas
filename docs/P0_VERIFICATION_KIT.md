@@ -1,6 +1,6 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-14**
+Terakhir diperbarui: **2026-09-25**
 
 Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release authoritative berada di `CURRENT_PROGRESS.md`.
 
@@ -8,7 +8,27 @@ Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang.
 
 Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini dan tidak boleh mempromosikan commit docs-only sebagai code gate baru.
 
-Latest completed green source gate:
+Latest source gate status (audit branch):
+
+```text
+branch             : hardening/raw-rkas-audit
+source commit      : 2b854f1b9f6a7f7501a3803acbaacb2035cd85f3
+CI run             : 36112716405 (#15)
+workflow           : SPJ Critical Verification
+result             : SUCCESS
+artifact guard     : PASS
+composer/platform  : PASS
+frontend build     : PASS
+blade compile      : PASS
+checklist PHP lint : PASS
+SPJ Critical       : PASS / 329 tests / 2,568 assertions
+Full Unit          : PASS / 79 tests / 281 assertions
+Full Feature       : PASS / 563 tests / 4,005 assertions
+```
+
+Run #15 menutup regression parse pada `resources/views/spj/checklist.blade.php`. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak dianggap sebagai code gate baru. Historical green baseline tetap dipertahankan untuk konteks dependency/platform lama.
+
+Latest historical completed green source gate:
 
 ```text
 commit        : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
@@ -92,9 +112,9 @@ test: align description UI contract with service delegation
 
 CI #480 menjadi historical green baseline sebelum Laravel 13/TALL migration. Tidak ada lifecycle, numbering, safe-sync, tenant ownership, atau authorization rule yang diubah untuk membuat gate tersebut hijau. Current canonical gate sekarang #486.
 
-### Coverage penting yang dipertahankan gate #486
+### Coverage penting historical gate #486
 
-Current SPJ Critical/Unit/Feature gate mencakup dan mempertahankan functional regression untuk:
+Historical green SPJ Critical/Unit/Feature gate #486 mencakup functional regression untuk:
 
 - six-category SPJ lifecycle;
 - NUMBERED/FINAL description correction contract;

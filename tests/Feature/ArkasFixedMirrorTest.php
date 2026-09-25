@@ -65,7 +65,9 @@ class ArkasFixedMirrorTest extends TestCase
             'message' => 'Sinkronisasi tabel 5/13 (ref_kode) …',
         ]);
 
-        $response = $this->actingAs($admin)->getJson(route('arkas.mirror.status'));
+        $response = $this->actingAs($admin)
+            ->withSession(['active_school_id' => $school->id])
+            ->getJson(route('arkas.mirror.status'));
 
         $response->assertOk()
             ->assertJsonPath('refs.status', 'RUNNING')

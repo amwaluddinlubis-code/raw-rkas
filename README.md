@@ -1,10 +1,13 @@
 # SPJ BOSP Web
 
-Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Branch pengembangan aktif: `gui-standardization`.
+Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Default branch repository adalah `main`; audit/hardening aktif saat pembaruan ini berada di `hardening/raw-rkas-audit`.
 
-Terakhir diverifikasi terhadap kode: **2026-09-14**.
+Terakhir diverifikasi terhadap source repository: **2026-09-25**.
 
 ## Status branch saat ini
+
+Audit repository 2026-09-25 memverifikasi bahwa branch `hardening/raw-rkas-audit` berada pada commit `6746a2052398cb098b76028e7aa08efe2aa48d37`. Workflow **SPJ Critical Verification** run `35993431668` selesai **FAILURE**: artifact guard, dependency install, frontend build, Blade compile, dan SPJ Critical tests PASS; kegagalan terjadi pada **Full Unit test suite**, sehingga Full Feature suite tidak dijalankan. Karena itu HEAD audit **belum boleh dipromosikan sebagai green release gate**. Historical green gate tetap dicatat di `docs/P0_VERIFICATION_KIT.md`.
+
 
 Root README adalah entry point project, bukan sumber angka/checkpoint release yang harus dipelihara terpisah. Jangan menyalin hash commit, nomor CI, atau jumlah test/assertion ke berkas ini karena cepat menjadi stale.
 
@@ -40,7 +43,7 @@ FINAL RELEASE   : NOT YET
 
 - PHP 8.3+ dengan ekstensi `sqlite3`, `mbstring`, `xml`, `gd`/`imagick` (untuk render dokumen), `zip`
 - Composer 2, Node.js 18+ (CI memakai Node.js 22; Vite 6 + Tailwind 4)
-- Git (branch kerja: `gui-standardization`)
+- Git (branch aktif repository mirror: `main`)
 
 ## Instalasi lokal
 

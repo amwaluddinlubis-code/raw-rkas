@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-11**
 
-Dokumen ini adalah sumber **keputusan bisnis/domain permanen** untuk branch `gui-standardization`.
+Dokumen ini adalah sumber **keputusan bisnis/domain permanen** untuk branch aktif `main` di repository mirror `raw-rkas`.
 
 Dokumen ini tidak menyatakan status implementasi. Gunakan:
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
@@ -57,6 +58,16 @@ class Employee extends Model
         }
 
         return $sources !== [] ? implode(' + ', $sources) : 'Manual';
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(EmployeeCertificate::class)->orderByDesc('issued_date')->orderByDesc('id');
+    }
+
+    public function latestCertificate(string $kind): ?EmployeeCertificate
+    {
+        return $this->certificates->firstWhere('kind', $kind);
     }
 
     protected function casts(): array
