@@ -8,13 +8,12 @@ Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang.
 
 Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini dan tidak boleh mempromosikan commit docs-only sebagai code gate baru.
 
-Latest verified source gate before single-branch consolidation:
+Latest verified source gate pada branch aktif:
 
 ```text
 active branch      : main
-source commit      : 2b854f1b9f6a7f7501a3803acbaacb2035cd85f3
-merged via         : PR #1 -> main
-CI run             : 36112716405 (#15)
+source commit      : 24a19333889ddf73614ad7a2a69dd6b7f12a768f
+CI run             : 36117781823 (#22)
 workflow           : SPJ Critical Verification
 result             : SUCCESS
 artifact guard     : PASS
@@ -24,10 +23,11 @@ blade compile      : PASS
 checklist PHP lint : PASS
 SPJ Critical       : PASS / 329 tests / 2,568 assertions
 Full Unit          : PASS / 79 tests / 281 assertions
-Full Feature       : PASS / 563 tests / 4,005 assertions
+Full Feature       : PASS / 569 tests / 4,050 assertions
+Pint advisory      : 3 pre-existing style issues
 ```
 
-Run #15 menutup regression parse pada `resources/views/spj/checklist.blade.php`. Evidence code gate melekat pada source commit di atas, yang kemudian digabung ke `main`; commit dokumentasi sesudahnya tidak dianggap sebagai code gate baru. Historical green baseline tetap dipertahankan untuk konteks dependency/platform lama.
+Run #22 membuktikan regression gate setelah audit fitur SK pegawai. Hardening yang tercakup: MIME server + ekstensi untuk PDF/JPEG/PNG, replacement file tanpa menghapus file lama sebelum storage+DB sukses, nama file unik dengan suffix random, cleanup pindaian saat SK/pegawai dihapus, dan boundary mutation/read route. `EmployeeCertificateTest` PASS sebagai bagian Full Feature suite. Tiga issue Pint advisory sudah identik pada run #19 sebelum commit SK sehingga dicatat sebagai debt pra-eksis, bukan regression gate ini. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak menjadi code gate baru.
 
 Latest historical completed green source gate:
 

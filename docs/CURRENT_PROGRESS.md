@@ -7,15 +7,35 @@ Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchroniz
 
 ---
 
-## Repository + documentation audit (2026-09-25)
+## Current main audit + SK file regression hardening (2026-09-25)
 
-Status: **AUDIT COMPLETE / DOCS SYNCHRONIZED / CURRENT AUDIT SOURCE GATE GREEN**.
+Status: **AUDIT COMPLETE / CURRENT MAIN SOURCE GATE GREEN**.
 
-Evidence GitHub untuk source commit audit `2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`, yang kemudian digabung ke `main` melalui PR #1:
+Audit dimulai dari `main@89e1866d7b9fecc6197ad71ec9674c6fa6a3d614` (`feat: tab SK kanonis + upload unduh pindaian SK`). Baseline commit tersebut sudah hijau pada CI run #20, tetapi audit source menemukan gap data-integrity yang belum dibuktikan regression:
+
+- upload hanya memeriksa ekstensi, sehingga file berkonten salah yang menyamar sebagai PDF/JPG/PNG belum ditolak berdasarkan MIME server;
+- penggantian pindaian menghapus file lama sebelum file baru pasti tersimpan, sehingga storage failure dapat meninggalkan metadata/file tidak konsisten;
+- nama file hanya unik sampai detik dan berisiko collision untuk kind+nama file yang sama;
+- penghapusan pegawai meng-cascade row `employee_certificates`, tetapi file pindaian fisik berpotensi menjadi orphan;
+- test upload awal memakai `withoutMiddleware()` dan belum mengunci boundary route mutation vs read.
+
+Hardening ditutup pada:
+
+```text
+ffa049a4589dd8fc650906eccc1796a3c6b5f60a
+fix: harden employee SK file regression
+
+24a19333889ddf73614ad7a2a69dd6b7f12a768f
+fix: clean up employee SK files on delete
+```
+
+Kontrak setelah hardening: validasi file memakai ekstensi + MIME server, file pengganti disimpan sebelum metadata DB diubah dan file lama baru dibuang setelah update DB sukses, nama file mendapat suffix random untuk mencegah collision, serta delete SK/pegawai membersihkan file setelah delete DB berhasil. Regression baru mencakup MIME spoof, replace sukses, replace gagal, boundary route, dan cleanup file saat pegawai dihapus.
+
+Evidence GitHub untuk source HEAD `main@24a19333889ddf73614ad7a2a69dd6b7f12a768f`:
 
 ```text
 WORKFLOW              : SPJ Critical Verification
-RUN                   : 36112716405 (#15)
+RUN                   : 36117781823 (#22)
 ARTIFACT GUARD        : PASS
 COMPOSER CHECKS       : PASS
 FRONTEND BUILD        : PASS
@@ -23,11 +43,12 @@ BLADE COMPILE         : PASS
 CHECKLIST PHP LINT    : PASS
 SPJ CRITICAL          : PASS / 329 tests / 2,568 assertions
 FULL UNIT             : PASS / 79 tests / 281 assertions
-FULL FEATURE          : PASS / 563 tests / 4,005 assertions
+FULL FEATURE          : PASS / 569 tests / 4,050 assertions
+EMPLOYEE CERTIFICATE  : PASS
 RESULT                : SUCCESS
 ```
 
-Regression yang menahan run sebelumnya berada di `resources/views/spj/checklist.blade.php`: directive inline `@php(...)` menghasilkan PHP terkompilasi yang tidak tertutup dan baru gagal pada token `else`. Assignment `$fixUrl` kini memakai blok `@php ... @endphp`; artifact diagnostic run #15 membuktikan `php -l` pada hasil compile tidak lagi menemukan syntax error, dan `WebRouteSmokeTest` kembali lewat sebagai bagian Full Feature suite. Historical green gate tetap dipertahankan sebagai baseline lama, sedangkan run #15 menjadi evidence source gate audit sebelum konsolidasi ke `main`. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
+Pint tetap advisory dan melaporkan 3 style issue lama pada `VerifyMirrorBackfill.php`, `TmpAuditDebugTest.php`, dan `tests/bootstrap.php`. Tiga issue yang sama sudah ada pada run #19 sebelum fitur SK terbaru, sehingga bukan regression commit ini. Node action juga masih menghasilkan warning deprecation non-blocking. Browser/operator runtime untuk UI tab/upload SK tetap **RVR**; CI membuktikan functional/regression gate, bukan visual/runtime operator evidence.
 
 ## Repository containment hardening (2026-09-24)
 
@@ -346,23 +367,22 @@ Definisi status:
 ### Latest successful canonical code gate
 
 ```text
-LATEST SUCCESSFUL CODE HEAD: ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
-LATEST SUCCESSFUL CODE GATE: CI #486 / run 34853857969 / SUCCESS
+LATEST SUCCESSFUL CODE HEAD: 24a19333889ddf73614ad7a2a69dd6b7f12a768f
+LATEST SUCCESSFUL CODE GATE: run 36117781823 (#22) / SUCCESS
 WORKFLOW                   : SPJ Critical Verification
 COMPOSER VALIDATE          : PASS
 LOCKED PLATFORM CHECK      : PASS pada PHP 8.3
 COMPOSER INSTALL           : PASS dari committed lock
-REPOSITORY PINT            : PASS pada gate #486
+REPOSITORY PINT            : ADVISORY / 3 pre-existing style issues
 FRONTEND BUILD             : PASS
 BLADE COMPILE              : PASS
-SPJ CRITICAL               : PASS
-FULL UNIT                  : PASS
-FULL FEATURE               : PASS
+CHECKLIST PHP LINT         : PASS
+SPJ CRITICAL               : PASS / 329 tests / 2,568 assertions
+FULL UNIT                  : PASS / 79 tests / 281 assertions
+FULL FEATURE               : PASS / 569 tests / 4,050 assertions
 ```
 
-CI #486 adalah gate sukses canonical terbaru untuk code head `ba8fa0b...`. Gate ini membuktikan dependency lock dapat di-install secara deterministik pada PHP 8.3, lalu frontend build, Blade compile, SPJ Critical, full Unit, dan full Feature semuanya selesai sukses.
-
-Commit dokumentasi setelah `ba8fa0b...` tidak menggantikan code gate tersebut selama tidak mengubah source/runtime yang digate.
+Run #22 adalah code gate canonical terbaru untuk `main`. Ia mencakup hardening upload/replace/delete pindaian SK dan regression baru di `EmployeeCertificateTest`. Tiga style issue Pint tetap diklasifikasikan sebagai debt pra-eksis karena identik dengan run #19; workflow mempertahankan Pint sebagai advisory. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
 
 ### P0 dependency-platform repair — CI #483 → #486
 
@@ -443,8 +463,8 @@ Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 asserti
 ## Status release saat ini
 
 ```text
-FUNCTIONAL BASELINE : PASS pada ba8fa0b... / CI #486
-CURRENT CODE GATE   : GREEN / CI #486
+FUNCTIONAL BASELINE : PASS
+CURRENT CODE GATE   : GREEN / main@24a19333 / run #22
 REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang terdokumentasi
 GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
 TEMPLATE OFFICE QA : RVR
