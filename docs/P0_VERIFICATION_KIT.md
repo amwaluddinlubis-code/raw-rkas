@@ -8,11 +8,12 @@ Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang.
 
 Evidence gate hidup di bagian ini. Dokumen lain wajib me-link ke sini dan tidak boleh mempromosikan commit docs-only sebagai code gate baru.
 
-Latest source gate status (audit branch):
+Latest verified source gate before single-branch consolidation:
 
 ```text
-branch             : hardening/raw-rkas-audit
+active branch      : main
 source commit      : 2b854f1b9f6a7f7501a3803acbaacb2035cd85f3
+merged via         : PR #1 -> main
 CI run             : 36112716405 (#15)
 workflow           : SPJ Critical Verification
 result             : SUCCESS
@@ -26,7 +27,7 @@ Full Unit          : PASS / 79 tests / 281 assertions
 Full Feature       : PASS / 563 tests / 4,005 assertions
 ```
 
-Run #15 menutup regression parse pada `resources/views/spj/checklist.blade.php`. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak dianggap sebagai code gate baru. Historical green baseline tetap dipertahankan untuk konteks dependency/platform lama.
+Run #15 menutup regression parse pada `resources/views/spj/checklist.blade.php`. Evidence code gate melekat pada source commit di atas, yang kemudian digabung ke `main`; commit dokumentasi sesudahnya tidak dianggap sebagai code gate baru. Historical green baseline tetap dipertahankan untuk konteks dependency/platform lama.
 
 Latest historical completed green source gate:
 
