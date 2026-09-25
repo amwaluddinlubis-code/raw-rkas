@@ -31,24 +31,26 @@ fix: clean up employee SK files on delete
 
 Kontrak setelah hardening: validasi file memakai ekstensi + MIME server, file pengganti disimpan sebelum metadata DB diubah dan file lama baru dibuang setelah update DB sukses, nama file mendapat suffix random untuk mencegah collision, serta delete SK/pegawai membersihkan file setelah delete DB berhasil. Regression baru mencakup MIME spoof, replace sukses, replace gagal, boundary route, dan cleanup file saat pegawai dihapus.
 
-Evidence GitHub untuk source HEAD `main@24a19333889ddf73614ad7a2a69dd6b7f12a768f`:
+Evidence GitHub untuk source HEAD `main@ac75b5bed646be70a4a2688512f75fbc6b55c46a`:
 
 ```text
 WORKFLOW              : SPJ Critical Verification
-RUN                   : 36117781823 (#22)
+RUN                   : 36120237766 (#25)
 ARTIFACT GUARD        : PASS
 COMPOSER CHECKS       : PASS
+REPOSITORY PINT       : PASS / 495 files
 FRONTEND BUILD        : PASS
 BLADE COMPILE         : PASS
 CHECKLIST PHP LINT    : PASS
-SPJ CRITICAL          : PASS / 329 tests / 2,568 assertions
+SPJ CRITICAL          : PASS / 330 tests / 2,570 assertions
 FULL UNIT             : PASS / 79 tests / 281 assertions
-FULL FEATURE          : PASS / 569 tests / 4,050 assertions
+FULL FEATURE          : PASS / 569 tests / 4,051 assertions
 EMPLOYEE CERTIFICATE  : PASS
+QUARTER AUDIT         : PASS
 RESULT                : SUCCESS
 ```
 
-Pint tetap advisory dan melaporkan 3 style issue lama pada `VerifyMirrorBackfill.php`, `TmpAuditDebugTest.php`, dan `tests/bootstrap.php`. Tiga issue yang sama sudah ada pada run #19 sebelum fitur SK terbaru, sehingga bukan regression commit ini. Node action juga masih menghasilkan warning deprecation non-blocking. Browser/operator runtime untuk UI tab/upload SK tetap **RVR**; CI membuktikan functional/regression gate, bukan visual/runtime operator evidence.
+Debt test/style pra-eksis juga ditutup tanpa mengubah business rule: coverage schema tenant tidak lengkap dipindahkan dari `TmpAuditDebugTest` ke `SpjQuarterAuditCommandTest` dengan assertion nyata, file debug sementara dihapus, dan issue Pint pada `VerifyMirrorBackfill.php` serta `tests/bootstrap.php` dibersihkan. Run #25 membuktikan Pint 495 file bersih dan seluruh regression gate tetap hijau. Browser/operator runtime untuk UI tab/upload SK tetap **RVR**; CI membuktikan functional/regression gate, bukan visual/runtime operator evidence.
 
 ## Repository containment hardening (2026-09-24)
 
@@ -367,22 +369,22 @@ Definisi status:
 ### Latest successful canonical code gate
 
 ```text
-LATEST SUCCESSFUL CODE HEAD: 24a19333889ddf73614ad7a2a69dd6b7f12a768f
-LATEST SUCCESSFUL CODE GATE: run 36117781823 (#22) / SUCCESS
+LATEST SUCCESSFUL CODE HEAD: ac75b5bed646be70a4a2688512f75fbc6b55c46a
+LATEST SUCCESSFUL CODE GATE: run 36120237766 (#25) / SUCCESS
 WORKFLOW                   : SPJ Critical Verification
 COMPOSER VALIDATE          : PASS
 LOCKED PLATFORM CHECK      : PASS pada PHP 8.3
 COMPOSER INSTALL           : PASS dari committed lock
-REPOSITORY PINT            : ADVISORY / 3 pre-existing style issues
+REPOSITORY PINT            : PASS / 495 files
 FRONTEND BUILD             : PASS
 BLADE COMPILE              : PASS
 CHECKLIST PHP LINT         : PASS
-SPJ CRITICAL               : PASS / 329 tests / 2,568 assertions
+SPJ CRITICAL               : PASS / 330 tests / 2,570 assertions
 FULL UNIT                  : PASS / 79 tests / 281 assertions
-FULL FEATURE               : PASS / 569 tests / 4,050 assertions
+FULL FEATURE               : PASS / 569 tests / 4,051 assertions
 ```
 
-Run #22 adalah code gate canonical terbaru untuk `main`. Ia mencakup hardening upload/replace/delete pindaian SK dan regression baru di `EmployeeCertificateTest`. Tiga style issue Pint tetap diklasifikasikan sebagai debt pra-eksis karena identik dengan run #19; workflow mempertahankan Pint sebagai advisory. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
+Run #25 adalah code gate canonical terbaru untuk `main`. Ia mencakup hardening upload/replace/delete pindaian SK, regression baru di `EmployeeCertificateTest`, canonical regression schema-incomplete pada `SpjQuarterAuditCommandTest`, penghapusan test debug sementara, dan repository Pint yang kembali bersih. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
 
 ### P0 dependency-platform repair — CI #483 → #486
 

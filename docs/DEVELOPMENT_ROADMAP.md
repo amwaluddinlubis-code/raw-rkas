@@ -20,7 +20,7 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 **Status: HISTORICAL GREEN BASELINE COMPLETE / MAIN SOURCE GATE GREEN.**
 
-CI #486 tetap historical green baseline untuk dependency/platform + authorization hardening. Current source gate berada pada `main@24a19333889ddf73614ad7a2a69dd6b7f12a768f`; GitHub Actions run `36117781823` (#22) selesai **SUCCESS** setelah audit dan hardening upload/replace/delete pindaian SK pegawai. Artifact guard, Composer/platform, frontend build, Blade compile, checklist compiled-PHP lint, SPJ Critical (329), Full Unit (79), dan Full Feature (569) semuanya PASS. Pint advisory masih memuat tiga style issue pra-eksis; browser/operator runtime tetap RVR.
+CI #486 tetap historical green baseline untuk dependency/platform + authorization hardening. Current source gate berada pada `main@ac75b5bed646be70a4a2688512f75fbc6b55c46a`; GitHub Actions run `36120237766` (#25) selesai **SUCCESS** setelah audit/hardening pindaian SK dan cleanup regression harness. Artifact guard, Composer/platform, Repository Pint (495 file), frontend build, Blade compile, checklist compiled-PHP lint, SPJ Critical (330), Full Unit (79), dan Full Feature (569) semuanya PASS. Browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -97,7 +97,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis, dan **current `main` source gate hijau** pada run #22. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis, dan **current `main` source gate hijau** pada run #25. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 

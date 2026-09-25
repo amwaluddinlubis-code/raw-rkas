@@ -12,22 +12,22 @@ Latest verified source gate pada branch aktif:
 
 ```text
 active branch      : main
-source commit      : 24a19333889ddf73614ad7a2a69dd6b7f12a768f
-CI run             : 36117781823 (#22)
+source commit      : ac75b5bed646be70a4a2688512f75fbc6b55c46a
+CI run             : 36120237766 (#25)
 workflow           : SPJ Critical Verification
 result             : SUCCESS
 artifact guard     : PASS
 composer/platform  : PASS
+Repository Pint    : PASS / 495 files
 frontend build     : PASS
 blade compile      : PASS
 checklist PHP lint : PASS
-SPJ Critical       : PASS / 329 tests / 2,568 assertions
+SPJ Critical       : PASS / 330 tests / 2,570 assertions
 Full Unit          : PASS / 79 tests / 281 assertions
-Full Feature       : PASS / 569 tests / 4,050 assertions
-Pint advisory      : 3 pre-existing style issues
+Full Feature       : PASS / 569 tests / 4,051 assertions
 ```
 
-Run #22 membuktikan regression gate setelah audit fitur SK pegawai. Hardening yang tercakup: MIME server + ekstensi untuk PDF/JPEG/PNG, replacement file tanpa menghapus file lama sebelum storage+DB sukses, nama file unik dengan suffix random, cleanup pindaian saat SK/pegawai dihapus, dan boundary mutation/read route. `EmployeeCertificateTest` PASS sebagai bagian Full Feature suite. Tiga issue Pint advisory sudah identik pada run #19 sebelum commit SK sehingga dicatat sebagai debt pra-eksis, bukan regression gate ini. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak menjadi code gate baru.
+Run #25 membuktikan regression gate setelah audit fitur SK pegawai dan cleanup harness. Hardening yang tercakup: MIME server + ekstensi untuk PDF/JPEG/PNG, replacement file tanpa menghapus file lama sebelum storage+DB sukses, nama file unik dengan suffix random, cleanup pindaian saat SK/pegawai dihapus, dan boundary mutation/read route. `EmployeeCertificateTest` PASS sebagai bagian Full Feature suite. Coverage schema tenant tidak lengkap kini berada di `SpjQuarterAuditCommandTest` dengan assertion nyata, `TmpAuditDebugTest` sudah dihapus, dan Repository Pint kembali PASS untuk 495 file. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak menjadi code gate baru.
 
 Latest historical completed green source gate:
 
