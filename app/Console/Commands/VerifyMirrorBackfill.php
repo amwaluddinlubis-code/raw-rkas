@@ -41,6 +41,7 @@ class VerifyMirrorBackfill extends Command
             $exp = $expected[$tx->id] ?? null;
             if (! $exp) {
                 $this->warn("Transaksi {$tx->id} tidak ada di backup (data baru pasca-backup).");
+
                 continue;
             }
             $model = Transaction::query()->with('items')->find($tx->id);
@@ -48,6 +49,7 @@ class VerifyMirrorBackfill extends Command
             if (! $source) {
                 $this->error("Transaksi {$tx->id}: mirror KOSONG.");
                 $mismatch++;
+
                 continue;
             }
             $checked++;
