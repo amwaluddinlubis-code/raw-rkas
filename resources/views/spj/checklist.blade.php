@@ -64,7 +64,11 @@
                         </li>
                     @endforeach
                     @foreach($blockingRequirements as $index => $item)
-                        @php($fixUrl = $item['key'] === 'transaction_details' ? $transactionUrl.'#rincian-transaksi' : $packageUrl.'#spj-manual-form')
+                        @php
+                            $fixUrl = $item['key'] === 'transaction_details'
+                                ? $transactionUrl.'#rincian-transaksi'
+                                : $packageUrl.'#spj-manual-form';
+                        @endphp
                         <li class="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex min-w-0 gap-3">
                                 <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-amber-100 text-xs font-black text-amber-800">{{ $failedChecks->count() + $index + 1 }}</span>
