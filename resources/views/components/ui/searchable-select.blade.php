@@ -18,9 +18,6 @@
         return ['value' => (string) $optionValue, 'label' => (string) $label];
     })->values()->all();
     $selectedValue = old($name, $value);
-    $selectedExpression = $wireModel
-        ? '$wire.entangle('.json_encode($wireModel, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT).').live'
-        : json_encode((string) $selectedValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $optionsExpression = json_encode($normalizedOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
     $placeholderExpression = json_encode($placeholder, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 @endphp
@@ -28,7 +25,7 @@
 <div x-data="{
     open: false,
     search: '',
-    selected: {{ $selectedExpression }},
+    selected: @if ($wireModel) @entangle($wireModel).live @else {{ json_encode((string) $selectedValue, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }} @endif,
     options: {{ $optionsExpression }},
     get selectedLabel() {
         return this.options.find(option => option.value === String(this.selected))?.label || {{ $placeholderExpression }};

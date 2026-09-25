@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchronization, `raw-rkas`)
+Terakhir diperbarui: **2026-09-25** (repository audit + authenticated route performance sweep, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
@@ -761,6 +761,25 @@ Audit static route terhadap 132 route non-vendor menemukan ketidakkonsistenan su
 Evidence timing dari `storage/logs/performance-2026-09-19.log` menunjukkan masalah performa nyata masih perlu RVR/browser follow-up: `transactions.index` 9--12 detik, `spj.index` maksimum 28,9 detik, `references.index` maksimum 13,7 detik, dan `database-manager.index` maksimum 9,4 detik. Penyebab terbesar yang teridentifikasi adalah scan JSON tanpa indeks pada referensi, agregasi mirror berulang pada halaman SPJ, dan route penganggaran-RKAS yang masih memakai tabel normalisasi legacy.
 
 Update: `ArkasMirrorBudgetService` sekarang menjadi adapter utama untuk `/penganggaran-rkas` dan `RkasBudgetFilter`. Pagu, periode, realisasi, hierarki, filter program/subprogram/kegiatan, dan pencarian membaca `arkas_mirror_rapbs`, `arkas_mirror_rapbs_periode`, `arkas_mirror_kas_umum`, serta `arkas_mirror_ref_kode`. Snapshot mirror melakukan preload referensi dan cache per request. Snapshot memilih revisi RKAS terakhir dengan kontrak ARKASBridge: per tahun+sumber dana, urut `IS_AKTIF`, `IS_APPROVE`, `LAST_UPDATE`, lalu `CREATE_DATE`, kemudian hanya memakai `rapbs` yang menunjuk ke `ID_ANGGARAN` tersebut. Kontrak tampilan direvisi 2026-09-24 (permintaan operator): halaman penganggaran menampilkan tab per revisi — seluruh revisi yang disetujui (kronologis) ditambah tab pengajuan terakhir bila masih ada yang belum disetujui; default tab persetujuan terakhir; satu tab = satu snapshot `ID_ANGGARAN` (`ArkasMirrorBudgetService::revisions()`). Label tab "Pengesahan ke-N"/"Pengajuan ke-N" tanpa tanggal (tanggal di teks info + tooltip); tanggal pengesahan dari kolom `tanggal_pengesahan`, pengajuan dari `tanggal_pengajuan`. Revisi: BKU menaut ke rapbs revisi berjalan sehingga tab lama nol realisasi — ditambah fallback identitas pos (`ID_REF_KODE|rekening|uraian`, sisa proporsional pagu, direct didahulukan; total tetap pas, view terbaru tidak berubah; scope identitas lewat record anggaran agar uang tahun lain tidak bocor lintas tahun). Volume tahunan fallback `VOLUME_TOTAL` → `VOLUME` untuk payload skema huruf kecil. Jalur tabel legacy masih ada sebagai fallback untuk database yang belum memiliki mirror; pada database dengan `arkas_mirror_rapbs`, jalur tersebut tidak dieksekusi. Regression runtime mirror tetap RVR karena database testing lokal mengalami `disk I/O`/`no such table: schools` setelah batch test sebelumnya.
+
+## Authenticated route performance sweep + searchable-select fix 2026-09-25
+
+Status: **FUNCTIONAL FIX PASS / SHELL RUNTIME EVIDENCE / BROWSER RUNTIME RVR**.
+
+Perbaikan yang diterapkan:
+
+- komponen `x-ui.searchable-select` memakai directive `@entangle(...).live` canonical ketika berada di dalam Livewire, menggantikan ekspresi string `$wire.entangle(...)` yang menghasilkan error browser `$wire is not defined` pada tab Paket SPJ;
+- import `DB` ganda pada model transaksi dibersihkan sehingga bootstrap route transaksi tidak lagi berhenti pada fatal error duplicate import.
+
+Evidence aktual:
+
+- 38 route GET statis authenticated diuji dari shell; 34 HTTP 200, 3 redirect normal, dan route `/setup` expected 404 karena user sudah ada;
+- route inti authenticated setelah perbaikan: `/` rata-rata 1,43 detik, `/spj` 141 ms, `/transaksi` 1,77 detik, dan `/penganggaran-rkas` 342 ms pada tiga request sequential per route;
+- route GET statis paling lambat pada sweep: template dokumen 5,65 detik, importer 5,02 detik, SPJ 4,80 detik, transaksi 4,23 detik, database manager 3,78 detik, dan dashboard 3,35 detik;
+- Blade cache berhasil, Vite build berhasil 3,30 detik, dan focused regression 30 test / 341 assertion lulus;
+- `git diff --check` bersih.
+
+Route dinamis yang memerlukan ID nyata dan route mutasi POST/PUT/DELETE tidak dijalankan pada sweep ini. Pengujian tersebut memerlukan fixture/flow khusus agar tidak mengubah data operator. Browser visual dan interaksi Livewire aktual tetap RVR sampai checklist runtime browser dijalankan.
 
 Hierarki RKAS memprioritaskan relasi `arkas_mirror_rapbs.ID_REF_KODE` ke `arkas_mirror_ref_kode.ID_REF_KODE`; kode dan nama kegiatan diambil dari referensi tersebut, sedangkan `KODE_PROGRAM`, `NAMA_PROGRAM`, `KODE_SUB_PROGRAM`, dan `NAMA_SUB_PROGRAM` diambil dari payload RAPBS lalu memakai referensi parent sebagai fallback. `ID_LEVEL_KODE` ikut dibawa sebagai metadata level referensi.
 
