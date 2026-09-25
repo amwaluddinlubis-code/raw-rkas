@@ -19,16 +19,21 @@ final class ArkasMirrorBudgetService
     {
         $year = (int) (FiscalYear::query()->whereKey($yearId)->value('year') ?: now()->year);
         $revisionModes = $this->revisionModes($fundSourceId, $year);
-        $revision = trim((string) $request->query('revisi', 'persetujuan'));
-        if ($revision !== 'pengajuan' || ! $revisionModes['hasPendingSubmission']) {
-            $revision = 'persetujuan';
+        $revisions = $this->revisions($fundSourceId, $year);
+        $allowedIds = collect($revisions)->pluck('id')->all();
+        // Tab terakhir yang disetujui adalah default; urutan kronologis menaik.
+        $latestApprovedId = collect($revisions)->where('status', 'approved')->last()['id'] ?? null;
+        $requested = trim((string) $request->query('revisi', ''));
+        if ($requested === '' || $requested === 'persetujuan') {
+            $selectedId = $latestApprovedId;
+        } elseif ($requested === 'pengajuan') {
+            $selectedId = $revisionModes['hasPendingSubmission'] ? $revisionModes['submitted']['id'] : $latestApprovedId;
+        } else {
+            $selectedId = in_array($requested, $allowedIds, true) ? $requested : $latestApprovedId;
         }
-        $anggaranIds = $revision === 'pengajuan' && $revisionModes['submitted'] !== null
-            ? [$revisionModes['submitted']['id']]
-            : null;
-        $snapshot = $anggaranIds === null
-            ? $this->snapshot($fundSourceId, $year)
-            : $this->snapshot($fundSourceId, $year, $anggaranIds);
+        $revision = $selectedId;
+        $anggaranIds = $selectedId === null ? null : [$selectedId];
+        $snapshot = $this->snapshot($fundSourceId, $year, $anggaranIds);
         $scope = $this->scope($request);
         $search = trim((string) $request->query('q'));
         $program = trim((string) $request->query('program'));
@@ -118,7 +123,7 @@ final class ArkasMirrorBudgetService
         };
         $fundName = (string) (DB::connection('school')->table('fund_sources')->where('id', $fundSourceId)->value('name') ?: '');
 
-        return ['hierarchyTree' => $tree, 'treeTotals' => ['amount' => array_sum(array_column($tree, 'amount')), 'realization' => array_sum(array_column($tree, 'realization')), 'remaining' => array_sum(array_column($tree, 'remaining')), 'items' => $rows->count()], 'filterContext' => 'pada '.$periodLabel, 'search' => $search, 'budget' => $budget, 'spent' => $budget - $remaining, 'remaining' => $remaining, 'overBudget' => max(0, -$remaining), 'underBudget' => max(0, $remaining), 'activityCount' => $snapshot['rows']->pluck('activity_code')->unique()->count(), 'scope' => $scope['scope'], 'scopeValue' => $scope['value'], 'periodLabel' => $periodLabel, 'programFilter' => $program, 'subprogramFilter' => $subprogram, 'activityFilter' => $activity, 'contextLabel' => trim($year.' · '.$fundName, ' ·'), 'revision' => $revision, 'revisionModes' => $revisionModes];
+        return ['hierarchyTree' => $tree, 'treeTotals' => ['amount' => array_sum(array_column($tree, 'amount')), 'realization' => array_sum(array_column($tree, 'realization')), 'remaining' => array_sum(array_column($tree, 'remaining')), 'items' => $rows->count()], 'filterContext' => 'pada '.$periodLabel, 'search' => $search, 'budget' => $budget, 'spent' => $budget - $remaining, 'remaining' => $remaining, 'overBudget' => max(0, -$remaining), 'underBudget' => max(0, $remaining), 'activityCount' => $snapshot['rows']->pluck('activity_code')->unique()->count(), 'scope' => $scope['scope'], 'scopeValue' => $scope['value'], 'periodLabel' => $periodLabel, 'programFilter' => $program, 'subprogramFilter' => $subprogram, 'activityFilter' => $activity, 'contextLabel' => trim($year.' · '.$fundName, ' ·'), 'revision' => $revision, 'revisions' => $revisions, 'latestApprovedId' => $latestApprovedId, 'revisionModes' => $revisionModes];
     }
 
     /** @return array{scope:string,value:int} */
@@ -417,6 +422,67 @@ final class ArkasMirrorBudgetService
             'submitted' => $submitted,
             'hasPendingSubmission' => $approved !== null && $submitted !== null && $submitted['id'] !== $approved['id'],
         ];
+    }
+
+    /**
+     * Daftar tab revisi RKAS per tahun+sumber dana untuk kontrak baru:
+     * seluruh revisi yang disetujui (kronologis menaik) ditambah pengajuan
+     * terakhir bila masih ada yang belum disetujui.
+     *
+     * @return array<int,array{id:string,status:string,dateLabel:string,revisionNo:int,amount:float}>
+     */
+    public function revisions(int $fundSourceId, int $year): array
+    {
+        $entries = [];
+        if (Schema::connection('school')->hasTable('arkas_mirror_anggaran')) {
+            foreach (DB::connection('school')->table('arkas_mirror_anggaran')->get(['source_key', 'payload']) as $record) {
+                $payload = json_decode((string) $record->payload, true);
+                if (! is_array($payload)
+                    || (int) (ArkasMirrorResolver::field($payload, ['TAHUN_ANGGARAN', 'TAHUN']) ?? 0) !== $year
+                    || ! $this->fundMatches($payload, $fundSourceId)
+                    || (int) (ArkasMirrorResolver::field($payload, ['SOFT_DELETE', 'IS_DELETED']) ?? 0) === 1) {
+                    continue;
+                }
+                $entries[] = [
+                    'id' => (string) (ArkasMirrorResolver::field($payload, ['ID_ANGGARAN']) ?: $record->source_key),
+                    'approved' => (int) (ArkasMirrorResolver::field($payload, ['IS_APPROVE', 'IS_APPROVED', 'APPROVED']) ?? 0),
+                    'updated' => $this->sourceTimestamp(ArkasMirrorResolver::field($payload, ['LAST_UPDATE', 'UPDATED_AT'])),
+                    'created' => $this->sourceTimestamp(ArkasMirrorResolver::field($payload, ['CREATE_DATE', 'CREATED_AT'])),
+                    'revisionNo' => (int) (ArkasMirrorResolver::field($payload, ['IS_REVISI', 'REVISI']) ?? 0),
+                    'amount' => (float) (ArkasMirrorResolver::field($payload, ['JUMLAH']) ?? 0),
+                ];
+            }
+        }
+
+        usort($entries, fn (array $left, array $right): int => [$left['updated'], $left['created']] <=> [$right['updated'], $right['created']]);
+
+        $dateLabel = static fn (array $entry): string => max($entry['updated'], $entry['created']) <= 0
+            ? '-'
+            : date('d-m-Y', max($entry['updated'], $entry['created']));
+
+        $approved = array_values(array_filter($entries, fn (array $entry): bool => $entry['approved'] === 1));
+        $latest = end($entries) ?: null;
+        $pending = $latest !== false && $latest !== null && $latest['approved'] !== 1 ? $latest : null;
+
+        $tabs = array_map(fn (array $entry): array => [
+            'id' => $entry['id'],
+            'status' => 'approved',
+            'dateLabel' => $dateLabel($entry),
+            'revisionNo' => $entry['revisionNo'],
+            'amount' => $entry['amount'],
+        ], $approved);
+
+        if ($pending !== null) {
+            $tabs[] = [
+                'id' => $pending['id'],
+                'status' => 'pending',
+                'dateLabel' => $dateLabel($pending),
+                'revisionNo' => $pending['revisionNo'],
+                'amount' => $pending['amount'],
+            ];
+        }
+
+        return $tabs;
     }
 
     private function sourceTimestamp(mixed $value): int

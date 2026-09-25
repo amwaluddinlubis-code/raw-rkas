@@ -106,6 +106,29 @@ class RkasRevisionModesTest extends TestCase
         $this->assertFalse($modes['hasPendingSubmission']);
     }
 
+    public function test_revisions_lists_all_approved_plus_pending_submission(): void
+    {
+        $this->seedAnggaran('ANG-1', ['ID_ANGGARAN' => 'ANG-1', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'IS_REVISI' => 0, 'LAST_UPDATE' => '2026-05-06 08:00:00', 'CREATE_DATE' => '2026-04-16 05:00:00']);
+        $this->seedAnggaran('ANG-2', ['ID_ANGGARAN' => 'ANG-2', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'IS_REVISI' => 100, 'LAST_UPDATE' => '2026-09-18 20:00:00', 'CREATE_DATE' => '2026-09-17 12:00:00']);
+        $this->seedAnggaran('ANG-3', ['ID_ANGGARAN' => 'ANG-3', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 0, 'IS_REVISI' => 101, 'LAST_UPDATE' => '2026-09-20 10:00:00', 'CREATE_DATE' => '2026-09-20 08:00:00']);
+
+        $tabs = app(ArkasMirrorBudgetService::class)->revisions(1, 2026);
+
+        $this->assertSame(['ANG-1', 'ANG-2', 'ANG-3'], array_column($tabs, 'id'));
+        $this->assertSame(['approved', 'approved', 'pending'], array_column($tabs, 'status'));
+    }
+
+    public function test_revisions_omits_pending_tab_when_all_approved(): void
+    {
+        $this->seedAnggaran('ANG-1', ['ID_ANGGARAN' => 'ANG-1', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-05-06 08:00:00', 'CREATE_DATE' => '2026-04-16 05:00:00']);
+        $this->seedAnggaran('ANG-2', ['ID_ANGGARAN' => 'ANG-2', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-09-18 20:00:00', 'CREATE_DATE' => '2026-09-17 12:00:00']);
+
+        $tabs = app(ArkasMirrorBudgetService::class)->revisions(1, 2026);
+
+        $this->assertSame(['ANG-1', 'ANG-2'], array_column($tabs, 'id'));
+        $this->assertSame(['approved', 'approved'], array_column($tabs, 'status'));
+    }
+
     public function test_soft_deleted_periode_splits_are_excluded_from_snapshot(): void
     {
         $this->seedRapbs('RAPBS-1', ['ID_RAPBS' => 'RAPBS-1', 'ID_ANGGARAN' => 'ANG-1', 'KODE_REKENING' => '5.1.02.01', 'JUMLAH' => 1000000]);

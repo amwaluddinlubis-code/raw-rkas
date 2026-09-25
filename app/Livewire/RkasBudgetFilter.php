@@ -83,7 +83,11 @@ class RkasBudgetFilter extends Component
             $this->mode = 'semua';
         }
 
-        if (! in_array($this->revisi, ['persetujuan', 'pengajuan'], true)) {
+        // Revisi: 'persetujuan' (default), 'pengajuan', atau ID anggaran
+        // spesifik dari daftar tab revisi. Nilai tak dikenal disanitasi
+        // menjadi default oleh service saat render.
+        $this->revisi = trim($this->revisi);
+        if ($this->revisi === '' || strlen($this->revisi) > 80 || ! preg_match('/^[A-Za-z0-9_.~-]+$/', $this->revisi)) {
             $this->revisi = 'persetujuan';
         }
 
