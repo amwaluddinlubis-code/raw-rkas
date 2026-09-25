@@ -11,28 +11,29 @@ Terakhir diperbarui: **2026-09-25** (repository audit + documentation synchroniz
 
 ## Repository + documentation audit (2026-09-25)
 
-Status: **AUDIT COMPLETE / DOCS SYNCHRONIZED / CURRENT AUDIT HEAD CI RED**.
+Status: **AUDIT COMPLETE / DOCS SYNCHRONIZED / CURRENT AUDIT SOURCE GATE GREEN**.
 
-Evidence GitHub untuk `hardening/raw-rkas-audit@6746a2052398cb098b76028e7aa08efe2aa48d37`:
+Evidence GitHub untuk source commit `hardening/raw-rkas-audit@2b854f1b9f6a7f7501a3803acbaacb2035cd85f3`:
 
 ```text
-WORKFLOW        : SPJ Critical Verification
-RUN             : 35993431668 (attempt 2)
-ARTIFACT GUARD  : PASS
-COMPOSER CHECKS : PASS
-FRONTEND BUILD  : PASS
-BLADE COMPILE   : PASS
-SPJ CRITICAL    : PASS
-FULL UNIT       : FAIL
-FULL FEATURE    : SKIPPED
-RESULT          : FAILURE
+WORKFLOW              : SPJ Critical Verification
+RUN                   : 36112716405 (#15)
+ARTIFACT GUARD        : PASS
+COMPOSER CHECKS       : PASS
+FRONTEND BUILD        : PASS
+BLADE COMPILE         : PASS
+CHECKLIST PHP LINT    : PASS
+SPJ CRITICAL          : PASS / 329 tests / 2,568 assertions
+FULL UNIT             : PASS / 79 tests / 281 assertions
+FULL FEATURE          : PASS / 563 tests / 4,005 assertions
+RESULT                : SUCCESS
 ```
 
-Implikasi: historical green gate tetap berguna sebagai baseline, tetapi **bukan evidence bahwa HEAD audit saat ini hijau**. Prioritas release-safety pertama adalah mengidentifikasi dan memperbaiki kegagalan Full Unit pada run tersebut, lalu menjalankan kembali workflow sampai seluruh blocking gate PASS. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
+Regression yang menahan run sebelumnya berada di `resources/views/spj/checklist.blade.php`: directive inline `@php(...)` menghasilkan PHP terkompilasi yang tidak tertutup dan baru gagal pada token `else`. Assignment `$fixUrl` kini memakai blok `@php ... @endphp`; artifact diagnostic run #15 membuktikan `php -l` pada hasil compile tidak lagi menemukan syntax error, dan `WebRouteSmokeTest` kembali lewat sebagai bagian Full Feature suite. Historical green gate tetap dipertahankan sebagai baseline lama, sedangkan run #15 menjadi evidence source gate terbaru untuk branch audit. Audit dokumentasi juga menemukan dan memperbaiki referensi branch lama, inventaris Livewire yang sangat stale, route Filament yang sudah tidak berlaku, status checklist bukti dukung fase 1, dan kontrak laporan periodik yang tertinggal dari implementasi print/PDF.
 
 ## Repository containment hardening (2026-09-24)
 
-Status: **SOURCE HARDENING APPLIED / ARTIFACT GUARD PASS / FULL CI FAILS AT UNIT SUITE**.
+Status: **SOURCE HARDENING APPLIED / ARTIFACT GUARD PASS / CURRENT SOURCE GATE GREEN**.
 
 Audit repository menemukan dump ARKAS/BKU dan backup archive terlacak di bawah
 `public/`, serta archive migration dan shortcut lokal Windows yang tidak
@@ -48,7 +49,7 @@ Riwayat Git masih memuat artefak pada commit awal. History rewrite dan rotasi
 token/kredensial, bila diperlukan setelah pemeriksaan pemilik data, belum
 dijalankan. Verifikasi lokal yang tersedia: artifact guard PASS, theme QA PASS,
 JavaScript syntax PASS, JSON metadata parse PASS, dan `git diff --check` PASS.
-GitHub Actions kemudian berjalan pada PR branch audit. Semua langkah sampai SPJ Critical PASS, tetapi Full Unit suite FAIL dan Full Feature suite SKIPPED; lihat audit 2026-09-25 di atas.
+GitHub Actions terbaru pada PR branch audit sekarang hijau sampai Full Feature suite; lihat evidence run #15 pada audit 2026-09-25 di atas.
 
 ---
 
