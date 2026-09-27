@@ -27,7 +27,7 @@ class SpjDescriptionServiceTest extends TestCase
                 'merchant' => 'Toko Nusantara',
                 'marketplace_displayname' => 'Mitra SiPLah',
                 'invoice_number' => 'INV-001',
-            ], 'Pembelian barang di Merchant Toko Nusantara melalui Mitra SiPLah berdasarkan invoice INV-001'],
+            ], 'Pembelian barang di Merchant Toko Nusantara melalui Mitra SiPLah berdasarkan invoice nomor INV-001'],
             'merchant marketplace without invoice' => [[
                 'merchant' => 'Toko Nusantara',
                 'marketplace_displayname' => 'Mitra SiPLah',
@@ -35,7 +35,7 @@ class SpjDescriptionServiceTest extends TestCase
             'marketplace without merchant' => [[
                 'marketplace_displayname' => 'Mitra SiPLah',
                 'invoice_number' => 'INV-002',
-            ], 'Pembelian barang melalui Mitra SiPLah berdasarkan invoice INV-002'],
+            ], 'Pembelian barang melalui Mitra SiPLah berdasarkan invoice nomor INV-002'],
             'items without marketplace' => [[
                 'items' => [
                     ['siplah_item_name' => 'Kertas A4'],
