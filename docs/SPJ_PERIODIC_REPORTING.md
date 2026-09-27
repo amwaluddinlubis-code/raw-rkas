@@ -28,6 +28,8 @@ Dokumen ini adalah kontrak teknis modul **Laporan Pertanggungjawaban Periodik** 
 - Berita Acara Pemeriksaan Kas (K7C)
 - BOS K7A
 - Rekap Belanja Modal dan Belanja Barang / Jasa
+- Rekapitulasi Pengeluaran Dana BOS
+- Laporan BPK Format BOS
 
 Periode valid: bulan `1..12`.
 
@@ -43,6 +45,8 @@ Periode valid: bulan `1..12`.
 - SP2T
 - Berita Acara Rekonsiliasi
 - Lampiran Berita Acara Rekonsiliasi
+- Rekapitulasi Pengeluaran Dana BOS
+- Laporan BPK Format BOS
 
 Periode valid: triwulan `1..4`.
 
@@ -59,6 +63,8 @@ Periode valid: triwulan `1..4`.
 - Berita Acara Rekonsiliasi
 - Lampiran Berita Acara Rekonsiliasi
 - Rekap Belanja Barang Milik Daerah (Aset)
+- Rekapitulasi Pengeluaran Dana BOS
+- Laporan BPK Format BOS
 
 Periode valid: semester `1..2`.
 
@@ -73,6 +79,7 @@ Periode valid: semester `1..2`.
 - Rekap Belanja Dana BOS
 - Form 1C
 - Rekapitulasi Pengeluaran Dana BOS
+- Laporan BPK Format BOS
 
 Periode tahunan selalu menggunakan seluruh tahun anggaran aktif dan tidak membutuhkan nomor periode tambahan.
 
@@ -119,4 +126,10 @@ Implementasi internal ini **bukan klaim bahwa seluruh formulir resmi sudah mempu
 1. tutup visual/runtime QA browser + PDF untuk laporan yang sudah mempunyai presenter internal;
 2. pasang formula/layout resmi per report key tanpa menduplikasi logika periode/tenant;
 3. pertahankan registry + use case sebagai source of truth daftar laporan dan scope periode;
-4. tambahkan binding template resmi hanya bila memang dibutuhkan oleh format pemerintah/sekolah.
+4. tutup QA workbook Excel untuk seluruh report key dan validasi format khusus
+   instansi;
+5. tambahkan binding template resmi hanya bila memang dibutuhkan oleh format pemerintah/sekolah.
+
+Laporan BPK Format BOS sudah memiliki presenter internal berbasis mirror kas
+umum. Pemetaan kategori rekening tetap perlu divalidasi dengan kode rekening
+yang digunakan sekolah sebelum dokumen dijadikan format final instansi.

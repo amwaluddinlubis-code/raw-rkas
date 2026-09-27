@@ -108,13 +108,14 @@ class SpjSourceReconciliationService
         ?string $notes,
         ?int $resolvedBy,
         ?int $sourceEventId = null,
+        bool $allowLockedResolution = false,
     ): array {
         $resolution = strtoupper(trim($resolution));
         if (! in_array($resolution, [self::REVIEWED_NO_BUSINESS_CHANGE, self::ACCEPT_SOURCE, self::KEEP_OVERLAY], true)) {
             throw new DomainException('Keputusan rekonsiliasi tidak valid.');
         }
 
-        return DB::connection('school')->transaction(function () use ($transaction, $resolution, $notes, $resolvedBy, $sourceEventId): array {
+        return DB::connection('school')->transaction(function () use ($transaction, $resolution, $notes, $resolvedBy, $sourceEventId, $allowLockedResolution): array {
             DB::connection('school')->table('transactions')->where('id', $transaction->id)->lockForUpdate()->first();
             $transaction->refresh()->load('spjPackage');
             $report = $this->forTransaction($transaction);
@@ -144,8 +145,11 @@ class SpjSourceReconciliationService
             if (in_array($resolution, [self::ACCEPT_SOURCE, self::KEEP_OVERLAY], true) && ! $hasBusinessDiff) {
                 throw new DomainException('Tidak ada perubahan nilai bisnis aktif. Gunakan Tandai Sudah Ditinjau.');
             }
-            if ($lockedPackage && $hasBusinessDiff) {
+            if ($lockedPackage && $hasBusinessDiff && ! $allowLockedResolution) {
                 throw new DomainException('Paket sudah bernomor/final. Perubahan nilai sumber harus ditangani melalui workflow pembatalan, reissue, atau revisi resmi.');
+            }
+            if ($lockedPackage && $hasBusinessDiff && blank($notes)) {
+                throw new DomainException('Penyelesaian paket bernomor/final wajib disertai alasan tertulis.');
             }
 
             $now = now();
@@ -173,6 +177,16 @@ class SpjSourceReconciliationService
                 'resolved_at' => $now,
             ];
         });
+    }
+
+    /**
+     * Gerbang pembuka SEMENTARA penyelesaian paket bernomor/final tanpa
+     * pembatalan. Fail-closed bila config di-cache (env tak terbaca).
+     * Untuk menutup kembali: hapus/hilangkan env dan awal ulang.
+     */
+    public function temporaryUnlockEnabled(): bool
+    {
+        return filter_var(env('SPJ_TEMP_UNLOCK_RECONCILIATION', false), FILTER_VALIDATE_BOOLEAN);
     }
 
     /**

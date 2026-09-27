@@ -237,4 +237,67 @@ class SpjSourceReconciliationResolutionTest extends TestCase
             'created_at' => now(),
         ]);
     }
+
+    public function test_locked_package_can_resolve_with_explicit_unlock_and_notes(): void
+    {
+        $transaction = $this->transaction('FINAL');
+        $eventId = $this->event($transaction, ['gross_amount' => 100000], ['gross_amount' => 150000]);
+
+        $result = app(SpjSourceReconciliationService::class)->resolve(
+            $transaction,
+            SpjSourceReconciliationService::ACCEPT_SOURCE,
+            'Buka sementara: angka ARKAS sudah dikonfirmasi bendahara.',
+            13,
+            $eventId,
+            true,
+        );
+
+        $this->assertSame(SpjSourceReconciliationService::ACCEPT_SOURCE, $result['resolution']);
+        $this->assertFalse((bool) $transaction->fresh()->requires_reconciliation);
+        $this->assertSame('FINAL', $transaction->fresh()->spjPackage->status);
+    }
+
+    public function test_locked_unlock_requires_written_notes(): void
+    {
+        $transaction = $this->transaction('NUMBERED');
+        $eventId = $this->event($transaction, ['gross_amount' => 100000], ['gross_amount' => 150000]);
+
+        $this->expectException(DomainException::class);
+        $this->expectExceptionMessage('alasan tertulis');
+
+        try {
+            app(SpjSourceReconciliationService::class)->resolve(
+                $transaction,
+                SpjSourceReconciliationService::ACCEPT_SOURCE,
+                null,
+                13,
+                $eventId,
+                true,
+            );
+        } finally {
+            $this->assertTrue((bool) $transaction->fresh()->requires_reconciliation);
+        }
+    }
+
+    public function test_temporary_unlock_defaults_to_closed(): void
+    {
+        $previousServer = $_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION'] ?? null;
+        $previousEnv = $_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION'] ?? null;
+        putenv('SPJ_TEMP_UNLOCK_RECONCILIATION');
+        unset($_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION'], $_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION']);
+
+        try {
+            $this->assertFalse(app(SpjSourceReconciliationService::class)->temporaryUnlockEnabled());
+        } finally {
+            if ($previousServer !== null) {
+                $_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION'] = $previousServer;
+                putenv('SPJ_TEMP_UNLOCK_RECONCILIATION='.$previousServer);
+            } else {
+                putenv('SPJ_TEMP_UNLOCK_RECONCILIATION');
+            }
+            if ($previousEnv !== null) {
+                $_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION'] = $previousEnv;
+            }
+        }
+    }
 }

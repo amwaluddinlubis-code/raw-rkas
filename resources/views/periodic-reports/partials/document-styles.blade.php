@@ -264,6 +264,28 @@
         color: #6b7280;
     }
 
+    .bpk-section-title {
+        margin: 16px 0 5px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .bpk-table {
+        margin-top: 4px;
+    }
+
+    .bpk-table th:first-child,
+    .bpk-table td:first-child {
+        width: 42px;
+        text-align: center;
+    }
+
+    .bpk-table th:last-child,
+    .bpk-table td:last-child {
+        width: 135px;
+    }
+
     .statement {
         margin: 14px 0;
         font-size: 11px;

@@ -234,3 +234,57 @@ html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transact
 html[data-ui-appearance='dark'] main:has(a[href*="/data-sinkron/bku"]) .transaction-action-pending {
     color: #fbbf24 !important;
 }
+
+/* SPJ preparation "Tindakan" reuses the transaction list "Aksi" treatment:
+   same centered trigger button opening the same action dialog. */
+main[data-page="spj"] .transaction-action-column,
+main[data-page="spj"] .transaction-action-cell {
+    border-left: 1px solid color-mix(in srgb, var(--theme-content-accent) 18%, var(--ui-line)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 5%, var(--ui-surface-base)) !important;
+}
+
+main[data-page="spj"] thead .transaction-action-column {
+    background: color-mix(in srgb, var(--theme-content-accent) 9%, var(--ui-surface-soft)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main[data-page="spj"] .transaction-action-button {
+    display: inline-flex;
+    width: 5.25rem;
+    min-height: 2.25rem;
+    align-items: center;
+    justify-content: center;
+    gap: .375rem;
+    border: 1px solid var(--ui-line-strong);
+    border-radius: .5rem;
+    padding: .375rem .625rem;
+    font-size: .8125rem;
+    font-weight: 700;
+    line-height: 1rem;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+main[data-page="spj"] table .transaction-action-button span {
+    font-size: var(--ui-table-small-font-size, .8125rem) !important;
+    line-height: 1rem !important;
+    color: inherit !important;
+}
+
+main[data-page="spj"] .transaction-action-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+}
+
+main[data-page="spj"] .transaction-action-edit {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 38%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 10%, var(--ui-surface-base)) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+main[data-page="spj"] .transaction-action-edit:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 62%, var(--ui-line-strong)) !important;
+    background: color-mix(in srgb, var(--theme-content-accent) 17%, var(--ui-surface-base)) !important;
+}
+
+main[data-page="spj"] table[data-pagination="server"] td.transaction-action-column {
+    padding-inline: .25rem !important;
+}

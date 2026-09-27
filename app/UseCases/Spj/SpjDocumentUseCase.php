@@ -3,6 +3,7 @@
 namespace App\UseCases\Spj;
 
 use App\Models\DocumentTemplate;
+use App\Models\GoodsReceipt;
 use App\Models\SpjPackage;
 use App\Services\SpjGeneratedDocumentValidator;
 use App\Services\SpjMaintenanceDocumentContextService;
@@ -109,7 +110,7 @@ class SpjDocumentUseCase
 
     public function downloadTemplate(string $packageId, string $templateId)
     {
-        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
+        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.goodsReceipts.items', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
         if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
@@ -123,9 +124,11 @@ class SpjDocumentUseCase
         $this->applyDocumentContext($package);
         $school = $this->context->school();
         $documentType = strtoupper($template->document_type);
+        $receipt = $this->resolveRenderReceipt($package);
+        $scopeKey = $this->renderScopeKey($receipt);
         $document = $package->documents()
             ->where('document_type', $documentType)
-            ->where('scope_key', 'MAIN')
+            ->where('scope_key', $scopeKey)
             ->where('status', '!=', 'CANCELLED')
             ->whereNotNull('document_number')
             ->latest('id')
@@ -134,7 +137,7 @@ class SpjDocumentUseCase
             $package->setAttribute('document_number', $document->document_number);
         }
 
-        $response = $templates->download($template, $package, $school);
+        $response = $templates->download($template, $package, $school, $receipt);
 
         return $this->assertBinaryOutput(
             $response,
@@ -146,7 +149,7 @@ class SpjDocumentUseCase
 
     public function downloadTemplatePdf(string $packageId, string $templateId)
     {
-        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
+        $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.goodsReceipts.items', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
         if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket atau template aktif tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
@@ -160,7 +163,7 @@ class SpjDocumentUseCase
         $this->applyDocumentContext($package);
         $school = $this->context->school();
         app(SpjTemplateRenderPreflight::class)->assertRenderable($template, $package, $school);
-        $response = $templates->downloadPdf($template, $package, $school);
+        $response = $templates->downloadPdf($template, $package, $school, $this->resolveRenderReceipt($package));
 
         return $this->assertPdfOutput($response, 'PDF '.(string) $template->document_type);
     }
@@ -183,9 +186,10 @@ class SpjDocumentUseCase
         // bila PDF tidak siap.
         $isXlsx = strtolower((string) $template->format) === 'xlsx';
         $previewPdfReady = $isXlsx || app(SpjSpreadsheetPdfConverter::class)->isAvailable();
+        $receipt = $this->resolveRenderReceipt($package);
 
         try {
-            $previewHtml = $previewPdfReady ? null : $templates->previewHtml($template, $package, $school);
+            $previewHtml = $previewPdfReady ? null : $templates->previewHtml($template, $package, $school, $receipt);
         } catch (Throwable $exception) {
             report($exception);
 
@@ -196,7 +200,7 @@ class SpjDocumentUseCase
             'package' => $package,
             'template' => $template,
             'previewHtml' => $previewHtml,
-            'previewPdfUrl' => route('spj.preview-template-pdf', [$packageId, $templateId]),
+            'previewPdfUrl' => route('spj.preview-template-pdf', [$packageId, $templateId]).($receipt ? '?scope='.$receipt->documentScopeKey() : ''),
             'previewPdfReady' => $previewPdfReady,
             'validationIssues' => $validationIssues,
         ]);
@@ -217,7 +221,7 @@ class SpjDocumentUseCase
         $school = $this->context->school();
         $this->applyDocumentContext($package);
         try {
-            $contents = $templates->previewTemplatePdfBytes($template, $package, $school);
+            $contents = $templates->previewTemplatePdfBytes($template, $package, $school, $this->resolveRenderReceipt($package));
         } catch (Throwable $exception) {
             report($exception);
 
@@ -351,6 +355,31 @@ class SpjDocumentUseCase
     private function applyDocumentContext(SpjPackage $package): void
     {
         app(SpjMaintenanceDocumentContextService::class)->apply($package);
+    }
+
+    /**
+     * Resolve the staged render scope (?scope=TAHAP:n) to its receipt.
+     * Unknown or foreign scopes fall back to null (MAIN rendering).
+     */
+    private function resolveRenderReceipt(SpjPackage $package): ?GoodsReceipt
+    {
+        $scope = (string) (request()->query('scope') ?? request()->input('scope') ?? '');
+        if (! preg_match('/^TAHAP:(\d+)$/', $scope, $matches)) {
+            return null;
+        }
+        $receipt = $package->transaction->goodsReceipts
+            ->firstWhere('receipt_sequence', (int) $matches[1]);
+        if (! $receipt || $receipt->status === 'CANCELLED') {
+            return null;
+        }
+        $receipt->loadMissing('items');
+
+        return $receipt;
+    }
+
+    private function renderScopeKey(?GoodsReceipt $receipt): string
+    {
+        return $receipt ? $receipt->documentScopeKey() : 'MAIN';
     }
 
     private function inlinePdfResponse(string $contents, string $fileName): Response

@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\DocumentTemplate;
 use App\Models\FiscalYear;
+use App\Models\GoodsReceipt;
 use App\Models\School;
+use App\Models\SpjGoods;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
@@ -137,7 +139,42 @@ class SpjTemplateService
     }
 
     /** @return array<string,string> */
-    public function placeholders(SpjPackage $package, School $school): array
+    /**
+     * Items visible for a render scope. A staged receipt (TAHAP:n) renders
+     * only its own items; otherwise the whole transaction is rendered.
+     *
+     * @return Collection<int, TransactionItem>
+     */
+    public function renderItems(SpjPackage $package, ?GoodsReceipt $receipt = null): Collection
+    {
+        $items = $package->transaction->items;
+        if (! $receipt) {
+            return $items->values();
+        }
+        $itemIds = $receipt->items->pluck('transaction_item_id')->all();
+
+        return $items->whereIn('id', $itemIds)->values();
+    }
+
+    /**
+     * Letter context for a render scope: the spj_goods row of the tahap's
+     * items (numbers come from numbering), dates prefer the receipt.
+     */
+    public function renderGoods(SpjPackage $package, ?GoodsReceipt $receipt = null): ?SpjGoods
+    {
+        $goods = $package->transaction->goods;
+        if (! $receipt) {
+            return $goods->first();
+        }
+        $itemIds = $receipt->items->pluck('transaction_item_id')->all();
+        $scoped = $goods->whereIn('transaction_item_id', $itemIds);
+
+        return $scoped->first(fn ($row) => filled($row->order_number) || filled($row->bap_number) || filled($row->bast_number))
+            ?? $scoped->first()
+            ?? $goods->first();
+    }
+
+    public function placeholders(SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): array
     {
         $transaction = $package->transaction;
         $transaction->loadMissing(['items', 'goods', 'workOrder', 'workers', 'serviceRecipients']);
@@ -146,18 +183,23 @@ class SpjTemplateService
         $year = FiscalYear::query()->findOrFail($transaction->fiscal_year_id);
         $profile = DB::connection('school')->table('school_profiles')->where('fiscal_year_id', $year->id)->first();
         $activityHierarchy = app(ArkasActivityHierarchyResolver::class)->resolve($transaction);
-        $goods = $transaction->goods->first();
+        $goods = $this->renderGoods($package, $receipt);
         $workOrder = $transaction->workOrder;
-        $items = $transaction->items->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->sourceValue('description')).' | '.$item->sourceValue('quantity').' '.($item->sourceValue('unit') ?: '—').' | '.app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('amount')))->implode("\n");
+        $renderItems = $this->renderItems($package, $receipt);
+        $items = $renderItems->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->sourceValue('description')).' | '.$item->sourceValue('quantity').' '.($item->sourceValue('unit') ?: '—').' | '.app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('amount')))->implode("\n");
         $services = $transaction->serviceRecipients->map(fn ($recipient, $index) => ($index + 1).'. '.$recipient->name.' | '.$recipient->service_type.' | '.$recipient->quantity.' '.$recipient->unit.' × '.$recipient->rental_days.' hari | '.app(SpjPlaceholderValueFormatter::class)->amount($recipient->amount))->implode("\n");
 
         $transactionDate = (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->translatedFormat('d F Y') : null) ?: '';
-        $orderDate = $goods?->order_date?->translatedFormat('d F Y') ?: '';
+        $orderDate = $receipt?->order_date?->translatedFormat('d F Y') ?: $goods?->order_date?->translatedFormat('d F Y') ?: '';
+        $bapDate = $receipt?->bap_date?->translatedFormat('d F Y') ?: $goods?->bap_date?->translatedFormat('d F Y') ?: '';
+        $bastDate = $receipt?->bast_date?->translatedFormat('d F Y') ?: $goods?->bast_date?->translatedFormat('d F Y') ?: '';
+        $invoiceDate = $receipt?->invoice_date?->translatedFormat('d F Y') ?: $transaction->invoice_date?->translatedFormat('d F Y') ?: '';
+        $invoiceStatus = (string) ($receipt?->invoice_status ?: $transaction->invoice_status ?: '');
         $spkDate = $workOrder?->spk_date?->translatedFormat('d F Y') ?: '';
         $rabDate = $workOrder?->rab_date?->translatedFormat('d F Y') ?: '';
         $workStarted = $workOrder?->work_started_at?->translatedFormat('d F Y') ?: '';
         $workCompleted = $workOrder?->work_completed_at?->translatedFormat('d F Y') ?: '';
-        $handoverDate = $goods?->bast_date?->translatedFormat('d F Y') ?: ($workCompleted ?: $transactionDate);
+        $handoverDate = $bastDate ?: ($workCompleted ?: $transactionDate);
         $vendorName = (string) ($transaction->vendor_name ?: $transaction->effective_receipt_recipient_name);
         $paymentMethod = $this->paymentMethodLabel((string) $transaction->payment_method);
         $siplahResponse = data_get($transaction->siplah_metadata, 'siplahResponse', []);
@@ -245,11 +287,11 @@ class SpjTemplateService
             'NOMOR_PESANAN' => (string) ($goods?->order_number ?: ''),
             'TANGGAL_PESANAN' => $orderDate,
             'NOMOR_BAP' => (string) ($goods?->bap_number ?: ''),
-            'TANGGAL_BAP' => $goods?->bap_date?->translatedFormat('d F Y') ?: '',
+            'TANGGAL_BAP' => $bapDate,
             'NOMOR_BAST' => (string) ($goods?->bast_number ?: ''),
             'NOMOR_INVOICE' => (string) $transaction->invoice_number,
-            'TANGGAL_INVOICE' => $transaction->invoice_date?->translatedFormat('d F Y') ?: '',
-            'STATUS_INVOICE' => (string) $transaction->invoice_status,
+            'TANGGAL_INVOICE' => $invoiceDate,
+            'STATUS_INVOICE' => $invoiceStatus,
             'NOMOR_SPK' => (string) ($workOrder?->spk_number ?: ''),
             'TANGGAL_SPK' => $spkDate,
             'NOMOR_RAB' => (string) ($workOrder?->rab_number ?: ''),
@@ -334,9 +376,9 @@ class SpjTemplateService
         return $values;
     }
 
-    public function download(DocumentTemplate $template, SpjPackage $package, School $school)
+    public function download(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null)
     {
-        $output = $this->filledTemplateFile($template, $package, $school);
+        $output = $this->filledTemplateFile($template, $package, $school, $receipt);
         $extension = strtolower($template->format);
 
         try {
@@ -359,13 +401,13 @@ class SpjTemplateService
      * Fill template placeholders into a temp file. The caller owns cleanup.
      * Shared by download and preview so both render the same filled input.
      */
-    public function filledTemplateFile(DocumentTemplate $template, SpjPackage $package, School $school): string
+    public function filledTemplateFile(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): string
     {
         $source = $this->templateSourcePath($template);
         if (! is_file($source)) {
             throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
         }
-        $values = $this->placeholders($package, $school);
+        $values = $this->placeholders($package, $school, $receipt);
         $extension = strtolower($template->format);
         $output = storage_path('app/generated-documents/'.uniqid('spj_', true).'.'.$extension);
         if (! is_dir(dirname($output))) {
@@ -375,7 +417,7 @@ class SpjTemplateService
         if ($extension === 'docx') {
             $document = new TemplateProcessor($source);
             $document->setMacroChars('{{', '}}');
-            $this->fillWordItems($document, $package, $template);
+            $this->fillWordItems($document, $package, $template, $receipt);
             $this->fillWordWorkers($document, $package);
             foreach ($values as $key => $value) {
                 $document->setValue($key, $value);
@@ -384,7 +426,7 @@ class SpjTemplateService
         } elseif ($extension === 'xlsx') {
             $spreadsheet = IOFactory::load($source);
             foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
-                $this->fillExcelItems($sheet, $package, $template);
+                $this->fillExcelItems($sheet, $package, $template, $receipt);
                 $this->fillExcelWorkers($sheet, $package);
                 $this->fillExcelLetterhead($sheet, $school);
                 foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
@@ -410,13 +452,13 @@ class SpjTemplateService
      * as the download path, so the operator prints exactly what gets archived.
      * Null only when LibreOffice is required (Word template) but unavailable.
      */
-    public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): ?string
     {
         if (strtolower($template->format) === 'xlsx') {
-            return $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($this->filledSpreadsheet($template, $package, $school), $template));
+            return $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($this->filledSpreadsheet($template, $package, $school, $receipt), $template));
         }
 
-        $filled = $this->filledTemplateFile($template, $package, $school);
+        $filled = $this->filledTemplateFile($template, $package, $school, $receipt);
 
         try {
             return app(SpjSpreadsheetPdfConverter::class)->convertFile($filled);
@@ -426,13 +468,13 @@ class SpjTemplateService
     }
 
     /** Menghasilkan HTML dari template Excel untuk pratinjau di browser. */
-    public function previewHtml(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    public function previewHtml(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): ?string
     {
         if (strtolower($template->format) !== 'xlsx') {
             return null;
         }
 
-        return $this->spreadsheetHtml($template, $package, $school);
+        return $this->spreadsheetHtml($template, $package, $school, $receipt);
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */
@@ -493,13 +535,13 @@ class SpjTemplateService
         return '<!doctype html><html><head><meta charset="utf-8"><style>.spj-preview-page{margin:0 auto 24px;width:max-content;max-width:none}.spj-preview-page table{background:white}@media print{.spj-preview-page{margin:0}}</style></head><body>'.$pages.'</body></html>';
     }
 
-    public function downloadPdf(DocumentTemplate $template, SpjPackage $package, School $school)
+    public function downloadPdf(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null)
     {
         if (strtolower($template->format) !== 'xlsx') {
             throw new \RuntimeException('Unduh PDF saat ini hanya tersedia untuk template Excel.');
         }
 
-        $spreadsheet = $this->filledSpreadsheet($template, $package, $school);
+        $spreadsheet = $this->filledSpreadsheet($template, $package, $school, $receipt);
 
         return $this->pdfResponse(
             $this->spreadsheetPdfContents($this->singleDocumentSpreadsheet($spreadsheet, $template)),
@@ -508,10 +550,10 @@ class SpjTemplateService
         );
     }
 
-    private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school): string
+    private function spreadsheetHtml(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): string
     {
         return $this->spreadsheetHtmlFromWorkbook(
-            $this->filledSpreadsheet($template, $package, $school),
+            $this->filledSpreadsheet($template, $package, $school, $receipt),
             $template,
         );
     }
@@ -572,16 +614,16 @@ class SpjTemplateService
         return $spreadsheet;
     }
 
-    private function filledSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    private function filledSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): Spreadsheet
     {
         $source = $this->templateSourcePath($template);
         if (! is_file($source)) {
             throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
         }
-        $values = $this->placeholders($package, $school);
+        $values = $this->placeholders($package, $school, $receipt);
         $spreadsheet = IOFactory::load($source);
         foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
-            $this->fillExcelItems($sheet, $package, $template);
+            $this->fillExcelItems($sheet, $package, $template, $receipt);
             $this->fillExcelWorkers($sheet, $package);
             $this->fillExcelLetterhead($sheet, $school);
             foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
@@ -836,9 +878,9 @@ class SpjTemplateService
         return $this->terbilangNumber(intdiv($number, 1000000000000)).' triliun '.$this->terbilangNumber($number % 1000000000000);
     }
 
-    private function itemValues(SpjPackage $package, int $index): array
+    private function itemValues(SpjPackage $package, int $index, ?Collection $renderItems = null): array
     {
-        $item = $package->transaction->items[$index - 1];
+        $item = ($renderItems ?? $package->transaction->items)[$index - 1];
 
         return [
             'ITEM_NO' => (string) $index,
@@ -970,25 +1012,25 @@ class SpjTemplateService
         }
     }
 
-    private function fillWordItems(TemplateProcessor $document, SpjPackage $package, ?DocumentTemplate $template = null): void
+    private function fillWordItems(TemplateProcessor $document, SpjPackage $package, ?DocumentTemplate $template = null, ?GoodsReceipt $receipt = null): void
     {
-        $this->withRabItemsForTemplate($package, $template, function () use ($document, $package): void {
-            $items = $package->transaction->items;
+        $this->withRabItemsForTemplate($package, $template, function () use ($document, $package, $receipt): void {
+            $items = $this->renderItems($package, $receipt);
             if ($items->isEmpty() || ! in_array('ITEM_NO', $document->getVariables(), true)) {
                 return;
             }
             $document->cloneRow('ITEM_NO', $items->count());
             foreach ($items as $index => $item) {
-                foreach ($this->itemValues($package, $index + 1) as $key => $value) {
+                foreach ($this->itemValues($package, $index + 1, $items) as $key => $value) {
                     $document->setValue($key.'#'.($index + 1), $value);
                 }
             }
         });
     }
 
-    private function fillExcelItems(Worksheet $sheet, SpjPackage $package, ?DocumentTemplate $template = null): void
+    private function fillExcelItems(Worksheet $sheet, SpjPackage $package, ?DocumentTemplate $template = null, ?GoodsReceipt $receipt = null): void
     {
-        $this->withRabItemsForTemplate($package, $template, function () use ($sheet, $package): void {
+        $this->withRabItemsForTemplate($package, $template, function () use ($sheet, $package, $receipt): void {
             $rows = [];
             foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
                 if (str_contains((string) $sheet->getCell($coordinate)->getValue(), '{{ITEM_NO}}')) {
@@ -996,7 +1038,7 @@ class SpjTemplateService
                 }
             }
             $rows = array_values(array_unique($rows));
-            $items = $package->transaction->items;
+            $items = $this->renderItems($package, $receipt);
             if (empty($rows) || $items->isEmpty()) {
                 return;
             }
@@ -1020,7 +1062,7 @@ class SpjTemplateService
             sort($rows);
             foreach ($items as $index => $item) {
                 $replacements = [];
-                foreach ($this->itemValues($package, $index + 1) as $key => $value) {
+                foreach ($this->itemValues($package, $index + 1, $items) as $key => $value) {
                     $replacements['{{'.$key.'}}'] = $value;
                 }
                 foreach ($original as $column => $value) {

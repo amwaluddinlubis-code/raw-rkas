@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\Transaction;
 use App\Services\ArkasMirrorResolver;
+use App\Services\OperationalAuditService;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjSourceReconciliationService;
 use App\Support\ActiveSpjContext;
@@ -28,6 +29,8 @@ class TransactionDetailWorkspace extends Component
     public string $resolutionNotes = '';
 
     public ?int $sourceEventId = null;
+
+    public bool $unlockLockedResolution = false;
 
     public function mount(int $transactionId, ActiveSpjContext $context): void
     {
@@ -90,7 +93,7 @@ class TransactionDetailWorkspace extends Component
         $this->dispatch('app-notify', type: 'success', message: 'Koreksi uraian berhasil disimpan.');
     }
 
-    public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, ActiveSpjContext $context): void
+    public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, ActiveSpjContext $context, OperationalAuditService $audit): void
     {
         if ($requestedResolution !== null) {
             $this->resolution = $requestedResolution;
@@ -111,19 +114,56 @@ class TransactionDetailWorkspace extends Component
             ])],
             'sourceEventId' => ['nullable', 'integer'],
             'resolutionNotes' => ['nullable', 'string', 'max:2000'],
+            'unlockLockedResolution' => ['boolean'],
         ]);
 
+        $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: 'DRAFT'));
+        $wantsUnlock = (bool) ($data['unlockLockedResolution'] ?? false);
+        if ($wantsUnlock) {
+            if (! $service->temporaryUnlockEnabled()) {
+                $this->addError('resolution', 'Jalur penyelesaian sementara sedang ditutup.');
+
+                return;
+            }
+            if (! auth()->user()?->isAdministrator()) {
+                $this->addError('resolution', 'Hanya administrator yang dapat menyelesaikan paket bernomor/final tanpa pembatalan.');
+
+                return;
+            }
+            if (blank($data['resolutionNotes'] ?? null)) {
+                $this->addError('resolutionNotes', 'Alasan tertulis wajib diisi untuk paket bernomor/final.');
+
+                return;
+            }
+            if (! in_array($packageStatus, ['NUMBERED', 'FINAL'], true)) {
+                $this->addError('resolution', 'Paket tidak terkunci; gunakan penyelesaian normal.');
+
+                return;
+            }
+        }
+
         try {
-            $result = $service->resolve($transaction, $data['resolution'], $data['resolutionNotes'] ?? null, auth()->id() ? (int) auth()->id() : null, $data['sourceEventId'] ?? null);
+            $result = $service->resolve($transaction, $data['resolution'], $data['resolutionNotes'] ?? null, auth()->id() ? (int) auth()->id() : null, $data['sourceEventId'] ?? null, $wantsUnlock);
         } catch (DomainException $exception) {
             $this->addError('resolution', $exception->getMessage());
 
             return;
         }
 
+        if ($wantsUnlock) {
+            $audit->record(
+                $transaction->fiscal_year_id,
+                'TRANSACTION',
+                $transaction->id,
+                'RESOLUSI_TERBUKA_'.$packageStatus,
+                'Rekonsiliasi '.$result['label'].' tanpa pembatalan (jalur sementara). Alasan: '.trim((string) ($data['resolutionNotes'] ?? '')),
+            );
+        }
+
         $this->loadTransaction();
         $this->resolution = '';
         $this->resolutionNotes = '';
+        $this->unlockLockedResolution = false;
         $message = 'Rekonsiliasi selesai: '.$result['label'].'.';
         session()->flash('success', $message);
         $this->dispatch('app-notify', type: 'success', message: $message);

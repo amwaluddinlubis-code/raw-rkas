@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DocumentTemplate;
+use App\Models\GoodsReceipt;
 use App\Models\School;
 use App\Models\SpjPackage;
 use Illuminate\Support\Collection;
@@ -27,9 +28,9 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     private bool $renderingCanonicalSpreadsheet = false;
 
     /** @return array<string,string> */
-    public function placeholders(SpjPackage $package, School $school): array
+    public function placeholders(SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): array
     {
-        $values = parent::placeholders($package, $school);
+        $values = parent::placeholders($package, $school, $receipt);
 
         if (! $this->renderingCanonicalSpreadsheet) {
             return $values;
@@ -42,24 +43,24 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
         return $values;
     }
 
-    public function download(DocumentTemplate $template, SpjPackage $package, School $school)
+    public function download(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null)
     {
         if (strtolower((string) $template->format) !== 'xlsx') {
-            return parent::download($template, $package, $school);
+            return parent::download($template, $package, $school, $receipt);
         }
 
         [$preparedTemplate] = $this->prepareMergedAnchorTemplate($template);
 
-        return parent::download($preparedTemplate, $package, $school);
+        return parent::download($preparedTemplate, $package, $school, $receipt);
     }
 
-    public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    public function previewTemplatePdfBytes(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): ?string
     {
         if (strtolower((string) $template->format) !== 'xlsx') {
-            return parent::previewTemplatePdfBytes($template, $package, $school);
+            return parent::previewTemplatePdfBytes($template, $package, $school, $receipt);
         }
 
-        $response = $this->download($template, $package, $school);
+        $response = $this->download($template, $package, $school, $receipt);
         $path = $response->getFile()->getPathname();
 
         try {
@@ -162,12 +163,12 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
         return [$template, null];
     }
 
-    protected function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    protected function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): Spreadsheet
     {
         $this->renderingCanonicalSpreadsheet = true;
 
         try {
-            $spreadsheet = parent::canonicalSpreadsheet($template, $package, $school);
+            $spreadsheet = parent::canonicalSpreadsheet($template, $package, $school, $receipt);
         } finally {
             $this->renderingCanonicalSpreadsheet = false;
         }

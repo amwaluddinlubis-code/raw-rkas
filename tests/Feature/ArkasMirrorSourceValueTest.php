@@ -65,6 +65,20 @@ class ArkasMirrorSourceValueTest extends TestCase
         $this->assertEquals(1390000, $source['net_amount']);
     }
 
+    public function test_aggregate_by_bukti_scopes_to_requested_year(): void
+    {
+        // Nomor bukti berulang tiap tahun; baseline tanpa tahun tercampur.
+        $this->seedMirrorRow('KAS-24', ['ID_KAS_UMUM' => 'KAS-24', 'KATEGORI_BKU' => 'BELANJA', 'NO_BUKTI' => 'BPU01', 'TANGGAL_TRANSAKSI' => '2024-03-23', 'URAIAN' => 'ALBERT DIANTONI', 'KODE_REKENING' => '5.1.02.02.01.0031', 'NAMA_TOKO' => 'ALBERT DIANTONI', 'JUMLAH' => 1000000]);
+        $this->seedMirrorRow('KAS-26', ['ID_KAS_UMUM' => 'KAS-26', 'KATEGORI_BKU' => 'BELANJA', 'NO_BUKTI' => 'BPU01', 'TANGGAL_TRANSAKSI' => '2026-03-06', 'URAIAN' => 'Belanja Jasa Operator', 'KODE_REKENING' => '5.1.02.02.01.0013', 'NAMA_TOKO' => 'Rista Dewi', 'JUMLAH' => 800000]);
+
+        $scoped = app(ArkasMirrorResolver::class)->aggregateByBukti('BPU01', 2026);
+
+        $this->assertNotNull($scoped);
+        $this->assertSame('2026-03-06', $scoped['transaction_date']);
+        $this->assertSame('Rista Dewi', $scoped['recipient_name']);
+        $this->assertEquals(800000, $scoped['gross_amount']);
+    }
+
     public function test_transaction_source_filters_tax_children_by_generated_category_column(): void
     {
         $this->seedMirrorRow('KAS-10', [

@@ -92,6 +92,10 @@ class SpjNumberingPolicyService
         $field = $rule['field'];
         $fallbackField = $rule['fallback_field'];
 
+        if ($definition['scope_rule'] === 'TAHAP' && preg_match('/^TAHAP:(\d+)$/', $scopeKey, $matches)) {
+            return $this->receiptEventDateValue($transaction, $documentType, (int) $matches[1]);
+        }
+
         return match ($rule['relation']) {
             'transaction' => $transaction->sourceValue($field),
             'goods' => $transaction->goods->pluck($field)->filter()->sort()->first()
@@ -172,5 +176,27 @@ class SpjNumberingPolicyService
 
         return $transaction->travels->pluck($field)->filter()->sort()->first()
             ?: ($fallbackField ? $transaction->travels->pluck($fallbackField)->filter()->sort()->first() : null);
+    }
+
+    /**
+     * Event date for staged goods letters: the tahap's own letter date,
+     * falling back to the receipt date. Used for TAHAP:n scopes of
+     * PESANAN/BAP/BAST; MAIN keeps the legacy goods-row behavior.
+     */
+    private function receiptEventDateValue(Transaction $transaction, string $documentType, int $sequence): mixed
+    {
+        $receipt = $transaction->goodsReceipts->firstWhere('receipt_sequence', $sequence);
+        if (! $receipt) {
+            return null;
+        }
+
+        $field = match ($documentType) {
+            'PESANAN' => 'order_date',
+            'BAP' => 'bap_date',
+            'BAST' => 'bast_date',
+            default => null,
+        };
+
+        return ($field ? $receipt->{$field} : null) ?: $receipt->receipt_date;
     }
 }

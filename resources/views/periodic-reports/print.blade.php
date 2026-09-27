@@ -15,6 +15,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <a href="{{ route('spj.periodic-reports.index', ['paket_laporan' => $summary['scope'], 'periode_laporan' => $summary['period']]) }}">Kembali</a>
             <a href="{{ route('spj.periodic-reports.pdf', ['scope' => $summary['scope'], 'report' => $report['key'], 'periode_laporan' => $summary['period']]) }}" target="_blank" rel="noopener">PDF</a>
+            <a href="{{ route('spj.periodic-reports.excel', ['scope' => $summary['scope'], 'report' => $report['key'], 'periode_laporan' => $summary['period']]) }}" target="_blank" rel="noopener">Excel</a>
             <button type="button" class="primary" onclick="window.print()">Cetak</button>
         </div>
     </div>

@@ -54,6 +54,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('k7c', 'Berita Acara Pemeriksaan Kas (K7C)'),
                 $this->report('bos_k7a', 'BOS K7A'),
                 $this->report('rekap_belanja_modal_barang_jasa', 'Rekap Belanja Modal dan Belanja Barang / Jasa'),
+                $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS'),
+                $this->report('bpk_bos', 'Laporan BPK Format BOS'),
             ],
             self::SCOPE_QUARTERLY => [
                 $this->report('sptjm', 'SPTJM'),
@@ -66,6 +68,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('sp2t', 'SP2T'),
                 $this->report('berita_acara_rekonsiliasi', 'Berita Acara Rekonsiliasi'),
                 $this->report('lampiran_berita_acara_rekonsiliasi', 'Lampiran Berita Acara Rekonsiliasi'),
+                $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS'),
+                $this->report('bpk_bos', 'Laporan BPK Format BOS'),
             ],
             self::SCOPE_SEMESTER => [
                 $this->report('sptjm', 'SPTJM'),
@@ -78,7 +82,9 @@ final class SpjPeriodicReportRegistry
                 $this->report('sp2t', 'SP2T'),
                 $this->report('berita_acara_rekonsiliasi', 'Berita Acara Rekonsiliasi'),
                 $this->report('lampiran_berita_acara_rekonsiliasi', 'Lampiran Berita Acara Rekonsiliasi'),
+                $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS'),
                 $this->report('rekap_bmd', 'Rekap Belanja Barang Milik Daerah (Aset)'),
+                $this->report('bpk_bos', 'Laporan BPK Format BOS'),
             ],
             self::SCOPE_ANNUAL => [
                 $this->report('sptjm', 'SPTJM'),
@@ -90,6 +96,7 @@ final class SpjPeriodicReportRegistry
                 $this->report('rekap_belanja_dana_bos', 'Rekap Belanja Dana BOS'),
                 $this->report('form_1c', 'Form 1C'),
                 $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS'),
+                $this->report('bpk_bos', 'Laporan BPK Format BOS'),
             ],
         ];
     }

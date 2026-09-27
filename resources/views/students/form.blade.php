@@ -122,7 +122,7 @@
                     </x-ui.field>
 
                     <x-ui.field label="Tinggi badan" for="student-height" hint="Dalam sentimeter." :error="$errors->first('height')">
-                        <x-ui.input id="student-height" type="number" name="height" :value="old('height',$student->height)" min="0" />
+                        <x-ui.input id="student-height" type="number" name="height" :value="old('height',$student->height)" min="0" step="1" inputmode="numeric" />
                     </x-ui.field>
 
                     <x-ui.field label="Berat badan" for="student-weight" hint="Dalam kilogram." :error="$errors->first('weight')">

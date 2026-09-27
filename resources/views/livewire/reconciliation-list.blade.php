@@ -41,6 +41,12 @@
             </div>
             <x-slot:actions>
                 <div class="flex flex-wrap items-end gap-2">
+                    @if(auth()->user()?->isOperatorOrAdministrator())
+                        <form method="POST" action="{{ route('reconciliation.bulk-review') }}" data-confirm="Tandai semua transaksi yang HANYA berubah metadata sebagai sudah ditinjau? Yang ada perubahan nilai bisnis tetap perlu keputusan individual.">
+                            @csrf
+                            <x-ui.button type="submit" variant="secondary">Tinjau massal (metadata saja)</x-ui.button>
+                        </form>
+                    @endif
                     <x-ui.field label="Cari" for="reconciliation-search" class="min-w-56">
                         <x-ui.input id="reconciliation-search" wire:model.live.debounce.400ms="q" placeholder="Cari bukti, uraian, penerima..." />
                     </x-ui.field>

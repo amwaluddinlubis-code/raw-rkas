@@ -293,6 +293,8 @@ invoice / metadata procurement yang memang operator-owned
 
 Source field tidak boleh diduplikasi menjadi input manual hanya demi kemudahan UI.
 
+Memori vendor (2026-09-27): saat nama penyedia diketik pada Data Umum Dokumen, `vendor_owner` dan `receipt_recipient_name` yang masih kosong diisi rekomendasi dari transaksi terakhir satu tenant dengan nama vendor yang sama (via `transactions.vendor-recommendation`). Hanya field kosong yang diisi; data operator tidak pernah ditimpa, sumber rekomendasi (no_bukti + tanggal) ditampilkan dan operator mengonfirmasi saat menyimpan.
+
 ---
 
 ## 13. Penerima Utama
@@ -305,6 +307,8 @@ Aturan UX/domain:
 - UI memakai radio, bukan checkbox;
 - pilihan disinkronkan ke `receipt_recipient_name`;
 - identitas row tetap dipertahankan, bukan digabung hanya karena nama serupa.
+
+Pengecualian KONSUMSI (2026-09-27): radio berlabel **Penerima Konsumsi**, hanya menandai `spj_participants.is_primary` pada daftar peserta, dan tidak disinkronkan ke `receipt_recipient_name`.
 
 ---
 
@@ -323,6 +327,18 @@ Tanggal BAP <= Tanggal BAST
 ```
 
 Nomor internal otomatis diterbitkan oleh numbering, bukan diketik pada Isian Manual.
+
+Penerimaan bertahap (2026-09-27): bila satu pembayaran menutup beberapa
+pengiriman (mis. pulsa Juli–September dibayar September), tiap tahap dicatat
+pada tab Penomoran beserta tanggal pesanan/BAP/BAST/invoice tahap tersebut.
+Pesanan, BAP, dan BAST dinomori per tahap (scope `TAHAP:n`); kuitansi tetap
+satu. Unduh/pratinjau per template mendukung `?scope=TAHAP:n` untuk mencetak
+set surat tiap tahap sesuai surat fisiknya. Tahap dapat dihapus selama paket
+masih dapat diubah dan tidak ada nomor aktif pada scope tahap tersebut;
+sequence tahap lain dipertahankan stabil. Pilihan barang pada form tahap
+hanya menampilkan barang yang masih bersisa; jumlah maksimal dibatasi sisa
+tersebut, nilai penerimaan terhitung otomatis dari harga satuan sumber
+(readonly) dan server menolak penerimaan melebihi jumlah pesanan.
 
 ---
 

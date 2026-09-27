@@ -51,7 +51,7 @@ final class SpjNumberingDocumentRegistry
                 null,
                 'goods',
                 'order_number',
-                'MAIN',
+                'TAHAP',
             ),
             'BAP' => $this->definition(
                 'BAP',
@@ -63,7 +63,7 @@ final class SpjNumberingDocumentRegistry
                 null,
                 'goods',
                 'bap_number',
-                'MAIN',
+                'TAHAP',
             ),
             'BAST' => $this->definition(
                 'BAST',
@@ -75,7 +75,7 @@ final class SpjNumberingDocumentRegistry
                 null,
                 'goods',
                 'bast_number',
-                'MAIN',
+                'TAHAP',
             ),
             'SPK' => $this->definition(
                 'SPK',

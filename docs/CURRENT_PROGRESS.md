@@ -803,6 +803,29 @@ Evidence aktual:
 
 Route dinamis yang memerlukan ID nyata dan route mutasi POST/PUT/DELETE tidak dijalankan pada sweep ini. Pengujian tersebut memerlukan fixture/flow khusus agar tidak mengubah data operator. Browser visual dan interaksi Livewire aktual tetap RVR sampai checklist runtime browser dijalankan.
 
+## Query performance tahap 1 — 2026-09-25
+
+Diagnosis: disk mentah cepat (5 query = 3 ms) dan indeks events/rekonsiliasi sudah
+memadai; kelambatan `spj.index` 3–18 detik berasal dari latensi per query
+sesaat (lock/WAL saat burst tulis sync; `busy_timeout=5000` membuat baca
+menunggu) dikali volume query per halaman. Perbaikan:
+
+- checkpoint WAL 4 DB sekolah + `PRAGMA wal_checkpoint(PASSIVE)` otomatis
+  pasca-sync sukses (`ArkasSynchronizationServiceV2`);
+- `scopeNeedsReconciliation`: agregasi event terbaru sekali (`GROUP BY`) lalu
+  di-join, bukan subquery `MAX` per baris — hasil identik (dikunci test);
+- kolom generated + indeks: `sx_id_anggaran` pada rapbs mirror (snapshot
+  memfilter `ID_ANGGARAN` di database), `sx_satuan`/`sx_harga_barang`/
+  `sx_batas_atas` + indeks komposit `(sx_tahun, sx_nama_barang, sx_satuan)`
+  pada acuan harga pusat (GROUP BY 68 ribu baris 127 ms → 72 ms, INDEX SEARCH);
+- temuan sampingan: migrasi lookup 150449 tercatat jalan padahal tabel referensi
+  dibuat runtime sesudahnya sehingga kolomnya tak pernah terpasang; migrasi
+  baru melengkapi yang hilang (guard `hasTable`/`hasColumn`).
+
+Evidence aktual: scope rewrite ekuivalen pada salinan DB nyata (45 = 45);
+`TransactionNeedsReconciliationScopeTest` 4/4, `ReferenceModuleTest` 6/6,
+suite rekonsiliasi/budget terkait hijau individual. Browser/runtime tetap RVR.
+
 Hierarki RKAS memprioritaskan relasi `arkas_mirror_rapbs.ID_REF_KODE` ke `arkas_mirror_ref_kode.ID_REF_KODE`; kode dan nama kegiatan diambil dari referensi tersebut, sedangkan `KODE_PROGRAM`, `NAMA_PROGRAM`, `KODE_SUB_PROGRAM`, dan `NAMA_SUB_PROGRAM` diambil dari payload RAPBS lalu memakai referensi parent sebagai fallback. `ID_LEVEL_KODE` ikut dibawa sebagai metadata level referensi.
 
 Filter periode RKAS mirror sekarang menormalisasi `ID_PERIODE` melalui `arkas_mirror_ref_periode` terlebih dahulu. Nama/metadata bulan, triwulan, dan semester dari referensi menjadi dasar agregasi pagu, volume, realisasi, serta jumlah opsi filter; fallback numerik hanya digunakan bila referensi periode belum tersedia.

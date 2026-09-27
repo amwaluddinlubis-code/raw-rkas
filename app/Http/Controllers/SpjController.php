@@ -103,6 +103,11 @@ class SpjController extends Controller
         return $useCase->storeGoodsReceipt($request, $transactionId);
     }
 
+    public function destroyGoodsReceipt(Request $request, string $transactionId, string $receiptId, SpjSettlementUseCase $useCase): RedirectResponse
+    {
+        return $useCase->destroyGoodsReceipt($request, $transactionId, $receiptId);
+    }
+
     public function updateDetails(
         string $packageId,
         Request $request,

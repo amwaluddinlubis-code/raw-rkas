@@ -261,20 +261,27 @@ class ArkasMirrorResolver
      * Agregat sumber per no_bukti langsung dari mirror (untuk snapshot
      * rekonsiliasi dan perbandingan sebelum/sesudah sync).
      *
+     * Nomor bukti ARKAS berulang tiap tahun anggaran (BPU01 ada di
+     * 2024, 2025, 2026), sehingga baseline wajib difilter tahun.
+     * Tanpa filter, baseline tercampur lintas tahun (identitas dari
+     * baris tertua + nominal = jumlah semua tahun).
+     *
      * @return array<string, mixed>|null
      */
-    public function aggregateByBukti(string $noBukti): ?array
+    public function aggregateByBukti(string $noBukti, ?int $year = null): ?array
     {
         try {
             if (! Schema::connection('school')->hasTable('arkas_mirror_kas_umum')) {
                 return null;
             }
 
-            $ids = DB::connection('school')->table('arkas_mirror_kas_umum')
+            $query = DB::connection('school')->table('arkas_mirror_kas_umum')
                 ->where('sx_no_bukti', $noBukti)
-                ->where('sx_kategori', 'BELANJA')
-                ->pluck('source_key')
-                ->all();
+                ->where('sx_kategori', 'BELANJA');
+            if ($year !== null && $year > 0) {
+                $query->where('sx_tanggal', 'like', $year.'-%');
+            }
+            $ids = $query->pluck('source_key')->all();
         } catch (\Throwable) {
             return null;
         }

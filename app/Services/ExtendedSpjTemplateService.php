@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DocumentTemplate;
+use App\Models\GoodsReceipt;
 use App\Models\School;
 use App\Models\SpjPackage;
 use Illuminate\Support\Collection;
@@ -49,9 +50,9 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     }
 
     /** @return array<string,string> */
-    public function placeholders(SpjPackage $package, School $school): array
+    public function placeholders(SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): array
     {
-        $values = parent::placeholders($package, $school);
+        $values = parent::placeholders($package, $school, $receipt);
         $transaction = $package->transaction->withMirrorSource();
         $transaction->loadMissing(['participants.item']);
         $package->setRelation('transaction', $transaction);
@@ -129,13 +130,13 @@ class ExtendedSpjTemplateService extends SpjTemplateService
      * template (page setup, margins, print area, dimensions, styles, merges,
      * header/footer, drawings) attached to the original worksheet object.
      */
-    public function download(DocumentTemplate $template, SpjPackage $package, School $school)
+    public function download(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null)
     {
         if (strtolower((string) $template->format) !== 'xlsx') {
-            return parent::download($template, $package, $school);
+            return parent::download($template, $package, $school, $receipt);
         }
 
-        $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school);
+        $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school, $receipt);
         $output = storage_path('app/generated-documents/'.uniqid('spj_', true).'.xlsx');
         if (! is_dir(dirname($output))) {
             mkdir(dirname($output), 0775, true);
@@ -157,13 +158,13 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         )->deleteFileAfterSend(true);
     }
 
-    public function previewHtml(DocumentTemplate $template, SpjPackage $package, School $school): ?string
+    public function previewHtml(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): ?string
     {
         if (strtolower((string) $template->format) !== 'xlsx') {
-            return parent::previewHtml($template, $package, $school);
+            return parent::previewHtml($template, $package, $school, $receipt);
         }
 
-        $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school);
+        $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school, $receipt);
         try {
             $writer = new Html($spreadsheet);
             $writer->setSheetIndex(0)->setEmbedImages(true)->setUseInlineCss(true);
@@ -174,13 +175,13 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    public function downloadPdf(DocumentTemplate $template, SpjPackage $package, School $school)
+    public function downloadPdf(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null)
     {
         if (strtolower((string) $template->format) !== 'xlsx') {
-            return parent::downloadPdf($template, $package, $school);
+            return parent::downloadPdf($template, $package, $school, $receipt);
         }
 
-        $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school);
+        $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school, $receipt);
         try {
             return $this->pdfResponseExtended(
                 $this->spreadsheetPdfContentsExtended($spreadsheet, false),
@@ -245,7 +246,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    protected function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school): Spreadsheet
+    protected function canonicalSpreadsheet(DocumentTemplate $template, SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): Spreadsheet
     {
         $sourcePath = $this->templateSourcePathExtended($template);
         if (! is_file($sourcePath)) {
@@ -256,7 +257,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
 
         try {
             [$sheet, $sheetName] = $this->resolveCanonicalWorksheet($source, $template);
-            $this->fillCanonicalWorksheet($sheet, $package, $school, $template);
+            $this->fillCanonicalWorksheet($sheet, $package, $school, $template, $receipt);
 
             return $this->retainOnlyCanonicalWorksheet($source, $sheetName);
         } catch (\Throwable $exception) {
@@ -352,11 +353,11 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         return $source;
     }
 
-    private function fillCanonicalWorksheet(Worksheet $sheet, SpjPackage $package, School $school, ?DocumentTemplate $template = null): void
+    private function fillCanonicalWorksheet(Worksheet $sheet, SpjPackage $package, School $school, ?DocumentTemplate $template = null, ?GoodsReceipt $receipt = null): void
     {
-        $values = $this->placeholders($package, $school);
+        $values = $this->placeholders($package, $school, $receipt);
         $this->normalizeMergedAnchorPlaceholders($sheet);
-        $this->fillExcelItemsExtended($sheet, $package, $template);
+        $this->fillExcelItemsExtended($sheet, $package, $template, $receipt);
         $this->fillExcelWorkersExtended($sheet, $package);
         $this->fillExcelLetterhead($sheet, $school);
 
@@ -462,9 +463,9 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    private function itemValuesExtended(SpjPackage $package, int $index): array
+    private function itemValuesExtended(SpjPackage $package, int $index, ?Collection $renderItems = null): array
     {
-        $item = $package->transaction->items[$index - 1];
+        $item = ($renderItems ?? $package->transaction->items)[$index - 1];
 
         return [
             'ITEM_NO' => (string) $index,
@@ -479,17 +480,17 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         ];
     }
 
-    private function fillExcelItemsExtended(Worksheet $sheet, SpjPackage $package, ?DocumentTemplate $template = null): void
+    private function fillExcelItemsExtended(Worksheet $sheet, SpjPackage $package, ?DocumentTemplate $template = null, ?GoodsReceipt $receipt = null): void
     {
-        $this->withRabItemsForTemplate($package, $template, function () use ($sheet, $package): void {
-            $items = $package->transaction->items;
+        $this->withRabItemsForTemplate($package, $template, function () use ($sheet, $package, $receipt): void {
+            $items = $this->renderItems($package, $receipt);
 
             app(SpjRepeatingRowRenderer::class)->render(
                 $sheet,
                 '{{ITEM_NO}}',
                 'ITEM_',
                 $items->count(),
-                fn (int $index): array => $this->itemValuesExtended($package, $index),
+                fn (int $index): array => $this->itemValuesExtended($package, $index, $items),
                 ['JENIS_RAB'],
             );
         });

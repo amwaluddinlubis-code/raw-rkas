@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\SpjPeriodicReportExcelService;
 use App\Services\SpjPeriodicReportPrintService;
 use App\Services\SpjPeriodicReportRegistry;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,6 +15,7 @@ final class PeriodicReportController extends Controller
     public function __construct(
         private readonly SpjPeriodicReportRegistry $registry,
         private readonly SpjPeriodicReportPrintService $reports,
+        private readonly SpjPeriodicReportExcelService $excel,
     ) {}
 
     public function show(Request $request, string $scope, string $report): View
@@ -28,6 +30,18 @@ final class PeriodicReportController extends Controller
         return Pdf::loadView('periodic-reports.pdf', $payload)
             ->setPaper($payload['paper'] ?? 'a4', $payload['orientation'])
             ->stream($payload['fileName'].'.pdf');
+    }
+
+    public function excel(Request $request, string $scope, string $report): Response
+    {
+        $payload = $this->payload($request, $scope, $report);
+        $path = $this->excel->export($payload);
+
+        return response()->download(
+            $path,
+            $payload['fileName'].'.xlsx',
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        )->deleteFileAfterSend(true);
     }
 
     /** @return array<string,mixed> */

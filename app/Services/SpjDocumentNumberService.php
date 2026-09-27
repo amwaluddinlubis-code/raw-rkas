@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\DocumentNumberFormat;
 use App\Models\SpjDocument;
+use App\Models\SpjGoods;
 use App\Models\SpjPackage;
+use App\Models\Transaction;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -25,7 +27,7 @@ class SpjDocumentNumberService
     public function assignAutomaticNumbers(SpjPackage $package, string $schoolCode, ?string $npsn = null, ?array $onlyDocumentTypes = null): array
     {
         $package->load('transaction');
-        $package->transaction?->load(['goods', 'workOrder', 'travels']);
+        $package->transaction?->load(['goods', 'workOrder', 'travels', 'goodsReceipts.items']);
         $transaction = $package->transaction;
         $documents = collect();
         $created = 0;
@@ -38,7 +40,7 @@ class SpjDocumentNumberService
                 ->unique()
                 ->values();
 
-        $assign = function (string $type, CarbonInterface $date, string $scopeKey = 'MAIN') use ($package, $schoolCode, $npsn, $documents, &$created, &$skipped): SpjDocument {
+        $assign = function (string $type, CarbonInterface $date, string $scopeKey = 'MAIN', bool $count = true) use ($package, $schoolCode, $npsn, $documents, &$created, &$skipped): SpjDocument {
             $alreadyNumbered = $package->documents()
                 ->where(['document_type' => $type, 'scope_key' => $scopeKey])
                 ->where('status', '!=', 'CANCELLED')
@@ -46,7 +48,9 @@ class SpjDocumentNumberService
                 ->exists();
             $document = $this->assign($package, $type, $date, $schoolCode, $scopeKey, npsn: $npsn);
             $documents->push($document);
-            $alreadyNumbered ? $skipped++ : $created++;
+            if ($count) {
+                $alreadyNumbered ? $skipped++ : $created++;
+            }
 
             return $document;
         };
@@ -74,6 +78,14 @@ class SpjDocumentNumberService
             }
 
             if ($target['relation'] === 'goods') {
+                if (($definition['scope_rule'] ?? null) === 'TAHAP'
+                    && $transaction->goodsReceipts->where('status', '!==', 'CANCELLED')->count() > 1) {
+                    $staged = $this->assignTahapNumbers($package, $transaction, $type, $targetField, $assign, $documents);
+                    $created += $staged['created'];
+                    $skipped += $staged['skipped'];
+
+                    continue;
+                }
                 if (! $eventDate || ! $targetField) {
                     continue;
                 }
@@ -136,6 +148,52 @@ class SpjDocumentNumberService
         }
 
         return compact('created', 'skipped', 'documents');
+    }
+
+    /**
+     * Per-tahap numbering for staged goods letters (BNU33 pattern: one
+     * payment, several monthly deliveries). Each receipt gets its own
+     * document scope TAHAP:n; the assigned number is written back only
+     * onto the spj_goods rows of that tahap's items.
+     *
+     * @param  callable(string, CarbonInterface, string, bool):SpjDocument  $assign
+     * @param  Collection<int, SpjDocument>  $documents
+     * @return array{created:int,skipped:int}
+     */
+    private function assignTahapNumbers(SpjPackage $package, Transaction $transaction, string $type, string $targetField, callable $assign, Collection $documents): array
+    {
+        $created = 0;
+        $skipped = 0;
+        $receipts = $transaction->goodsReceipts
+            ->where('status', '!==', 'CANCELLED')
+            ->sortBy('receipt_sequence')
+            ->values();
+
+        foreach ($receipts as $receipt) {
+            $scopeKey = 'TAHAP:'.$receipt->receipt_sequence;
+            $eventDate = $this->policy->documentEventDateValue($transaction, $type, $scopeKey);
+            if (! $eventDate) {
+                continue;
+            }
+            $itemIds = $receipt->items->pluck('transaction_item_id')->all();
+            $goodsQuery = SpjGoods::query()->whereIn('transaction_item_id', $itemIds);
+            if ($itemIds === [] || $goodsQuery->count() === 0) {
+                continue;
+            }
+            $existing = (clone $goodsQuery)->whereNotNull($targetField)->value($targetField);
+            if ($existing) {
+                (clone $goodsQuery)->whereNull($targetField)->update([$targetField => $existing]);
+                $skipped++;
+
+                continue;
+            }
+            $document = $assign($type, Carbon::parse($eventDate), $scopeKey, false);
+            (clone $goodsQuery)->whereNull($targetField)->update([$targetField => $document->document_number]);
+            $documents->push($document);
+            $created++;
+        }
+
+        return compact('created', 'skipped');
     }
 
     public function assign(
@@ -244,7 +302,7 @@ class SpjDocumentNumberService
     private function canonicalDocumentDate(SpjPackage $package, string $documentType, CarbonInterface $fallback, string $scopeKey): CarbonInterface
     {
         $package->load('transaction');
-        $package->transaction?->load(['goods', 'workOrder', 'travels']);
+        $package->transaction?->load(['goods', 'workOrder', 'travels', 'goodsReceipts.items']);
         $value = $this->policy->documentEventDateValue($package->transaction, $documentType, $scopeKey);
 
         return filled($value) ? Carbon::parse($value) : $fallback;

@@ -201,6 +201,103 @@ class EmployeeIdentityMergeTest extends TestCase
         $this->assertFalse($identity->effectiveActive(null, false));
     }
 
+    public function test_fuse_merges_titled_variants_with_complementary_ids(): void
+    {
+        $pegawai = Employee::query()->create([
+            'source_type' => 'PEGAWAI', 'source_key' => 'ARKAS:PEGAWAI:1', 'name' => 'TARMINI',
+            'normalized_name' => 'tarmini', 'nuptk' => '2663764665300022',
+            'last_seen_arkas_at' => now(), 'last_known_active_arkas' => true,
+        ]);
+        Employee::query()->create([
+            'source_type' => 'PTK', 'source_key' => 'ARKAS:PTK:2', 'name' => 'TARMINI, S.Pd.',
+            'normalized_name' => 'tarmini s pd', 'nip' => '198603312022212019',
+            'position' => 'BENDAHARA BOS',
+            'last_seen_arkas_at' => now(), 'last_known_active_arkas' => true,
+        ]);
+
+        $report = app(EmployeeIdentityService::class)->fuseDuplicates(false);
+
+        $this->assertSame(1, $report['groups']);
+        $this->assertSame(1, $report['merged']);
+        $this->assertSame(1, Employee::query()->count());
+
+        $kept = Employee::query()->firstOrFail();
+        $this->assertSame($pegawai->id, $kept->id);
+        $this->assertSame('2663764665300022', $kept->nuptk);
+        $this->assertSame('198603312022212019', $kept->nip);
+        $this->assertSame('BENDAHARA BOS', $kept->position);
+    }
+
+    public function test_fuse_skips_titled_variants_with_conflicting_ids(): void
+    {
+        Employee::query()->create([
+            'source_type' => 'PEGAWAI', 'source_key' => 'ARKAS:PEGAWAI:1', 'name' => 'TARMINI',
+            'normalized_name' => 'tarmini', 'nip' => '111',
+        ]);
+        Employee::query()->create([
+            'source_type' => 'PTK', 'source_key' => 'ARKAS:PTK:2', 'name' => 'TARMINI, S.Pd.',
+            'normalized_name' => 'tarmini s pd', 'nip' => '222', 'nuptk' => '999',
+        ]);
+
+        $report = app(EmployeeIdentityService::class)->fuseDuplicates(false);
+
+        $this->assertSame(0, $report['groups']);
+        $this->assertSame(2, Employee::query()->count());
+    }
+
+    public function test_fuse_skips_titled_variants_without_ids(): void
+    {
+        Employee::query()->create([
+            'source_type' => 'ARKAS', 'source_key' => 'ARKAS:1', 'name' => 'SUTRI BATUBARA',
+            'normalized_name' => 'sutri batubara',
+        ]);
+        Employee::query()->create([
+            'source_type' => 'ARKAS', 'source_key' => 'ARKAS:2', 'name' => 'Sutri Batubara, S.Pd.',
+            'normalized_name' => 'sutri batubara s pd',
+        ]);
+
+        $report = app(EmployeeIdentityService::class)->fuseDuplicates(false);
+
+        $this->assertSame(0, $report['groups']);
+        $this->assertSame(2, Employee::query()->count());
+    }
+
+    public function test_fuse_skips_titled_variants_with_manual_or_locked_rows(): void
+    {
+        Employee::query()->create([
+            'source_type' => 'MANUAL', 'source_key' => 'MANUAL:1', 'name' => 'TARMINI',
+            'normalized_name' => 'tarmini', 'nuptk' => '2663764665300022',
+        ]);
+        Employee::query()->create([
+            'source_type' => 'PTK', 'source_key' => 'ARKAS:PTK:2', 'name' => 'TARMINI, S.Pd.',
+            'normalized_name' => 'tarmini s pd', 'nip' => '198603312022212019',
+        ]);
+        Employee::query()->create([
+            'source_type' => 'PEGAWAI', 'source_key' => 'ARKAS:PEGAWAI:3', 'name' => 'UBAIDAH NASUTION',
+            'normalized_name' => 'ubaidah nasution', 'nuptk' => '9533748649300012',
+            'operator_locked' => true,
+        ]);
+        Employee::query()->create([
+            'source_type' => 'PTK', 'source_key' => 'ARKAS:PTK:4', 'name' => 'UBAIDAH NASUTION, S.Pd.',
+            'normalized_name' => 'ubaidah nasution s pd', 'nip' => '197002012000032007',
+        ]);
+
+        $report = app(EmployeeIdentityService::class)->fuseDuplicates(false);
+
+        $this->assertSame(0, $report['groups']);
+        $this->assertSame(4, Employee::query()->count());
+    }
+
+    public function test_core_name_strips_titles(): void
+    {
+        $identity = app(EmployeeIdentityService::class);
+
+        $this->assertSame('tarmini', $identity->coreName('TARMINI, S.Pd.'));
+        $this->assertSame('ubaidah nasution', $identity->coreName('UBAIDAH NASUTION, S.Pd.'));
+        $this->assertSame('muhammad hidayat', $identity->coreName('H. Muhammad Hidayat, M.Pd.'));
+        $this->assertSame('sutri batubara', $identity->coreName('SUTRI BATUBARA'));
+    }
+
     /** @return array{0: Employee, 1: Employee} */
     private function seedDuplicatePair(): array
     {

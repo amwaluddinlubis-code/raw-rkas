@@ -115,7 +115,7 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertStringContainsString("@include('spj.partials.package.documents')", $index);
         $this->assertStringContainsString('id="package-panel-rincian"', $index);
         $this->assertStringContainsString('class="overflow-hidden border-b border-[var(--ui-line)] pb-1"', $validation);
-        $this->assertStringContainsString('class="overflow-hidden pt-1"', $documents);
+        $this->assertStringContainsString('class="overflow-hidden"', $documents);
         $this->assertStringNotContainsString('mx-5 mt-5 overflow-hidden rounded-xl border', $validation);
         $this->assertStringNotContainsString('mx-5 mt-5 overflow-hidden rounded-xl border', $documents);
     }

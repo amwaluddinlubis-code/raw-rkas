@@ -113,4 +113,55 @@ class SpjPackageManualCategoryTest extends TestCase
         $this->assertSame(0, $transaction->fresh()->goods()->count());
         $this->assertSame(1, $transaction->fresh()->serviceRecipients()->count());
     }
+
+    public function test_konsumsi_primary_marks_list_without_overwriting_receipt_signer(): void
+    {
+        $transaction = $this->mirrorTransaction([
+            'fiscal_year_id' => 1,
+            'fund_source_id' => 1,
+            'no_bukti' => 'BPU05',
+            'transaction_date' => '2026-01-15',
+            'gross_amount' => 500000,
+            'net_amount' => 500000,
+            'spj_category' => 'KONSUMSI',
+        ]);
+        $this->mirrorItem($transaction, [
+            'description' => 'Konsumsi rapat',
+            'item_description' => 'Konsumsi rapat',
+            'quantity' => 10,
+            'unit' => 'paket',
+            'unit_price' => 50000,
+            'amount' => 500000,
+        ]);
+        $package = $transaction->spjPackage()->create(['status' => 'DRAFT']);
+
+        $this->withoutMiddleware()
+            ->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1])
+            ->put(route('spj.update', $package->id), [
+                'spj_category' => 'KONSUMSI',
+                'payment_description' => 'Konsumsi rapat kerja',
+                'payment_method' => 'tunai',
+                'receipt_recipient_name' => 'Bendahara Kuitansi',
+                'event_name' => 'Rapat kerja',
+                'event_location' => 'Aula sekolah',
+                'event_date' => '2026-01-15',
+                'participant_count' => 2,
+                'participants' => [
+                    ['name' => 'Ani', 'portions' => 1],
+                    ['name' => 'Budi', 'portions' => 1],
+                ],
+                'primary_recipient_group' => 'participants',
+                'primary_recipient_index' => 1,
+            ])
+            ->assertSessionHasNoErrors();
+
+        // Penandatangan kuitansi tetap dari Data Umum Dokumen, bukan radio daftar.
+        $this->assertSame('Bendahara Kuitansi', $transaction->fresh()->receipt_recipient_name);
+
+        $participants = $transaction->fresh()->items->first()->participants()->orderBy('sort_order')->get();
+        $this->assertCount(2, $participants);
+        $this->assertFalse((bool) $participants[0]->is_primary);
+        $this->assertTrue((bool) $participants[1]->is_primary);
+        $this->assertSame('Budi', $participants[1]->name);
+    }
 }

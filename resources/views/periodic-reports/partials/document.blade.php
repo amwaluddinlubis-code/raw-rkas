@@ -4,11 +4,16 @@
     $principalNip = trim((string) ($profile->principal_nip ?? ''));
     $treasurerName = trim((string) ($profile->treasurer_name ?? '')) ?: '........................................';
     $treasurerNip = trim((string) ($profile->treasurer_nip ?? ''));
+    $isLedger = in_array($presentation, ['bku_ledger', 'cash_ledger'], true);
+    $isRekap = $presentation === 'rekap_bosp';
+    $isBpk = $presentation === 'bpk_bos';
+    $ledgerTitle = $presentation === 'cash_ledger' ? 'BUKU PEMBANTU KAS' : 'BUKU KAS UMUM (BKU)';
+    $closingSubject = $presentation === 'cash_ledger' ? 'Buku Pembantu Kas' : 'Buku Kas Umum';
 @endphp
 
 <article class="document-sheet">
-    @if($presentation === 'bku_ledger' || $presentation === 'tax')
-        <h1 class="doc-title">{{ $presentation === 'tax' ? 'BUKU PEMBANTU PAJAK' : 'BUKU KAS UMUM (BKU)' }}</h1>
+    @if($isLedger || $presentation === 'tax')
+        <h1 class="doc-title">{{ $presentation === 'tax' ? 'BUKU PEMBANTU PAJAK' : $ledgerTitle }}</h1>
         @if($presentation === 'tax')
             <div class="doc-subtitle">BKU - PAJAK</div>
         @endif
@@ -37,6 +42,7 @@
             </tr>
         </table>
     @else
+    @if(! $isRekap)
     <header class="doc-header">
         <div class="school">{{ $school->name }}</div>
         <div class="address">
@@ -53,8 +59,107 @@
     <h1 class="doc-title">{{ $report['label'] }}</h1>
     <div class="doc-subtitle">{{ $summary['period_label'] }}</div>
     @endif
+    @endif
 
-    @if(! in_array($presentation, ['bku_ledger', 'tax'], true))
+    @if($isRekap && isset($rekapBosp))
+        <h1 class="doc-title">REKAPITULASI REALISASI PENGGUNAAN DANA BOSP</h1>
+        <div class="doc-subtitle">PERIODE TANGGAL : {{ $rekapTitle['range'] ?? '-' }}</div>
+        <div class="doc-subtitle">{{ $rekapTitle['phase'] ?? '' }}</div>
+        <table class="bku-identity-block page-break-avoid">
+            <tr>
+                <td>NPSN</td>
+                <td>: {{ $school->npsn ?? '-' }}</td>
+            </tr>
+            <tr>
+                <td>Nama Sekolah</td>
+                <td>: {{ $school->name }}</td>
+            </tr>
+            <tr>
+                <td>Kecamatan</td>
+                <td>: {{ str_starts_with((string) $school->district, 'Kec.') ? $school->district : 'Kec. '.$school->district }}</td>
+            </tr>
+            <tr>
+                <td>Kabupaten/Kota</td>
+                <td>: {{ str_starts_with((string) $school->regency, 'Kab.') ? $school->regency : 'Kab. '.$school->regency }}</td>
+            </tr>
+            <tr>
+                <td>Provinsi</td>
+                <td>: {{ str_starts_with((string) $school->province, 'Prov.') ? $school->province : 'Prov. '.$school->province }}</td>
+            </tr>
+            <tr>
+                <td>Sumber Dana</td>
+                <td>: {{ $fundSource }}</td>
+            </tr>
+        </table>
+        @php
+            $snpRows = $rekapSnpRows ?? [];
+            $subPrograms = $rekapSubPrograms ?? [];
+            $rekapCols = range(1, 12);
+        @endphp
+        <table class="report-table rekap-bosp-table">
+            <thead>
+                <tr>
+                    <th rowspan="3">No.<br>Urut</th>
+                    <th rowspan="3">Standar Nasional<br>Pendidikan</th>
+                    <th colspan="12">SUB PROGRAM</th>
+                    <th rowspan="3">Jumlah</th>
+                </tr>
+                <tr>
+                    @foreach($rekapCols as $col)
+                        <th>{{ $subPrograms[$col] }}</th>
+                    @endforeach
+                </tr>
+                <tr>
+                    @foreach($rekapCols as $col)
+                        <th>{{ $col }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($snpRows as $rowIndex => $snpLabel)
+                    @php
+                        $rowNo = $rowIndex + 1;
+                    @endphp
+                    <tr>
+                        <td class="integer">{{ $rowNo }}</td>
+                        <td>{{ $snpLabel }}</td>
+                        @foreach($rekapCols as $col)
+                            <td class="money">{{ $rupiah($rekapBosp['grid'][$rowNo][$col] ?? 0) }}</td>
+                        @endforeach
+                        <td class="money"><strong>{{ $rupiah($rekapBosp['rowTotals'][$rowNo] ?? 0) }}</strong></td>
+                    </tr>
+                @endforeach
+                <tr>
+                    <td class="integer"></td>
+                    <td><strong>JUMLAH</strong></td>
+                    @foreach($rekapCols as $col)
+                        <td class="money"><strong>{{ $rupiah($rekapBosp['colTotals'][$col] ?? 0) }}</strong></td>
+                    @endforeach
+                    <td class="money"><strong>{{ $rupiah($rekapBosp['grand'] ?? 0) }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="meta-table page-break-avoid">
+            <tr>
+                <td>Saldo periode sebelumnya</td>
+                <td>: Rp. {{ $rupiah($rekapBosp['prev'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td>Total penerimaan dana BOSP periode ini</td>
+                <td>: Rp. {{ $rupiah($rekapBosp['received'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td>Total penggunaan dana BOSP periode ini</td>
+                <td>: Rp. {{ $rupiah($rekapBosp['used'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td>Akhir saldo BOSP periode ini</td>
+                <td>: Rp. {{ $rupiah($rekapBosp['closing'] ?? 0) }}</td>
+            </tr>
+        </table>
+    @endif
+
+    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk)
     <table class="meta-table page-break-avoid">
         <tr>
             <td>Tahun Anggaran</td>
@@ -71,6 +176,11 @@
     </table>
     @endif
 
+    @if(! empty($bpkData))
+        @include('periodic-reports.partials.bpk-dinas')
+    @endif
+
+
     @if($presentation === 'statement')
         <div class="statement">
             @foreach($statement as $paragraph)
@@ -79,7 +189,7 @@
         </div>
     @endif
 
-    @if($presentation !== 'bku_ledger')
+    @if(! $isLedger && ! $isRekap && ! $isBpk)
     <table class="summary-table page-break-avoid">
         <thead>
             <tr>
@@ -114,8 +224,8 @@
         @if($presentation === 'statement')
             <div style="margin-top:12px;font-weight:700;">Rekap Pendukung</div>
         @endif
-        <table class="report-table{{ $presentation === 'bku_ledger' ? ' bku-table' : '' }}">
-            @if($presentation === 'bku_ledger')
+        <table class="report-table{{ $isLedger ? ' bku-table' : '' }}">
+            @if($isLedger)
                 <colgroup>
                     <col style="width:72px">
                     <col style="width:68px">
@@ -166,20 +276,26 @@
         </table>
     @endif
 
-    @if($presentation === 'bku_ledger' && isset($bkuClosing))
+    @if($isLedger && isset($bkuClosing))
         <div class="bku-closing page-break-avoid">
-            <p>Pada hari ini {{ $bkuClosing['weekday_date'] }} Buku Kas Umum Ditutup dengan keadaan/posisi buku sebagai berikut :</p>
+            <p>Pada hari ini {{ $bkuClosing['weekday_date'] }} {{ $closingSubject }} Ditutup dengan keadaan/posisi buku sebagai berikut :</p>
             <table class="bku-closing-table">
-                <tr><td class="bku-closing-label"><strong>Saldo Buku Kas Umum</strong></td><td>: Rp. {{ $rupiah($bkuClosing['total']) }}</td></tr>
+                @if($presentation === 'cash_ledger')
+                    <tr><td class="bku-closing-label"><strong>Saldo Kas Tunai</strong></td><td>: Rp. {{ $rupiah($bkuClosing['cash']) }}</td></tr>
+                @else
+                    <tr><td class="bku-closing-label"><strong>Saldo Buku Kas Umum</strong></td><td>: Rp. {{ $rupiah($bkuClosing['total']) }}</td></tr>
+                @endif
                 <tr><td class="bku-closing-label">Terdiri Dari :</td><td></td></tr>
-                <tr><td class="bku-closing-label">- Saldo Bank</td><td>: Rp. {{ $rupiah($bkuClosing['bank']) }}</td></tr>
+                @if($presentation !== 'cash_ledger')
+                    <tr><td class="bku-closing-label">- Saldo Bank</td><td>: Rp. {{ $rupiah($bkuClosing['bank']) }}</td></tr>
+                @endif
                 <tr><td class="bku-closing-label">- Saldo Kas Tunai</td><td>: Rp. {{ $rupiah($bkuClosing['cash']) }}</td></tr>
                 <tr><td class="bku-closing-label"><strong>Jumlah</strong></td><td>: Rp. {{ $rupiah($bkuClosing['total']) }}</td></tr>
             </table>
         </div>
     @endif
 
-    @if($presentation === 'bku_ledger' || $presentation === 'tax')
+    @if($isLedger || $presentation === 'tax')
     <table class="signature-table bku-signature">
         <tr>
             <td>
@@ -194,6 +310,30 @@
             <td>
                 @if($school->district)Kec. {{ $school->district }}, @endif{{ $bkuClosing['signed_date'] ?? '' }}<br>
                 Bendahara,
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @endif
+    @if($isRekap)
+    <table class="signature-table">
+        <tr>
+            <td>
+                Menyetujui,<br>
+                Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+            <td>
+                Bendahara /<br>
+                Penanggungjawab Kegiatan
                 <div class="signature-space"></div>
                 <div class="signature-name">{{ $treasurerName }}</div>
                 @if($treasurerNip)

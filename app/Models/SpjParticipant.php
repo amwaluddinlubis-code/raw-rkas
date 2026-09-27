@@ -9,7 +9,7 @@ class SpjParticipant extends Model
 {
     protected $connection = 'school';
 
-    protected $fillable = ['transaction_item_id', 'name', 'position', 'nip', 'nuptk', 'portions', 'sort_order'];
+    protected $fillable = ['transaction_item_id', 'name', 'position', 'nip', 'nuptk', 'portions', 'is_primary', 'sort_order'];
 
     public function item(): BelongsTo
     {
@@ -18,6 +18,6 @@ class SpjParticipant extends Model
 
     protected function casts(): array
     {
-        return ['portions' => 'decimal:2'];
+        return ['portions' => 'decimal:2', 'is_primary' => 'boolean'];
     }
 }

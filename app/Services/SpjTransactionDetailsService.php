@@ -190,6 +190,13 @@ class SpjTransactionDetailsService
             return;
         }
 
+        // Radio "Penerima Konsumsi" hanya menandai penerima pada daftar
+        // konsumsi (spj_participants.is_primary). Ia TIDAK mengisi
+        // penandatangan kuitansi; itu murni dari field Data Umum Dokumen.
+        $primaryIndex = ($details['primary_recipient_group'] ?? null) === 'participants'
+            ? (int) ($details['primary_recipient_index'] ?? -1)
+            : -1;
+
         foreach ($details['participants'] ?? [] as $sortOrder => $participant) {
             if (blank($participant['name'] ?? null)) {
                 continue;
@@ -200,6 +207,7 @@ class SpjTransactionDetailsService
                 'nip' => blank($participant['nip'] ?? null) ? null : trim($participant['nip']),
                 'nuptk' => blank($participant['nuptk'] ?? null) ? null : trim($participant['nuptk']),
                 'portions' => (float) ($participant['portions'] ?? 1),
+                'is_primary' => $primaryIndex === (int) $sortOrder,
                 'sort_order' => $sortOrder,
             ]);
         }

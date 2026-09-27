@@ -29,6 +29,19 @@ class ArkasSynchronizationServiceV2
     }
 
     /**
+     * Checkpoint WAL pasca-sync (PASSIVE: tidak menunggu lock) agar baca
+     * berikutnya tidak memindai WAL basi. Kegagalan tidak menggagalkan sync.
+     */
+    private function checkpointAfterSync(): void
+    {
+        try {
+            DB::connection('school')->unprepared('PRAGMA wal_checkpoint(PASSIVE)');
+        } catch (\Throwable $exception) {
+            Log::warning('Checkpoint WAL pasca-sync dilewati.', ['error' => $exception->getMessage()]);
+        }
+    }
+
+    /**
      * Rekam SOURCE_CHANGED dari snapshot mirror (pengganti trigger
      * snapshot kolom lokal yang basi pasca-refactor overlay).
      *
@@ -247,6 +260,7 @@ class ArkasSynchronizationServiceV2
                 'records_written' => count($rkas) + count($bku), 'finished_at' => now(), 'updated_at' => now(),
             ]);
             $source->forceFill(['last_identity' => json_encode($identity, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'last_synced_at' => now()])->save();
+            $this->checkpointAfterSync();
 
             return ['rkas' => count($rkas), 'bku' => count($bku)];
         } catch (\Throwable $exception) {
@@ -423,7 +437,7 @@ class ArkasSynchronizationServiceV2
         $resolver = app(ArkasMirrorResolver::class);
         foreach ($records as $record) {
             if (($record['KATEGORI_BKU'] ?? '') === 'BELANJA' && ! empty($record['NO_BUKTI']) && ! array_key_exists($record['NO_BUKTI'], $mirrorBefore)) {
-                $mirrorBefore[$record['NO_BUKTI']] = $resolver->aggregateByBukti((string) $record['NO_BUKTI']);
+                $mirrorBefore[$record['NO_BUKTI']] = $resolver->aggregateByBukti((string) $record['NO_BUKTI'], (int) $year->year);
             }
         }
         foreach ($this->ids($records, 'ID_KAS_UMUM') as $kasId) {

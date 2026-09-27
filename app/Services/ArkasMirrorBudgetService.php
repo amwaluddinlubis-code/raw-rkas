@@ -152,7 +152,11 @@ final class ArkasMirrorBudgetService
         $rows = collect();
         $names = [];
         $validAnggaranIds = $overrideIds ?? $this->latestAnggaranIds($db, $fundSourceId, $year);
-        $rapbsRecords = $db->table('arkas_mirror_rapbs')->get(['source_key', 'payload']);
+        $rapbsQuery = $db->table('arkas_mirror_rapbs');
+        if ($validAnggaranIds !== [] && Schema::connection('school')->hasColumn('arkas_mirror_rapbs', 'sx_id_anggaran')) {
+            $rapbsQuery->whereIn('sx_id_anggaran', $validAnggaranIds);
+        }
+        $rapbsRecords = $rapbsQuery->get(['source_key', 'payload']);
         $references = [];
         $referencesByCode = [];
         if (Schema::hasTable('arkas_mirror_ref_kode')) {

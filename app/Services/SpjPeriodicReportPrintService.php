@@ -9,6 +9,7 @@ use App\UseCases\Spj\SpjPeriodicReportUseCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class SpjPeriodicReportPrintService
 {
@@ -43,7 +44,7 @@ final class SpjPeriodicReportPrintService
         $summary = $payload['summary'];
 
         $extra = [];
-        if ($presentation === 'bku_ledger' || $presentation === 'tax') {
+        if (in_array($presentation, ['bku_ledger', 'cash_ledger', 'tax'], true)) {
             $extra['bkuClosing'] = $this->bkuClosing($summary);
             $extra['bkuPeriod'] = $this->bkuPeriodLabel($summary, (int) ($year->year ?: now()->year));
             if ($presentation === 'tax') {
@@ -56,6 +57,18 @@ final class SpjPeriodicReportPrintService
                 (string) ($year->fundSource?->name ?? $year->fund_source ?? '-'),
                 (int) ($year->year ?: now()->year)
             );
+        }
+        if ($presentation === 'rekap_bosp') {
+            $extra['rekapBosp'] = $this->rekapBospData($scope, $period);
+            $extra['rekapTitle'] = $this->rekapBospTitle($summary, (int) ($year->year ?: now()->year));
+            $extra['rekapSnpRows'] = BospRekapStandardMapper::standardRows();
+            $extra['rekapSubPrograms'] = BospRekapStandardMapper::subPrograms();
+        }
+        if ($presentation === 'bpk_bos') {
+            $extra['bpkData'] = $this->bpkData($scope, $period);
+            $extra['bpkTitle'] = $this->bpkTitle($summary, (int) ($year->year ?: now()->year));
+            $extra['bpkSchoolName'] = $this->bpkSchoolName($school->name ?? '');
+            $extra['bpkSchoolAddress'] = mb_strtoupper(trim('DESA '.(string) $school->desa.' KECAMATAN '.(string) $school->district));
         }
 
         return [
@@ -84,8 +97,10 @@ final class SpjPeriodicReportPrintService
             'buku_pembantu_bank' => 'bank_ledger',
             'buku_pembantu_pajak' => 'tax',
             'bos_k7a', 'bos_k8' => 'activity_summary',
+            'rekapitulasi_pengeluaran_dana_bos' => 'rekap_bosp',
+            'bpk_bos' => 'bpk_bos',
             'format_k7', 'rekap_belanja_modal_barang_jasa', 'rekap_bmd',
-            'rekap_belanja_dana_bos', 'form_1c', 'rekapitulasi_pengeluaran_dana_bos' => 'account_summary',
+            'rekap_belanja_dana_bos', 'form_1c' => 'account_summary',
             'lampiran_sp2b', 'lampiran_berita_acara_rekonsiliasi' => 'transaction_recap',
             default => 'statement',
         };
@@ -97,14 +112,217 @@ final class SpjPeriodicReportPrintService
         return match ($presentation) {
             'bku_ledger' => [$this->bkuLedgerColumns(), $this->bkuLedgerRows($scope, $period)],
             'ledger' => [$this->ledgerColumns(), $this->ledgerRows($transactions)],
-            'cash_ledger' => [$this->ledgerColumns(), $this->ledgerRows($this->cashTransactions($transactions))],
+            'cash_ledger' => [$this->bkuLedgerColumns(), $this->bkuLedgerRows($scope, $period, true)],
             'bank_ledger' => [$this->ledgerColumns(), $this->ledgerRows($this->bankTransactions($transactions))],
             'tax' => [$this->taxColumns(), $this->taxRows($transactions)],
+            'rekap_bosp' => [$this->rekapBospColumns(), $this->rekapBospRows($scope, $period)],
             'activity_summary' => [$this->activityColumns(), $this->activityRows($transactions)],
             'account_summary' => [$this->accountColumns(), $this->accountRows($transactions)],
             'transaction_recap' => [$this->recapColumns(), $this->recapRows($transactions)],
+            'bpk_bos' => [[], []],
             default => [$this->accountColumns(), $this->accountRows($transactions)],
         };
+    }
+
+    /**
+     * Laporan BPK Dinas (REKAP REALISASI PENGGUNAAN DANA BOS): DATA SEKOLAH +
+     * DATA REALISASI KEUANGAN (saldo awal, pendapatan operasional, belanja
+     * operasional a–g, belanja modal KIB A–F, saldo akhir) + tanda tangan.
+     *
+     * Aturan nilai (diverifikasi terhadap 6 contoh resmi 2025):
+     * - belanja per kategori dari KODE_REKENING (bukan uraian);
+     * - Terima Dana BOS distinct (bukti+tanggal+nominal) karena ARKAS
+     *   menduplikasi baris terima per revisi anggaran;
+     * - Beban Bunga Bank = total bunga bank periode (pass-through);
+     * - Setor Tunai ikut penerimaan bila datanya ada.
+     *
+     * @return array<string,mixed>
+     */
+    private function bpkData(string $scope, ?int $period): array
+    {
+        $months = $this->scopeMonths($scope, $period);
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+        $fundSourceId = $this->context->fundSourceId() ?? 0;
+
+        $data = [
+            'openingBank' => 0.0, 'openingCash' => 0.0, 'openingDate' => '',
+            'terimaRows' => [], 'terimaTotal' => 0.0, 'terimaReguler' => 0.0, 'terimaKinerja' => 0.0,
+            'bungaRows' => [], 'bungaTotal' => 0.0,
+            'setorTotal' => 0.0,
+            'op' => ['persediaan' => 0.0, 'perjalanan' => 0.0, 'pemeliharaan' => 0.0, 'koran' => 0.0, 'makan' => 0.0, 'jasa' => 0.0],
+            'opReguler' => ['persediaan' => 0.0, 'perjalanan' => 0.0, 'pemeliharaan' => 0.0, 'koran' => 0.0, 'makan' => 0.0, 'jasa' => 0.0],
+            'modal' => ['A' => 0.0, 'B' => 0.0, 'C' => 0.0, 'D' => 0.0, 'E' => 0.0, 'F' => 0.0],
+            'modalReguler' => ['A' => 0.0, 'B' => 0.0, 'C' => 0.0, 'D' => 0.0, 'E' => 0.0, 'F' => 0.0],
+            'bebanBunga' => 0.0,
+            'finalDate' => '',
+        ];
+
+        if ($months !== []) {
+            $firstMonth = min($months);
+            $data['openingDate'] = sprintf('%02d-%02d-%04d', 1, $firstMonth, $year);
+
+            $placeholders = implode(',', array_fill(0, count($months), '?'));
+            $records = DB::connection('school')->table('arkas_mirror_kas_umum')
+                ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
+                ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
+                ->orderByRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI')")
+                ->orderBy('id')
+                ->get(['payload'])
+                ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER));
+
+            $receivedKeys = [];
+            $lastDate = '';
+            foreach ($records as $payload) {
+                $rek = (string) ($payload['REK_BKU'] ?? '');
+                $amount = (float) ($payload['JUMLAH'] ?? 0);
+                $date = (string) ($payload['TANGGAL_TRANSAKSI'] ?? '');
+                if ($date !== '') {
+                    $lastDate = max($lastDate, $date);
+                }
+                $isReguler = $this->bpkIsReguler($payload, $fundSourceId);
+
+                if (str_starts_with($rek, 'Saldo Awal') && substr($date, 0, 7) === sprintf('%04d-%02d', $year, $firstMonth) && substr($date, 8, 2) === '01') {
+                    if ($rek === 'Saldo Awal Bank') {
+                        $data['openingBank'] += $amount;
+                    } else {
+                        $data['openingCash'] += $amount;
+                    }
+
+                    continue;
+                }
+                if ($rek === 'Terima Dana BOS') {
+                    $key = (string) ($payload['NO_BUKTI'] ?? '').'|'.$date.'|'.$amount;
+                    if (! isset($receivedKeys[$key])) {
+                        $receivedKeys[$key] = true;
+                        $data['terimaTotal'] += $amount;
+                        if ($isReguler) {
+                            $data['terimaReguler'] += $amount;
+                        } else {
+                            $data['terimaKinerja'] += $amount;
+                        }
+                        $data['terimaRows'][] = ['date' => $date, 'uraian' => (string) ($payload['URAIAN'] ?? ''), 'amount' => $amount, 'reguler' => $isReguler];
+                    }
+
+                    continue;
+                }
+                if ($rek === 'Bunga Bank') {
+                    $data['bungaTotal'] += $amount;
+                    $month = (int) substr($date, 5, 2);
+                    $data['bungaRows'][] = [
+                        'date' => $date,
+                        'amount' => $amount,
+                        'label' => $month >= 1 && $month <= 12
+                            ? 'Bulan '.Carbon::create($year, $month, 1)->translatedFormat('F Y')
+                            : $date,
+                        'endDate' => $month >= 1 && $month <= 12
+                            ? Carbon::create($year, $month, 1)->endOfMonth()->format('d-m-Y')
+                            : $date,
+                    ];
+
+                    continue;
+                }
+                if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
+                    continue;
+                }
+                $category = $this->bpkBelanjaCategory((string) ($payload['KODE_REKENING'] ?? ''));
+                if ($category === null) {
+                    continue;
+                }
+                [$group, $key] = $category;
+                $data[$group][$key] += $amount;
+                if ($isReguler) {
+                    $data[$group.'Reguler'][$key] += $amount;
+                }
+            }
+
+            $data['bebanBunga'] = $data['bungaTotal'];
+            $data['finalDate'] = $lastDate !== '' ? Carbon::parse($lastDate)->format('d-m-Y') : '';
+        }
+
+        $data = $this->bpkTotals($data);
+        $data['closingBank'] = 0.0;
+        $data['closingCash'] = 0.0;
+        if ($months !== []) {
+            $nextStart = Carbon::create($year, max($months), 1)->addMonth()->format('Y-m-d');
+            foreach (DB::connection('school')->table('arkas_mirror_kas_umum')
+                ->whereRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI') = ?", [$nextStart])
+                ->get(['payload']) as $row) {
+                $payload = array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER);
+                if (($payload['REK_BKU'] ?? '') === 'Saldo Awal Bank') {
+                    $data['closingBank'] += (float) ($payload['JUMLAH'] ?? 0);
+                } elseif (($payload['REK_BKU'] ?? '') === 'Saldo Awal Tunai') {
+                    $data['closingCash'] += (float) ($payload['JUMLAH'] ?? 0);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /** @return array<string,mixed> */
+    private function bpkTotals(array $data): array
+    {
+        $opTotal = array_sum($data['op']) + $data['bebanBunga'];
+        $modalTotal = array_sum($data['modal']);
+        $masuk = $data['terimaTotal'] + $data['bungaTotal'] + $data['setorTotal'];
+        $keluar = $opTotal + $modalTotal;
+        $opening = $data['openingBank'] + $data['openingCash'];
+        $data['opTotal'] = $opTotal;
+        $data['modalTotal'] = $modalTotal;
+        $data['masukTotal'] = $masuk;
+        $data['keluarTotal'] = $keluar;
+        $data['closing'] = $opening + $masuk - $keluar;
+
+        return $data;
+    }
+
+    private function bpkIsReguler(array $payload, int $fundSourceId): bool
+    {
+        $fund = (int) ($payload['ID_REF_SUMBER_DANA'] ?? 0);
+        if ($fund > 0) {
+            return $fund === $fundSourceId;
+        }
+
+        return true;
+    }
+
+    /**
+     * Kategori belanja Dinas dari kode rekening (diverifikasi terhadap contoh
+     * resmi triwulan/semester/tahunan). Kembali [grup, kunci] atau null bila
+     * tak terpetakan (tidak dihitung di kategori agar total teraudit).
+     *
+     * @return array{0:string,1:string}|null
+     */
+    private function bpkBelanjaCategory(string $rekening): ?array
+    {
+        $code = strtoupper(trim($rekening, '.'));
+
+        if (str_starts_with($code, '5.1.02.04')) {
+            return ['op', 'perjalanan'];
+        }
+        if ($code === '5.1.02.02.01.0063') {
+            return ['op', 'koran'];
+        }
+        if ($code === '5.1.02.01.01.0052') {
+            return ['op', 'makan'];
+        }
+        if (in_array($code, ['5.1.02.02.01.0013', '5.1.02.02.01.0031'], true) || str_starts_with($code, '5.1.02.02.04')) {
+            return ['op', 'jasa'];
+        }
+        if (str_starts_with($code, '5.1.02.03')) {
+            return ['op', 'pemeliharaan'];
+        }
+        if (str_starts_with($code, '5.2.02')) {
+            return ['modal', 'B'];
+        }
+        if (str_starts_with($code, '5.2.05') || str_starts_with($code, '5.2.')) {
+            return ['modal', 'E'];
+        }
+        if (str_starts_with($code, '5.1.') || str_starts_with($code, '5.2.')) {
+            return ['op', 'persediaan'];
+        }
+
+        return null;
     }
 
     /** @return Collection<int,Transaction> */
@@ -183,7 +401,7 @@ final class SpjPeriodicReportPrintService
      *
      * @return list<array<string,mixed>>
      */
-    private function bkuLedgerRows(string $scope, ?int $period): array
+    private function bkuLedgerRows(string $scope, ?int $period, bool $cashOnly = false): array
     {
         $months = $this->scopeMonths($scope, $period);
         if ($months === []) {
@@ -240,7 +458,7 @@ final class SpjPeriodicReportPrintService
         $openingLines = [];
         foreach ($records as $payload) {
             if ((int) substr((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), 5, 2) === $firstMonth
-                && in_array($payload['REK_BKU'] ?? '', ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
+                && in_array($payload['REK_BKU'] ?? '', $cashOnly ? ['Saldo Awal Tunai'] : ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
                 $openingLines[] = $payload;
             }
         }
@@ -255,7 +473,7 @@ final class SpjPeriodicReportPrintService
                 'description' => $this->bkuDescription($payload, $operatorMaps),
                 'incoming' => $amount,
                 'outgoing' => 0.0,
-                'balance' => $bank + $cash,
+                'balance' => $cashOnly ? $cash : $bank + $cash,
             ];
         }
 
@@ -265,6 +483,10 @@ final class SpjPeriodicReportPrintService
         foreach ($records as $payload) {
             $rek = (string) ($payload['REK_BKU'] ?? '');
             if (in_array($rek, ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
+                continue;
+            }
+            // Buku Pembantu Kas hanya mencatat sisi tunai.
+            if ($cashOnly && ! in_array($rek, ['Pergeseran Tunai', 'Kas Keluar', 'Pajak Belanja Terima', 'Pajak Belanja Setor'], true)) {
                 continue;
             }
 
@@ -296,7 +518,7 @@ final class SpjPeriodicReportPrintService
                 'item' => $this->bkuItemLine($payload, $operatorMaps),
                 'incoming' => $incoming,
                 'outgoing' => $outgoing,
-                'balance' => $bank + $cash,
+                'balance' => $cashOnly ? $cash : $bank + $cash,
             ];
         }
 
@@ -310,10 +532,12 @@ final class SpjPeriodicReportPrintService
             'description' => 'Jumlah',
             'incoming' => $totalIn,
             'outgoing' => $totalOut,
-            'balance' => $bank + $cash,
+            'balance' => $cashOnly ? $cash : $bank + $cash,
         ];
 
-        $this->bkuClosing = ['bank' => $bank, 'cash' => $cash, 'total' => $bank + $cash];
+        $this->bkuClosing = $cashOnly
+            ? ['bank' => 0.0, 'cash' => $cash, 'total' => $cash]
+            : ['bank' => $bank, 'cash' => $cash, 'total' => $bank + $cash];
 
         return $rows;
     }
@@ -910,6 +1134,243 @@ final class SpjPeriodicReportPrintService
     }
 
     /** @return list<array{key:string,label:string,type:string}> */
+    private function rekapBospColumns(): array
+    {
+        // Grid 7x12 + footer dirender cabang khusus (bukan report-table generik).
+        return [];
+    }
+
+    /** @return list<array<string,mixed>> */
+    private function rekapBospRows(string $scope, ?int $period): array
+    {
+        return [];
+    }
+
+    /**
+     * Grid + saldo REKAPITULASI REALISASI PENGGUNAAN DANA BOSP model ARKAS.
+     *
+     * Sel = jumlah BELANJA per (SNP, sub program) dari kode kegiatan baris
+     * mirror. Penerimaan = Terima Dana BOS distinct (bukti+tanggal+nominal),
+     * karena ARKAS menduplikasi baris terima per revisi anggaran.
+     *
+     * @return array{grid:array<int,array<int,float>>,rowTotals:array<int,float>,colTotals:array<int,float>,grand:float,unmapped:float,prev:float,received:float,used:float,closing:float}
+     */
+    private function rekapBospData(string $scope, ?int $period): array
+    {
+        $months = $this->scopeMonths($scope, $period);
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+
+        $grid = [];
+        for ($row = 1; $row <= 7; $row++) {
+            for ($col = 1; $col <= 12; $col++) {
+                $grid[$row][$col] = 0.0;
+            }
+        }
+
+        $activityMap = $this->rekapActivityMap();
+        $receivedKeys = [];
+        $received = 0.0;
+        $used = 0.0;
+        $unmapped = 0.0;
+
+        if ($months !== []) {
+            $placeholders = implode(',', array_fill(0, count($months), '?'));
+            $records = DB::connection('school')->table('arkas_mirror_kas_umum')
+                ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
+                ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
+                ->orderByRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI')")
+                ->orderBy('id')
+                ->get(['payload'])
+                ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
+                ->values();
+
+            foreach ($records as $payload) {
+                $amount = (float) ($payload['JUMLAH'] ?? 0);
+                if (($payload['REK_BKU'] ?? '') === 'Terima Dana BOS') {
+                    $key = (string) ($payload['NO_BUKTI'] ?? '').'|'.(string) ($payload['TANGGAL_TRANSAKSI'] ?? '').'|'.$amount;
+                    if (! isset($receivedKeys[$key])) {
+                        $receivedKeys[$key] = true;
+                        $received += $amount;
+                    }
+
+                    continue;
+                }
+                if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
+                    continue;
+                }
+                $used += $amount;
+                $cell = BospRekapStandardMapper::cellForActivity($activityMap[(string) ($payload['ID_RAPBS'] ?? '')] ?? null);
+                if ($cell === null) {
+                    $unmapped += $amount;
+
+                    continue;
+                }
+                $grid[$cell['row']][$cell['col']] += $amount;
+            }
+        }
+
+        $prev = $this->rekapPreviousBalance($year, $months);
+
+        $rowTotals = [];
+        $colTotals = [];
+        for ($col = 1; $col <= 12; $col++) {
+            $colTotals[$col] = 0.0;
+        }
+        foreach ($grid as $row => $cols) {
+            $rowTotals[$row] = array_sum($cols);
+            foreach ($cols as $col => $value) {
+                $colTotals[$col] += $value;
+            }
+        }
+
+        return [
+            'grid' => $grid,
+            'rowTotals' => $rowTotals,
+            'colTotals' => $colTotals,
+            'grand' => array_sum($rowTotals),
+            'unmapped' => $unmapped,
+            'prev' => $prev,
+            'received' => $received,
+            'used' => $used,
+            'closing' => $prev + $received - $used,
+        ];
+    }
+
+    /**
+     * ID_RAPBS -> kode kegiatan. Urutan: field langsung payload, tabel
+     * legacy arkas_rkas_items, lalu ref_kode pusat.
+     *
+     * @return array<string,string>
+     */
+    private function rekapActivityMap(): array
+    {
+        $map = [];
+        foreach (DB::connection('school')->table('arkas_mirror_rapbs')->get(['source_key', 'payload']) as $record) {
+            $payload = array_change_key_case(json_decode((string) $record->payload, true) ?? [], CASE_UPPER);
+            $code = trim((string) ($payload['KODE_KEGIATAN'] ?? ''), '.');
+            if ($code !== '') {
+                $map[(string) $record->source_key] = $code;
+            }
+        }
+
+        if (Schema::connection('school')->hasTable('arkas_rkas_items')) {
+            foreach (DB::connection('school')->table('arkas_rkas_items')->whereNotNull('activity_code')->get(['source_rapbs_id', 'activity_code']) as $row) {
+                $code = trim((string) $row->activity_code, '.');
+                if (! isset($map[(string) $row->source_rapbs_id]) && $code !== '') {
+                    $map[(string) $row->source_rapbs_id] = $code;
+                }
+            }
+        }
+
+        $missingRef = [];
+        foreach (DB::connection('school')->table('arkas_mirror_rapbs')->get(['source_key', 'payload']) as $record) {
+            if (isset($map[(string) $record->source_key])) {
+                continue;
+            }
+            $payload = array_change_key_case(json_decode((string) $record->payload, true) ?? [], CASE_UPPER);
+            $refId = (string) ($payload['ID_REF_KODE'] ?? '');
+            if ($refId !== '') {
+                $missingRef[$refId][] = (string) $record->source_key;
+            }
+        }
+        if ($missingRef !== [] && Schema::hasTable('arkas_mirror_ref_kode')) {
+            foreach (DB::table('arkas_mirror_ref_kode')->whereIn('source_key', array_keys($missingRef))->get(['source_key', 'payload']) as $row) {
+                $code = trim((string) (ArkasMirrorResolver::field(json_decode((string) $row->payload, true) ?? [], ['ID_KODE']) ?? ''), '.');
+                if ($code === '') {
+                    continue;
+                }
+                foreach ($missingRef[(string) $row->source_key] as $rapbsId) {
+                    $map[$rapbsId] = $code;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Saldo periode sebelumnya: penerimaan - penggunaan sejak awal tahun
+     * anggaran sampai sebelum bulan pertama periode (penerimaan distinct
+     * seperti periode berjalan).
+     */
+    private function rekapPreviousBalance(int $year, array $months): float
+    {
+        if ($months === []) {
+            return 0.0;
+        }
+        $firstMonth = min($months);
+        if ($firstMonth <= 1) {
+            return 0.0;
+        }
+
+        $placeholders = implode(',', array_fill(0, $firstMonth - 1, '?'));
+        $received = 0.0;
+        $used = 0.0;
+        $receivedKeys = [];
+        $records = DB::connection('school')->table('arkas_mirror_kas_umum')
+            ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
+            ->whereRaw(
+                "CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})",
+                range(1, $firstMonth - 1)
+            )
+            ->get(['payload'])
+            ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
+            ->values();
+
+        foreach ($records as $payload) {
+            $amount = (float) ($payload['JUMLAH'] ?? 0);
+            if (($payload['REK_BKU'] ?? '') === 'Terima Dana BOS') {
+                $key = (string) ($payload['NO_BUKTI'] ?? '').'|'.(string) ($payload['TANGGAL_TRANSAKSI'] ?? '').'|'.$amount;
+                if (! isset($receivedKeys[$key])) {
+                    $receivedKeys[$key] = true;
+                    $received += $amount;
+                }
+
+                continue;
+            }
+            if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) === 'BELANJA') {
+                $used += $amount;
+            }
+        }
+
+        return $received - $used;
+    }
+
+    /**
+     * Judul resmi: PERIODE TANGGAL + label tahap/bulan/triwulan/semester/tahun.
+     *
+     * @param  array<string,mixed>  $summary
+     * @return array{range:string,phase:string}
+     */
+    private function rekapBospTitle(array $summary, int $year): array
+    {
+        $range = '-';
+        try {
+            $from = filled($summary['date_from'] ?? null) ? Carbon::parse((string) $summary['date_from']) : null;
+            $to = filled($summary['date_to'] ?? null) ? Carbon::parse((string) $summary['date_to']) : null;
+            if ($from && $to) {
+                $range = $from->translatedFormat('d F Y').' s/d '.$to->translatedFormat('d F Y');
+            }
+        } catch (\Throwable) {
+            $range = '-';
+        }
+
+        $scope = (string) ($summary['scope'] ?? '');
+        $period = (int) ($summary['period'] ?? 0);
+        $phase = match ($scope) {
+            SpjPeriodicReportRegistry::SCOPE_MONTHLY => $period >= 1 && $period <= 12
+                ? mb_strtoupper(Carbon::create($year, $period, 1)->translatedFormat('F')).' TAHUN '.$year : 'TAHUN '.$year,
+            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => $period >= 1 && $period <= 4
+                ? 'TRIWULAN '.$period.' TAHUN '.$year : 'TAHUN '.$year,
+            SpjPeriodicReportRegistry::SCOPE_SEMESTER => $period >= 1 && $period <= 2
+                ? 'TAHAP '.$period.' TAHUN '.$year : 'TAHUN '.$year,
+            default => 'TAHUN '.$year,
+        };
+
+        return ['range' => $range, 'phase' => $phase];
+    }
+
+    /** @return list<array{key:string,label:string,type:string}> */
     private function recapColumns(): array
     {
         return [
@@ -976,7 +1437,7 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos'], true)
             ? 'landscape'
             : 'portrait';
     }
@@ -986,7 +1447,46 @@ final class SpjPeriodicReportPrintService
      */
     private function paper(string $presentation): string
     {
-        return $presentation === 'bku_ledger' ? 'folio' : 'a4';
+        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos'], true) ? 'folio' : 'a4';
+    }
+
+    /**
+     * Label judul dinas: TRIWULAN I–IV / SEMESTER I–II / BULAN / TAHUN.
+     *
+     * @param  array<string,mixed>  $summary
+     * @return array{title:string}
+     */
+    private function bpkTitle(array $summary, int $year): array
+    {
+        $scope = (string) ($summary['scope'] ?? '');
+        $period = (int) ($summary['period'] ?? 0);
+        $roman = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'];
+
+        if ($scope === SpjPeriodicReportRegistry::SCOPE_MONTHLY && $period >= 1 && $period <= 12) {
+            $label = 'BULAN '.mb_strtoupper(Carbon::create($year, $period, 1)->translatedFormat('F')).' TAHUN '.$year;
+        } elseif ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4) {
+            $label = 'TRIWULAN '.$roman[$period].' TAHUN '.$year;
+        } elseif ($scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period >= 1 && $period <= 2) {
+            $label = 'SEMESTER '.$roman[$period].' TAHUN '.$year;
+        } else {
+            $label = 'TAHUN '.$year;
+        }
+
+        return ['title' => 'REKAP REALISASI PENGGUNAAN DANA BOS '.$label];
+    }
+
+    /**
+     * Nama sekolah versi kop Dinas: prefix UPTD untuk SD/SMP Negeri.
+     */
+    private function bpkSchoolName(?string $name): string
+    {
+        $upper = mb_strtoupper((string) $name);
+
+        if (preg_match('/^(SD|SMP)\b/i', (string) $name) === 1 && ! str_starts_with($upper, 'UPTD')) {
+            return 'UPTD '.$upper;
+        }
+
+        return $upper;
     }
 
     private function fileName(string $label, string $periodLabel): string

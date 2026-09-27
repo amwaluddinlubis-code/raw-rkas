@@ -125,6 +125,7 @@ Route::middleware('auth')->group(function () {
 
             Route::put('/transaksi/{transactionId}/uraian-spj', [TransactionController::class, 'updateSpjDescriptions'])->name('transactions.spj-descriptions.update');
             Route::post('/transaksi/{transactionId}/rekonsiliasi-sumber/selesaikan', [SourceReconciliationController::class, 'resolve'])->name('transactions.source-reconciliation.resolve');
+            Route::post('/rekonsiliasi/tinjau-massal', [SourceReconciliationController::class, 'bulkReview'])->name('reconciliation.bulk-review');
             Route::put('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'update'])->name('transactions.maintenance-links.update');
             Route::get('/transaksi/{transactionId}/siapkan-spj', SpjPreparationController::class)->name('transactions.prepare-spj');
 
@@ -139,6 +140,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/spj/dokumen/{documentId}/ganti', [SpjController::class, 'replaceDocument'])->middleware('administrator')->name('spj.documents.replace');
             Route::post('/spj/transaksi/{transactionId}/pembayaran', [SpjController::class, 'storePayment'])->name('spj.payments.store');
             Route::post('/spj/transaksi/{transactionId}/penerimaan', [SpjController::class, 'storeGoodsReceipt'])->name('spj.receipts.store');
+            Route::delete('/spj/transaksi/{transactionId}/penerimaan/{receiptId}', [SpjController::class, 'destroyGoodsReceipt'])->name('spj.receipts.destroy');
 
             Route::get('/pengaturan/format-penomoran', [DocumentNumberFormatController::class, 'index'])->name('document-number-formats.index');
             Route::put('/pengaturan/format-penomoran/{documentType}', [DocumentNumberFormatController::class, 'update'])->name('document-number-formats.update');
@@ -155,6 +157,7 @@ Route::middleware('auth')->group(function () {
         Route::view('/laporan-periode', 'periodic-reports.index')->name('spj.periodic-reports.index');
         Route::get('/laporan-periode/{scope}/{report}/cetak', [PeriodicReportController::class, 'show'])->name('spj.periodic-reports.print');
         Route::get('/laporan-periode/{scope}/{report}/pdf', [PeriodicReportController::class, 'pdf'])->name('spj.periodic-reports.pdf');
+        Route::get('/laporan-periode/{scope}/{report}/excel', [PeriodicReportController::class, 'excel'])->name('spj.periodic-reports.excel');
         Route::get('/spj/penomoran', [SpjNumberingWorkflowController::class, 'index'])->name('spj.numbering-workflow');
         Route::get('/spj/paket/{packageId}/checklist', SpjPackageChecklistController::class)->name('spj.checklist');
         Route::match(['GET', 'POST'], '/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
@@ -201,6 +204,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
         Route::get('/penganggaran-rkas/saran', RkasPlanningSuggestionController::class)->name('rkas-planning.index');
         Route::get('/penganggaran-rkas/saran/unduh/{modul}', [RkasPlanningSuggestionController::class, 'export'])->name('rkas-planning.export');
+        Route::get('/transaksi/rekomendasi-vendor', [TransactionController::class, 'vendorRecommendation'])->name('transactions.vendor-recommendation');
         Route::get('/transaksi/{transactionId}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/data-sinkron', [SyncedDataController::class, 'index'])->name('synced-data.index');
         Route::get('/data-sinkron/{type}', [SyncedDataController::class, 'index'])->name('synced-data.show');

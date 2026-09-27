@@ -171,7 +171,7 @@ Kontrak umum:
 Untuk tabel kategori SPJ non-BARANG:
 
 - pagination/filter/per-page berada di bawah tabel;
-- satu radio **Penerima Utama**;
+- satu radio **Penerima Utama** (KONSUMSI: **Penerima Konsumsi**);
 - row height/input dibuat compact;
 - currency accounting, count integer.
 
@@ -333,14 +333,14 @@ Desktop menggunakan dua kolom besar:
 
 Semua input umum selain `payment_description` harus berada di kolom kanan, tidak turun menjadi row penuh di bawah textarea pada desktop.
 
-Istilah canonical: **Penerima Utama**.
+Istilah canonical: **Penerima Utama**. Pengecualian: tab KONSUMSI memakai **Penerima Konsumsi** (radio hanya menandai daftar peserta, tidak mengisi kuitansi).
 
 ## 15. Tabel kategori non-BARANG
 
 KONSUMSI, PEMELIHARAAN, HONOR_PEGAWAI, SPPD, dan JASA_LAINNYA memakai pola compact.
 
 - filter/per-page/pager hanya satu dan berada di bawah tabel;
-- Penerima Utama menggunakan radio;
+- Penerima Utama menggunakan radio (KONSUMSI memakai label Penerima Konsumsi);
 - Hari/Porsi/Bulan-Kali = integer;
 - Tarif/Harga/Nilai = accounting `1.000`;
 - field sekunder tidak perlu membuat row utama terlalu lebar; gunakan detail row/editor bila diperlukan.

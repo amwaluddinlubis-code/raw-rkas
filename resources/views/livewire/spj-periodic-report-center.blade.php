@@ -88,6 +88,15 @@
                                 >
                                     PDF
                                 </a>
+                                <a
+                                    href="{{ route('spj.periodic-reports.excel', ['scope' => $scope, 'report' => $report['key'], 'periode_laporan' => $periode]) }}"
+                                    target="_blank"
+                                    rel="noopener"
+                                    class="ui-btn ui-btn-ghost min-h-8 px-2.5 py-1.5 text-xs"
+                                    title="Unduh Excel {{ $report['label'] }}"
+                                >
+                                    Excel
+                                </a>
                             </div>
                         @else
                             <span class="pl-10 text-xs font-semibold text-[var(--ui-fg-muted)] sm:pl-0">Pilih periode</span>

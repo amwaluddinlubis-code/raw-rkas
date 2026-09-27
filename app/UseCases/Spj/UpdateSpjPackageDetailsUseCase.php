@@ -365,6 +365,13 @@ class UpdateSpjPackageDetailsUseCase
             return null;
         }
 
+        // Grup participants (KONSUMSI) dipisah total: radio "Penerima
+        // Konsumsi" hanya menandai daftar (spj_participants.is_primary) dan
+        // tidak boleh menimpa penandatangan kuitansi.
+        if ($group === 'participants') {
+            return null;
+        }
+
         $row = $data[$group][$index] ?? null;
         if (! is_array($row)) {
             return null;

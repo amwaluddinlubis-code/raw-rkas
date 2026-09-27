@@ -33,7 +33,7 @@ class SpjDescriptionService
                 ? 'Pembelian barang di Merchant '.$merchant.' melalui '.$marketplace
                 : 'Pembelian barang melalui '.$marketplace;
 
-            return $description.($invoice !== '' ? ' berdasarkan invoice '.$invoice : '');
+            return $description.($invoice !== '' ? ' berdasarkan invoice nomor '.$invoice : '');
         }
 
         $items = collect(data_get($response, 'items', []));

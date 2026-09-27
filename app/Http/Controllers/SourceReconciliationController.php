@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Services\SpjSourceReconciliationService;
 use App\Support\ActiveSpjContext;
+use App\UseCases\Spj\BulkReviewMetadataReconciliationUseCase;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,5 +47,10 @@ class SourceReconciliationController extends Controller
         }
 
         return back()->with('success', 'Rekonsiliasi selesai: '.$result['label'].'.');
+    }
+
+    public function bulkReview(Request $request, BulkReviewMetadataReconciliationUseCase $useCase): RedirectResponse
+    {
+        return $useCase->handle($request);
     }
 }

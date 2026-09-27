@@ -43,6 +43,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Berita Acara Pemeriksaan Kas (K7C)',
             'BOS K7A',
             'Rekap Belanja Modal dan Belanja Barang / Jasa',
+            'Rekapitulasi Pengeluaran Dana BOS',
+            'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_MONTHLY), 'label'));
 
         $this->assertSame([
@@ -56,6 +58,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'SP2T',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
+            'Rekapitulasi Pengeluaran Dana BOS',
+            'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_QUARTERLY), 'label'));
 
         $this->assertSame([
@@ -69,7 +73,9 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'SP2T',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
+            'Rekapitulasi Pengeluaran Dana BOS',
             'Rekap Belanja Barang Milik Daerah (Aset)',
+            'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_SEMESTER), 'label'));
 
         $this->assertSame([
@@ -82,9 +88,10 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Rekap Belanja Dana BOS',
             'Form 1C',
             'Rekapitulasi Pengeluaran Dana BOS',
+            'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_ANNUAL), 'label'));
 
-        $this->assertSame(39, array_sum(array_map('count', $registry->packages())));
+        $this->assertSame(46, array_sum(array_map('count', $registry->packages())));
     }
 
     #[Test]

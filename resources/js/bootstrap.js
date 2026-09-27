@@ -10,6 +10,8 @@ import './spj-package-document-placement';
 import './spj-package-manual-category';
 import './spj-package-maintenance-links';
 import './spj-package-workspace-ui';
+import './spj-settlement-receipt';
+import './spj-vendor-recommendation';
 import './spj-package-transaction-boundary';
 import './spj-detail-input-validation';
 import './spj-numbering-confirmation-modal';

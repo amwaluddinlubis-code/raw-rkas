@@ -223,6 +223,56 @@ class BkuOfficialLedgerTest extends TestCase
         }
     }
 
+    public function test_cash_ledger_uses_bku_shape_with_cash_only_balance(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'buku_pembantu_kas', 4);
+
+        $this->assertNotNull($payload);
+        $this->assertSame('cash_ledger', $payload['presentation']);
+        $this->assertSame('landscape', $payload['orientation']);
+        $this->assertSame('folio', $payload['paper']);
+        $this->assertSame(
+            ['date', 'activity', 'account', 'evidence', 'description', 'incoming', 'outgoing', 'balance'],
+            collect($payload['columns'])->pluck('key')->all()
+        );
+
+        $rows = $payload['rows'];
+        $descriptions = collect($rows)->pluck('description')->map(fn ($value): string => strip_tags((string) $value))->all();
+        // Tanpa sisi bank: tanpa Saldo Awal Bank dan Tarik Tunai.
+        $this->assertCount(7, $rows);
+        $this->assertFalse(collect($descriptions)->contains(fn (string $text): bool => str_contains($text, 'Saldo Bank Bulan Maret')));
+        $this->assertFalse(collect($descriptions)->contains(fn (string $text): bool => str_contains($text, 'Tarik Tunai')));
+
+        // Saldo berjalan hanya sisi tunai: 0 + 69.097.500 - 2.400.000 + 264.000 - 264.000.
+        $this->assertSame(0.0, $rows[0]['incoming']);
+        $this->assertSame(0.0, $rows[0]['balance']);
+        $this->assertSame(69097500.0, $rows[1]['incoming']);
+        $this->assertSame(69097500.0, $rows[1]['balance']);
+
+        $jumlah = $rows[array_key_last($rows)];
+        $this->assertSame('Jumlah', $jumlah['description']);
+        $this->assertEquals(69097500 + 264000, $jumlah['incoming']);
+        $this->assertEquals(2400000 + 264000, $jumlah['outgoing']);
+        $this->assertSame(66697500.0, $jumlah['balance']);
+
+        $closing = $payload['bkuClosing'];
+        $this->assertSame(0.0, $closing['bank']);
+        $this->assertSame(66697500.0, $closing['cash']);
+        $this->assertSame(66697500.0, $closing['total']);
+    }
+
+    public function test_cash_ledger_print_route_renders_bku_shaped_layout(): void
+    {
+        $response = $this->get('/laporan-periode/bulan/buku_pembantu_kas/cetak?periode_laporan=4');
+
+        $response->assertOk();
+        $response->assertSee('bku-table', false);
+        $response->assertSee('BUKU PEMBANTU KAS', false);
+        $response->assertSee('Buku Pembantu Kas Ditutup', false);
+        $response->assertSee('Saldo Kas Tunai', false);
+        $response->assertSee('Menyetujui', false);
+    }
+
     public function test_bku_print_route_renders_official_layout(): void
     {
         $response = $this->get('/laporan-periode/triwulan/bku/cetak?periode_laporan=2');

@@ -129,6 +129,15 @@ class SpjPackageValidationService
             $bapBastReady = ! $hasBapOrBast || ($itemsComplete && $amountsValid);
             $this->addCheck($checks, 'goods_bap_bast', 'Belanja barang', 'Kelengkapan BAP/BAST', $bapBastReady, 'Rincian barang konsisten untuk BAP/BAST.', 'BAP dan BAST belum dapat diterbitkan sebelum rincian barang lengkap dan konsisten.', $packageUrl);
 
+            $stagedReceipts = $transaction->goodsReceipts->where('status', '!==', 'CANCELLED');
+            if ($stagedReceipts->count() > 1) {
+                $incompleteStages = $stagedReceipts
+                    ->filter(fn ($receipt) => blank($receipt->order_date) || blank($receipt->bap_date) || blank($receipt->bast_date))
+                    ->map(fn ($receipt) => 'Tahap '.$receipt->receipt_sequence)
+                    ->implode(', ');
+                $this->addCheck($checks, 'goods_staged_letters', 'Belanja barang bertahap', 'Tanggal surat per tahap', $incompleteStages === '', 'Setiap tahap penerimaan memiliki tanggal pesanan, BAP, dan BAST.', 'Lengkapi tanggal pesanan, BAP, dan BAST pada: '.$incompleteStages.'. Isi pada tab Penomoran bagian penerimaan bertahap.', $packageUrl);
+            }
+
             $duplicateExists = false;
             if (filled($transaction->invoice_number) && filled($transaction->vendor_name)) {
                 $duplicateExists = $transaction->newQuery()

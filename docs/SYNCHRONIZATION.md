@@ -319,6 +319,26 @@ Prinsip:
 - stale reconciliation event tidak boleh menimpa resolution terbaru;
 - NUMBERED/FINAL tidak boleh dimutasi otomatis karena reconciliation.
 
+Tinjau massal (`POST /rekonsiliasi/tinjau-massal`, operator/administrator) hanya
+menyelesaikan event **tanpa diff nilai bisnis** (`REVIEWED_NO_BUSINESS_CHANGE`,
+maks 200 per proses, `source_event_id` dikunci per item, audit per transaksi).
+Event dengan perubahan nilai, `SOURCE_MISSING`, dan di luar konteks aktif selalu
+dilewati dan tetap wajib keputusan individual.
+
+Baseline "sebelum" per no_bukti wajib lingkup tahun anggaran
+(`aggregateByBukti($noBukti, $year)`): nomor bukti berulang tiap tahun dan
+mirror menyimpan multi-tahun sekaligus; tanpa filter tahun, baseline tercampur
+(identitas dari baris tertua + nominal terjumlah semua tahun) sehingga setiap
+sync memicu rekonsiliasi semu.
+
+Pembuka SEMENTARA (atas permintaan operator, tercatat di sini agar tidak
+menjadi permanen diam-diam): dengan env `SPJ_TEMP_UNLOCK_RECONCILIATION=true`,
+administrator dapat menutup rekonsiliasi paket NUMBERED/FINAL tanpa pembatalan
+langsung dari panel transaksi — wajib pilih keputusan (terima sumber /
+pertahankan overlay) + alasan tertulis + centang pemahaman, terekam audit
+`RESOLUSI_TERBUKA_{STATUS}`. Dokumen bernomor/final TIDAK berubah otomatis.
+Menutup kembali: hapus/nol-kan env (fail-closed bila config di-cache).
+
 ---
 
 ## 10. Employee identity lintas ARKAS dan Dapodik
@@ -342,6 +362,13 @@ Matching canonical menggunakan strong identity terlebih dahulu:
 4. normalized name hanya jika hasilnya unik/non-ambiguous.
 
 Nama yang sama tetapi ambiguous **tidak boleh** menyebabkan silent merge.
+
+Varian bergelar (2026-09-27): `fuseDuplicates` juga menyatukan baris dengan
+nama inti sama setelah gelar akademik dilepas (`TARMINI` vs `TARMINI, S.Pd.`),
+khusus belahan feed PEGAWAI/PTK. Syarat ketat: tiap baris membawa minimal satu
+identitas nasional, gabungan mencakup minimal dua jenis ID yang saling
+melengkapi (mis. NIP + NUPTK), tidak ada nilai konflik, dan tidak ada baris
+MANUAL/operator-locked yang tersentuh heuristik ini.
 
 Source provenance disimpan agar satu Employee dapat tetap diketahui berasal dari lebih dari satu feed.
 

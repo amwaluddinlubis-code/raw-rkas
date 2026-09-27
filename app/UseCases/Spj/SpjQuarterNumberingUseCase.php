@@ -3,6 +3,7 @@
 namespace App\UseCases\Spj;
 
 use App\Models\QuarterNumberingRun;
+use App\Models\SpjGoods;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\ArkasMirrorResolver;
@@ -163,6 +164,16 @@ class SpjQuarterNumberingUseCase
                     continue;
                 }
 
+                if ($definition['scope_rule'] === 'TAHAP') {
+                    $tahapPackages = $packages->filter(fn (SpjPackage $package): bool => $this->numberingPolicy
+                        ->isAutomaticDocumentEligible($package->transaction, $documentType));
+                    $tahapResult = $this->assignQuarterTahapNumbers($tahapPackages, $documentType, $school->school_code ?: $school->npsn, $school->npsn);
+                    $numbered += $tahapResult['created'];
+                    $skipped += $tahapResult['skipped'];
+
+                    continue;
+                }
+
                 $eligiblePackages = $packages->filter(fn (SpjPackage $package): bool => $this->numberingPolicy
                     ->isAutomaticDocumentEligible($package->transaction, $documentType)
                     && $this->order->documentEventDateValue($package, $documentType) !== null);
@@ -236,6 +247,70 @@ class SpjQuarterNumberingUseCase
             }
             if (blank($travel->{$rule['field']})) {
                 $travel->forceFill([$rule['field'] => $entry['date']])->save();
+            }
+            $before ? $skipped++ : $created++;
+        }
+
+        return compact('created', 'skipped');
+    }
+
+    /** @param Collection<int, SpjPackage> $packages @return array{created:int,skipped:int} */
+    private function assignQuarterTahapNumbers(Collection $packages, string $documentType, string $schoolCode, ?string $npsn): array
+    {
+        $definition = $this->numberingPolicy->numberingDefinition($documentType);
+        if (! $definition || $definition['scope_rule'] !== 'TAHAP') {
+            return ['created' => 0, 'skipped' => 0];
+        }
+
+        $targetField = $definition['number_target']['field'];
+        $entries = collect();
+        foreach ($packages as $package) {
+            $receipts = $package->transaction->goodsReceipts->where('status', '!==', 'CANCELLED');
+            if ($receipts->count() < 2) {
+                continue;
+            }
+            foreach ($receipts as $receipt) {
+                $scopeKey = 'TAHAP:'.$receipt->receipt_sequence;
+                $eventDate = $this->numberingPolicy->documentEventDateValue($package->transaction, $documentType, $scopeKey);
+                if (! $eventDate) {
+                    continue;
+                }
+                $entries->push([
+                    'package' => $package,
+                    'receipt' => $receipt,
+                    'scopeKey' => $scopeKey,
+                    'date' => Carbon::parse($eventDate),
+                    'key' => Carbon::parse($eventDate)->format('Y-m-d').'|'.$this->order->sourceOrderKey($package->transaction)
+                        .'|'.str_pad((string) $receipt->receipt_sequence, 8, '0', STR_PAD_LEFT),
+                ]);
+            }
+        }
+
+        $created = 0;
+        $skipped = 0;
+        foreach ($entries->sortBy('key')->values() as $entry) {
+            $package = $entry['package'];
+            $itemIds = $entry['receipt']->items->pluck('transaction_item_id')->all();
+            if ($itemIds === []) {
+                continue;
+            }
+            $goodsQuery = SpjGoods::query()->whereIn('transaction_item_id', $itemIds);
+            if ($goodsQuery->count() === 0) {
+                continue;
+            }
+            if ($targetField && (clone $goodsQuery)->whereNotNull($targetField)->exists()) {
+                $skipped++;
+
+                continue;
+            }
+            $before = $package->documents()
+                ->where(['document_type' => $documentType, 'scope_key' => $entry['scopeKey']])
+                ->where('status', '!=', 'CANCELLED')
+                ->whereNotNull('document_number')
+                ->exists();
+            $document = $this->numbers->assign($package, $documentType, $entry['date'], $schoolCode, $entry['scopeKey'], npsn: $npsn);
+            if ($targetField) {
+                (clone $goodsQuery)->whereNull($targetField)->update([$targetField => $document->document_number]);
             }
             $before ? $skipped++ : $created++;
         }

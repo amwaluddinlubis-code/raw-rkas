@@ -53,6 +53,9 @@ const iconFromTemplate = (name) => {
 const directActionIconChildren = (element) => Array.from(element.children).filter((child) => {
     if (child instanceof SVGElement) return true;
     if (child.classList?.contains('transaction-detail-inline-icon')) return true;
+    // Canonical tab icon: <span class="ui-tab-icon"><svg …></span> already
+    // decorates the action, so the migrator must not prepend a second glyph.
+    if (child.classList?.contains('ui-tab-icon') && Boolean(child.querySelector?.('svg'))) return true;
     return child.getAttribute?.('aria-hidden') === 'true' && Boolean(child.querySelector?.('svg'));
 });
 

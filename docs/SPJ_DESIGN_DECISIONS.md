@@ -364,6 +364,8 @@ Distribusi derived tidak boleh mengubah source transaction tax/net.
 
 `recipient_name` tetap source. Jika detail kategori mempunyai banyak penerima, maksimal satu Penerima Utama menjadi authoritative untuk Paket tersebut.
 
+Pengecualian KONSUMSI (2026-09-27): radio pada daftar peserta berlabel **Penerima Konsumsi** dan hanya menandai `spj_participants.is_primary`. Ia dipisah total dari kuitansi — tidak menimpa `receipt_recipient_name`, yang murni dari field Data Umum Dokumen. Alasan: penerima konsumsi pada daftar bukan penanda tangan kuitansi/BAP/BHP/pesanan/invoice.
+
 ---
 
 ## 16. Lifecycle Paket SPJ
@@ -487,6 +489,25 @@ Rollback numbering dapat menghapus/reset history numbering domain yang membuat n
 Audit minimal menyimpan actor, tenant context, quarter bila relevant, nomor awal/akhir rollback, sequence sebelum/sesudah, alasan, dan timestamp.
 
 Detail lengkap ada pada `NUMBERING_CORRECTION_AND_ROLLBACK.md`.
+
+### 17.7 Surat bertahap per penerimaan (TAHAP:n)
+
+Kasus nyata: satu nota/pembayaran (satu kuitansi, scope MAIN) menutup beberapa
+pengiriman bulanan yang masing-masing memiliki set surat fisik sendiri
+(pesanan, invoice, BAP, BAST) — mis. pulsa Juli/Agustus dibayar September
+(BNU33, SDN 10208246).
+
+Aturan (2026-09-27):
+
+- Setiap tahap penerimaan (`goods_receipts`) menyimpan tanggal suratnya
+  sendiri (`order_date`, `bap_date`, `bast_date`, `invoice_date`); nomor
+  surat tetap diterbitkan penomoran dan tertulis pada `spj_goods` item
+  tahap tersebut.
+- PESANAN/BAP/BAST memakai scope_rule `TAHAP`: scope `MAIN` untuk paket
+  sekali-kirim (kompatibel mundur), scope `TAHAP:n` bila transaksi memiliki
+  lebih dari satu penerimaan aktif. Kuitansi tidak pernah bertahap.
+- Render template per-template mendukung `?scope=TAHAP:n` (tanggal dan
+  rincian item tahap tersebut); bundel paket tetap konteks MAIN.
 
 ---
 

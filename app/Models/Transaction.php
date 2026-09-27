@@ -94,6 +94,9 @@ class Transaction extends Model
      * Filter transaksi yang benar-benar masih membutuhkan perhatian rekonsiliasi.
      * Resolution terbaru menutup event terbaru yang memiliki source hash sama,
      * walaupun flag legacy requires_reconciliation belum tersapu.
+     *
+     * Event terbaru diagregasi sekali (GROUP BY) lalu di-join, bukan subquery
+     * MAX per baris, agar daftar tidak membayar agregasi berulang.
      */
     public function scopeNeedsReconciliation(Builder $query): Builder
     {
@@ -104,9 +107,18 @@ class Transaction extends Model
                         ->whereNotExists(function ($resolved): void {
                             $resolved->selectRaw('1')
                                 ->from('transaction_source_reconciliations as tsr')
+                                ->joinSub(
+                                    DB::connection('school')->table('transaction_source_events')
+                                        ->selectRaw('transaction_id, MAX(id) AS latest_event_id')
+                                        ->groupBy('transaction_id'),
+                                    'latest_event',
+                                    'latest_event.transaction_id',
+                                    '=',
+                                    'tsr.transaction_id'
+                                )
                                 ->whereColumn('tsr.transaction_id', 'transactions.id')
-                                ->whereRaw('(tsr.source_hash = transactions.source_hash OR (tsr.source_hash IS NULL AND transactions.source_hash IS NULL))')
-                                ->whereRaw('tsr.source_event_id = (SELECT MAX(tse.id) FROM transaction_source_events tse WHERE tse.transaction_id = transactions.id)');
+                                ->whereColumn('tsr.source_event_id', 'latest_event.latest_event_id')
+                                ->whereRaw('(tsr.source_hash = transactions.source_hash OR (tsr.source_hash IS NULL AND transactions.source_hash IS NULL))');
                         });
                 });
         });

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Services\ArkasMirrorResolver;
 use App\Services\SpjDescriptionService;
+use App\Services\VendorHistoryService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -67,6 +69,30 @@ class TransactionController extends Controller
         }
 
         return view('transactions.show', ['transactionId' => $transaction->id]);
+    }
+
+    /**
+     * Read-only vendor memory: suggest vendor_owner / receipt_recipient_name
+     * from the latest tenant transaction with the same vendor_name.
+     */
+    public function vendorRecommendation(Request $request, ActiveSpjContext $context, VendorHistoryService $history): JsonResponse
+    {
+        $data = $request->validate([
+            'vendor' => ['required', 'string', 'min:3', 'max:180'],
+            'transaction_id' => ['required', 'integer'],
+        ]);
+
+        $transaction = Transaction::query()->find($data['transaction_id']);
+        if (! $transaction || ! $context->matchesTransaction($transaction)) {
+            abort(404);
+        }
+
+        $recommendation = $history->latestForVendor($data['vendor'], $transaction->id);
+        if (! $recommendation) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json(['found' => true] + $recommendation);
     }
 
     /** @return array{0: ?Transaction, 1: ?Transaction} */

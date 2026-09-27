@@ -1,9 +1,5 @@
 @php
-    $participantPrimaryIndex = collect($participantRows)->search(function ($row) use ($transaction): bool {
-        return is_array($row)
-            && filled($transaction->receipt_recipient_name)
-            && mb_strtolower(trim((string) ($row['name'] ?? ''))) === mb_strtolower(trim((string) $transaction->receipt_recipient_name));
-    });
+    $participantPrimaryIndex = collect($participantRows)->search(fn ($row) => is_array($row) && ! empty($row['is_primary']));
     if ($participantPrimaryIndex === false) {
         $participantPrimaryIndex = count($participantRows) > 0 ? 0 : null;
     }
@@ -187,7 +183,7 @@
                     <th class="w-28 px-1.5 py-1.5 text-left">NIP</th>
                     <th class="w-28 px-1.5 py-1.5 text-left">NUPTK</th>
                     <th class="w-20 px-1.5 py-1.5 text-right">Porsi</th>
-                    <th class="w-20 px-1.5 py-1.5 text-center">Penerima Utama</th>
+                    <th class="w-20 px-1.5 py-1.5 text-center">Penerima Konsumsi</th>
                     <th class="w-28 px-1.5 py-1.5 text-center">Aksi</th>
                 </tr>
             </thead>
@@ -221,7 +217,7 @@
                         <td class="px-1 py-1"><input :name="`participants[${index}][nip]`" x-model="row.nip" class="h-8 w-28 rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 font-mono text-xs"></td>
                         <td class="px-1 py-1"><input :name="`participants[${index}][nuptk]`" x-model="row.nuptk" class="h-8 w-28 rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 font-mono text-xs"></td>
                         <td class="px-1 py-1"><input required type="number" min="1" step="1" inputmode="numeric" :name="`participants[${index}][portions]`" x-model.number="row.portions" class="h-8 w-20 rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 text-right font-mono text-xs"></td>
-                        <td class="px-1.5 py-1 text-center"><input type="radio" :checked="primaryIndex === index" @change="primaryIndex = index" title="Jadikan peserta ini sebagai Penerima Utama" class="h-4 w-4 border-[var(--ui-line-strong)] text-indigo-600 focus:ring-indigo-500"></td>
+                        <td class="px-1.5 py-1 text-center"><input type="radio" :checked="primaryIndex === index" @change="primaryIndex = index" title="Jadikan peserta ini sebagai penerima konsumsi" class="h-4 w-4 border-[var(--ui-line-strong)] text-indigo-600 focus:ring-indigo-500"></td>
                         <td class="px-1.5 py-1 text-center"><div class="inline-flex items-center gap-0.5"><button type="button" @click="moveBy(index, -1)" :disabled="index <= 0" title="Pindahkan ke atas" class="inline-flex h-7 w-7 items-center justify-center rounded text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)] disabled:opacity-35">↑</button><button type="button" @click="moveBy(index, 1)" :disabled="index >= rows.length - 1" title="Pindahkan ke bawah" class="inline-flex h-7 w-7 items-center justify-center rounded text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)] disabled:opacity-35">↓</button><button type="button" @click="removeRow(index)" title="Hapus baris" class="inline-flex h-7 w-7 items-center justify-center rounded text-rose-700 hover:bg-rose-50">×</button></div></td>
                     </tr>
                 </template>

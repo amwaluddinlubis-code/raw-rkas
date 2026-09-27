@@ -29,6 +29,53 @@ class EmployeeIdentityService
         return $normalized;
     }
 
+    /**
+     * Academic/religious title tokens stripped for cross-feed comparison.
+     * ARKAS writes the same person as "TARMINI" (PEGAWAI feed) and
+     * "TARMINI, S.Pd." (PTK feed); the core name is the comparable part.
+     */
+    private const TITLE_TOKENS = [
+        'spd', 'spdi', 'mpd', 'mpdi', 'skom', 'mkom', 'ssi', 'msi', 'se', 'sag',
+        'sh', 'mh', 'mm', 'ma', 'med', 'mhum', 'mpsi', 'spsi', 'skep', 'skm',
+        'st', 'mt', 'sarjana', 'magister', 'doktor',
+        'pd', 'pdi', 'kom', 'si', 'e', 'ag', 'sos', 'kep', 'km', 'hum', 'ds',
+        'sn', 'psi', 'gz', 'or', 'ars', 't', 'pt', 'md', 'amd', 'ama',
+        'dr', 'drs', 'dra', 'ir', 'prof', 'lc',
+    ];
+
+    private const SINGLE_LETTER_TITLES = ['s', 'm', 'a', 'h', 'i'];
+
+    /**
+     * Comparable core name: normalized, then title tokens removed.
+     * Single letters are only stripped when at least two other tokens
+     * remain, so real initials are preserved.
+     */
+    public function coreName(string $value): string
+    {
+        $tokens = explode(' ', $this->normalize($value));
+        $tokens = array_values(array_filter($tokens, fn (string $token) => $token !== ''));
+        if ($tokens === []) {
+            return '';
+        }
+
+        $filtered = [];
+        foreach ($tokens as $token) {
+            if (in_array($token, self::TITLE_TOKENS, true)) {
+                continue;
+            }
+            if (strlen($token) === 1
+                && in_array($token, self::SINGLE_LETTER_TITLES, true)
+                && count($tokens) >= 3) {
+                continue;
+            }
+            $filtered[] = $token;
+        }
+
+        $core = implode(' ', $filtered);
+
+        return $core !== '' ? $core : implode(' ', $tokens);
+    }
+
     public function findMatch(?string $nuptk, ?string $nip, ?string $nik, string $name): ?Employee
     {
         if (filled($nuptk)) {
@@ -214,6 +261,8 @@ class EmployeeIdentityService
             }
         }
 
+        $this->unionTitledVariants($rows, $find, $parent);
+
         $byRoot = [];
         foreach ($rows as $row) {
             $byRoot[$find($row->id)][] = $row;
@@ -243,6 +292,81 @@ class EmployeeIdentityService
         }
 
         return $keys;
+    }
+
+    /**
+     * Union rows sharing a title-stripped core name when identifier evidence
+     * is complementary, e.g. PEGAWAI feed "TARMINI" (NUPTK only) vs PTK feed
+     * "TARMINI, S.Pd." (NIP only). Buckets are merged only when:
+     * - every row carries at least one national identifier;
+     * - identifiers span at least two kinds (cross-feed complement);
+     * - no kind holds conflicting values;
+     * - no MANUAL or operator-locked row is involved (human-owned data
+     *   is never touched by this heuristic).
+     *
+     * @param  Collection<int, Employee>  $rows
+     * @param  array<int, int>  $parent  union-find map, mutated in place
+     */
+    private function unionTitledVariants(Collection $rows, callable $find, array &$parent): void
+    {
+        $buckets = [];
+        foreach ($rows as $row) {
+            $core = $this->coreName((string) $row->name);
+            if (mb_strlen($core) < 4) {
+                continue;
+            }
+            $buckets[$core][] = $row;
+        }
+
+        foreach ($buckets as $bucket) {
+            if (count($bucket) < 2 || ! $this->isFusableTitledBucket($bucket)) {
+                continue;
+            }
+            $first = $bucket[0]->id;
+            foreach (array_slice($bucket, 1) as $row) {
+                $rootA = $find($first);
+                $rootB = $find($row->id);
+                if ($rootA !== $rootB) {
+                    $parent[$rootB] = $rootA;
+                }
+            }
+        }
+    }
+
+    /** @param array<int, Employee> $bucket */
+    private function isFusableTitledBucket(array $bucket): bool
+    {
+        $kinds = ['nuptk', 'nip', 'nik', 'dapodik_id'];
+        $seen = [];
+
+        foreach ($bucket as $row) {
+            if (strtoupper((string) $row->source_type) === 'MANUAL' || (bool) $row->operator_locked) {
+                return false;
+            }
+            $hasId = false;
+            foreach ($kinds as $kind) {
+                if (! filled($row->getAttribute($kind))) {
+                    continue;
+                }
+                $hasId = true;
+                $seen[$kind][] = trim((string) $row->getAttribute($kind));
+            }
+            if (! $hasId) {
+                return false;
+            }
+        }
+
+        if (count($seen) < 2) {
+            return false;
+        }
+
+        foreach ($seen as $values) {
+            if (count(array_unique($values)) > 1) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /** @param Collection<int, Employee> $losers */

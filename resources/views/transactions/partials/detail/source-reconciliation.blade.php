@@ -7,6 +7,7 @@
     $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: 'DRAFT'));
     $packageLocked = in_array($packageStatus, ['NUMBERED', 'FINAL'], true);
     $latestHasChanges = $latest && $latest->changes !== [];
+    $tempUnlock = app(\App\Services\SpjSourceReconciliationService::class)->temporaryUnlockEnabled() && auth()->user()?->isAdministrator();
     $formatValue = function ($value) {
         if ($value === null || $value === '') {
             return '-';
@@ -41,7 +42,7 @@
 
         @if($reconciliation['action_hint'])
             <div class="border-b border-[var(--ui-line)] px-5 py-3 text-sm text-amber-900">
-                <strong>Tindakan:</strong> {{ $reconciliation['action_hint'] }}
+                <strong>AKSI:</strong> {{ $reconciliation['action_hint'] }}
             </div>
         @endif
 
@@ -101,6 +102,32 @@
                     <div class="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
                         Paket berstatus <strong>{{ $packageStatus }}</strong>. Ada perubahan nilai sumber nyata, sehingga rekonsiliasi tidak boleh ditutup langsung. Gunakan workflow pembatalan, reissue, atau revisi resmi bila perubahan ARKAS harus diterapkan pada dokumen.
                     </div>
+                    @if($tempUnlock)
+                        <form wire:submit="resolveReconciliation(null)" class="mt-3 space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-4">
+                            <p class="text-sm font-bold text-amber-900">Jalur sementara (administrator): tutup tanpa pembatalan. Keputusan + alasan terekam audit. Dokumen bernomor/final TIDAK berubah otomatis — cetak ulang manual bila diperlukan.</p>
+                            <input type="hidden" wire:model="sourceEventId">
+                            <div class="grid gap-2 lg:grid-cols-2">
+                                <label class="flex cursor-pointer gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3">
+                                    <input type="radio" wire:model="resolution" value="ACCEPT_SOURCE" required class="mt-1">
+                                    <span><strong class="block text-sm text-[var(--ui-fg-strong)]">Terima perubahan sumber ARKAS</strong></span>
+                                </label>
+                                <label class="flex cursor-pointer gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-3">
+                                    <input type="radio" wire:model="resolution" value="KEEP_OVERLAY" required class="mt-1">
+                                    <span><strong class="block text-sm text-[var(--ui-fg-strong)]">Pertahankan overlay SPJ</strong></span>
+                                </label>
+                            </div>
+                            <div>
+                                <x-ui.field label="Alasan tertulis (wajib)">
+                                    <x-ui.textarea wire:model="resolutionNotes" rows="2" maxlength="2000" placeholder="Wajib: alasan menutup rekonsiliasi paket bernomor/final tanpa pembatalan." />
+                                </x-ui.field>
+                            </div>
+                            <label class="flex cursor-pointer items-start gap-2 text-sm text-amber-900">
+                                <input type="checkbox" wire:model="unlockLockedResolution" value="1" required class="mt-1">
+                                <span>Saya memahami ini jalur sementara dan dokumen {{ $packageStatus }} tidak berubah otomatis.</span>
+                            </label>
+                            <x-ui.button type="submit" variant="danger">Tutup rekonsiliasi tanpa pembatalan</x-ui.button>
+                        </form>
+                    @endif
                 @else
                     <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Pilih keputusan setelah membandingkan nilai sumber sebelum dan sesudah. Pilihan ini tidak menghapus riwayat perubahan ARKAS.</p>
                     <form wire:submit="resolveReconciliation(null)" class="mt-3 space-y-3">

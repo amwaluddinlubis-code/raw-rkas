@@ -12,10 +12,10 @@ class SpjPeriodicReportRegistryTest extends TestCase
         $registry = app(SpjPeriodicReportRegistry::class);
         $packages = $registry->packages();
 
-        $this->assertSame(9, count($packages['bulan']));
-        $this->assertSame(10, count($packages['triwulan']));
-        $this->assertSame(11, count($packages['semester']));
-        $this->assertSame(9, count($packages['tahunan']));
+        $this->assertSame(11, count($packages['bulan']));
+        $this->assertSame(12, count($packages['triwulan']));
+        $this->assertSame(13, count($packages['semester']));
+        $this->assertSame(10, count($packages['tahunan']));
 
         $this->assertSame([
             'SPTJM',
@@ -27,6 +27,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Berita Acara Pemeriksaan Kas (K7C)',
             'BOS K7A',
             'Rekap Belanja Modal dan Belanja Barang / Jasa',
+            'Rekapitulasi Pengeluaran Dana BOS',
+            'Laporan BPK Format BOS',
         ], array_column($packages['bulan'], 'label'));
 
         $this->assertSame([
@@ -40,6 +42,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'SP2T',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
+            'Rekapitulasi Pengeluaran Dana BOS',
+            'Laporan BPK Format BOS',
         ], array_column($packages['triwulan'], 'label'));
 
         $this->assertSame([
@@ -53,7 +57,9 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'SP2T',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
+            'Rekapitulasi Pengeluaran Dana BOS',
             'Rekap Belanja Barang Milik Daerah (Aset)',
+            'Laporan BPK Format BOS',
         ], array_column($packages['semester'], 'label'));
 
         $this->assertSame([
@@ -66,6 +72,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Rekap Belanja Dana BOS',
             'Form 1C',
             'Rekapitulasi Pengeluaran Dana BOS',
+            'Laporan BPK Format BOS',
         ], array_column($packages['tahunan'], 'label'));
     }
 

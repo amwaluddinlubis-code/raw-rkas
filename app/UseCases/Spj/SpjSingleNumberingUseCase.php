@@ -110,6 +110,9 @@ class SpjSingleNumberingUseCase
         if ($definition['scope_rule'] === 'MAIN' && $scopeKey !== 'MAIN') {
             return back()->with('error', 'Penomoran '.$definition['label'].' hanya menggunakan scope MAIN sesuai registry canonical.');
         }
+        if ($definition['scope_rule'] === 'TAHAP' && $scopeKey !== 'MAIN' && ! preg_match('/^TAHAP:\d+$/', $scopeKey)) {
+            return back()->with('error', 'Penomoran '.$definition['label'].' memerlukan scope MAIN atau tahap penerimaan yang valid (TAHAP:n).');
+        }
         if ($definition['scope_rule'] === 'TRAVEL' && ! preg_match('/^TRAVEL-\d+$/', $scopeKey)) {
             return back()->with('error', 'Penomoran '.$definition['label'].' memerlukan scope perjalanan yang valid.');
         }

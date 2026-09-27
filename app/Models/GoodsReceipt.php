@@ -10,7 +10,7 @@ class GoodsReceipt extends Model
 {
     protected $connection = 'school';
 
-    protected $fillable = ['transaction_id', 'scope_key', 'receipt_sequence', 'receipt_date', 'status', 'notes', 'is_late_entry'];
+    protected $fillable = ['transaction_id', 'scope_key', 'receipt_sequence', 'receipt_date', 'status', 'notes', 'is_late_entry', 'order_date', 'bap_date', 'bast_date', 'invoice_date', 'invoice_status'];
 
     public function transaction(): BelongsTo
     {
@@ -24,6 +24,15 @@ class GoodsReceipt extends Model
 
     protected function casts(): array
     {
-        return ['receipt_date' => 'date', 'is_late_entry' => 'boolean'];
+        return ['receipt_date' => 'date', 'is_late_entry' => 'boolean', 'order_date' => 'date', 'bap_date' => 'date', 'bast_date' => 'date', 'invoice_date' => 'date'];
+    }
+
+    /**
+     * Document scope key for staged letters (PESANAN/BAP/BAST per tahap).
+     * The single kuitansi stays on scope MAIN.
+     */
+    public function documentScopeKey(): string
+    {
+        return 'TAHAP:'.$this->receipt_sequence;
     }
 }

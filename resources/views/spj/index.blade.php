@@ -66,7 +66,7 @@
                         $participantRows = $transaction->items
                             ->flatMap(fn ($item) => $item->participants)
                             ->sortBy(fn ($participant) => [(int) ($participant->sort_order ?? 0), (int) $participant->getKey()])
-                            ->map(fn ($participant) => ['name' => $participant->name, 'position' => $participant->position, 'nip' => $participant->nip, 'nuptk' => $participant->nuptk, 'portions' => (int) $participant->portions])
+                            ->map(fn ($participant) => ['name' => $participant->name, 'position' => $participant->position, 'nip' => $participant->nip, 'nuptk' => $participant->nuptk, 'portions' => (int) $participant->portions, 'is_primary' => (bool) $participant->is_primary])
                             ->values()
                             ->all();
                     @endphp

@@ -204,6 +204,20 @@ class SpjDocumentLifecycleService
                 continue;
             }
 
+            if ($definition['scope_rule'] === 'TAHAP') {
+                $receipts = $transaction->goodsReceipts->where('status', '!==', 'CANCELLED');
+                if ($receipts->count() > 1) {
+                    foreach ($receipts as $receipt) {
+                        $scopeKey = 'TAHAP:'.$receipt->receipt_sequence;
+                        if (filled($this->numberingPolicy->documentEventDateValue($transaction, $documentType, $scopeKey))) {
+                            $requirements[] = ['document_type' => $documentType, 'scope_key' => $scopeKey];
+                        }
+                    }
+
+                    continue;
+                }
+            }
+
             if (filled($this->numberingPolicy->documentEventDateValue($transaction, $documentType))) {
                 $requirements[] = ['document_type' => $documentType, 'scope_key' => 'MAIN'];
             }

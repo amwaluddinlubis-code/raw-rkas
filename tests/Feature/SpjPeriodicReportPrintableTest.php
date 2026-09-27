@@ -15,6 +15,7 @@ class SpjPeriodicReportPrintableTest extends TestCase
         $this->assertStringContainsString('use App\\Http\\Controllers\\PeriodicReportController;', $routes);
         $this->assertStringContainsString("->name('spj.periodic-reports.print')", $routes);
         $this->assertStringContainsString("->name('spj.periodic-reports.pdf')", $routes);
+        $this->assertStringContainsString("->name('spj.periodic-reports.excel')", $routes);
     }
 
     public function test_periodic_report_center_exposes_print_and_pdf_actions_only_after_period_is_ready(): void
@@ -24,6 +25,7 @@ class SpjPeriodicReportPrintableTest extends TestCase
         $this->assertIsString($blade);
         $this->assertStringContainsString("route('spj.periodic-reports.print'", $blade);
         $this->assertStringContainsString("route('spj.periodic-reports.pdf'", $blade);
+        $this->assertStringContainsString("route('spj.periodic-reports.excel'", $blade);
         $this->assertStringContainsString("@if(\$summary['ready'])", $blade);
         $this->assertStringContainsString('Siap dicetak', $blade);
     }
@@ -41,6 +43,17 @@ class SpjPeriodicReportPrintableTest extends TestCase
         $this->assertStringContainsString("@include('periodic-reports.partials.document')", $pdf);
         $this->assertStringContainsString('Kepala Sekolah', $document);
         $this->assertStringContainsString('Bendahara BOSP', $document);
+    }
+
+    public function test_periodic_report_excel_service_supports_special_presentations(): void
+    {
+        $service = file_get_contents(app_path('Services/SpjPeriodicReportExcelService.php'));
+
+        $this->assertIsString($service);
+        $this->assertStringContainsString('new Spreadsheet', $service);
+        $this->assertStringContainsString("'rekap_bosp'", $service);
+        $this->assertStringContainsString("'bpk_bos'", $service);
+        $this->assertStringContainsString('new Xlsx', $service);
     }
 
     public function test_internal_print_service_covers_every_registered_periodic_report_key(): void

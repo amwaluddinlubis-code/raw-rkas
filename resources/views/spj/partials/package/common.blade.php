@@ -1,4 +1,4 @@
-<section class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
+<section class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3" data-vendor-recommendation data-vendor-recommend-url="{{ route('transactions.vendor-recommendation') }}" data-vendor-transaction-id="{{ (int) $transaction->id }}">
     <div class="flex flex-wrap items-center justify-between gap-2">
         <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-strong)]">Data Umum Dokumen</h3>
         <span class="text-[11px] font-medium text-[var(--ui-fg-muted)]">Field bertanda * wajib diisi sebelum
@@ -52,34 +52,29 @@
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Referensi pembayaran</label>
                 @php($siplahOrder = $transaction->siplah_order_number ?: (filled($siplahInvoice) ? collect(explode('/', $siplahInvoice))->filter()->last() : null))
-                <x-ui.input name="payment_reference" :value="old(
-                    'payment_reference',
-                    $transaction->payment_reference ?: ($transaction->is_siplah ? $siplahOrder : null),
-                )" class="mt-1 !py-1.5 !text-sm" />
+                <x-ui.input name="payment_reference" :value="old('payment_reference', $transaction->payment_reference ?: 'VA Sumut - ')" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama <span
-                        class="text-rose-600">*</span></label>
-                <x-ui.input name="receipt_recipient_name" :value="old(
-                    'receipt_recipient_name',
-                    $transaction->receipt_recipient_name ?:
-                    ($transaction->is_siplah
-                        ? data_get($siplahResponse, 'merchant')
-                        : null),
-                )" class="mt-1 !py-1.5 !text-sm" required />
+                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penyedia / Merchant / Toko</label>
+                <x-ui.input name="vendor_name" data-vendor-name-input :value="old('vendor_name', $transaction->vendor_name)" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Nama penyedia / penerima</label>
-                <x-ui.input name="vendor_name" :value="old('vendor_name', $transaction->vendor_name)" class="mt-1 !py-1.5 !text-sm" />
-            </div>
-            <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Nama pemilik / direktur</label>
-                <x-ui.input name="vendor_owner" :value="old('vendor_owner', $transaction->vendor_owner)" class="mt-1 !py-1.5 !text-sm" />
+                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Pemilik Merchant / Toko /
+                    Direktur</label>
+                <x-ui.input name="vendor_owner" data-vendor-owner-input :value="old('vendor_owner', $transaction->vendor_owner)" class="mt-1 !py-1.5 !text-sm" />
+                <p data-vendor-owner-hint class="mt-1 hidden text-[11px] text-[var(--ui-fg-muted)]"></p>
             </div>
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">NPWP penyedia</label>
                 <x-ui.input name="vendor_npwp" :value="old('vendor_npwp', $transaction->vendor_npwp)" class="mt-1 !py-1.5 !text-sm" />
             </div>
+            <div>
+                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama / Kuitansi /
+                    Penandatangan <span class="text-rose-600">*</span></label>
+                <x-ui.input name="receipt_recipient_name" data-vendor-recipient-input :value="old('receipt_recipient_name', $transaction->receipt_recipient_name)" class="mt-1 !py-1.5 !text-sm" required />
+                <p data-vendor-recipient-hint class="mt-1 hidden text-[11px] text-[var(--ui-fg-muted)]"></p>
+            </div>
+
         </div>
     </div>
 </section>
