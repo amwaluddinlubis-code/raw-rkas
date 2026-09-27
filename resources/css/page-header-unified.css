@@ -13,7 +13,7 @@
 html[data-ui-header] .page-header-main {
     position: relative;
     overflow: hidden;
-    padding: 1.75rem 1.25rem !important;
+    padding: 1.25rem 1.0rem !important;
     background: radial-gradient(130% 150% at 88% 0%,
             color-mix(in srgb, var(--theme-accent) 30%, transparent),
             transparent 55%),
@@ -220,7 +220,7 @@ html[data-ui-personality] .page-header-summary> :is(.grid, [class*="grid-cols-"]
    but they no longer own any color; all visual values resolve through tokens. */
 .page-header-legacy.page-header-shell>.page-header-main,
 .page-header-legacy .page-header-main {
-    padding: 1.75rem 1.25rem !important;
+    padding: 1.25rem 1.0rem !important;
 }
 
 .page-header-legacy .page-header-main h1 {

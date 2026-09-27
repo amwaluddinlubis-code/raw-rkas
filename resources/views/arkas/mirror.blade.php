@@ -5,15 +5,6 @@
             subtitle="Dua lajur tetap: 13 tabel referensi mengalir ke database pusat, 17 tabel operasional mengalir ke database sekolah aktif. Tanpa mapping manual, overlay SPJ selalu dipertahankan."
             kicker="Data & Integrasi"
         >
-            <div class="flex flex-wrap items-center gap-2 text-xs font-semibold text-[var(--ui-fg-muted)]">
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-1.5">
-                    <x-ui.icon name="database" size="xs" /> 13 referensi
-                </span>
-                <span aria-hidden="true" class="text-[var(--ui-line-strong)]">→</span>
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-1.5">
-                    <x-ui.icon name="school" size="xs" /> 17 operasional
-                </span>
-            </div>
         </x-page-header>
 
         @if(session('success'))
