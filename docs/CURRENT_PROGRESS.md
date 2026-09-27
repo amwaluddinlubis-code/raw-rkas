@@ -1,11 +1,43 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-25** (repository audit + authenticated route performance sweep, `raw-rkas`)
+Terakhir diperbarui: **2026-09-28** (post-954 regression recovery + canonical CI #34, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
 ---
+
+## Current main regression recovery after staged-rendering feature (2026-09-28)
+
+Status: **FUNCTIONAL PASS / CURRENT MAIN SOURCE GATE GREEN**.
+
+Perubahan fitur besar `9540937d1098f954784d0971fa4f92edb9691b3f` memperluas staged goods receipt (`TAHAP:n`), template rendering, vendor memory, dan beberapa jalur rekonsiliasi. Empat run push berturut-turut (#27–#30) kemudian gagal. Audit 2026-09-28 menutup blocker secara bertahap tanpa mengubah lifecycle/numbering contract:
+
+- `47368a2c31d73bebdf04ee8bb8ece880ee2efc15` — override test template diselaraskan dengan signature baru `?GoodsReceipt $receipt = null`; fatal `Premature end of PHP process` tertutup.
+- `217a69f858d0a5f03f12cdd51286b356b2cd4404` — fallback `auth()` di use case rekonsiliasi dihapus, regression assertion tanggal dibuat tahan whitespace tanpa melonggarkan batas tanggal canonical, dan form Siswa kembali memakai theme token.
+- `49cd5ae759bc5713cd7023adc4999ca4ac5d9e2e` — expected test SiPLah diselaraskan dengan wording source yang memang berubah menjadi `invoice nomor ...`.
+- `14cf825eea79da48b98423469d8e2746839a0bcb` — realisasi RKAS lintas revisi dipulihkan. Query baris tampilan tetap boleh difilter ke revisi terpilih, tetapi indeks identitas RAPBS untuk fallback realisasi kembali membaca lintas revisi lalu menerapkan scope tahun+sumber dana canonical. Tiga regression `RkasRevisionModesTest` tetap dipertahankan sebagai guard.
+
+Evidence GitHub untuk code HEAD `main@14cf825eea79da48b98423469d8e2746839a0bcb`:
+
+```text
+WORKFLOW              : SPJ Critical Verification
+RUN                   : 36349827238 (#34)
+ARTIFACT GUARD        : PASS
+COMPOSER VALIDATE     : PASS
+LOCKED PLATFORM CHECK : PASS / PHP 8.3
+COMPOSER INSTALL      : PASS
+REPOSITORY PINT       : PASS
+FRONTEND BUILD        : PASS
+BLADE COMPILE         : PASS
+CHECKLIST PHP LINT    : PASS
+SPJ CRITICAL          : PASS / 339 tests / 2,605 assertions
+FULL UNIT             : PASS / 79 tests / 281 assertions
+FULL FEATURE          : PASS / 611 tests / 4,276 assertions
+RESULT                : SUCCESS
+```
+
+Deterministic source/regression gate kembali hijau. Browser/operator visual-runtime untuk perubahan UI 2026-09-27 tetap **RVR**; CI ini tidak dipakai sebagai klaim browser QA.
 
 ## Current main audit + SK file regression hardening (2026-09-25)
 
@@ -369,22 +401,22 @@ Definisi status:
 ### Latest successful canonical code gate
 
 ```text
-LATEST SUCCESSFUL CODE HEAD: ac75b5bed646be70a4a2688512f75fbc6b55c46a
-LATEST SUCCESSFUL CODE GATE: run 36120237766 (#25) / SUCCESS
+LATEST SUCCESSFUL CODE HEAD: 14cf825eea79da48b98423469d8e2746839a0bcb
+LATEST SUCCESSFUL CODE GATE: run 36349827238 (#34) / SUCCESS
 WORKFLOW                   : SPJ Critical Verification
 COMPOSER VALIDATE          : PASS
 LOCKED PLATFORM CHECK      : PASS pada PHP 8.3
 COMPOSER INSTALL           : PASS dari committed lock
-REPOSITORY PINT            : PASS / 495 files
+REPOSITORY PINT            : PASS
 FRONTEND BUILD             : PASS
 BLADE COMPILE              : PASS
 CHECKLIST PHP LINT         : PASS
-SPJ CRITICAL               : PASS / 330 tests / 2,570 assertions
+SPJ CRITICAL               : PASS / 339 tests / 2,605 assertions
 FULL UNIT                  : PASS / 79 tests / 281 assertions
-FULL FEATURE               : PASS / 569 tests / 4,051 assertions
+FULL FEATURE               : PASS / 611 tests / 4,276 assertions
 ```
 
-Run #25 adalah code gate canonical terbaru untuk `main`. Ia mencakup hardening upload/replace/delete pindaian SK, regression baru di `EmployeeCertificateTest`, canonical regression schema-incomplete pada `SpjQuarterAuditCommandTest`, penghapusan test debug sementara, dan repository Pint yang kembali bersih. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
+Run #34 adalah code gate canonical terbaru untuk source `main`. Ia mencakup recovery regression pasca-`9540937d`, termasuk kompatibilitas signature template staged receipt, boundary use-case tanpa `auth()` global, theme/source-contract cleanup, sinkronisasi wording SiPLah, serta pemulihan fallback realisasi RKAS lintas revisi. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
 
 ### P0 dependency-platform repair — CI #483 → #486
 
