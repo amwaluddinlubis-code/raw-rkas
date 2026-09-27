@@ -1,0 +1,109 @@
+/* Unifikasi global ala halaman pilih-tahun (2026-09-27).
+   1. Semua page header memakai permukaan terang bergradasi radial
+      dengan teks gelap mengikuti token tema (aman light/dark).
+   2. Semua tombol primary memakai gaya dasar terang (accent wash +
+      permukaan), bukan solid fill, di semua profil tema.
+   Ditempatkan terakhir pada cascade agar menang atas varian per-tema. */
+
+html[data-theme][data-ui-header] .page-header-main,
+html:not([data-theme])[data-ui-header] .page-header-main {
+    background:
+        radial-gradient(130% 150% at 90% 0%, color-mix(in srgb, var(--theme-accent) 38%, transparent), transparent 62%),
+        radial-gradient(130% 160% at 100% 100%, color-mix(in srgb, #8b5cf6 28%, transparent), transparent 58%),
+        linear-gradient(120deg, color-mix(in srgb, var(--theme-accent) 14%, transparent), transparent 55%),
+        linear-gradient(135deg, color-mix(in srgb, var(--theme-accent-soft) 88%, transparent), transparent 80%),
+        var(--ui-surface-soft) !important;
+    color: var(--ui-fg-strong) !important;
+}
+
+html[data-theme][data-ui-header] .page-header-main :is(.page-header-title, .page-header-kicker),
+html:not([data-theme])[data-ui-header] .page-header-main :is(.page-header-title, .page-header-kicker) {
+    color: var(--ui-fg-strong) !important;
+}
+
+html[data-theme][data-ui-header] .page-header-main .page-header-description,
+html:not([data-theme])[data-ui-header] .page-header-main .page-header-description {
+    color: var(--ui-fg-muted) !important;
+}
+
+html[data-theme][data-ui-header] .page-header-main .page-header-kicker,
+html:not([data-theme])[data-ui-header] .page-header-main .page-header-kicker {
+    border-color: var(--ui-line) !important;
+    background: var(--ui-surface-base) !important;
+    color: var(--theme-content-accent) !important;
+}
+
+html[data-theme][data-ui-header] .page-header-main .page-header-icon,
+html:not([data-theme])[data-ui-header] .page-header-main .page-header-icon {
+    border-color: color-mix(in srgb, var(--theme-content-accent) 22%, var(--ui-line)) !important;
+    background: color-mix(in srgb, var(--theme-accent-soft) 35%, var(--ui-surface-base)) !important;
+    color: var(--theme-content-accent, var(--ui-accent)) !important;
+}
+
+html[data-theme][data-ui-header] .page-header-main .page-header-decoration-top,
+html:not([data-theme])[data-ui-header] .page-header-main .page-header-decoration-top,
+html[data-theme][data-ui-header] .page-header-main .page-header-decoration-bottom,
+html:not([data-theme])[data-ui-header] .page-header-main .page-header-decoration-bottom {
+    background: color-mix(in srgb, var(--theme-accent) 10%, transparent) !important;
+}
+
+html[data-theme][data-ui-header] .page-header-main :is(a, button):not(.ui-btn):not(.btn):not(.ui-btn-danger):not(.btn-danger),
+html:not([data-theme])[data-ui-header] .page-header-main :is(a, button):not(.ui-btn):not(.btn):not(.ui-btn-danger):not(.btn-danger) {
+    color: var(--ui-fg-strong) !important;
+}
+
+html[data-theme] :is(.ui-btn-primary, .btn-primary, .theme-btn),
+html:not([data-theme]) :is(.ui-btn-primary, .btn-primary, .theme-btn) {
+    border-color: color-mix(in srgb, var(--theme-accent) 32%, transparent) !important;
+    background:
+        radial-gradient(130% 150% at 85% 0%, color-mix(in srgb, var(--theme-accent) 24%, transparent), transparent 65%),
+        color-mix(in srgb, var(--theme-accent-soft) 70%, var(--ui-component-surface, var(--ui-surface-base, #fff))) !important;
+    color: var(--theme-content-accent, var(--theme-accent-strong)) !important;
+}
+
+html[data-theme] :is(.ui-btn-primary, .btn-primary, .theme-btn):hover,
+html:not([data-theme]) :is(.ui-btn-primary, .btn-primary, .theme-btn):hover {
+    border-color: color-mix(in srgb, var(--theme-accent) 48%, transparent) !important;
+    background:
+        radial-gradient(130% 150% at 85% 0%, color-mix(in srgb, var(--theme-accent) 34%, transparent), transparent 65%),
+        color-mix(in srgb, var(--theme-accent-soft) 88%, var(--ui-component-surface, var(--ui-surface-base, #fff))) !important;
+    color: var(--theme-content-accent, var(--theme-accent-strong)) !important;
+}
+
+html[data-theme] :is(.ui-btn-primary, .btn-primary, .theme-btn) svg,
+html:not([data-theme]) :is(.ui-btn-primary, .btn-primary, .theme-btn) svg {
+    color: currentColor !important;
+    stroke: currentColor !important;
+}
+
+/* Toolbar menyatu dengan tabel di bawahnya: radius bawah 0. */
+.ui-toolbar {
+    border-bottom-right-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+/* Summary header meniru kartu ringkasan dashboard: label kecil uppercase,
+   angka besar extrabold, hint meredup, sel lega dan sejajar vertikal. */
+.page-header-summary .ui-stat {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    min-height: 6rem !important;
+    padding: 1rem 1.25rem !important;
+}
+
+.page-header-summary .ui-stat-label {
+    font-size: .75rem !important;
+    line-height: 1rem !important;
+}
+
+.page-header-summary .ui-stat-value {
+    font-size: 1.25rem !important;
+    font-weight: 800 !important;
+    line-height: 1.55rem !important;
+}
+
+.page-header-summary .ui-stat-hint {
+    font-size: .75rem !important;
+    line-height: 1rem !important;
+}

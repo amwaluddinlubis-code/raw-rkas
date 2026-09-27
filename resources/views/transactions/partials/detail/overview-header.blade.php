@@ -73,13 +73,13 @@
 <x-page-header :title="$transaction->sourceValue('no_bukti')"
     :subtitle="$transaction->sourceValue('description') ?: 'Uraian transaksi belum tersedia.'"
     kicker="{{ $headerVisual['label'] }} · Detail transaksi ARKAS / BKU">
-    <div class="grid sm:grid-cols-3">
+    <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <x-stat-item label="Nilai bruto" :value="$rupiah($transaction->sourceValue('gross_amount'))"
-            :hint="$transaction->sourceCarbon()?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia'" />
+            :hint="$transaction->sourceCarbon()?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia'" value-class="text-slate-800" icon="budget" icon-class="text-slate-800" />
         <x-stat-item label="Nilai netto" :value="$rupiah($transaction->sourceValue('net_amount'))"
-            hint="Nilai setelah potongan pajak" />
+            hint="Nilai setelah potongan pajak" value-class="text-emerald-700" icon="balance" icon-class="text-emerald-700" />
         <x-stat-item label="Rincian barang/jasa" value="{{ $transaction->items->count() }} item"
-            :hint="'Akumulasi: '.$rupiah($totalItems)" />
+            :hint="'Akumulasi: '.$rupiah($totalItems)" value-class="text-indigo-700" icon="report" icon-class="text-indigo-700" />
     </div>
 </x-page-header>
 

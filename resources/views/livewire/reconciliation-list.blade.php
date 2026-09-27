@@ -15,11 +15,11 @@
         kicker="Perubahan sumber ARKAS"
         subtitle="Tinjau transaksi yang berubah atau tidak lagi muncul pada sinkronisasi sebelum melanjutkan dokumen SPJ."
     >
-        <div class="grid gap-px bg-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4">
-            <x-stat-item label="Perlu perhatian" :value="number_format($summary['total'], 0, ',', '.')" hint="Semua transaksi yang perlu ditinjau" />
-            <x-stat-item label="Data berubah" :value="number_format($summary['changed'], 0, ',', '.')" hint="Sumber ARKAS berubah setelah data SPJ tersedia" value-class="text-orange-700" />
-            <x-stat-item label="Tidak muncul" :value="number_format($summary['missing'], 0, ',', '.')" hint="Tidak ditemukan pada sinkronisasi terakhir" value-class="text-rose-700" />
-            <x-stat-item label="Sudah punya paket" :value="number_format($summary['with_package'], 0, ',', '.')" hint="Perlu kehati-hatian sebelum finalisasi" value-class="text-[var(--theme-content-accent)]" />
+        <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <x-stat-item label="Perlu perhatian" :value="number_format($summary['total'], 0, ',', '.')" hint="Semua transaksi yang perlu ditinjau" value-class="text-slate-800" icon="inbox" icon-class="text-slate-700" />
+            <x-stat-item label="Data berubah" :value="number_format($summary['changed'], 0, ',', '.')" hint="Sumber ARKAS berubah setelah data SPJ tersedia" value-class="text-orange-700" icon="refresh" icon-class="text-orange-700" />
+            <x-stat-item label="Tidak muncul" :value="number_format($summary['missing'], 0, ',', '.')" hint="Tidak ditemukan pada sinkronisasi terakhir" value-class="text-rose-700" icon="warning" icon-class="text-rose-700" />
+            <x-stat-item label="Sudah punya paket" :value="number_format($summary['with_package'], 0, ',', '.')" hint="Perlu kehati-hatian sebelum finalisasi" value-class="text-[var(--theme-content-accent)]" icon="document" icon-class="text-[var(--theme-content-accent)]" />
         </div>
     </x-page-header>
 

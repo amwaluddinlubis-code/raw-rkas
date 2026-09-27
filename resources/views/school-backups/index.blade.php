@@ -11,9 +11,9 @@
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Sekolah Aktif" :value="$school->name" :hint="'NPSN '.$school->npsn" value-class="text-indigo-700" />
-                <x-stat-item label="Jumlah Backup" :value="number_format($backups->count(), 0, ',', '.')" hint="Backup yang tersedia" value-class="text-emerald-700" />
-                <x-stat-item label="Backup Terakhir" :value="$backups->first()?->created_at?->translatedFormat('d M Y H:i') ?? '—'" hint="Waktu pembuatan terakhir" value-class="text-slate-800" />
+                <x-stat-item label="Sekolah Aktif" :value="$school->name" :hint="'NPSN '.$school->npsn" value-class="text-indigo-700" icon="school" icon-class="text-indigo-700" />
+                <x-stat-item label="Jumlah Backup" :value="number_format($backups->count(), 0, ',', '.')" hint="Backup yang tersedia" value-class="text-emerald-700" icon="archive" icon-class="text-emerald-700" />
+                <x-stat-item label="Backup Terakhir" :value="$backups->first()?->created_at?->translatedFormat('d M Y H:i') ?? '—'" hint="Waktu pembuatan terakhir" value-class="text-slate-800" icon="clock" icon-class="text-slate-800" />
             </div>
         </x-page-header>
 

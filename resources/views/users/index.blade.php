@@ -10,10 +10,10 @@
             kicker="Pengaturan pengguna"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                <x-stat-item label="Total pengguna" :value="number_format($users->count(), 0, ',', '.')" hint="Akun terdaftar" />
-                <x-stat-item label="Administrator" :value="number_format($users->where('role', \App\Models\User::ROLE_ADMIN)->count(), 0, ',', '.')" hint="Akses penuh" value-class="text-indigo-700" />
-                <x-stat-item label="Operator" :value="number_format($users->where('role', \App\Models\User::ROLE_OPERATOR)->count(), 0, ',', '.')" hint="Mengelola SPJ" value-class="text-emerald-700" />
-                <x-stat-item label="Pemeriksa" :value="number_format($users->where('role', \App\Models\User::ROLE_VIEWER)->count(), 0, ',', '.')" hint="Hanya melihat data" value-class="text-slate-700" />
+                <x-stat-item label="Total pengguna" :value="number_format($users->count(), 0, ',', '.')" hint="Akun terdaftar" value-class="text-slate-800" icon="users" icon-class="text-slate-800" />
+                <x-stat-item label="Administrator" :value="number_format($users->where('role', \App\Models\User::ROLE_ADMIN)->count(), 0, ',', '.')" hint="Akses penuh" value-class="text-indigo-700" icon="user" icon-class="text-indigo-700" />
+                <x-stat-item label="Operator" :value="number_format($users->where('role', \App\Models\User::ROLE_OPERATOR)->count(), 0, ',', '.')" hint="Mengelola SPJ" value-class="text-emerald-700" icon="edit" icon-class="text-emerald-700" />
+                <x-stat-item label="Pemeriksa" :value="number_format($users->where('role', \App\Models\User::ROLE_VIEWER)->count(), 0, ',', '.')" hint="Hanya melihat data" value-class="text-slate-700" icon="eye" icon-class="text-slate-700" />
             </div>
         </x-page-header>
 

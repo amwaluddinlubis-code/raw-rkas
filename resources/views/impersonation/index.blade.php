@@ -11,9 +11,9 @@
                 @endif
             </x-slot:actions>
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Total User" :value="number_format($users->count(), 0, ',', '.')" hint="Akun yang dapat ditinjau" />
-                <x-stat-item label="User Non-Admin" :value="number_format($users->reject(fn($user) => $user->isAdministrator())->count(), 0, ',', '.')" hint="Kandidat mode uji" value-class="text-indigo-700" />
-                <x-stat-item label="Mode Uji" :value="session('impersonator_user_id') ? 'Aktif' : 'Tidak aktif'" :hint="session('impersonator_user_id') ? 'Sedang impersonate user' : 'Masih sebagai administrator'" :value-class="session('impersonator_user_id') ? 'text-amber-700' : 'text-emerald-700'" />
+                <x-stat-item label="Total User" :value="number_format($users->count(), 0, ',', '.')" hint="Akun yang dapat ditinjau" value-class="text-slate-800" icon="users" icon-class="text-slate-700" />
+                <x-stat-item label="User Non-Admin" :value="number_format($users->reject(fn($user) => $user->isAdministrator())->count(), 0, ',', '.')" hint="Kandidat mode uji" value-class="text-indigo-700" icon="user" icon-class="text-indigo-700" />
+                <x-stat-item label="Mode Uji" :value="session('impersonator_user_id') ? 'Aktif' : 'Tidak aktif'" :hint="session('impersonator_user_id') ? 'Sedang impersonate user' : 'Masih sebagai administrator'" :value-class="session('impersonator_user_id') ? 'text-amber-700' : 'text-emerald-700'" icon="eye" :icon-class="session('impersonator_user_id') ? 'text-amber-700' : 'text-emerald-700'" />
             </div>
         </x-page-header>
 

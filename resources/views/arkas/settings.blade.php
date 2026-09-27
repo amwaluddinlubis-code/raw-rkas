@@ -6,9 +6,9 @@
             kicker="Pengaturan Sumber Data"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Database ARKAS" :value="$health['database'] ? 'Ditemukan' : 'Belum ditemukan'" :hint="$health['database'] ? 'Sumber database siap' : 'Periksa lokasi database'" :value-class="$health['database'] ? 'text-emerald-700' : 'text-rose-700'" />
-                <x-stat-item label="Engine ARKASBridge" :value="$health['bridge'] ? 'Ditemukan' : 'Belum ditemukan'" :hint="$health['bridge'] ? 'Engine siap digunakan' : 'Periksa lokasi engine'" :value-class="$health['bridge'] ? 'text-emerald-700' : 'text-rose-700'" />
-                <x-stat-item label="Kata Sandi" :value="$health['password'] ? 'Tersimpan' : 'Belum disimpan'" :hint="$health['password'] ? 'Tersimpan terenkripsi' : 'Lengkapi konfigurasi'" :value-class="$health['password'] ? 'text-emerald-700' : 'text-rose-700'" />
+                <x-stat-item label="Database ARKAS" :value="$health['database'] ? 'Ditemukan' : 'Belum ditemukan'" :hint="$health['database'] ? 'Sumber database siap' : 'Periksa lokasi database'" :value-class="$health['database'] ? 'text-emerald-700' : 'text-rose-700'" icon="database" :icon-class="$health['database'] ? 'text-emerald-700' : 'text-rose-700'" />
+                <x-stat-item label="Engine ARKASBridge" :value="$health['bridge'] ? 'Ditemukan' : 'Belum ditemukan'" :hint="$health['bridge'] ? 'Engine siap digunakan' : 'Periksa lokasi engine'" :value-class="$health['bridge'] ? 'text-emerald-700' : 'text-rose-700'" icon="settings" :icon-class="$health['bridge'] ? 'text-emerald-700' : 'text-rose-700'" />
+                <x-stat-item label="Kata Sandi" :value="$health['password'] ? 'Tersimpan' : 'Belum disimpan'" :hint="$health['password'] ? 'Tersimpan terenkripsi' : 'Lengkapi konfigurasi'" :value-class="$health['password'] ? 'text-emerald-700' : 'text-rose-700'" icon="lock" :icon-class="$health['password'] ? 'text-emerald-700' : 'text-rose-700'" />
             </div>
         </x-page-header>
 

@@ -6,9 +6,9 @@
             kicker="Master Pegawai Terpadu"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Sumber" :value="$employee->exists ? $employee->source_label : 'Manual'" hint="Provenance record pegawai" value-class="text-indigo-700" />
-                <x-stat-item label="Pemadanan" value="NUPTK → NIP → NIK → Nama" hint="ARKAS dan Dapodik" value-class="text-slate-800" />
-                <x-stat-item label="Status" :value="$employee->exists ? ($employee->is_active ? 'Aktif' : 'Tidak aktif') : 'Pegawai baru'" :hint="$employee->exists ? 'Status data saat ini' : 'Akan dibuat sebagai data manual'" :value-class="$employee->exists && !$employee->is_active ? 'text-rose-700' : 'text-emerald-700'" />
+                <x-stat-item label="Sumber" :value="$employee->exists ? $employee->source_label : 'Manual'" hint="Provenance record pegawai" value-class="text-indigo-700" icon="database" icon-class="text-indigo-700" />
+                <x-stat-item label="Pemadanan" value="NUPTK → NIP → NIK → Nama" hint="ARKAS dan Dapodik" value-class="text-slate-800" icon="search" icon-class="text-slate-700" />
+                <x-stat-item label="Status" :value="$employee->exists ? ($employee->is_active ? 'Aktif' : 'Tidak aktif') : 'Pegawai baru'" :hint="$employee->exists ? 'Status data saat ini' : 'Akan dibuat sebagai data manual'" :value-class="$employee->exists && !$employee->is_active ? 'text-rose-700' : 'text-emerald-700'" icon="check" :icon-class="$employee->exists && !$employee->is_active ? 'text-rose-700' : 'text-emerald-700'" />
             </div>
         </x-page-header>
 

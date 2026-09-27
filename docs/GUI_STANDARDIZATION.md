@@ -90,6 +90,8 @@ Gunakan token utama:
 
 Semantic success/warning/danger tetap boleh memakai semantic color. Kode baru tidak boleh bergantung pada hard-coded palette non-semantik hanya karena compatibility layer tersedia.
 
+Standar unifikasi pilih-tahun (2026-09-27, `resources/css/header-button-unification.css`, dimuat terakhir pada cascade): semua page header memakai permukaan terang bergradasi radial dengan teks token gelap, dan semua tombol primary memakai gaya dasar terang (accent wash + permukaan) — sama di semua profil tema. Jangan mengembalikan varian header gelap atau solid fill per-tema tanpa keputusan desain baru.
+
 Tema tersimpan diterapkan sinkron di `<head>` melalui `x-theme-init` sebelum first paint agar tidak terjadi flash tema lain saat pindah halaman. Peta profil di partial tersebut disalin dari `resources/js/theme-profiles.js`; parity keduanya dikunci `ThemeEarlyInitTest` — profil baru wajib ditambahkan di kedua tempat.
 
 Pada halaman publik (`/masuk`, `/setup`, `/pilih-sekolah`, `/pilih-tahun`), tersedia tombol ikon aksesibel untuk ganti cepat terang/gelap (memakai pasangan onboarding **ARKAS Light** dan **ARKAS Dark V2**) berdampingan dengan dropdown selector profil lengkap, sehingga tema Apple dan profil lain dapat dipilih sebelum masuk. Selector profil lengkap tetap tersedia pada layout authenticated.

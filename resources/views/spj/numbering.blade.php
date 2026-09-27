@@ -29,11 +29,11 @@
 
             @php($packagedCount = max(0, ($selectedSummary['transactions'] ?? 0) - ($selectedSummary['without_package'] ?? 0)))
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
-                <x-stat-item label="Transaksi ber-rincian" :value="number_format($selectedSummary['transactions'] ?? 0, 0, ',', '.')" :hint="'Triwulan '.$selectedQuarter" />
-                <x-stat-item label="Sudah berpaket" :value="number_format($packagedCount, 0, ',', '.')" hint="Transaksi menjadi paket" />
-                <x-stat-item label="Siap dinomori" :value="number_format($selectedSummary['ready'] ?? 0, 0, ',', '.')" hint="Lengkap dan siap diproses" value-class="text-[var(--theme-content-accent)]" />
-                <x-stat-item label="Terhambat" :value="number_format($selectedSummary['blocked'] ?? 0, 0, ',', '.')" hint="Belum berpaket atau draft" :value-class="($selectedSummary['blocked'] ?? 0) > 0 ? 'text-amber-700' : 'text-emerald-700'" />
-                <x-stat-item label="Bernomor" :value="number_format($selectedSummary['numbered'] ?? 0, 0, ',', '.')" hint="Bernomor atau final" value-class="text-emerald-700" />
+                <x-stat-item label="Transaksi ber-rincian" :value="number_format($selectedSummary['transactions'] ?? 0, 0, ',', '.')" :hint="'Triwulan '.$selectedQuarter" value-class="text-slate-800" icon="inbox" icon-class="text-slate-800" />
+                <x-stat-item label="Sudah berpaket" :value="number_format($packagedCount, 0, ',', '.')" hint="Transaksi menjadi paket" value-class="text-indigo-700" icon="document" icon-class="text-indigo-700" />
+                <x-stat-item label="Siap dinomori" :value="number_format($selectedSummary['ready'] ?? 0, 0, ',', '.')" hint="Lengkap dan siap diproses" value-class="text-[var(--theme-content-accent)]" icon="number" icon-class="text-[var(--theme-content-accent)]" />
+                <x-stat-item label="Terhambat" :value="number_format($selectedSummary['blocked'] ?? 0, 0, ',', '.')" hint="Belum berpaket atau draft" :value-class="($selectedSummary['blocked'] ?? 0) > 0 ? 'text-amber-700' : 'text-emerald-700'" icon="warning" :icon-class="($selectedSummary['blocked'] ?? 0) > 0 ? 'text-amber-700' : 'text-emerald-700'" />
+                <x-stat-item label="Bernomor" :value="number_format($selectedSummary['numbered'] ?? 0, 0, ',', '.')" hint="Bernomor atau final" value-class="text-emerald-700" icon="check" icon-class="text-emerald-700" />
             </div>
         </x-page-header>
 

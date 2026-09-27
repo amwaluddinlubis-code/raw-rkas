@@ -8,12 +8,12 @@
         >
             <x-slot:actions>
                 <x-ui.button :href="route('employees.edit', $employee)">Ubah</x-ui.button>
-                <a href="{{ route('employees.index') }}" class="rounded-lg bg-white/15 px-4 py-2 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/25">Kembali</a>
+                <x-ui.button variant="secondary" :href="route('employees.index')">Kembali</x-ui.button>
             </x-slot:actions>
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Sumber Data" :value="$employee->source_label" hint="Satu row dapat berasal dari lebih dari satu sumber" value-class="text-[var(--theme-content-accent)]" />
-                <x-stat-item label="Status" :value="$employee->is_active ? 'Aktif' : 'Tidak aktif'" hint="Status kepegawaian di aplikasi" :value-class="$employee->is_active ? 'text-emerald-700' : 'text-rose-700'" />
-                <x-stat-item label="Honor Tahun Aktif" :value="'Rp '.number_format($honors->sum('net_amount'), 0, ',', '.')" :hint="number_format($honors->count(), 0, ',', '.').' rincian honor'" value-class="text-amber-700" />
+                <x-stat-item label="Sumber Data" :value="$employee->source_label" hint="Satu row dapat berasal dari lebih dari satu sumber" value-class="text-[var(--theme-content-accent)]" icon="database" icon-class="text-[var(--theme-content-accent)]" />
+                <x-stat-item label="Status" :value="$employee->is_active ? 'Aktif' : 'Tidak aktif'" hint="Status kepegawaian di aplikasi" :value-class="$employee->is_active ? 'text-emerald-700' : 'text-rose-700'" icon="check" :icon-class="$employee->is_active ? 'text-emerald-700' : 'text-rose-700'" />
+                <x-stat-item label="Honor Tahun Aktif" :value="'Rp '.number_format($honors->sum('net_amount'), 0, ',', '.')" :hint="number_format($honors->count(), 0, ',', '.').' rincian honor'" value-class="text-amber-700" icon="balance" icon-class="text-amber-700" />
             </div>
         </x-page-header>
 

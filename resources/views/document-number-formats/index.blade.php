@@ -11,10 +11,10 @@
             kicker="Pengaturan Dokumen"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                <x-stat-item label="Tahun Aktif" :value="$year->year" hint="Konteks penomoran" />
-                <x-stat-item label="Kode Sekolah" :value="$school->school_code ?: $school->npsn" hint="Placeholder {SCHOOL}" value-class="text-indigo-700" />
-                <x-stat-item label="NPSN" :value="$school->npsn" hint="Placeholder {NPSN}" value-class="text-slate-800" />
-                <x-stat-item label="Hak Akses" value="Admin & Operator" hint="Dapat mengubah format" value-class="text-emerald-700" />
+                <x-stat-item label="Tahun Aktif" :value="$year->year" hint="Konteks penomoran" icon="calendar" icon-class="text-slate-700" />
+                <x-stat-item label="Kode Sekolah" :value="$school->school_code ?: $school->npsn" hint="Placeholder {SCHOOL}" value-class="text-indigo-700" icon="school" icon-class="text-indigo-700" />
+                <x-stat-item label="NPSN" :value="$school->npsn" hint="Placeholder {NPSN}" value-class="text-slate-800" icon="archive" icon-class="text-slate-700" />
+                <x-stat-item label="Hak Akses" value="Admin & Operator" hint="Dapat mengubah format" value-class="text-emerald-700" icon="users" icon-class="text-emerald-700" />
             </div>
         </x-page-header>
 

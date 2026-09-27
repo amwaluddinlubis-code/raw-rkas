@@ -33,10 +33,10 @@
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-                <x-stat-item label="Jalur pengadaan" :value="$requirementSummary['channel']" :hint="$transaction->spj_category ? $spjTypeLabel($transaction->spj_category) : 'Tanpa kategori'" />
-                <x-stat-item label="Dokumen wajib siap" :value="$requirementSummary['required_ready'].' / '.$requirementSummary['required_total']" :hint="$progress.'% lengkap'" />
-                <x-stat-item label="Masih menghalangi" :value="$blockingCount" :hint="$completedChecks.'/'.$totalChecks.' pemeriksaan lolos'" :value-class="$blockingCount > 0 ? 'text-amber-700' : 'text-emerald-700'" />
-                <x-stat-item label="Status paket" :value="$package->status" :hint="$transaction->sourceCarbon()?->translatedFormat('d F Y') ?: 'Tanggal belum tersedia'" />
+                <x-stat-item label="Jalur pengadaan" :value="$requirementSummary['channel']" :hint="$transaction->spj_category ? $spjTypeLabel($transaction->spj_category) : 'Tanpa kategori'" value-class="text-[var(--theme-content-accent)]" icon="work" icon-class="text-[var(--theme-content-accent)]" />
+                <x-stat-item label="Dokumen wajib siap" :value="$requirementSummary['required_ready'].' / '.$requirementSummary['required_total']" :hint="$progress.'% lengkap'" value-class="text-slate-800" icon="document" icon-class="text-slate-800" />
+                <x-stat-item label="Masih menghalangi" :value="$blockingCount" :hint="$completedChecks.'/'.$totalChecks.' pemeriksaan lolos'" :value-class="$blockingCount > 0 ? 'text-amber-700' : 'text-emerald-700'" icon="warning" :icon-class="$blockingCount > 0 ? 'text-amber-700' : 'text-emerald-700'" />
+                <x-stat-item label="Status paket" :value="$package->status" :hint="$transaction->sourceCarbon()?->translatedFormat('d F Y') ?: 'Tanggal belum tersedia'" value-class="text-indigo-700" icon="archive" icon-class="text-indigo-700" />
             </div>
         </x-page-header>
 
