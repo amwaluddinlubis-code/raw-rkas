@@ -210,7 +210,7 @@ class SiplahPurchaseMvpTest extends TestCase
         ]);
 
         $this->assertSame(
-            'Pembelian barang di Merchant SIPLah Toko Ladang melalui SIPLah berdasarkan invoice INV-001',
+            'Pembelian barang di Merchant SIPLah Toko Ladang melalui SIPLah berdasarkan invoice nomor INV-001',
             app(SpjDescriptionService::class)->siplahPaymentDescription($transaction),
         );
     }

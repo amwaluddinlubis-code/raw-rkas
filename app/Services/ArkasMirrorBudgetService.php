@@ -278,7 +278,8 @@ final class ArkasMirrorBudgetService
                 ];
             }
         }
-        foreach ($rapbsRecords as $record) {
+        $identityRapbsRecords = $db->table('arkas_mirror_rapbs')->get(['source_key', 'payload']);
+        foreach ($identityRapbsRecords as $record) {
             $payload = json_decode((string) $record->payload, true);
             if (! is_array($payload)) {
                 continue;

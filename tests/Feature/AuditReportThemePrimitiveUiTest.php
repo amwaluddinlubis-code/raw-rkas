@@ -16,7 +16,7 @@ class AuditReportThemePrimitiveUiTest extends TestCase
         $this->assertStringContainsString('<x-ui.table', $blade);
         $this->assertStringContainsString('var(--ui-surface-base)', $blade);
         $this->assertStringContainsString('var(--ui-line)', $blade);
-        $this->assertStringContainsString('var(--ui-fg-muted)', $blade);
+        $this->assertStringContainsString('var(--ui-fg-strong)', $blade);
         $this->assertStringContainsString('ui-btn ui-btn-primary', $blade);
     }
 
