@@ -22,7 +22,7 @@ class BulkReviewMetadataReconciliationUseCase
 
     public function handle(Request $request): RedirectResponse
     {
-        $user = $request->user() ?? auth()->user();
+        $user = $request->user();
         if (! $user || ! $user->isOperatorOrAdministrator()) {
             return back()->with('error', 'Hanya operator atau administrator yang dapat meninjau rekonsiliasi.');
         }

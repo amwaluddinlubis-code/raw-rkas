@@ -146,6 +146,6 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertStringContainsString('$transaction->sourceCarbon()?->format(\'Y-m-d\')', $index);
         $this->assertStringContainsString(':max="$transactionDateLimit"', $barang);
         $this->assertStringContainsString('name="payment_date" max="{{ $transactionDateLimit }}"', $numbering);
-        $this->assertStringContainsString('name="receipt_date" max="{{ $transactionDateLimit }}"', $numbering);
+        $this->assertMatchesRegularExpression('/name="receipt_date"\s+max="\{\{ \$transactionDateLimit \}\}"/', $numbering);
     }
 }

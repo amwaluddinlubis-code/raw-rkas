@@ -7,7 +7,7 @@
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <x-stat-item label="Mode Data" value="Manual" hint="Diisi oleh operator" value-class="text-[var(--theme-content-accent)]" icon="edit" icon-class="text-[var(--theme-content-accent)]" />
-                <x-stat-item label="Pemadanan" value="NISN → ID Dapodik" hint="Saat sinkronisasi Dapodik" value-class="text-[var(--ui-fg-strong)]" icon="search" icon-class="text-slate-700" />
+                <x-stat-item label="Pemadanan" value="NISN → ID Dapodik" hint="Saat sinkronisasi Dapodik" value-class="text-[var(--ui-fg-strong)]" icon="search" icon-class="text-[var(--ui-fg-muted)]" />
                 <x-stat-item label="Status" :value="$student->exists ? ($student->is_active ? 'Aktif' : 'Tidak aktif') : 'Siswa baru'" :hint="$student->exists ? 'Status data saat ini' : 'Akan dibuat sebagai data manual'" :value-class="$student->exists && !$student->is_active ? 'text-rose-700' : 'text-emerald-700'" icon="check" :icon-class="$student->exists && !$student->is_active ? 'text-rose-700' : 'text-emerald-700'" />
             </div>
         </x-page-header>
