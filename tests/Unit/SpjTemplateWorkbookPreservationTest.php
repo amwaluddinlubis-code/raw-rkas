@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\DocumentTemplate;
+use App\Models\GoodsReceipt;
 use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
@@ -71,7 +72,7 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
 
         $service = new class extends ExtendedSpjTemplateService
         {
-            public function placeholders(SpjPackage $package, School $school): array
+            public function placeholders(SpjPackage $package, School $school, ?GoodsReceipt $receipt = null): array
             {
                 return ['NAMA_SEKOLAH' => 'SD TEST'];
             }
