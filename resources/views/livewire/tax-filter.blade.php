@@ -194,6 +194,8 @@
             </table>
         </div>
 
-        <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
+        @if($transactions->hasPages())
+            <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
+        @endif
     </section>
 </div>

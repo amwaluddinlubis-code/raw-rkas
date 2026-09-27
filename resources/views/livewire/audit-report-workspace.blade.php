@@ -2,12 +2,15 @@
 <div class="space-y-6">
     <x-page-header title="Laporan Audit" subtitle="Pilih tab laporan untuk meninjau data secara lebih terarah." kicker="Audit Reporting Suite">
         <x-slot:actions><a href="{{ route('audit-reports.export', 'xlsx') }}" class="ui-btn ui-btn-secondary px-4 py-2.5 text-sm">Unduh XLSX</a><a href="{{ route('audit-reports.export', 'pdf') }}" class="ui-btn ui-btn-primary px-4 py-2.5 text-sm">Cetak PDF</a></x-slot:actions>
-        <p class="text-xs font-semibold text-[var(--ui-fg-muted)]">{{ $year->year }} · {{ $fundSource?->name ?? $year->fund_source }} · ID {{ session('active_fund_source_id') }}</p>
         <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4"><x-stat-item label="RKAS" :value="$rupiah($summary['budget'])" value-class="text-[var(--theme-content-accent)]" icon="budget" icon-class="text-[var(--theme-content-accent)]" /><x-stat-item label="BKU Belanja" :value="$rupiah($summary['bku'])" value-class="text-emerald-700" icon="transaction" icon-class="text-emerald-700" /><x-stat-item label="Transaksi Unik" :value="number_format($summary['transactionCount'], 0, ',', '.')" :hint="$rupiah($summary['transactions'])" value-class="text-slate-800" icon="report" icon-class="text-slate-700" /><x-stat-item label="Temuan SPJ" :value="number_format($summary['exceptionCount'], 0, ',', '.')" :hint="$summary['spjNumbered'].' bernomor / '.$summary['spjPackaged'].' paket'" value-class="text-amber-700" icon="warning" icon-class="text-amber-700" /></div>
     </x-page-header>
-    <nav class="grid gap-2 rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-2 sm:grid-cols-2 lg:grid-cols-6" aria-label="Tab laporan audit">
-        @foreach(['overview' => ['Ringkasan','dashboard'], 'reconciliation' => ['Rekonsiliasi','report'], 'register' => ['Buku Kas','transaction'], 'tax' => ['Pajak','tax'], 'completeness' => ['Kelengkapan SPJ','document'], 'history' => ['Riwayat','sync']] as $key => [$label, $icon])<button type="button" wire:click="setTab('{{ $key }}')" class="ui-btn flex items-center justify-center gap-2 px-3 py-3 text-sm {{ $tab === $key ? 'ui-btn-primary' : 'text-[var(--ui-fg)] hover:bg-[var(--ui-surface-soft)]' }}"><x-ui.icon :name="$icon" size="sm" /><span>{{ $label }}</span></button>@endforeach
-    </nav>
+    <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+    <div class="ui-tabs">
+        <nav class="ui-tabs-list" role="tablist" aria-label="Tab laporan audit">
+            @foreach(['overview' => ['Ringkasan','dashboard'], 'reconciliation' => ['Rekonsiliasi','report'], 'register' => ['Buku Kas','transaction'], 'tax' => ['Pajak','tax'], 'completeness' => ['Kelengkapan SPJ','document'], 'history' => ['Riwayat','sync']] as $key => [$label, $icon])<button type="button" role="tab" wire:click="setTab('{{ $key }}')" aria-selected="{{ $tab === $key ? 'true' : 'false' }}" data-tab="{{ $key }}" class="ui-tab {{ $tab === $key ? 'ui-tab-active' : '' }}"><span class="ui-tab-icon"><x-ui.icon :name="$icon" size="sm" /></span><span>{{ $label }}</span></button>@endforeach
+        </nav>
+    </div>
+    <div class="p-4 sm:p-5">
     @if($tab === 'overview')
         <div class="grid gap-6 lg:grid-cols-2"><x-ui.alert type="warning" title="Batasan data audit" class="items-start"><ul class="list-disc space-y-2 pl-5 text-sm">@foreach($limitations as $limitation)<li>{{ $limitation }}</li>@endforeach</ul></x-ui.alert><div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-5 py-5 shadow-sm"><h2 class="font-bold text-[var(--ui-fg-strong)]">Indikator pemeriksaan</h2><div class="mt-4 grid grid-cols-2 gap-3 text-sm"><x-stat-item label="Selisih rekonsiliasi" :value="$summary['mismatchCount']" value-class="text-amber-700" icon="warning" icon-class="text-amber-700" /><x-stat-item label="Paket SPJ" :value="$summary['spjPackaged']" value-class="text-slate-800" icon="document" icon-class="text-slate-800" /><x-stat-item label="Sinkronisasi" :value="$summary['syncCount']" value-class="text-indigo-700" icon="sync" icon-class="text-indigo-700" /><x-stat-item label="Aktivitas audit" :value="$summary['auditCount']" value-class="text-emerald-700" icon="audit" icon-class="text-emerald-700" /></div></div></div>
     @elseif($tab === 'reconciliation')
@@ -21,4 +24,6 @@
     @else
         <x-ui.table min-width="780px"><thead><tr><th>Jenis</th><th>Status / Aksi</th><th>Waktu</th><th>Keterangan</th></tr></thead><tbody>@forelse($syncRuns as $row)<tr><td>SINKRONISASI {{ $row->source }}</td><td>{{ $row->status }}</td><td>{{ $row->started_at }}</td><td>{{ $row->message ?: 'Data dibaca: '.$row->records_read.' · ditulis: '.$row->records_written }}</td></tr>@empty<tr><td colspan="4" class="empty-cell">Belum ada riwayat sinkronisasi.</td></tr>@endforelse @foreach($auditLogs as $row)<tr><td>{{ $row->entity_type }}</td><td>{{ $row->action }}</td><td>{{ $row->created_at }}</td><td>{{ $row->description }}</td></tr>@endforeach</tbody></x-ui.table><x-livewire.audit-pagination :paginator="$syncRuns" page-name="history_page" per-page="historyPerPage" noun="sinkronisasi" />
     @endif
+    </div>
+    </section>
 </div>

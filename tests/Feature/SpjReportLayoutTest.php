@@ -221,12 +221,23 @@ class SpjReportLayoutTest extends TestCase
     {
         $preparation = file_get_contents(resource_path('views/livewire/spj-preparation-filter.blade.php'));
         $packages = file_get_contents(resource_path('views/livewire/spj-package-list.blade.php'));
+        $report = file_get_contents(resource_path('views/livewire/spj-report-filter.blade.php'));
 
         $this->assertIsString($preparation);
         $this->assertIsString($packages);
-        $this->assertSame(1, substr_count($preparation, 'Menampilkan'));
-        $this->assertSame(1, substr_count($packages, 'Menampilkan'));
-        $this->assertStringContainsString(':compact="true"', $preparation);
-        $this->assertStringContainsString(':compact="true"', $packages);
+        $this->assertIsString($report);
+        $this->assertSame(0, substr_count($preparation, 'Menampilkan'));
+        $this->assertSame(0, substr_count($packages, 'Menampilkan'));
+        $this->assertSame(0, substr_count($report, 'Menampilkan'));
+        $this->assertStringContainsString('x-ui.server-pagination', $preparation);
+        $this->assertStringContainsString('x-ui.server-pagination', $packages);
+        $this->assertStringContainsString('x-ui.server-pagination', $report);
+        $this->assertStringNotContainsString(':compact="true"', $preparation);
+        $this->assertStringNotContainsString(':compact="true"', $packages);
+
+        $paginationView = file_get_contents(resource_path('views/vendor/pagination/tailwind.blade.php'));
+        $livewirePaginationView = file_get_contents(resource_path('views/vendor/livewire/tailwind.blade.php'));
+        $this->assertStringNotContainsString('ui-pagination-summary', $paginationView);
+        $this->assertStringNotContainsString('ui-pagination-summary', $livewirePaginationView);
     }
 }

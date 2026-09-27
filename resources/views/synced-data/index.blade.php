@@ -131,7 +131,9 @@
                     </tbody>
                 </x-ui.table>
 
-                <x-ui.server-pagination :paginator="$rows" noun="data" />
+                @if($rows->hasPages())
+                    <x-ui.server-pagination :paginator="$rows" noun="data" />
+                @endif
             </section>
         @endif
     </div>

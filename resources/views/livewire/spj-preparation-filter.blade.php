@@ -83,8 +83,7 @@
                         <option value="draft">Perlu dilengkapi</option>
                         <option value="numbered">Sudah bernomor</option>
                     </x-ui.select></x-ui.field>
-                <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="resetFilters">Reset
-                    Filter</x-ui.button>
+                <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="resetFilters">Reset Filter</x-ui.button>
             </div>
         </div>
     </div>
@@ -182,24 +181,7 @@
             </tbody>
         </table>
     </div>
-    <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-[var(--ui-line)] px-5 py-4 bg-[var(--ui-surface-soft)]">
-        <div class="ui-toolbar-group flex items-center gap-2 text-xs">
-            <label for="spj-preparation-per-page" class="font-semibold"
-                style="color: var(--ui-fg-muted)">Baris</label>
-            <x-ui.select id="spj-preparation-per-page" wire:model.live="perPage" aria-label="Baris per halaman"
-                class="!min-h-9 !w-auto !py-1.5 !text-xs">
-                <option value="15">15 baris</option>
-                <option value="25">25 baris</option>
-                <option value="50">50 baris</option>
-                <option value="100">100 baris</option>
-            </x-ui.select>
-            <span style="color: var(--ui-fg-muted)">Menampilkan <span class="font-semibold"
-                    style="color: var(--ui-fg-strong)">{{ $transactions?->firstItem() ?? 0 }}–{{ $transactions?->lastItem() ?? 0 }}</span>
-                dari <span class="font-semibold"
-                    style="color: var(--ui-fg-strong)">{{ number_format($transactions?->total() ?? 0, 0, ',', '.') }}</span>
-                transaksi</span>
-        </div>
-        <x-ui.server-pagination :paginator="$transactions" noun="transaksi" :compact="true" />
-    </div>
+    @if($transactions->hasPages())
+        <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
+    @endif
 </div>

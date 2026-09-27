@@ -70,22 +70,7 @@
             </tbody>
         </table>
     </div>
-    <div class="flex flex-col gap-3 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-center gap-2 text-xs" style="color: var(--ui-fg-muted)">
-            <label for="spj-package-per-page" class="font-semibold">Baris</label>
-            <x-ui.searchable-select id="spj-package-per-page" wire-model="perPage"
-                :options="[
-                    ['value' => '10', 'label' => '10 baris'],
-                    ['value' => '15', 'label' => '15 baris'],
-                    ['value' => '25', 'label' => '25 baris'],
-                    ['value' => '50', 'label' => '50 baris'],
-                    ['value' => '100', 'label' => '100 baris'],
-                ]" :value="$perPage" placeholder="15 baris" search-placeholder="Cari jumlah..."
-                class="!min-h-9 !w-auto !py-1.5 !text-xs" />
-            <span>Menampilkan <span class="font-semibold" style="color: var(--ui-fg-strong)">{{ $packageList->firstItem() ?? 0 }}–{{ $packageList->lastItem() ?? 0 }}</span> dari <span class="font-semibold" style="color: var(--ui-fg-strong)">{{ number_format($packageList->total(), 0, ',', '.') }}</span> paket</span>
-        </div>
-        @if($packageList->hasPages())
-            <x-ui.server-pagination :paginator="$packageList" noun="paket" :compact="true" />
-        @endif
-    </div>
+    @if($packageList->hasPages())
+        <x-ui.server-pagination :paginator="$packageList" noun="paket" />
+    @endif
 </div>

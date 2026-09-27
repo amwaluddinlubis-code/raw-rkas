@@ -146,7 +146,7 @@
                 </x-ui.table>
             @endif
 
-            @if(! $rows->isEmpty())
+            @if($rows->hasPages())
                 <x-ui.server-pagination :paginator="$rows" noun="baris" />
             @endif
         </section>

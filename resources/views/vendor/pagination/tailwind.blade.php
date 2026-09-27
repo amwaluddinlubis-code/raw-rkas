@@ -8,11 +8,6 @@
     @endphp
 
     <nav role="navigation" aria-label="{{ __('Pagination Navigation') }}" class="ui-pagination" data-pagination-standard="segmented">
-        <span class="ui-pagination-summary">
-            Menampilkan <strong>{{ $paginator->firstItem() ?? 0 }}–{{ $paginator->lastItem() ?? 0 }}</strong>
-            dari <strong>{{ $paginator->total() }}</strong> baris
-        </span>
-
         <span class="ui-pagination-group" aria-label="Navigasi halaman">
             @if ($paginator->onFirstPage())
                 <span class="ui-pagination-control is-disabled" aria-disabled="true">{{ __('pagination.previous') }}</span>
