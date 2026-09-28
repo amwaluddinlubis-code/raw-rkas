@@ -109,24 +109,45 @@ class SchoolConfigurationController extends Controller
                 'treasurer_name', 'treasurer_nip', 'treasurer_email', 'treasurer_phone',
                 'committee_name', 'inventory_manager_name', 'inventory_manager_nip',
             ])->toArray();
-            foreach ([
-                'committee_signature' => 'committee_signature_path',
-                'principal_signature' => 'principal_signature_path',
-                'treasurer_signature' => 'treasurer_signature_path',
-            ] as $input => $column) {
-                if (! $request->hasFile($input)) {
-                    continue;
+            $newSignaturePaths = [];
+            $oldSignaturePaths = [];
+            $disk = Storage::disk('local');
+            try {
+                foreach ([
+                    'committee_signature' => 'committee_signature_path',
+                    'principal_signature' => 'principal_signature_path',
+                    'treasurer_signature' => 'treasurer_signature_path',
+                ] as $input => $column) {
+                    if (! $request->hasFile($input)) {
+                        continue;
+                    }
+                    $newPath = $request->file($input)->store('signatures', 'local');
+                    if (! is_string($newPath) || trim($newPath) === '') {
+                        throw ValidationException::withMessages([$input => 'Gambar tanda tangan baru gagal disimpan.']);
+                    }
+                    $newSignaturePaths[] = $newPath;
+                    $profileData[$column] = $newPath;
+
+                    $oldPath = trim((string) data_get($profile, $column, ''));
+                    if ($oldPath !== '') {
+                        $oldSignaturePaths[] = $oldPath;
+                    }
                 }
-                $oldPath = trim((string) data_get($profile, $column, ''));
-                if ($oldPath !== '') {
-                    Storage::disk('local')->delete($oldPath);
+                DB::connection('school')->transaction(function () use ($profileData, $year): void {
+                    DB::connection('school')->table('school_profiles')->updateOrInsert(
+                        ['fiscal_year_id' => $year->id],
+                        array_merge($profileData, ['updated_at' => now(), 'created_at' => now()])
+                    );
+                });
+            } catch (\Throwable $exception) {
+                foreach ($newSignaturePaths as $newPath) {
+                    $disk->delete($newPath);
                 }
-                $profileData[$column] = $request->file($input)->store('signatures', 'local');
+                throw $exception;
             }
-            DB::connection('school')->table('school_profiles')->updateOrInsert(
-                ['fiscal_year_id' => $year->id],
-                array_merge($profileData, ['updated_at' => now(), 'created_at' => now()])
-            );
+            foreach ($oldSignaturePaths as $oldPath) {
+                $disk->delete($oldPath);
+            }
         }
 
         return back()->with('success', 'Profil sekolah dan penandatangan dokumen berhasil diperbarui.');

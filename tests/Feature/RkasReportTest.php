@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
@@ -129,8 +130,41 @@ class RkasReportTest extends TestCase
         $path = app(RkasReportExcelService::class)->export($payload);
 
         $this->assertFileExists($path);
+        $this->assertStringEndsWith('.xlsx', $path);
+        $this->assertFileDoesNotExist(substr($path, 0, -5));
         $this->assertGreaterThan(0, filesize($path));
         @unlink($path);
+    }
+
+    public function test_excel_export_keeps_source_text_that_looks_like_a_formula_literal(): void
+    {
+        $payload = app(RkasReportService::class)->build('tahunan', $this->reportOptions(['revision' => 'ANG-1']));
+        $formulaLikeText = '=HYPERLINK("https://example.invalid/","klik")';
+        foreach ($payload['lines'] as &$line) {
+            if ($line['level'] === 'item') {
+                $line['name'] = $formulaLikeText;
+                break;
+            }
+        }
+        unset($line);
+
+        $path = app(RkasReportExcelService::class)->export($payload);
+        try {
+            $sheet = IOFactory::load($path)->getActiveSheet();
+            $formulaCell = null;
+            for ($row = 1; $row <= $sheet->getHighestRow(); $row++) {
+                $cell = $sheet->getCell('D'.$row);
+                if ($cell->getValue() === $formulaLikeText) {
+                    $formulaCell = $cell;
+                    break;
+                }
+            }
+
+            $this->assertNotNull($formulaCell);
+            $this->assertSame(DataType::TYPE_STRING, $formulaCell->getDataType());
+        } finally {
+            @unlink($path);
+        }
     }
 
     public function test_excel_column_structure_matches_each_report_scope(): void

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -34,17 +35,17 @@ final class RkasReportExcelService
         $lastLetter = $this->col($lastCol);
 
         $sheet->mergeCells("A{$row}:{$lastLetter}{$row}");
-        $sheet->setCellValue("A{$row}", $payload['title']);
+        $this->setCellValue($sheet, "A{$row}", $payload['title']);
         $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(14);
         $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $row++;
         $sheet->mergeCells("A{$row}:{$lastLetter}{$row}");
-        $sheet->setCellValue("A{$row}", 'TAHUN ANGGARAN : '.$payload['year']);
+        $this->setCellValue($sheet, "A{$row}", 'TAHUN ANGGARAN : '.$payload['year']);
         $sheet->getStyle("A{$row}")->getFont()->setBold(true)->setSize(12);
         $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $row++;
         $sheet->mergeCells("A{$row}:{$lastLetter}{$row}");
-        $sheet->setCellValue("A{$row}", $payload['revision_label'].($payload['revision_date'] !== '-' ? ' · '.$payload['revision_date'] : ''));
+        $this->setCellValue($sheet, "A{$row}", $payload['revision_label'].($payload['revision_date'] !== '-' ? ' · '.$payload['revision_date'] : ''));
         $sheet->getStyle("A{$row}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $row += 2;
 
@@ -56,32 +57,32 @@ final class RkasReportExcelService
             ['Kabupaten', $school['regency']],
             ['Provinsi', $school['province']],
         ] as [$label, $value]) {
-            $sheet->setCellValue("A{$row}", $label);
-            $sheet->setCellValue("B{$row}", ':');
-            $sheet->setCellValue("C{$row}", $value);
+            $this->setCellValue($sheet, "A{$row}", $label);
+            $this->setCellValue($sheet, "B{$row}", ':');
+            $this->setCellValue($sheet, "C{$row}", $value);
             $row++;
         }
         if (in_array($payload['scope'], ['triwulan', 'triwulan-bulanan'], true)) {
-            $sheet->setCellValue("A{$row}", 'Triwulan');
+            $this->setCellValue($sheet, "A{$row}", 'Triwulan');
         } elseif ($payload['scope'] === 'tahap') {
-            $sheet->setCellValue("A{$row}", 'Tahap');
+            $this->setCellValue($sheet, "A{$row}", 'Tahap');
         } elseif ($payload['scope'] === 'bulanan') {
-            $sheet->setCellValue("A{$row}", 'Bulan');
+            $this->setCellValue($sheet, "A{$row}", 'Bulan');
         }
         if (in_array($payload['scope'], ['triwulan', 'triwulan-bulanan', 'tahap', 'bulanan'], true)) {
-            $sheet->setCellValue("B{$row}", ':');
-            $sheet->setCellValue("C{$row}", $payload['scope_label'].($payload['scope'] === 'bulanan' ? (string) $payload['year'] : ''));
+            $this->setCellValue($sheet, "B{$row}", ':');
+            $this->setCellValue($sheet, "C{$row}", $payload['scope_label'].($payload['scope'] === 'bulanan' ? (string) $payload['year'] : ''));
             $row++;
         }
-        $sheet->setCellValue("A{$row}", 'Sumber Dana');
-        $sheet->setCellValue("B{$row}", ':');
-        $sheet->setCellValue("C{$row}", $payload['fund_name']);
+        $this->setCellValue($sheet, "A{$row}", 'Sumber Dana');
+        $this->setCellValue($sheet, "B{$row}", ':');
+        $this->setCellValue($sheet, "C{$row}", $payload['fund_name']);
         $row += 2;
 
-        $sheet->setCellValue("A{$row}", $payload['penerimaan_heading']);
+        $this->setCellValue($sheet, "A{$row}", $payload['penerimaan_heading']);
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $row++;
-        $sheet->setCellValue("A{$row}", $payload['penerimaan_source_label']);
+        $this->setCellValue($sheet, "A{$row}", $payload['penerimaan_source_label']);
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $row++;
         $sheet->fromArray([['No. Kode', 'Penerimaan', 'Jumlah']], null, "A{$row}");
@@ -91,25 +92,25 @@ final class RkasReportExcelService
             ? $payload['penerimaan']
             : array_values(array_filter($payload['penerimaan'], fn (array $item): bool => (bool) $item['active']));
         foreach ($keuangan as $item) {
-            $sheet->setCellValue("A{$row}", $item['code']);
-            $sheet->setCellValue("B{$row}", $item['label'].($item['active'] ? '' : ' **'));
-            $sheet->setCellValue("C{$row}", $item['amount']);
+            $this->setCellValue($sheet, "A{$row}", $item['code']);
+            $this->setCellValue($sheet, "B{$row}", $item['label'].($item['active'] ? '' : ' **'));
+            $this->setCellValue($sheet, "C{$row}", $item['amount']);
             $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
             $this->borderRow($sheet, $row, 3);
             $row++;
         }
-        $sheet->setCellValue("A{$row}", 'Total Penerimaan');
+        $this->setCellValue($sheet, "A{$row}", 'Total Penerimaan');
         $sheet->mergeCells("A{$row}:B{$row}");
-        $sheet->setCellValue("C{$row}", $payload['totals']['jumlah']);
+        $this->setCellValue($sheet, "C{$row}", $payload['totals']['jumlah']);
         $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('#,##0');
         $sheet->getStyle("A{$row}:C{$row}")->getFont()->setBold(true);
         $this->borderRow($sheet, $row, 3);
         $row++;
-        $sheet->setCellValue("A{$row}", '* belum pengesahan, ** belum aktivasi anggaran, ~ penerimaan dan belanja tidak sesuai');
+        $this->setCellValue($sheet, "A{$row}", '* belum pengesahan, ** belum aktivasi anggaran, ~ penerimaan dan belanja tidak sesuai');
         $sheet->getStyle("A{$row}")->getFont()->setItalic(true)->setSize(8);
         $row += 2;
 
-        $sheet->setCellValue("A{$row}", 'B. BELANJA');
+        $this->setCellValue($sheet, "A{$row}", 'B. BELANJA');
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $row++;
 
@@ -119,20 +120,20 @@ final class RkasReportExcelService
         $third = (int) floor($lastCol / 3);
         $treasurerStart = $lastCol - 2;
         $sheet->mergeCells($this->col($treasurerStart).$row.':'.$lastLetter.$row);
-        $sheet->setCellValue($this->col($treasurerStart).$row, $payload['place_date']);
+        $this->setCellValue($sheet, $this->col($treasurerStart).$row, $payload['place_date']);
         $sheet->getStyle($this->col($treasurerStart).$row.':'.$lastLetter.$row)
             ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $row++;
-        $sheet->setCellValue('A'.$row, 'Komite Sekolah');
-        $sheet->setCellValue($this->col($third).$row, 'Kepala Sekolah');
-        $sheet->setCellValue($this->col($lastCol - 2).$row, 'Bendahara Sekolah');
+        $this->setCellValue($sheet, 'A'.$row, 'Komite Sekolah');
+        $this->setCellValue($sheet, $this->col($third).$row, 'Kepala Sekolah');
+        $this->setCellValue($sheet, $this->col($lastCol - 2).$row, 'Bendahara Sekolah');
         $sheet->getStyle("A{$row}:{$lastLetter}{$row}")->getFont()->setBold(true);
         $row += 10;
         $committeeStart = 1;
         $principalStart = $third;
-        $sheet->setCellValue($this->col($committeeStart).$row, (string) ($payload['signatories']['committee_name'] ?? ''));
-        $sheet->setCellValue($this->col($principalStart).$row, (string) ($payload['signatories']['principal_name'] ?? ''));
-        $sheet->setCellValue($this->col($treasurerStart).$row, (string) ($payload['signatories']['treasurer_name'] ?? ''));
+        $this->setCellValue($sheet, $this->col($committeeStart).$row, (string) ($payload['signatories']['committee_name'] ?? ''));
+        $this->setCellValue($sheet, $this->col($principalStart).$row, (string) ($payload['signatories']['principal_name'] ?? ''));
+        $this->setCellValue($sheet, $this->col($treasurerStart).$row, (string) ($payload['signatories']['treasurer_name'] ?? ''));
         foreach ([
             [$committeeStart, $principalStart - 1],
             [$principalStart, $treasurerStart - 1],
@@ -148,10 +149,10 @@ final class RkasReportExcelService
         $sheet->getStyle("A{$row}:{$lastLetter}{$row}")->getFont()->setBold(true);
         $row++;
         if (trim((string) ($payload['signatories']['principal_nip'] ?? '')) !== '') {
-            $sheet->setCellValue($this->col($third).$row, 'NIP: '.$payload['signatories']['principal_nip']);
+            $this->setCellValue($sheet, $this->col($third).$row, 'NIP: '.$payload['signatories']['principal_nip']);
         }
         if (trim((string) ($payload['signatories']['treasurer_nip'] ?? '')) !== '') {
-            $sheet->setCellValue($this->col($lastCol - 2).$row, 'NIP: '.$payload['signatories']['treasurer_nip']);
+            $this->setCellValue($sheet, $this->col($lastCol - 2).$row, 'NIP: '.$payload['signatories']['treasurer_nip']);
         }
 
         foreach (range(1, $lastCol) as $col) {
@@ -174,8 +175,20 @@ final class RkasReportExcelService
         $footTag = str_replace('&', '&&', $payload['footer_tag'].' - NPSN : '.$payload['school']['npsn'].', '.$payload['school']['name']);
         $sheet->getHeaderFooter()->setOddFooter('&L&8 '.$footTag.'&R&8 Halaman &P dari &N');
 
-        $path = tempnam(sys_get_temp_dir(), 'rkas-laporan-').'.xlsx';
-        (new Xlsx($book))->save($path);
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'rkas-laporan-');
+        if ($temporaryPath === false) {
+            throw new \RuntimeException('File sementara laporan RKAS tidak dapat dibuat.');
+        }
+
+        $path = $temporaryPath.'.xlsx';
+        try {
+            (new Xlsx($book))->save($path);
+        } catch (\Throwable $exception) {
+            @unlink($path);
+            throw $exception;
+        } finally {
+            @unlink($temporaryPath);
+        }
 
         return $path;
     }
@@ -201,6 +214,17 @@ final class RkasReportExcelService
         }
 
         return $letters;
+    }
+
+    private function setCellValue(object $sheet, string $coordinate, mixed $value): void
+    {
+        if (is_string($value)) {
+            $sheet->setCellValueExplicit($coordinate, $value, DataType::TYPE_STRING);
+
+            return;
+        }
+
+        $sheet->setCellValue($coordinate, $value);
     }
 
     private function headerRow(object $sheet, int $row, int $cols): void
@@ -230,7 +254,7 @@ final class RkasReportExcelService
             }
             $col = 1;
             foreach ($headers as $header) {
-                $sheet->setCellValue($this->col($col).$row, $header);
+                $this->setCellValue($sheet, $this->col($col).$row, $header);
                 $col++;
             }
             $this->headerRow($sheet, $row, $cols);
@@ -256,7 +280,7 @@ final class RkasReportExcelService
             };
             $col = 1;
             foreach (array_merge($headers, $periodHeaders) as $header) {
-                $sheet->setCellValue($this->col($col).$row, $header);
+                $this->setCellValue($sheet, $this->col($col).$row, $header);
                 $col++;
             }
             $this->headerRow($sheet, $row, $cols);
@@ -321,7 +345,7 @@ final class RkasReportExcelService
         $col = 1;
         foreach ($values as $value) {
             $cell = $this->col($col).$row;
-            $sheet->setCellValue($cell, $value);
+            $this->setCellValue($sheet, $cell, $value);
             if (is_numeric($value) && $col > 4) {
                 $sheet->getStyle($cell)->getNumberFormat()->setFormatCode('#,##0');
             }

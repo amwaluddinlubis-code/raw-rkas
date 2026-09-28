@@ -33,6 +33,27 @@ Tanda tangan Komite, Kepala Sekolah, dan Bendahara dapat diunggah secara
 opsional dari Pengaturan Sekolah; PDF/pratinjau/Excel mengabaikan gambar yang
 kosong atau tidak tersedia dan tetap mencetak nama, garis, serta NIP.
 
+### Audit lanjutan `main@1705f5d` (2026-09-29)
+
+Audit read-through menemukan bahwa ekspor Excel meninggalkan file kosong dari
+`tempnam()` dan menulis string source/profil memakai binder otomatis, sehingga
+teks yang diawali `=` dapat dianggap formula. Perbaikan lokal menjaga semua
+string sebagai teks literal dan menghapus file sementara awal maupun file
+parsial saat penulisan gagal. Regression ditambahkan untuk formula-literal dan
+file sementara yatim.
+
+Penggantian gambar tanda tangan kini menyimpan gambar baru terlebih dahulu,
+memperbarui path profil dalam transaksi tenant, lalu menghapus gambar lama.
+Jika penyimpanan gambar atau update profil gagal, file baru yang sudah
+ditahapkan dibersihkan dan gambar lama tetap ada.
+
+Status perubahan audit: **IMPLEMENTED / VERIFICATION BLOCKED IN THIS WORKSPACE**.
+PHP, Composer, dan `vendor/` tidak tersedia pada workspace ini; karena itu
+`RkasReportTest` dan Pint belum dijalankan setelah perubahan. Gate hijau terakhir
+yang tercatat di bawah tetap untuk `14cf825` dan tidak membuktikan `1705f5d` atau
+perubahan lokal ini. Jalankan focused test dan Pint saat runtime PHP tersedia;
+visual PDF/Excel tetap RVR.
+
 ---
 
 ## Cross-year reconciliation artifact quarantine (2026-09-28)
@@ -60,9 +81,9 @@ bersih. `view:cache` + Pint bersih.
 
 ---
 
-## Current main regression recovery after staged-rendering feature (2026-09-28)
+## Main regression recovery after staged-rendering feature (2026-09-28)
 
-Status: **FUNCTIONAL PASS / CURRENT MAIN SOURCE GATE GREEN**.
+Status: **FUNCTIONAL PASS / HISTORICAL GREEN GATE**.
 
 Perubahan fitur besar `9540937d1098f954784d0971fa4f92edb9691b3f` memperluas staged goods receipt (`TAHAP:n`), template rendering, vendor memory, dan beberapa jalur rekonsiliasi. Empat run push berturut-turut (#27–#30) kemudian gagal. Audit 2026-09-28 menutup blocker secara bertahap tanpa mengubah lifecycle/numbering contract:
 
@@ -71,7 +92,8 @@ Perubahan fitur besar `9540937d1098f954784d0971fa4f92edb9691b3f` memperluas stag
 - `49cd5ae759bc5713cd7023adc4999ca4ac5d9e2e` — expected test SiPLah diselaraskan dengan wording source yang memang berubah menjadi `invoice nomor ...`.
 - `14cf825eea79da48b98423469d8e2746839a0bcb` — realisasi RKAS lintas revisi dipulihkan. Query baris tampilan tetap boleh difilter ke revisi terpilih, tetapi indeks identitas RAPBS untuk fallback realisasi kembali membaca lintas revisi lalu menerapkan scope tahun+sumber dana canonical. Tiga regression `RkasRevisionModesTest` tetap dipertahankan sebagai guard.
 
-Evidence GitHub untuk code HEAD `main@14cf825eea79da48b98423469d8e2746839a0bcb`:
+Evidence GitHub untuk code HEAD `main@14cf825eea79da48b98423469d8e2746839a0bcb`
+(sebelum enam commit yang membawa main ke `1705f5d`):
 
 ```text
 WORKFLOW              : SPJ Critical Verification
