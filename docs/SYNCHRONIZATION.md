@@ -331,6 +331,14 @@ mirror menyimpan multi-tahun sekaligus; tanpa filter tahun, baseline tercampur
 (identitas dari baris tertua + nominal terjumlah semua tahun) sehingga setiap
 sync memicu rekonsiliasi semu.
 
+Event semu lintas tahun yang terlanjur tercatat sync lama (sebelum filter
+tahun) dikarantina di lapisan baca (`SpjSourceReconciliationService`):
+tidak menjadi `latest`, tidak memicu badge/aksi rekonsiliasi, dan ditandai
+di panel sebagai artefak. Penanda basi yang tersisa hanya karena artefak
+dapat ditutup operator dari panel (`dismissArtifacts` →
+`REKONSILIASI_ARTEFAK_DITUTUP` di audit) tanpa menulis resolusi palsu dan
+tanpa menyentuh paket/dokumen SPJ.
+
 Pembuka SEMENTARA (atas permintaan operator, tercatat di sini agar tidak
 menjadi permanen diam-diam): dengan env `SPJ_TEMP_UNLOCK_RECONCILIATION=true`,
 administrator dapat menutup rekonsiliasi paket NUMBERED/FINAL tanpa pembatalan

@@ -25,7 +25,9 @@ class SpjSourceReconciliationService
      *     latest:?object,
      *     resolutions:Collection<int,object>,
      *     latest_resolution:?object,
-     *     action_hint:?string
+     *     action_hint:?string,
+     *     artifact_count:int,
+     *     has_cross_year_artifacts:bool
      * }
      */
     public function forTransaction(Transaction $transaction): array
@@ -33,13 +35,19 @@ class SpjSourceReconciliationService
         $sourceStatus = strtoupper((string) ($transaction->source_status ?: 'ACTIVE'));
         $requiresReconciliation = (bool) $transaction->requires_reconciliation;
         $events = $this->events($transaction->id);
-        $latest = $events->first();
+        $fiscalYear = $this->fiscalYearNumber((int) $transaction->fiscal_year_id);
+        foreach ($events as $event) {
+            $event->is_cross_year_artifact = $event->event_type === 'SOURCE_CHANGED'
+                && $this->isCrossYearArtifact($event->before ?? [], $event->after ?? [], $fiscalYear);
+        }
+        $latest = $events->first(fn (object $event): bool => ! $event->is_cross_year_artifact);
+        $artifactCount = $events->filter(fn (object $event): bool => $event->is_cross_year_artifact)->count();
         $resolutions = $this->resolutions($transaction->id);
         $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: 'DRAFT'));
         $lockedPackageAlreadyResolved = in_array($packageStatus, ['NUMBERED', 'FINAL'], true)
             && $latest !== null
             && $resolutions->firstWhere('source_event_id', $latest->id) !== null;
-        $effectiveRequiresReconciliation = $requiresReconciliation && ! $lockedPackageAlreadyResolved;
+        $effectiveRequiresReconciliation = $requiresReconciliation && ! $lockedPackageAlreadyResolved && $latest !== null;
 
         return [
             'needs_attention' => $sourceStatus === 'SOURCE_MISSING' || $effectiveRequiresReconciliation,
@@ -49,8 +57,34 @@ class SpjSourceReconciliationService
             'latest' => $latest,
             'resolutions' => $resolutions,
             'latest_resolution' => $resolutions->first(),
-            'action_hint' => $this->actionHint($transaction, $sourceStatus, $requiresReconciliation, $latest),
+            'action_hint' => $this->actionHint($transaction, $sourceStatus, $effectiveRequiresReconciliation, $latest),
+            'artifact_count' => $artifactCount,
+            'has_cross_year_artifacts' => $artifactCount > 0,
         ];
+    }
+
+    /**
+     * Artefak pembanding lintas tahun: snapshot "sebelum" berasal dari baris
+     * mirror tahun anggaran lain dengan NO_BUKTI yang sama (BPU01 ada di
+     * 2024, 2025, 2026). Baseline semacam ini dicatat sync lama sebelum
+     * filter tahun di aggregateByBukti; bukan perubahan nyata dan tidak
+     * boleh ditindak sebagai rekonsiliasi.
+     *
+     * @param  array<string,mixed>  $before
+     * @param  array<string,mixed>  $after
+     */
+    public function isCrossYearArtifact(array $before, array $after, ?int $fiscalYear): bool
+    {
+        if ($fiscalYear === null || $fiscalYear <= 0) {
+            return false;
+        }
+        $beforeYear = $this->snapshotYear($before['transaction_date'] ?? null);
+        $afterYear = $this->snapshotYear($after['transaction_date'] ?? null);
+        if ($beforeYear === null || $afterYear === null) {
+            return false;
+        }
+
+        return $beforeYear !== $afterYear && $beforeYear !== $fiscalYear;
     }
 
     /** @return Collection<int,object> */
@@ -177,6 +211,78 @@ class SpjSourceReconciliationService
                 'resolved_at' => $now,
             ];
         });
+    }
+
+    /**
+     * Menutup penanda rekonsiliasi yang tersisa hanya karena artefak
+     * pembanding lintas tahun. Tidak menulis resolusi palsu, tidak
+     * menyentuh paket/dokumen SPJ — hanya membersihkan flag + audit.
+     *
+     * @return int jumlah artefak yang ditutup (0 bila masih ada event aksionabel)
+     */
+    public function dismissCrossYearArtifacts(Transaction $transaction, OperationalAuditService $audit, ?int $resolvedBy = null): int
+    {
+        return DB::connection('school')->transaction(function () use ($transaction, $audit, $resolvedBy): int {
+            DB::connection('school')->table('transactions')->where('id', $transaction->id)->lockForUpdate()->first();
+            $transaction->refresh()->load('spjPackage');
+            $report = $this->forTransaction($transaction);
+
+            if ($report['source_status'] === 'SOURCE_MISSING') {
+                throw new DomainException('Transaksi masih hilang dari sumber ARKAS/BKU. Sinkronkan atau verifikasi sumber terlebih dahulu.');
+            }
+            if ($report['latest'] !== null) {
+                throw new DomainException('Masih ada perubahan sumber nyata yang harus diselesaikan melalui alur rekonsiliasi.');
+            }
+            if (! (bool) $transaction->requires_reconciliation) {
+                return 0;
+            }
+            if ($report['artifact_count'] === 0) {
+                throw new DomainException('Tidak ada artefak lintas tahun yang perlu ditutup.');
+            }
+
+            $now = now();
+            DB::connection('school')->table('transactions')->where('id', $transaction->id)->update([
+                'requires_reconciliation' => false,
+                'updated_at' => $now,
+            ]);
+
+            $audit->record(
+                $transaction->fiscal_year_id,
+                'TRANSACTION',
+                $transaction->id,
+                'REKONSILIASI_ARTEFAK_DITUTUP',
+                'Penanda rekonsiliasi ditutup: hanya artefak pembanding lintas tahun (NO_BUKTI berulang antar tahun anggaran, sync lama). '
+                    .'Artefak: '.$report['artifact_count'].' event. Diselesaikan oleh '.($resolvedBy ?? 'operator').'.',
+            );
+
+            return $report['artifact_count'];
+        });
+    }
+
+    /** @var array<int,int|null> */
+    private array $fiscalYearCache = [];
+
+    private function fiscalYearNumber(int $fiscalYearId): ?int
+    {
+        if (! array_key_exists($fiscalYearId, $this->fiscalYearCache)) {
+            try {
+                $this->fiscalYearCache[$fiscalYearId] = (int) DB::connection('school')->table('fiscal_years')->where('id', $fiscalYearId)->value('year') ?: null;
+            } catch (\Throwable) {
+                $this->fiscalYearCache[$fiscalYearId] = null;
+            }
+        }
+
+        return $this->fiscalYearCache[$fiscalYearId];
+    }
+
+    private function snapshotYear(mixed $value): ?int
+    {
+        if (! is_string($value) || strlen(trim($value)) < 4) {
+            return null;
+        }
+        $year = (int) substr(trim($value), 0, 4);
+
+        return $year > 0 ? $year : null;
     }
 
     /**

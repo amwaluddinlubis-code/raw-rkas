@@ -169,6 +169,31 @@ class TransactionDetailWorkspace extends Component
         $this->dispatch('app-notify', type: 'success', message: $message);
     }
 
+    public function dismissArtifacts(SpjSourceReconciliationService $service, ActiveSpjContext $context, OperationalAuditService $audit): void
+    {
+        $transaction = $this->transaction();
+        if (! $context->matchesTransaction($transaction)) {
+            $this->redirectRoute('transactions.index');
+
+            return;
+        }
+
+        try {
+            $dismissed = $service->dismissCrossYearArtifacts($transaction, $audit, auth()->id() ? (int) auth()->id() : null);
+        } catch (DomainException $exception) {
+            $this->addError('form', $exception->getMessage());
+
+            return;
+        }
+
+        $this->loadTransaction();
+        $message = $dismissed > 0
+            ? 'Artefak pembanding lintas tahun ditutup tanpa mengubah paket SPJ.'
+            : 'Tidak ada artefak lintas tahun yang perlu ditutup.';
+        session()->flash('success', $message);
+        $this->dispatch('app-notify', type: 'success', message: $message);
+    }
+
     public function render(): View
     {
         $transaction = $this->transaction();

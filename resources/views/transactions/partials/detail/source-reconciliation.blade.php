@@ -65,6 +65,17 @@
             </div>
         @endif
 
+        @if($reconciliation['has_cross_year_artifacts'])
+            <div class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3 text-sm text-[var(--ui-fg-muted)]">
+                <p><strong class="text-[var(--ui-fg-strong)]">{{ $reconciliation['artifact_count'] }} perubahan sumber</strong> tercatat sebagai artefak pembanding lintas tahun (NO_BUKTI yang sama di tahun anggaran berbeda, dari sinkronisasi lama) — bukan perubahan nyata dan tidak ditampilkan sebagai selisih.</p>
+                @if($transaction->requires_reconciliation && ! $reconciliation['requires_reconciliation'])
+                    <form wire:submit="dismissArtifacts" class="mt-2">
+                        <x-ui.button type="submit" variant="secondary">Tutup artefak tanpa mengubah paket SPJ</x-ui.button>
+                    </form>
+                @endif
+            </div>
+        @endif
+
         @if($latest && $latest->changes !== [])
             <div class="overflow-x-auto">
                 <table data-pagination="none" class="min-w-full text-sm">

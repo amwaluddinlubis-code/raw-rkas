@@ -7,6 +7,31 @@ Terakhir diperbarui: **2026-09-28** (post-954 regression recovery + canonical CI
 
 ---
 
+## Cross-year reconciliation artifact quarantine (2026-09-28)
+
+Status: **FUNCTIONAL PASS (focused) / RVR untuk visual panel**.
+
+Temuan operator: panel Rekonsiliasi Sumber menampilkan diff "Sebelum 2024 → Sesudah 2026"
+(dua transaksi berbeda). Akar masalah: kolom "Sebelum" dibangun dari agregat mirror
+per NO_BUKTI tanpa filter tahun pada sync lama (filter tahun baru ada sejak `9540937`);
+NO_BUKTI berulang tiap tahun (105/153 no_bukti multi-tahun di data lokal) sehingga
+baseline tercampur lintas tahun. Bukan salah jodoh transaksi (matching tetap
+per tahun + sumber dana).
+
+Perbaikan (read-path, tanpa migrasi, tanpa sentuh paket/dokumen SPJ):
+`SpjSourceReconciliationService` menandai event lintas tahun sebagai artefak
+(dikecualikan dari `latest`/badge/hint/resolve/bulk-review), panel menampilkan
+catatan + tombol tutup beraudit (`REKONSILIASI_ARTEFAK_DITUTUP`), docs di
+`SYNCHRONIZATION.md` §9.
+
+Evidence: `CrossYearArtifactQuarantineTest` 5 passed / 22 assertions; suite rekon
+terkait 26 passed per-file (`Resolution` 11, `Hardening` 6, `NeedsScope` 4,
+`ReconciliationList` 5). `BulkReviewReconciliationTest` gagal di environment ini
+(`testing.sqlite` tanpa tabel `users`) — terbukti pra-eksis via stash di main
+bersih. `view:cache` + Pint bersih.
+
+---
+
 ## Current main regression recovery after staged-rendering feature (2026-09-28)
 
 Status: **FUNCTIONAL PASS / CURRENT MAIN SOURCE GATE GREEN**.
