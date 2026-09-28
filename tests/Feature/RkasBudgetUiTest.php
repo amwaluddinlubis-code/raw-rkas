@@ -8,20 +8,33 @@ class RkasBudgetUiTest extends TestCase
 {
     public function test_rkas_filter_is_livewire_card_without_local_style_override(): void
     {
-        $view = file_get_contents(resource_path('views/rkas-budget/index.blade.php'));
+        $index = file_get_contents(resource_path('views/rkas-budget/index.blade.php'));
+        $workspace = file_get_contents(resource_path('views/livewire/rkas-budget-workspace.blade.php'));
 
-        $this->assertStringNotContainsString('<style>', $view);
-        $this->assertStringNotContainsString('rkas-filter-grid', $view);
-        $this->assertStringContainsString("@include('rkas-budget.partials.filter')", $view);
+        $this->assertStringContainsString('<livewire:rkas-budget-workspace', $index);
+        $this->assertStringContainsString('<x-layouts.tailwind-app>', $index);
+        $this->assertStringNotContainsString('<style>', $index);
+        $this->assertStringNotContainsString('rkas-filter-grid', $workspace);
+        $this->assertStringContainsString("@include('rkas-budget.partials.filter')", $workspace);
 
         $filterPartial = file_get_contents(resource_path('views/rkas-budget/partials/filter.blade.php'));
 
         $this->assertStringContainsString('<livewire:rkas-budget-filter />', $filterPartial);
     }
 
+    public function test_rkas_workspace_is_livewire_fragment_without_nested_layout(): void
+    {
+        $workspace = file_get_contents(resource_path('views/livewire/rkas-budget-workspace.blade.php'));
+
+        $this->assertStringNotContainsString('<x-layouts.tailwind-app>', $workspace);
+        $this->assertStringNotContainsString('<html', $workspace);
+        $this->assertStringNotContainsString('@livewireScripts', $workspace);
+        $this->assertStringNotContainsString('@livewireStyles', $workspace);
+    }
+
     public function test_rkas_hierarchy_table_uses_theme_tokens_without_local_overrides(): void
     {
-        $view = file_get_contents(resource_path('views/rkas-budget/index.blade.php'));
+        $view = file_get_contents(resource_path('views/livewire/rkas-budget-workspace.blade.php'));
 
         $this->assertStringContainsString('Rincian Hierarki RKAS', $view);
         $this->assertStringContainsString('$hierarchyTree', $view);

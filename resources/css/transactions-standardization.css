@@ -422,3 +422,10 @@ main:has(#modul-buat-spj) #rincian-transaksi form>fieldset>div:last-child .ui-bt
         transition: none !important;
     }
 }
+
+/* Informasi Referensi ARKAS/BKU (detail transaksi): body panel dibuat lebih
+   padat — padding atas/bawah .5rem, padding kiri/kanan ikut token global. */
+.txn-ref-compact .ui-panel-body-padded {
+    padding-top: .5rem;
+    padding-bottom: .5rem;
+}

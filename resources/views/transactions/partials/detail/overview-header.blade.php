@@ -73,9 +73,11 @@
 <x-page-header :title="$transaction->sourceValue('no_bukti')"
     :subtitle="$transaction->sourceValue('description') ?: 'Uraian transaksi belum tersedia.'"
     kicker="{{ $headerVisual['label'] }} · Detail transaksi ARKAS / BKU">
-    <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+    <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
         <x-stat-item label="Nilai bruto" :value="$rupiah($transaction->sourceValue('gross_amount'))"
             :hint="$transaction->sourceCarbon()?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia'" value-class="text-slate-800" icon="budget" icon-class="text-slate-800" />
+        <x-stat-item label="Pajak" :value="$rupiah($transaction->sourceValue('tax_total'))"
+            hint="Total pajak sesuai sumber BKU/ARKAS" value-class="text-[var(--ui-fg-strong)]" icon="tax" icon-class="text-[var(--ui-fg-strong)]" />
         <x-stat-item label="Nilai netto" :value="$rupiah($transaction->sourceValue('net_amount'))"
             hint="Nilai setelah potongan pajak" value-class="text-emerald-700" icon="balance" icon-class="text-emerald-700" />
         <x-stat-item label="Rincian barang/jasa" value="{{ $transaction->items->count() }} item"
@@ -83,7 +85,7 @@
     </div>
 </x-page-header>
 
-<section>
+<section class="txn-ref-compact">
     <x-ui.panel variant="soft">
         <x-slot:title>
             <div class="flex items-center gap-2">
@@ -92,25 +94,20 @@
             </div>
         </x-slot:title>
 
-        <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
-            <div class="px-5 py-4">
+        <div class="grid divide-y divide-[var(--ui-line)] md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-3">
+            <div class="px-2.5 py-2">
                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penerima / Penyedia</p>
                 <p class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->sourceValue('recipient_name') ?: 'Belum diisi' }}</p>
             </div>
-            <div class="px-5 py-4">
+            <div class="px-2.5 py-2">
                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Kegiatan</p>
                 <p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">{{ $transaction->sourceValue('activity_code') ?: '—' }}</p>
                 <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->sourceValue('activity_name') ?: 'Kegiatan belum tersedia' }}</p>
             </div>
-            <div class="px-5 py-4">
+            <div class="px-2.5 py-2">
                 <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kode Rekening</p>
                 <p class="mt-1 font-mono text-base font-semibold text-[var(--theme-content-accent)]">{{ $transaction->sourceValue('account_code') ?: '—' }}</p>
                 <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->sourceValue('account_name') ?: 'Rekening belum tersedia' }}</p>
-            </div>
-            <div class="px-5 py-4">
-                <p class="text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Pajak</p>
-                <p class="mt-1 font-mono text-base font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->sourceValue('tax_total')) }}</p>
-                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Total pajak sesuai sumber BKU/ARKAS.</p>
             </div>
         </div>
     </x-ui.panel>

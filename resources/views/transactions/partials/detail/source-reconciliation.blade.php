@@ -8,6 +8,7 @@
     $packageLocked = in_array($packageStatus, ['NUMBERED', 'FINAL'], true);
     $latestHasChanges = $latest && $latest->changes !== [];
     $tempUnlock = app(\App\Services\SpjSourceReconciliationService::class)->temporaryUnlockEnabled() && auth()->user()?->isAdministrator();
+    $reconOpen = (bool) ($reconciliation['requires_reconciliation'] || $reconciliation['needs_attention']);
     $formatValue = function ($value) {
         if ($value === null || $value === '') {
             return '-';
@@ -24,7 +25,7 @@
 @endphp
 
 @if($reconciliation['needs_attention'] || $events->isNotEmpty() || $resolutions->isNotEmpty())
-    <section class="rounded-2xl border {{ $reconciliation['needs_attention'] ? 'border-amber-300 bg-amber-50/70' : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)]' }} shadow-sm" data-source-reconciliation>
+    <section class="rounded-2xl border {{ $reconciliation['needs_attention'] ? 'border-amber-300 bg-amber-50/70' : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)]' }} shadow-sm" data-source-reconciliation x-data="{ reconOpen: {{ $reconOpen ? 'true' : 'false' }} }">
         <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -35,10 +36,18 @@
                 </div>
                 <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Data manual SPJ tidak ditimpa oleh sinkronisasi. Perubahan sumber tetap dicatat sebagai riwayat audit.</p>
             </div>
-            @if($latest)
-                <p class="text-xs font-semibold text-[var(--ui-fg-muted)]">Peristiwa terakhir: {{ $latest->label }}</p>
-            @endif
+            <div class="flex shrink-0 flex-wrap items-center gap-3">
+                @if($latest)
+                    <p class="text-xs font-semibold text-[var(--ui-fg-muted)]">Peristiwa terakhir: {{ $latest->label }}</p>
+                @endif
+                <button type="button" @click="reconOpen = ! reconOpen" :aria-expanded="reconOpen.toString()" aria-controls="recon-source-body" :title="reconOpen ? 'Sembunyikan detail rekonsiliasi' : 'Tampilkan detail rekonsiliasi'" class="inline-flex items-center gap-1.5 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-xs font-bold text-[var(--ui-fg-muted)] transition hover:text-[var(--ui-fg-strong)]">
+                    <x-ui.icon name="chevron-down" size="xs" class="transition-transform" ::class="reconOpen ? 'rotate-180' : ''" />
+                    <span x-text="reconOpen ? 'Sembunyikan' : 'Tampilkan'"></span>
+                </button>
+            </div>
         </div>
+
+        <div id="recon-source-body" x-show="reconOpen" x-collapse x-cloak>
 
         @if($reconciliation['action_hint'])
             <div class="border-b border-[var(--ui-line)] px-5 py-3 text-sm text-amber-900">
@@ -196,5 +205,6 @@
                 </div>
             </details>
         @endif
+        </div>
     </section>
 @endif

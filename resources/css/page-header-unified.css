@@ -211,10 +211,6 @@ html[data-ui-personality] .page-header-summary> :is(.grid, [class*="grid-cols-"]
     color: var(--text-comfort-muted, #718096) !important;
 }
 
-.page-header-summary .ui-stat-value,
-.page-header-summary> :is(.grid, [class*="grid-cols-"])> :not(.ui-stat) :is(.text-slate-800, .text-slate-900) {
-    color: var(--text-comfort-strong, #1f2937) !important;
-}
 
 /* Legacy migration layer. Legacy palette class names may still exist in Blade,
    but they no longer own any color; all visual values resolve through tokens. */
