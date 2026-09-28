@@ -120,6 +120,47 @@ class TransactionsTableLivewireTest extends TestCase
             ->assertSee('BKU-031');
     }
 
+    public function test_pager_uses_canonical_segmented_control(): void
+    {
+        $this->prepareSchoolConnection();
+
+        $fundSource = FundSource::on('school')->create(['code' => 'BOS', 'name' => 'BOS Reguler']);
+        $year = FiscalYear::on('school')->create([
+            'year' => 2026,
+            'fund_source' => 'BOS Reguler',
+            'fund_source_id' => $fundSource->id,
+            'is_active' => true,
+        ]);
+        foreach (range(1, 200) as $number) {
+            $this->mirrorTransaction([
+                'fiscal_year_id' => $year->id,
+                'fund_source_id' => $fundSource->id,
+                'no_bukti' => sprintf('BKU-%03d', $number),
+                'transaction_date' => '2026-03-10',
+                'description' => 'Transaksi '.$number,
+                'gross_amount' => 100000,
+                'tax_total' => 0,
+                'net_amount' => 100000,
+                'status' => 'DITETAPKAN',
+            ]);
+        }
+
+        $this->actingAs(User::factory()->create(['role' => 'ADMIN']))
+            ->withSession([
+                'active_school_id' => 1,
+                'active_fiscal_year_id' => $year->id,
+                'active_fund_source_id' => $fundSource->id,
+            ]);
+
+        Livewire::test(TransactionsTable::class)
+            ->assertSee('Sebelumnya')
+            ->assertSee('Berikutnya')
+            ->assertSee('ui-pagination-group', false)
+            ->assertSee('is-active', false)
+            ->assertSee('ui-pagination-ellipsis', false)
+            ->assertDontSee('bg-indigo-600');
+    }
+
     private function prepareSchoolConnection(): void
     {
         config()->set('database.connections.school.database', ':memory:');

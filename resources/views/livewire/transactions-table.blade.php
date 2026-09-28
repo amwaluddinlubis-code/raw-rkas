@@ -293,28 +293,7 @@
             </table>
         </div>
 
-        <div
-            class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
-            <p style="color: var(--ui-fg-muted)">Menampilkan <span class="font-semibold"
-                    style="color: var(--ui-fg)">{{ $transactions->firstItem() ?? 0 }}–{{ $transactions->lastItem() ?? 0 }}</span>
-                dari <span class="font-semibold" style="color: var(--ui-fg)">{{ $transactions->total() }}</span>
-                transaksi</p>
-            @if ($transactions->hasPages())
-                <nav class="flex items-center gap-1" aria-label="Navigasi halaman transaksi">
-                    <button type="button" wire:click="previousPage" @disabled($transactions->onFirstPage())
-                        class="inline-flex h-9 items-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Halaman sebelumnya"><x-ui.icon name="chevron-left" size="sm" /></button>
-                    @for ($page = max(1, $transactions->currentPage() - 2); $page <= min($transactions->lastPage(), $transactions->currentPage() + 2); $page++)
-                        <button type="button" wire:click="gotoPage({{ $page }})"
-                            aria-current="{{ $transactions->currentPage() === $page ? 'page' : 'false' }}"
-                            class="inline-flex h-9 min-w-9 items-center justify-center rounded-md border px-2 font-semibold {{ $transactions->currentPage() === $page ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-[var(--ui-line)] bg-[var(--ui-surface-base)] text-slate-600 hover:bg-slate-100' }}">{{ $page }}</button>
-                    @endfor
-                    <button type="button" wire:click="nextPage" @disabled(!$transactions->hasMorePages())
-                        class="inline-flex h-9 items-center rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 font-semibold text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                        aria-label="Halaman berikutnya"><x-ui.icon name="chevron-right" size="sm" /></button>
-                </nav>
-            @endif
-        </div>
+        <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
     </section>
 
 </div>
