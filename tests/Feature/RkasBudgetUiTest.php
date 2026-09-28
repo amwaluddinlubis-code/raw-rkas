@@ -51,6 +51,18 @@ class RkasBudgetUiTest extends TestCase
         $this->assertStringNotContainsString('bg-yellow-', $view);
     }
 
+    public function test_rkas_report_actions_use_canonical_semantic_buttons(): void
+    {
+        $view = file_get_contents(resource_path('views/livewire/rkas-budget-workspace.blade.php'));
+
+        $this->assertStringContainsString('ui-btn ui-btn-primary !min-h-10 !min-w-10', $view);
+        $this->assertStringContainsString('ui-btn ui-btn-danger !min-h-10 !min-w-10', $view);
+        $this->assertStringContainsString('ui-btn ui-btn-success !min-h-10 !min-w-10', $view);
+        $this->assertStringContainsString('pt-8 pr-2 pb-6 pl-6', $view);
+        $this->assertStringNotContainsString('rkas-report-action', $view);
+        $this->assertStringNotContainsString('<style>', $view);
+    }
+
     public function test_rkas_filter_card_uses_canonical_primitives_and_theme_tokens(): void
     {
         $view = file_get_contents(resource_path('views/livewire/rkas-budget-filter.blade.php'));

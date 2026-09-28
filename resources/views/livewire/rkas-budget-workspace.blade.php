@@ -136,15 +136,15 @@
                             <option value="3">Triwulan III</option>
                             <option value="4">Triwulan IV</option>
                         </select>
-                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-preview"
+                        <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Pratinjau Triwulan per Bulan" aria-label="Pratinjau Triwulan per Bulan"
                             @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
                                 name="preview" size="sm" /></button>
-                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-pdf"
+                        <button type="button" class="ui-btn ui-btn-danger !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Unduh PDF Triwulan per Bulan" aria-label="Unduh PDF Triwulan per Bulan"
                             @click="openDownload(@js(route('rkas-reports.pdf', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
                                 name="pdf" size="sm" /></button>
-                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-excel"
+                        <button type="button" class="ui-btn ui-btn-success !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Unduh Excel Triwulan per Bulan" aria-label="Unduh Excel Triwulan per Bulan"
                             @click="openDownload(@js(route('rkas-reports.excel', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
                                 name="excel" size="sm" /></button>
@@ -195,45 +195,10 @@
                                 @click="previewOpen = false" aria-label="Tutup pratinjau">Tutup</button>
                         </div>
                     </div>
-                    <iframe x-ref="previewFrame" class="min-h-0 flex-1 bg-white px-8 py-8" :src="previewUrl"
-                        title="Pratinjau laporan RKAS" style="padding: 2rem 0.5rem 1.5rem 1.5rem !important"></iframe>
+                    <iframe x-ref="previewFrame" class="min-h-0 flex-1 bg-white pt-8 pr-2 pb-6 pl-6" :src="previewUrl"
+                        title="Pratinjau laporan RKAS"></iframe>
                 </div>
             </div>
-            <style>
-                .rkas-report-action {
-                    min-height: 2.5rem;
-                    min-width: 2.5rem;
-                    padding: .5rem;
-                    color: #fff;
-                }
-
-                .rkas-report-action-preview {
-                    border-color: #2563eb;
-                    background: #2563eb;
-                }
-
-                .rkas-report-action-preview:hover {
-                    background: #1d4ed8;
-                }
-
-                .rkas-report-action-pdf {
-                    border-color: #dc2626;
-                    background: #dc2626;
-                }
-
-                .rkas-report-action-pdf:hover {
-                    background: #b91c1c;
-                }
-
-                .rkas-report-action-excel {
-                    border-color: #16a34a;
-                    background: #16a34a;
-                }
-
-                .rkas-report-action-excel:hover {
-                    background: #15803d;
-                }
-            </style>
         </div>
     </x-section-card>
 
