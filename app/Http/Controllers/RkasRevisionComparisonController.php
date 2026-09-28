@@ -25,7 +25,9 @@ final class RkasRevisionComparisonController extends Controller
         if ($request->hasAny(['from', 'to'])) {
             $queryFrom = $request->query('from');
             $queryTo = $request->query('to');
-            foreach (['from' => $queryFrom, 'to' => $queryTo] as $key => $value) {
+            $queryFrom = is_string($queryFrom) && trim($queryFrom) === '' ? null : $queryFrom;
+            $queryTo = is_string($queryTo) && trim($queryTo) === '' ? null : $queryTo;
+            foreach ([$queryFrom, $queryTo] as $value) {
                 if ($value !== null) {
                     abort_unless(is_string($value) && in_array($value, $revisionIds, true), 422, 'Revisi yang dipilih tidak tersedia pada konteks aktif.');
                 }
