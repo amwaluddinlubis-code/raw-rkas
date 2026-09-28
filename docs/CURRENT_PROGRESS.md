@@ -47,19 +47,18 @@ memperbarui path profil dalam transaksi tenant, lalu menghapus gambar lama.
 Jika penyimpanan gambar atau update profil gagal, file baru yang sudah
 ditahapkan dibersihkan dan gambar lama tetap ada.
 
-Status perubahan audit report: **IMPLEMENTED / CI PARTIAL FAIL**. GitHub Actions
-run #39 (`36486277572`) pada `b07d764` lulus artifact guard, Composer/platform,
-Pint, frontend build, Blade compile, SPJ Critical (339 / 2.605 assertions), dan
-Unit (79 / 281 assertions). Full Feature menjalankan 629 test: 628 lulus dan
-satu gagal pada `RkasBudgetUiTest::test_rkas_hierarchy_table_uses_theme_tokens_without_local_overrides` (4.359 assertions),
-karena `<style>` lokal pada tombol laporan melanggar guard tema yang sudah ada.
-Perubahan CSS lokal dihapus dan seluruh report actions dipindah ke kelas tombol
-semantic canonical. Run ulang #40 (`36487670910`) lulus SPJ Critical dan Unit,
-namun Full Feature menemukan assertion test baru terlalu luas karena nama class
-dipakai oleh Alpine action yang tidak terkait styling. Assertion kini dibatasi
-ke atribut class tombol lama; coverage mengunci ketiga kelas semantic dan
-spacing iframe. PHP/Composer tidak tersedia lokal, jadi verifikasi ulang
-bergantung pada gate CI setelah perubahan ini. Visual PDF/Excel tetap RVR.
+Status perubahan audit report: **FUNCTIONAL PASS / FULL REGRESSION GATE GREEN**.
+GitHub Actions #39 (`36486277572`) pada `b07d764` mengungkap local `<style>`
+yang melanggar guard tema. Fix pertama memindahkan sebagian tombol ke kelas
+canonical; gate #40 (`36487670910`) menangkap selector class lama yang masih
+tertinggal pada kelompok Tahunan/Tahap/Triwulan dan Bulanan, serta assertion
+baru yang terlalu luas. Semua kelompok tombol laporan kini memakai semantic
+theme classes; regression mengunci kelas itu, spacing iframe, dan tidak adanya
+atribut class lokal lama. GitHub Actions #41 (`36488216251`) pada source
+`a22f7d5` **SUCCESS**: Pint, frontend, Blade, checklist lint, SPJ Critical
+(339 / 2.605 assertions), Full Unit (79 / 281 assertions), dan Full Feature
+(630 / 4.370 assertions) lulus. PHP/Composer tidak tersedia lokal, tetapi gate
+CI menjalankan ulang seluruh suite; visual PDF/Excel tetap RVR.
 
 ---
 
@@ -483,8 +482,8 @@ Definisi status:
 ### Latest successful canonical code gate
 
 ```text
-LATEST SUCCESSFUL CODE HEAD: 14cf825eea79da48b98423469d8e2746839a0bcb
-LATEST SUCCESSFUL CODE GATE: run 36349827238 (#34) / SUCCESS
+LATEST SUCCESSFUL CODE HEAD: a22f7d54306f173e51e3ad5da30dd2152f013e99
+LATEST SUCCESSFUL CODE GATE: run 36488216251 (#41) / SUCCESS
 WORKFLOW                   : SPJ Critical Verification
 COMPOSER VALIDATE          : PASS
 LOCKED PLATFORM CHECK      : PASS pada PHP 8.3
@@ -495,10 +494,10 @@ BLADE COMPILE              : PASS
 CHECKLIST PHP LINT         : PASS
 SPJ CRITICAL               : PASS / 339 tests / 2,605 assertions
 FULL UNIT                  : PASS / 79 tests / 281 assertions
-FULL FEATURE               : PASS / 611 tests / 4,276 assertions
+FULL FEATURE               : PASS / 630 tests / 4,370 assertions
 ```
 
-Run #34 adalah code gate canonical terbaru untuk source `main`. Ia mencakup recovery regression pasca-`9540937d`, termasuk kompatibilitas signature template staged receipt, boundary use-case tanpa `auth()` global, theme/source-contract cleanup, sinkronisasi wording SiPLah, serta pemulihan fallback realisasi RKAS lintas revisi. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
+Run #41 adalah code gate canonical terbaru untuk source `main`. Ia mencakup regression UI RKAS yang sebelumnya terlewat pada run #39–#40. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
 
 ### P0 dependency-platform repair — CI #483 → #486
 
