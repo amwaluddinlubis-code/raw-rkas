@@ -25,8 +25,8 @@ final class RkasRevisionComparisonController extends Controller
 
         if ($request->hasAny(['from', 'to'])) {
             $validated = $request->validate([
-                'from' => ['nullable', 'string', Rule::in($revisionIds)],
-                'to' => ['nullable', 'string', Rule::in($revisionIds)],
+                'from' => ['sometimes', 'nullable', 'string', Rule::in($revisionIds)],
+                'to' => ['sometimes', 'nullable', 'string', Rule::in($revisionIds)],
             ]);
             $fromId = (string) ($validated['from'] ?? $fromId);
             $toId = (string) ($validated['to'] ?? $toId);
