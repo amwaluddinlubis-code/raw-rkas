@@ -63,6 +63,45 @@
 
     @include('rkas-budget.partials.filter')
 
+    @php($reportRevisi = request()->query('revisi'))
+    @php($reportQuery = $reportRevisi !== null && $reportRevisi !== '' ? ['revisi' => $reportRevisi] : [])
+    <x-section-card title="Unduh Laporan RKAS" description="Kertas Kerja per pengesahan revisi dalam format PDF atau Excel. Revisi aktif mengikuti tab revisi di atas.">
+        <div class="grid gap-2 md:grid-cols-2">
+            @foreach ([['tahunan', 'Tahunan', 'Pagu setahun per sumber dana (Operasi/Modal).'], ['tahap', 'Tahap', 'Alokasi Tahap 1 (TW 1+2) dan Tahap 2 (TW 3+4).'], ['triwulan', 'Triwulan', 'Alokasi TW 1 sampai TW 4.']] as [$reportScope, $reportLabel, $reportDesc])
+                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $reportLabel }}</p>
+                        <p class="text-xs text-[var(--ui-fg-muted)]">{{ $reportDesc }}</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <x-ui.button variant="secondary" icon="pdf" :href="route('rkas-reports.pdf', array_merge(['scope' => $reportScope], $reportQuery))" target="_blank">PDF</x-ui.button>
+                        <x-ui.button variant="secondary" icon="excel" :href="route('rkas-reports.excel', array_merge(['scope' => $reportScope], $reportQuery))">Excel</x-ui.button>
+                    </div>
+                </div>
+            @endforeach
+            <form method="GET" action="{{ route('rkas-reports.pdf', ['scope' => 'bulanan']) }}" class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+                @if ($reportRevisi !== null && $reportRevisi !== '')
+                    <input type="hidden" name="revisi" value="{{ $reportRevisi }}">
+                @endif
+                <div class="min-w-0">
+                    <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Bulanan</p>
+                    <p class="text-xs text-[var(--ui-fg-muted)]">Rincian per bulan terpilih.</p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                    <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
+                    <select id="rkas-report-bulan" name="bulan" required class="ui-select px-3 py-2 text-sm">
+                        <option value="">Pilih bulan…</option>
+                        @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
+                            <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
+                        @endforeach
+                    </select>
+                    <x-ui.button variant="secondary" icon="pdf" type="submit" formaction="{{ route('rkas-reports.pdf', ['scope' => 'bulanan']) }}">PDF</x-ui.button>
+                    <x-ui.button variant="secondary" icon="excel" type="submit" formaction="{{ route('rkas-reports.excel', ['scope' => 'bulanan']) }}">Excel</x-ui.button>
+                </div>
+            </form>
+        </div>
+    </x-section-card>
+
     <x-section-card title="Rincian Hierarki RKAS" :description="'Pagu, realisasi, dan sisa ' . $filterContext . '.'" :padding="false">
         <x-slot:actions>
             <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">•

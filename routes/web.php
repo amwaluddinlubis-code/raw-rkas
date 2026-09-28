@@ -22,6 +22,7 @@ use App\Http\Controllers\ReconciliationController;
 use App\Http\Controllers\ReferenceController;
 use App\Http\Controllers\RkasBudgetController;
 use App\Http\Controllers\RkasPlanningSuggestionController;
+use App\Http\Controllers\RkasReportController;
 use App\Http\Controllers\SchoolBackupController;
 use App\Http\Controllers\SchoolConfigurationController;
 use App\Http\Controllers\SchoolSelectionController;
@@ -204,6 +205,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
         Route::get('/penganggaran-rkas/saran', RkasPlanningSuggestionController::class)->name('rkas-planning.index');
         Route::get('/penganggaran-rkas/saran/unduh/{modul}', [RkasPlanningSuggestionController::class, 'export'])->name('rkas-planning.export');
+        Route::get('/penganggaran-rkas/laporan/{scope}/pdf', [RkasReportController::class, 'pdf'])->name('rkas-reports.pdf');
+        Route::get('/penganggaran-rkas/laporan/{scope}/excel', [RkasReportController::class, 'excel'])->name('rkas-reports.excel');
         Route::get('/transaksi/rekomendasi-vendor', [TransactionController::class, 'vendorRecommendation'])->name('transactions.vendor-recommendation');
         Route::get('/transaksi/{transactionId}', [TransactionController::class, 'show'])->name('transactions.show');
         Route::get('/data-sinkron', [SyncedDataController::class, 'index'])->name('synced-data.index');

@@ -7,6 +7,27 @@ Terakhir diperbarui: **2026-09-28** (post-954 regression recovery + canonical CI
 
 ---
 
+## Laporan Kertas Kerja RKAS per pengesahan (2026-09-28)
+
+Status: **FUNCTIONAL PASS (focused) / RVR untuk visual PDF/Excel di browser**.
+
+Halaman Penganggaran RKAS kini mengunduh Kertas Kerja ala ARKAS (PDF via Dompdf
+landscape + XLSX via PhpSpreadsheet) dalam 4 bentuk: Tahunan (kolom 6 sumber
+dana × Operasi/Modal), Tahap (Tahap 1 = TW 1+2, Tahap 2 = TW 3+4), Triwulan
+(kolom TW 1–4), Bulanan (filter bulan + Volume/Satuan/Tarif). Setiap laporan
+menghormati tab revisi aktif (`revisi`) sehingga pengesahan terdahulu dapat
+digenerate ulang dari snapshot mirror per ID anggaran; kop sekolah +
+penandatangan diambil dari profil, kolom dana mengikuti konteks dana aktif.
+
+Evidence: `RkasReportTest` 8 passed / 29 assertions (termasuk render `%PDF`
+keempat scope + unduhan route PDF/Excel + 404/422 guard); suite RKAS terkait
+hijau (`RevisionModes` 10, `BudgetFilter` 5, `BudgetUi` 4, `ReportLayout` 14,
+`RouteSmoke` 6). `view:cache` + Pint bersih. Batasan: butuh data mirror
+(422 bila belum sync); alokasi periode revisi lama mengikuti split periode
+mutakhir bila ARKAS mengubah split antar revisi.
+
+---
+
 ## Cross-year reconciliation artifact quarantine (2026-09-28)
 
 Status: **FUNCTIONAL PASS (focused) / RVR untuk visual panel**.

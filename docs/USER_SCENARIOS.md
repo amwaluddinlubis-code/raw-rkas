@@ -150,6 +150,15 @@ Siap Dinomori     -> Paket READY
 Sudah Bernomor    -> Paket NUMBERED / FINAL
 ```
 
+### Unduh laporan Kertas Kerja RKAS
+
+Halaman Penganggaran RKAS menyediakan kartu **Unduh Laporan RKAS**: Tahunan,
+Tahap, Triwulan (langsung PDF/Excel), dan Bulanan (pilih bulan dulu). Setiap
+unduhan mengikuti tab revisi aktif sehingga pengesahan terdahulu dapat
+dicetak ulang dalam format ala ARKAS (kop sekolah, penerimaan, belanja
+hierarkis, jumlah, tanda tangan). Unduhan butuh data mirror hasil
+sinkronisasi; bila belum ada, aplikasi menolak dengan pesan 422.
+
 ---
 
 ## 6. Detail Transaksi
