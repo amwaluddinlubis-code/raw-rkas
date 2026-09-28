@@ -205,6 +205,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
         Route::get('/penganggaran-rkas/saran', RkasPlanningSuggestionController::class)->name('rkas-planning.index');
         Route::get('/penganggaran-rkas/saran/unduh/{modul}', [RkasPlanningSuggestionController::class, 'export'])->name('rkas-planning.export');
+        Route::get('/penganggaran-rkas/laporan/{scope}/preview', [RkasReportController::class, 'preview'])->name('rkas-reports.preview');
         Route::get('/penganggaran-rkas/laporan/{scope}/pdf', [RkasReportController::class, 'pdf'])->name('rkas-reports.pdf');
         Route::get('/penganggaran-rkas/laporan/{scope}/excel', [RkasReportController::class, 'excel'])->name('rkas-reports.excel');
         Route::get('/transaksi/rekomendasi-vendor', [TransactionController::class, 'vendorRecommendation'])->name('transactions.vendor-recommendation');

@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -23,7 +25,7 @@ final class RkasReportExcelService
         $sheet = $book->getActiveSheet();
         $sheet->setTitle(mb_substr('RKAS '.ucfirst($payload['scope']), 0, 31));
         $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-        $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_A4);
+        $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_FOLIO);
         $sheet->getPageSetup()->setFitToWidth(1);
         $sheet->getPageSetup()->setFitToHeight(0);
 
@@ -59,14 +61,14 @@ final class RkasReportExcelService
             $sheet->setCellValue("C{$row}", $value);
             $row++;
         }
-        if ($payload['scope'] === 'triwulan') {
+        if (in_array($payload['scope'], ['triwulan', 'triwulan-bulanan'], true)) {
             $sheet->setCellValue("A{$row}", 'Triwulan');
         } elseif ($payload['scope'] === 'tahap') {
             $sheet->setCellValue("A{$row}", 'Tahap');
         } elseif ($payload['scope'] === 'bulanan') {
             $sheet->setCellValue("A{$row}", 'Bulan');
         }
-        if (in_array($payload['scope'], ['triwulan', 'tahap', 'bulanan'], true)) {
+        if (in_array($payload['scope'], ['triwulan', 'triwulan-bulanan', 'tahap', 'bulanan'], true)) {
             $sheet->setCellValue("B{$row}", ':');
             $sheet->setCellValue("C{$row}", $payload['scope_label'].($payload['scope'] === 'bulanan' ? (string) $payload['year'] : ''));
             $row++;
@@ -76,16 +78,19 @@ final class RkasReportExcelService
         $sheet->setCellValue("C{$row}", $payload['fund_name']);
         $row += 2;
 
-        $sheet->setCellValue("A{$row}", 'A. PENERIMAAN');
+        $sheet->setCellValue("A{$row}", $payload['penerimaan_heading']);
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $row++;
-        $sheet->setCellValue("A{$row}", 'Sumber Dana :');
+        $sheet->setCellValue("A{$row}", $payload['penerimaan_source_label']);
         $sheet->getStyle("A{$row}")->getFont()->setBold(true);
         $row++;
         $sheet->fromArray([['No. Kode', 'Penerimaan', 'Jumlah']], null, "A{$row}");
         $this->headerRow($sheet, $row, 3);
         $row++;
-        foreach ($payload['penerimaan'] as $item) {
+        $keuangan = $payload['scope'] === 'tahunan'
+            ? $payload['penerimaan']
+            : array_values(array_filter($payload['penerimaan'], fn (array $item): bool => (bool) $item['active']));
+        foreach ($keuangan as $item) {
             $sheet->setCellValue("A{$row}", $item['code']);
             $sheet->setCellValue("B{$row}", $item['label'].($item['active'] ? '' : ' **'));
             $sheet->setCellValue("C{$row}", $item['amount']);
@@ -111,17 +116,35 @@ final class RkasReportExcelService
         $row = $this->belanjaTable($sheet, $payload, $row);
 
         $row += 2;
-        $sheet->setCellValue($this->col($lastCol - 2).$row, $payload['place_date']);
-        $row++;
         $third = (int) floor($lastCol / 3);
+        $treasurerStart = $lastCol - 2;
+        $sheet->mergeCells($this->col($treasurerStart).$row.':'.$lastLetter.$row);
+        $sheet->setCellValue($this->col($treasurerStart).$row, $payload['place_date']);
+        $sheet->getStyle($this->col($treasurerStart).$row.':'.$lastLetter.$row)
+            ->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $row++;
         $sheet->setCellValue('A'.$row, 'Komite Sekolah');
         $sheet->setCellValue($this->col($third).$row, 'Kepala Sekolah');
         $sheet->setCellValue($this->col($lastCol - 2).$row, 'Bendahara Sekolah');
         $sheet->getStyle("A{$row}:{$lastLetter}{$row}")->getFont()->setBold(true);
-        $row += 4;
-        $sheet->setCellValue('A'.$row, '');
-        $sheet->setCellValue($this->col($third).$row, (string) ($payload['signatories']['principal_name'] ?? ''));
-        $sheet->setCellValue($this->col($lastCol - 2).$row, (string) ($payload['signatories']['treasurer_name'] ?? ''));
+        $row += 10;
+        $committeeStart = 1;
+        $principalStart = $third;
+        $sheet->setCellValue($this->col($committeeStart).$row, (string) ($payload['signatories']['committee_name'] ?? ''));
+        $sheet->setCellValue($this->col($principalStart).$row, (string) ($payload['signatories']['principal_name'] ?? ''));
+        $sheet->setCellValue($this->col($treasurerStart).$row, (string) ($payload['signatories']['treasurer_name'] ?? ''));
+        foreach ([
+            [$committeeStart, $principalStart - 1],
+            [$principalStart, $treasurerStart - 1],
+            [$treasurerStart, $lastCol],
+        ] as [$start, $end]) {
+            $lineEnd = (int) floor(($start + $end) / 2);
+            $sheet->getStyle($this->col($start).$row.':'.$this->col($lineEnd).$row)
+                ->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+        }
+        $this->addSignatureDrawing($sheet, $payload['signatories']['committee_signature_path'] ?? '', $this->col($committeeStart), $row - 5, 'Komite');
+        $this->addSignatureDrawing($sheet, $payload['signatories']['principal_signature_path'] ?? '', $this->col($principalStart), $row - 5, 'Kepala Sekolah');
+        $this->addSignatureDrawing($sheet, $payload['signatories']['treasurer_signature_path'] ?? '', $this->col($treasurerStart), $row - 5, 'Bendahara');
         $sheet->getStyle("A{$row}:{$lastLetter}{$row}")->getFont()->setBold(true);
         $row++;
         if (trim((string) ($payload['signatories']['principal_nip'] ?? '')) !== '') {
@@ -134,6 +157,22 @@ final class RkasReportExcelService
         foreach (range(1, $lastCol) as $col) {
             $sheet->getColumnDimension($this->col($col))->setAutoSize(true);
         }
+        if ($payload['scope'] !== 'tahunan') {
+            // Kolom Volume (E) dan Satuan (F) dibuat sama-sama ringkas.
+            $detailWidths = match ($payload['scope']) {
+                'triwulan' => ['D' => 32, 'E' => 6, 'F' => 9],
+                'triwulan-bulanan' => ['D' => 34, 'E' => 6, 'F' => 9],
+                'tahap' => ['D' => 38, 'E' => 6, 'F' => 9],
+                default => ['D' => 45, 'E' => 6, 'F' => 9],
+            };
+            foreach ($detailWidths as $column => $width) {
+                $sheet->getColumnDimension($column)->setAutoSize(false);
+                $sheet->getColumnDimension($column)->setWidth($width);
+            }
+            $sheet->getStyle('E1:F'.$row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        }
+        $footTag = str_replace('&', '&&', $payload['footer_tag'].' - NPSN : '.$payload['school']['npsn'].', '.$payload['school']['name']);
+        $sheet->getHeaderFooter()->setOddFooter('&L&8 '.$footTag.'&R&8 Halaman &P dari &N');
 
         $path = tempnam(sys_get_temp_dir(), 'rkas-laporan-').'.xlsx';
         (new Xlsx($book))->save($path);
@@ -145,9 +184,10 @@ final class RkasReportExcelService
     {
         return match ($scope) {
             'tahunan' => 17,
-            'triwulan' => 13,
-            'tahap' => 11,
-            default => 9,
+            'triwulan' => 12,
+            'tahap' => 10,
+            'triwulan-bulanan' => 11,
+            default => 8,
         };
     }
 
@@ -166,7 +206,9 @@ final class RkasReportExcelService
     private function headerRow(object $sheet, int $row, int $cols): void
     {
         $sheet->getStyle('A'.$row.':'.$this->col($cols).$row)->getFont()->setBold(true);
-        $sheet->getStyle('A'.$row.':'.$this->col($cols).$row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('A'.$row.':'.$this->col($cols).$row)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
         $this->borderRow($sheet, $row, $cols);
     }
 
@@ -192,6 +234,7 @@ final class RkasReportExcelService
                 $col++;
             }
             $this->headerRow($sheet, $row, $cols);
+            $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd($row, $row);
             $row++;
             foreach ($payload['lines'] as $line) {
                 $values = [$line['no'], $this->accountCell($line), $line['activity_code'], $line['name'], $line['jumlah']];
@@ -205,13 +248,19 @@ final class RkasReportExcelService
             $row = $this->dataRow($sheet, $row, $cols, array_merge(['Jumlah', '', '', '', $payload['totals']['jumlah']], $this->fundTotals($payload)), 'total');
         } else {
             $headers = ['No. Urut', 'Kode Rekening', 'Kode Program', 'Uraian', 'Volume', 'Satuan', 'Tarif Harga', 'Jumlah'];
-            $periodHeaders = $scope === 'triwulan' ? ['1', '2', '3', '4'] : ($scope === 'tahap' ? ['Tahap 1', 'Tahap 2'] : []);
+            $periodHeaders = match ($scope) {
+                'triwulan' => ['1', '2', '3', '4'],
+                'triwulan-bulanan' => array_map(fn (int $month): string => RkasReportService::MONTH_NAMES[$month - 1], $payload['quarter_months']),
+                'tahap' => ['Tahap 1', 'Tahap 2'],
+                default => [],
+            };
             $col = 1;
             foreach (array_merge($headers, $periodHeaders) as $header) {
                 $sheet->setCellValue($this->col($col).$row, $header);
                 $col++;
             }
             $this->headerRow($sheet, $row, $cols);
+            $sheet->getPageSetup()->setRowsToRepeatAtTopByStartAndEnd($row, $row);
             $row++;
             foreach ($payload['lines'] as $line) {
                 $values = [
@@ -219,18 +268,26 @@ final class RkasReportExcelService
                     $line['level'] === 'item' ? $line['volume'] : null,
                     $line['level'] === 'item' ? $line['unit'] : null,
                     $line['level'] === 'item' ? $line['unit_price'] : null,
-                    $scope === 'bulanan' ? $line['scoped'] : $line['jumlah'],
+                    in_array($scope, ['bulanan', 'triwulan-bulanan'], true) ? $line['scoped'] : $line['jumlah'],
                 ];
                 if ($scope === 'triwulan') {
                     array_push($values, $line['tw'][1], $line['tw'][2], $line['tw'][3], $line['tw'][4]);
+                } elseif ($scope === 'triwulan-bulanan') {
+                    foreach ($payload['quarter_months'] as $month) {
+                        $values[] = $line['months'][$month] ?? 0;
+                    }
                 } elseif ($scope === 'tahap') {
                     array_push($values, $line['tahap'][0], $line['tahap'][1]);
                 }
                 $row = $this->dataRow($sheet, $row, $cols, $values, $line['level']);
             }
-            $values = ['Jumlah', '', '', '', '', '', '', $scope === 'bulanan' ? $payload['totals']['scoped'] : $payload['totals']['jumlah']];
+            $values = ['Jumlah', '', '', '', '', '', '', in_array($scope, ['bulanan', 'triwulan-bulanan'], true) ? $payload['totals']['scoped'] : $payload['totals']['jumlah']];
             if ($scope === 'triwulan') {
                 array_push($values, $payload['totals']['tw'][1], $payload['totals']['tw'][2], $payload['totals']['tw'][3], $payload['totals']['tw'][4]);
+            } elseif ($scope === 'triwulan-bulanan') {
+                foreach ($payload['quarter_months'] as $month) {
+                    $values[] = $payload['totals']['months'][$month] ?? 0;
+                }
             } elseif ($scope === 'tahap') {
                 array_push($values, $payload['totals']['tahap'][0], $payload['totals']['tahap'][1]);
             }
@@ -284,5 +341,25 @@ final class RkasReportExcelService
         $this->borderRow($sheet, $row, $cols);
 
         return $row + 1;
+    }
+
+    private function addSignatureDrawing(object $sheet, string $path, string $coordinate, int $row, string $name): void
+    {
+        $disk = Storage::disk('local');
+        if (trim($path) === '' || ! $disk->exists($path)) {
+            return;
+        }
+
+        try {
+            $drawing = new Drawing;
+            $drawing->setName('Tanda tangan '.$name);
+            $drawing->setDescription('Tanda tangan '.$name);
+            $drawing->setPath($disk->path($path));
+            $drawing->setHeight(45);
+            $drawing->setCoordinates($coordinate.$row);
+            $drawing->setWorksheet($sheet);
+        } catch (\Throwable) {
+            // File tanda tangan opsional; laporan tetap dibuat tanpa gambar.
+        }
     }
 }

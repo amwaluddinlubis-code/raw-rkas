@@ -306,8 +306,7 @@
                             :aria-expanded="profileMenuOpen.toString()" aria-haspopup="menu" title="Profil User"
                             class="app-runtime-badge inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold">
                             <x-ui.icon name="employee" size="sm" />
-                            <span class="hidden sm:inline">Profil User</span>
-                            <span class="hidden max-w-[10rem] truncate lg:inline">{{ auth()->user()->name }}</span>
+                            <span class="max-w-[10rem] truncate">{{ auth()->user()->name }}</span>
                             <x-ui.icon name="chevron-down" size="xs" />
                         </button>
                         <div x-show="profileMenuOpen" x-cloak x-transition.origin.top.right role="menu"

@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-28** (post-954 regression recovery + canonical CI #34, `raw-rkas`)
+Terakhir diperbarui: **2026-09-29** (laporan RKAS + tanda tangan opsional, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
@@ -12,19 +12,26 @@ Terakhir diperbarui: **2026-09-28** (post-954 regression recovery + canonical CI
 Status: **FUNCTIONAL PASS (focused) / RVR untuk visual PDF/Excel di browser**.
 
 Halaman Penganggaran RKAS kini mengunduh Kertas Kerja ala ARKAS (PDF via Dompdf
-landscape + XLSX via PhpSpreadsheet) dalam 4 bentuk: Tahunan (kolom 6 sumber
+landscape + XLSX via PhpSpreadsheet) dalam 5 bentuk: Tahunan (kolom 6 sumber
 dana × Operasi/Modal), Tahap (Tahap 1 = TW 1+2, Tahap 2 = TW 3+4), Triwulan
-(kolom TW 1–4), Bulanan (filter bulan + Volume/Satuan/Tarif). Setiap laporan
+(kolom TW 1–4), Triwulan per Bulan (pilih TW I–IV dengan tiga kolom bulan),
+Bulanan (filter bulan + Volume/Satuan/Tarif). Setiap laporan
 menghormati tab revisi aktif (`revisi`) sehingga pengesahan terdahulu dapat
 digenerate ulang dari snapshot mirror per ID anggaran; kop sekolah +
 penandatangan diambil dari profil, kolom dana mengikuti konteks dana aktif.
 
-Evidence: `RkasReportTest` 8 passed / 29 assertions (termasuk render `%PDF`
-keempat scope + unduhan route PDF/Excel + 404/422 guard); suite RKAS terkait
+Evidence: `RkasReportTest` 10 passed / 50 assertions (termasuk render `%PDF`
+kelima scope + pratinjau HTML/modal + unduhan route PDF/Excel + 404/422 guard); suite RKAS terkait
 hijau (`RevisionModes` 10, `BudgetFilter` 5, `BudgetUi` 4, `ReportLayout` 14,
 `RouteSmoke` 6). `view:cache` + Pint bersih. Batasan: butuh data mirror
 (422 bila belum sync); alokasi periode revisi lama mengikuti split periode
 mutakhir bila ARKAS mengubah split antar revisi.
+Header laporan dan header kolom diulang saat cetak, footer memuat nomor halaman
+X dari Y, kolom Satuan diperlebar, dan nama Komite Sekolah dibaca dari
+`school_profiles.committee_name` (diisi melalui Pengaturan Sekolah).
+Tanda tangan Komite, Kepala Sekolah, dan Bendahara dapat diunggah secara
+opsional dari Pengaturan Sekolah; PDF/pratinjau/Excel mengabaikan gambar yang
+kosong atau tidak tersedia dan tetap mencetak nama, garis, serta NIP.
 
 ---
 

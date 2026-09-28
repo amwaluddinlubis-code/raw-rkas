@@ -12,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class RkasReportTest extends TestCase
@@ -74,6 +75,16 @@ class RkasReportTest extends TestCase
         $this->assertSame(5000000.0, $payload['totals']['modal']);
         $this->assertSame(0, $payload['fund_column']);
         $this->assertSame(5600000.0, collect($payload['penerimaan'])->firstWhere('code', '4.3.1.01.')['amount']);
+        $this->assertStringContainsString('31 Mei 2026', $payload['place_date']);
+
+        // Subtotal header tidak boleh melipatgandakan item turunannya, dan
+        // tidak ada baris header rekening (sesuai ARKAS).
+        $byLevel = collect($payload['lines'])->groupBy('level');
+        $this->assertFalse($byLevel->has('account'));
+        $this->assertSame(5600000.0, $byLevel['program']->sum('jumlah'));
+        $this->assertSame(5600000.0, $byLevel['subprogram']->sum('jumlah'));
+        $this->assertSame(5600000.0, $byLevel['activity']->sum('jumlah'));
+        $this->assertSame(5600000.0, $byLevel['item']->sum('jumlah'));
     }
 
     public function test_latest_revision_is_default_and_differs_from_old(): void
@@ -92,6 +103,12 @@ class RkasReportTest extends TestCase
 
         $tahap = app(RkasReportService::class)->build('tahap', $this->reportOptions(['revision' => 'ANG-1']));
         $this->assertSame([600000.0, 5000000.0], $tahap['totals']['tahap']);
+
+        $quarterly = app(RkasReportService::class)->build('triwulan-bulanan', $this->reportOptions(['revision' => 'ANG-1', 'quarter' => 3]));
+        $this->assertSame('Triwulan III', $quarterly['scope_label']);
+        $this->assertSame([7, 8, 9], $quarterly['quarter_months']);
+        $this->assertSame(5000000.0, $quarterly['totals']['scoped']);
+        $this->assertStringContainsString('30 September 2026', $quarterly['place_date']);
     }
 
     public function test_bulanan_filters_single_month_and_rejects_invalid(): void
@@ -101,6 +118,7 @@ class RkasReportTest extends TestCase
         $this->assertNotNull($payload);
         $this->assertSame(5000000.0, $payload['totals']['scoped']);
         $this->assertStringContainsString('Juli', $payload['scope_label']);
+        $this->assertStringContainsString('31 Juli 2026', $payload['place_date']);
 
         $this->assertNull(app(RkasReportService::class)->build('bulanan', $this->reportOptions(['month' => 0])));
     }
@@ -115,10 +133,39 @@ class RkasReportTest extends TestCase
         @unlink($path);
     }
 
+    public function test_excel_column_structure_matches_each_report_scope(): void
+    {
+        foreach ([
+            'tahunan' => ['month' => null, 'last_column' => 'Q'],
+            'tahap' => ['month' => null, 'last_column' => 'J'],
+            'triwulan' => ['month' => null, 'last_column' => 'L'],
+            'triwulan-bulanan' => ['month' => null, 'quarter' => 3, 'last_column' => 'K'],
+            'bulanan' => ['month' => 7, 'last_column' => 'H'],
+        ] as $scope => $expectation) {
+            $options = $this->reportOptions(['revision' => 'ANG-1']);
+            if ($expectation['month'] !== null) {
+                $options['month'] = $expectation['month'];
+            }
+            if (($expectation['quarter'] ?? null) !== null) {
+                $options['quarter'] = $expectation['quarter'];
+            }
+            $path = app(RkasReportExcelService::class)->export(
+                app(RkasReportService::class)->build($scope, $options)
+            );
+            $sheet = IOFactory::load($path)->getActiveSheet();
+
+            $this->assertSame($expectation['last_column'], $sheet->getHighestColumn(), $scope);
+            @unlink($path);
+        }
+    }
+
     public function test_pdf_renders_for_all_scopes(): void
     {
-        foreach (['tahunan', 'tahap', 'triwulan'] as $scope) {
+        foreach (['tahunan', 'tahap', 'triwulan', 'triwulan-bulanan'] as $scope) {
             $payload = app(RkasReportService::class)->build($scope, $this->reportOptions(['revision' => 'ANG-1']));
+            if ($scope === 'triwulan-bulanan') {
+                $payload = app(RkasReportService::class)->build($scope, $this->reportOptions(['revision' => 'ANG-1', 'quarter' => 3]));
+            }
             $output = Pdf::loadView('rkas-reports.pdf', $payload)->setPaper('a4', 'landscape')->output();
             $this->assertStringStartsWith('%PDF', $output, "scope {$scope}");
         }
@@ -139,6 +186,28 @@ class RkasReportTest extends TestCase
         $this->get(route('rkas-reports.excel', ['scope' => 'triwulan', 'revisi' => 'ANG-1']))
             ->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_report_preview_uses_html_report_view_and_committee_profile(): void
+    {
+        DB::connection('school')->table('school_profiles')->insert([
+            'fiscal_year_id' => 1,
+            'committee_name' => 'Siti Komite',
+            'principal_name' => 'Budi Kepala',
+            'treasurer_name' => 'Ani Bendahara',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payload = app(RkasReportService::class)->build('tahunan', $this->reportOptions(['revision' => 'ANG-1']));
+
+        $this->assertSame('Siti Komite', $payload['signatories']['committee_name']);
+        $this->assertSame('A. PENERIMAAN', $payload['penerimaan_heading']);
+
+        $this->withoutMiddleware();
+        $this->get(route('rkas-reports.preview', ['scope' => 'tahunan', 'revisi' => 'ANG-1']))
+            ->assertOk()
+            ->assertSee('KERTAS KERJA RENCANA KEGIATAN DAN ANGGARAN SEKOLAH');
     }
 
     public function test_report_routes_reject_unknown_scope_and_missing_month(): void

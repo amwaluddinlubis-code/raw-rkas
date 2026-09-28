@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\FiscalYear;
 use App\Models\School;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
- * Builder laporan Kertas Kerja RKAS (Tahunan, Tahap, Triwulan, Bulanan)
+ * Builder laporan Kertas Kerja RKAS (Tahunan, Tahap, Triwulan, Triwulan per Bulan, Bulanan)
  * per pengesahan revisi, dari snapshot mirror ARKAS.
  *
  * Data per revisi diambil lewat ArkasMirrorBudgetService::snapshot() dengan
@@ -18,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class RkasReportService
 {
-    public const SCOPES = ['tahunan', 'tahap', 'triwulan', 'bulanan'];
+    public const SCOPES = ['tahunan', 'tahap', 'triwulan', 'triwulan-bulanan', 'bulanan'];
 
     /** @var array<int,array{code:string,label:string}> */
     public const PENERIMAAN_ROWS = [
@@ -40,7 +42,7 @@ final class RkasReportService
     public function __construct(private readonly ArkasMirrorBudgetService $budgets) {}
 
     /**
-     * @param  array{school_id:int,fiscal_year_id:int,fund_source_id:int,revision?:string|null,month?:int|null}  $options
+     * @param  array{school_id:int,fiscal_year_id:int,fund_source_id:int,revision?:string|null,month?:int|null,quarter?:int|null}  $options
      * @return array<string,mixed>|null null bila data mirror belum siap
      */
     public function build(string $scope, array $options): ?array
@@ -74,6 +76,10 @@ final class RkasReportService
         if ($scope === 'bulanan' && ($month < 1 || $month > 12)) {
             return null;
         }
+        $quarter = (int) ($options['quarter'] ?? 0);
+        if ($scope === 'triwulan-bulanan' && ($quarter < 1 || $quarter > 4)) {
+            return null;
+        }
 
         $revisions = $this->budgets->revisions($fundSourceId, $yearNumber);
         $allowedIds = collect($revisions)->pluck('id')->all();
@@ -96,7 +102,7 @@ final class RkasReportService
             return null;
         }
 
-        $lines = $this->buildLines($rows, $scope, $month);
+        $lines = $this->buildLines($rows, $scope, $month, $quarter);
         if ($lines === []) {
             return null;
         }
@@ -106,9 +112,13 @@ final class RkasReportService
 
         return [
             'scope' => $scope,
-            'scope_label' => $this->scopeLabel($scope, $month),
+            'scope_label' => $this->scopeLabel($scope, $month, $quarter),
+            'quarter' => $quarter,
+            'quarter_months' => $scope === 'triwulan-bulanan' ? $this->quarterMonths($quarter) : [],
             'title' => $this->title($scope),
             'footer_tag' => $this->footerTag($scope),
+            'penerimaan_heading' => $this->penerimaanHeading($scope),
+            'penerimaan_source_label' => $this->penerimaanSourceLabel($scope),
             'school' => [
                 'npsn' => (string) ($school->npsn ?? ''),
                 'name' => (string) ($school->name ?? ''),
@@ -122,6 +132,13 @@ final class RkasReportService
                 'principal_nip' => (string) ($profile['principal_nip'] ?? ''),
                 'treasurer_name' => (string) ($profile['treasurer_name'] ?? ''),
                 'treasurer_nip' => (string) ($profile['treasurer_nip'] ?? ''),
+                'committee_name' => (string) ($profile['committee_name'] ?? ''),
+                'principal_signature' => $this->signatureDataUri($profile['principal_signature_path'] ?? null),
+                'treasurer_signature' => $this->signatureDataUri($profile['treasurer_signature_path'] ?? null),
+                'committee_signature' => $this->signatureDataUri($profile['committee_signature_path'] ?? null),
+                'principal_signature_path' => (string) ($profile['principal_signature_path'] ?? ''),
+                'treasurer_signature_path' => (string) ($profile['treasurer_signature_path'] ?? ''),
+                'committee_signature_path' => (string) ($profile['committee_signature_path'] ?? ''),
             ],
             'year' => $yearNumber,
             'fund_name' => $fundName,
@@ -129,10 +146,10 @@ final class RkasReportService
             'penerimaan' => $this->penerimaanRows($fundName, (float) $totals['jumlah']),
             'revision_label' => $this->revisionLabel($selectedTab),
             'revision_date' => (string) ($selectedTab['dateLabel'] ?? '-'),
-            'place_date' => $this->placeDate($school),
+            'place_date' => $this->reportDate($school, $scope, $yearNumber, $month, $quarter, $selectedTab, $selectedId === $latestApprovedId),
             'lines' => $lines,
             'totals' => $totals,
-            'file_name' => $this->fileName($scope, $yearNumber, $fundName, $selectedTab, $month),
+            'file_name' => $this->fileName($scope, $yearNumber, $fundName, $selectedTab, $month, $quarter),
         ];
     }
 
@@ -151,6 +168,7 @@ final class RkasReportService
             'tahunan' => 'KERTAS KERJA RENCANA KEGIATAN DAN ANGGARAN SEKOLAH (RKAS)',
             'tahap' => 'KERTAS KERJA RENCANA KEGIATAN DAN ANGGARAN SEKOLAH (RKAS) PER TAHAP',
             'triwulan' => 'KERTAS KERJA RENCANA KEGIATAN DAN ANGGARAN SEKOLAH (RKAS) PER TRIWULAN',
+            'triwulan-bulanan' => 'KERTAS KERJA RKAS PER TRIWULAN DAN BULAN',
             default => 'RINCIAN KERTAS KERJA PERBULAN',
         };
     }
@@ -161,17 +179,59 @@ final class RkasReportService
             'tahunan' => 'Kertas Kerja',
             'tahap' => 'Kertas Kerja perTahap',
             'triwulan' => 'Kertas Kerja perTriwulan',
+            'triwulan-bulanan' => 'Kertas Kerja perTriwulan perBulan',
             default => 'Kertas Kerja perBulan',
         };
     }
 
-    private function scopeLabel(string $scope, int $month): string
+    private function penerimaanHeading(string $scope): string
+    {
+        return match ($scope) {
+            'tahunan' => 'A. PENERIMAAN',
+            'tahap' => 'A. PENERIMAAN PER TAHAP',
+            'triwulan' => 'A. PENERIMAAN PER TRIWULAN',
+            'triwulan-bulanan' => 'A. PENERIMAAN PER TRIWULAN DAN BULAN',
+            default => 'A. PENERIMAAN PER BULAN',
+        };
+    }
+
+    private function penerimaanSourceLabel(string $scope): string
+    {
+        return match ($scope) {
+            'tahunan' => 'Sumber Dana :',
+            'tahap' => 'Sumber Dana Tahap :',
+            'triwulan' => 'Sumber Dana Triwulan :',
+            'triwulan-bulanan' => 'Sumber Dana Triwulan :',
+            default => 'Sumber Dana Bulan :',
+        };
+    }
+
+    private function scopeLabel(string $scope, int $month, int $quarter): string
     {
         return match ($scope) {
             'tahap' => 'I dan II',
             'triwulan' => 'I,II,III dan IV',
+            'triwulan-bulanan' => 'Triwulan '.$this->romanQuarter($quarter),
             'bulanan' => self::MONTH_NAMES[$month - 1].' ',
             default => '',
+        };
+    }
+
+    /** @return array<int,int> */
+    private function quarterMonths(int $quarter): array
+    {
+        $start = (($quarter - 1) * 3) + 1;
+
+        return [$start, $start + 1, $start + 2];
+    }
+
+    private function romanQuarter(int $quarter): string
+    {
+        return match ($quarter) {
+            1 => 'I',
+            2 => 'II',
+            3 => 'III',
+            default => 'IV',
         };
     }
 
@@ -189,21 +249,62 @@ final class RkasReportService
     }
 
     /** @param array{id:string,status:string,seq:int,dateLabel:string,revisionNo:int,amount:float}|null $tab */
-    private function fileName(string $scope, int $year, string $fund, ?array $tab, int $month): string
+    private function fileName(string $scope, int $year, string $fund, ?array $tab, int $month, int $quarter): string
     {
         $slug = preg_replace('/[^A-Za-z0-9]+/', '-', strtoupper($fund));
         $rev = $tab === null ? 'TERAKHIR' : (($tab['status'] ?? '') === 'pending' ? 'PENGAJUAN' : 'PENGESAHAN-'.($tab['seq'] ?? 1));
-        $suffix = $scope === 'bulanan' ? '-'.strtoupper(self::MONTH_NAMES[$month - 1]) : '';
+        $suffix = match ($scope) {
+            'bulanan' => '-'.strtoupper(self::MONTH_NAMES[$month - 1]),
+            'triwulan-bulanan' => '-TW-'.$quarter,
+            default => '',
+        };
 
         return trim(sprintf('RKAS-%s-%d-%s-%s%s', strtoupper($scope), $year, trim((string) $slug, '-'), $rev, $suffix), '-');
     }
 
-    private function placeDate(School $school): string
+    private function reportDate(School $school, string $scope, int $year, int $month, int $quarter, ?array $selectedTab, bool $isLatestApproved): string
     {
         $place = trim((string) ($school->district ?? ''));
-        $date = now()->translatedFormat('d F Y');
+        $date = match ($scope) {
+            'bulanan' => Carbon::create($year, $month, 1)->endOfMonth(),
+            'triwulan-bulanan' => Carbon::create($year, $quarter * 3, 1)->endOfMonth(),
+            'triwulan' => Carbon::create($year, 12, 1)->endOfMonth(),
+            'tahap', 'tahunan' => $this->approvalDate($year, $selectedTab, $isLatestApproved),
+            default => Carbon::create($year, 12, 1)->endOfMonth(),
+        };
 
-        return ($place !== '' ? $place.', ' : '').$date;
+        return ($place !== '' ? $place.', ' : '').$date->translatedFormat('d F Y');
+    }
+
+    private function signatureDataUri(?string $path): ?string
+    {
+        $path = trim((string) $path);
+        $disk = Storage::disk('local');
+        if ($path === '' || ! $disk->exists($path)) {
+            return null;
+        }
+
+        try {
+            $contents = $disk->get($path);
+            $mime = $disk->mimeType($path) ?: 'image/png';
+
+            return 'data:'.$mime.';base64,'.base64_encode($contents);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function approvalDate(int $year, ?array $selectedTab, bool $isLatestApproved): Carbon
+    {
+        if ($isLatestApproved || $selectedTab === null || ($selectedTab['dateLabel'] ?? '-') === '-') {
+            return Carbon::create($year, 12, 1)->endOfMonth();
+        }
+
+        try {
+            return Carbon::createFromFormat('d-m-Y', (string) $selectedTab['dateLabel'])->endOfMonth();
+        } catch (\Throwable) {
+            return Carbon::create($year, 12, 1)->endOfMonth();
+        }
     }
 
     private function fundColumnIndex(string $fundName): int
@@ -265,7 +366,7 @@ final class RkasReportService
      * @param  Collection<int,array>  $rows
      * @return array<int,array<string,mixed>>
      */
-    private function buildLines(Collection $rows, string $scope, int $month): array
+    private function buildLines(Collection $rows, string $scope, int $month, int $quarter): array
     {
         $tree = [];
         foreach ($rows as $row) {
@@ -277,11 +378,17 @@ final class RkasReportService
             $programCode = $parts[0];
             $subCode = count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : $programCode;
             $amounts = $this->rowAmounts($row);
-            $scoped = $scope === 'bulanan' ? ($amounts['months'][$month] ?? 0.0) : (float) $row['amount'];
-            if ((float) $row['amount'] <= 0 || ($scope === 'bulanan' && $scoped <= 0)) {
+            $quarterMonths = $scope === 'triwulan-bulanan' ? $this->quarterMonths($quarter) : [];
+            $scoped = match ($scope) {
+                'bulanan' => $amounts['months'][$month] ?? 0.0,
+                'triwulan-bulanan' => array_sum(array_map(fn (int $selectedMonth): float => (float) ($amounts['months'][$selectedMonth] ?? 0.0), $quarterMonths)),
+                default => (float) $row['amount'],
+            };
+            if ((float) $row['amount'] <= 0 || (in_array($scope, ['bulanan', 'triwulan-bulanan'], true) && $scoped <= 0)) {
                 continue;
             }
             $isModal = str_starts_with(trim((string) ($row['account_code'] ?? '')), '5.2');
+            $scopedAmount = in_array($scope, ['bulanan', 'triwulan-bulanan'], true) ? $scoped : (float) $row['amount'];
             $item = [
                 'program_code' => $programCode,
                 'program_name' => (string) ($row['program_name'] ?? 'Program'),
@@ -295,12 +402,13 @@ final class RkasReportService
                 'volume' => (float) (ArkasMirrorResolver::field($row['payload'] ?? [], ['VOLUME_TOTAL', 'VOLUME']) ?? 0),
                 'unit' => (string) (ArkasMirrorResolver::field($row['payload'] ?? [], ['SATUAN', 'UNIT']) ?? ''),
                 'unit_price' => (float) (ArkasMirrorResolver::field($row['payload'] ?? [], ['HARGA_SATUAN']) ?? 0),
-                'jumlah' => (float) $row['amount'],
-                'operasi' => $isModal ? 0.0 : (float) $row['amount'],
-                'modal' => $isModal ? (float) $row['amount'] : 0.0,
+                'jumlah' => $scopedAmount,
+                'operasi' => $isModal ? 0.0 : $scopedAmount,
+                'modal' => $isModal ? $scopedAmount : 0.0,
                 'tw' => $amounts['quarters'],
                 'tahap' => [$amounts['quarters'][1] + $amounts['quarters'][2], $amounts['quarters'][3] + $amounts['quarters'][4]],
-                'scoped' => $scope === 'bulanan' ? $scoped : (float) $row['amount'],
+                'months' => $amounts['months'],
+                'scoped' => $scopedAmount,
             ];
             $tree[$programCode] ??= ['code' => $programCode, 'name' => $item['program_name'], 'subs' => []];
             $tree[$programCode]['subs'][$subCode] ??= ['code' => $subCode, 'name' => $item['sub_name'], 'activities' => []];
@@ -325,29 +433,26 @@ final class RkasReportService
                     $activityLines = [];
                     foreach ($activity['accounts'] as $account) {
                         usort($account['items'], fn (array $a, array $b): int => $this->compareCodes($a['account_code'], $b['account_code']) ?: strnatcasecmp($a['description'], $b['description']));
-                        $accountLines = array_map(fn (array $item): array => $this->line('item', $item), $account['items']);
-                        if ($accountLines === [] && $scope === 'bulanan') {
-                            continue;
+                        // Tanpa baris header rekening (sesuai ARKAS: header
+                        // hanya Program/Subprogram/Kegiatan): rincian langsung
+                        // di bawah kegiatan.
+                        foreach ($account['items'] as $item) {
+                            $activityLines[] = $this->line('item', $item);
                         }
-                        $activityLines[] = $this->aggregateLine('account', [
-                            'account_code' => $account['account_code'], 'name' => $account['account_name'],
-                            'activity_code' => $activity['code'],
-                        ], $accountLines);
-                        array_push($activityLines, ...$accountLines);
                     }
-                    if ($activityLines === [] && $scope === 'bulanan') {
+                    if ($activityLines === [] && in_array($scope, ['bulanan', 'triwulan-bulanan'], true)) {
                         continue;
                     }
                     $subLines[] = $this->aggregateLine('activity', ['activity_code' => $activity['code'], 'name' => $activity['name']], $activityLines);
                     array_push($subLines, ...$activityLines);
                 }
-                if ($subLines === [] && $scope === 'bulanan') {
+                if ($subLines === [] && in_array($scope, ['bulanan', 'triwulan-bulanan'], true)) {
                     continue;
                 }
                 $programLines[] = $this->aggregateLine('subprogram', ['activity_code' => $sub['code'], 'name' => $sub['name']], $subLines);
                 array_push($programLines, ...$subLines);
             }
-            if ($programLines === [] && $scope === 'bulanan') {
+            if ($programLines === [] && in_array($scope, ['bulanan', 'triwulan-bulanan'], true)) {
                 continue;
             }
             $lines[] = $this->aggregateLine('program', ['activity_code' => $program['code'], 'name' => $program['name']], $programLines);
@@ -401,22 +506,34 @@ final class RkasReportService
             'modal' => (float) ($item['modal'] ?? 0),
             'tw' => $item['tw'] ?? [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0],
             'tahap' => $item['tahap'] ?? [0.0, 0.0],
+            'months' => $item['months'] ?? [],
             'scoped' => (float) ($item['scoped'] ?? $item['jumlah'] ?? 0),
             'no' => 0,
         ];
     }
 
     /**
+     * Agregat header hanya menjumlah baris item turunan (level 'item').
+     * Anak yang diberikan berbentuk flat (header + item tercampur) sehingga
+     * menjumlah semuanya akan melipatgandakan subtotal.
+     *
      * @param  array<int,array<string,mixed>>  $children
      * @param  array{activity_code:string,name:string,account_code?:string}  $meta
      */
     private function aggregateLine(string $level, array $meta, array $children): array
     {
-        $sum = fn (string $key): float => array_sum(array_map(fn (array $line): float => (float) ($line[$key] ?? 0), $children));
+        $items = array_values(array_filter($children, fn (array $line): bool => ($line['level'] ?? '') === 'item'));
+        $sum = fn (string $key): float => array_sum(array_map(fn (array $line): float => (float) ($line[$key] ?? 0), $items));
         $tw = [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0];
-        foreach ($children as $child) {
+        foreach ($items as $item) {
             foreach ([1, 2, 3, 4] as $q) {
-                $tw[$q] += (float) ($child['tw'][$q] ?? 0);
+                $tw[$q] += (float) ($item['tw'][$q] ?? 0);
+            }
+        }
+        $months = [];
+        foreach ($items as $item) {
+            foreach ($item['months'] ?? [] as $month => $amount) {
+                $months[(int) $month] = ($months[(int) $month] ?? 0.0) + (float) $amount;
             }
         }
 
@@ -429,6 +546,7 @@ final class RkasReportService
             'modal' => $sum('modal'),
             'tw' => $tw,
             'tahap' => [$tw[1] + $tw[2], $tw[3] + $tw[4]],
+            'months' => $months,
             'scoped' => $sum('scoped'),
         ]);
     }
@@ -449,6 +567,15 @@ final class RkasReportService
                 $tw[$q] += (float) ($line['tw'][$q] ?? 0);
             }
         }
+        $months = [];
+        foreach ($lines as $line) {
+            if ($line['level'] !== 'item') {
+                continue;
+            }
+            foreach ($line['months'] ?? [] as $month => $amount) {
+                $months[(int) $month] = ($months[(int) $month] ?? 0.0) + (float) $amount;
+            }
+        }
 
         return [
             'jumlah' => $sum('jumlah'),
@@ -456,6 +583,7 @@ final class RkasReportService
             'modal' => $sum('modal'),
             'tw' => $tw,
             'tahap' => [$tw[1] + $tw[2], $tw[3] + $tw[4]],
+            'months' => $months,
             'scoped' => $sum('scoped'),
         ];
     }

@@ -1,4 +1,4 @@
-<div class="space-y-6">
+<div class="flex flex-col gap-6">
     @php($rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
 
     <x-page-header title="Penganggaran RKAS" :subtitle="'Pantau pagu RKAS dan realisasi BKU pada konteks ' . $contextLabel . '.'" kicker="Anggaran & Realisasi">
@@ -13,15 +13,14 @@
             </form>
         </x-slot:actions>
 
-        <div
-            class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+        <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
             <x-stat-item label="Total Anggaran" :value="$rupiah($budget)" hint="RKAS tersinkron"
                 value-class="text-[var(--theme-content-accent)]" icon="budget"
                 icon-class="text-[var(--theme-content-accent)]" />
-            <x-stat-item label="Realisasi BKU" :value="$rupiah($spent)" hint="Belanja tercatat"
-                value-class="text-emerald-700" icon="transaction" icon-class="text-emerald-700" />
-            <x-stat-item label="Sisa Anggaran" :value="$rupiah($remaining)" :hint="'Belum dibukukan ' . $rupiah($underBudget) . ' · Kelebihan ' . $rupiah($overBudget)" icon="balance" value-class="text-amber-700"
-                icon-class="text-amber-700" />
+            <x-stat-item label="Realisasi BKU" :value="$rupiah($spent)" hint="Belanja tercatat" value-class="text-emerald-700"
+                icon="transaction" icon-class="text-emerald-700" />
+            <x-stat-item label="Sisa Anggaran" :value="$rupiah($remaining)" :hint="'Belum dibukukan ' . $rupiah($underBudget) . ' · Kelebihan ' . $rupiah($overBudget)" icon="balance"
+                value-class="text-amber-700" icon-class="text-amber-700" />
             <x-stat-item label="Kegiatan RKAS" :value="number_format($activityCount, 0, ',', '.')" hint="Kegiatan tersinkron" icon="work"
                 icon-class="text-[var(--theme-content-accent)]" />
         </div>
@@ -34,8 +33,7 @@
         @php($activeRev = collect($revTabs)->firstWhere('id', $activeRevId) ?? collect($revTabs)->last())
         <section aria-label="Revisi RKAS"
             class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-            <div class="ui-segment-group flex w-fit max-w-full overflow-x-auto" role="group"
-                aria-label="Revisi RKAS">
+            <div class="ui-segment-group flex w-fit max-w-full overflow-x-auto" role="group" aria-label="Revisi RKAS">
                 @foreach ($revTabs as $tabIndex => $tab)
                     @php($isActive = $tab['id'] === ($activeRev['id'] ?? null))
                     @php($isDefault = $tab['id'] === ($latestApprovedId ?? null))
@@ -65,40 +63,177 @@
 
     @php($reportRevisi = request()->query('revisi'))
     @php($reportQuery = $reportRevisi !== null && $reportRevisi !== '' ? ['revisi' => $reportRevisi] : [])
-    <x-section-card title="Unduh Laporan RKAS" description="Kertas Kerja per pengesahan revisi dalam format PDF atau Excel. Revisi aktif mengikuti tab revisi di atas.">
-        <div class="grid gap-2 md:grid-cols-2">
-            @foreach ([['tahunan', 'Tahunan', 'Pagu setahun per sumber dana (Operasi/Modal).'], ['tahap', 'Tahap', 'Alokasi Tahap 1 (TW 1+2) dan Tahap 2 (TW 3+4).'], ['triwulan', 'Triwulan', 'Alokasi TW 1 sampai TW 4.']] as [$reportScope, $reportLabel, $reportDesc])
-                <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+    <x-section-card title="Unduh Laporan RKAS"
+        description="Kertas Kerja per pengesahan revisi dalam format PDF atau Excel. Revisi aktif mengikuti tab revisi di atas."
+        class="order-last">
+        <div x-data="{
+            previewOpen: false,
+            previewUrl: '',
+            openPreview(url, value = '', parameter = 'bulan') {
+                if (!value && (url.includes('/bulanan') || url.includes('/triwulan-bulanan'))) {
+                    window.alert(url.includes('/triwulan-bulanan') ? 'Pilih triwulan laporan terlebih dahulu.' : 'Pilih bulan laporan terlebih dahulu.');
+                    return;
+                }
+                const target = new URL(url, window.location.origin);
+                if (value) target.searchParams.set(parameter, value);
+                this.previewUrl = target.toString();
+                this.previewOpen = true;
+            },
+            openDownload(url, value = '', parameter = 'bulan') {
+                if (!value && (url.includes('/bulanan') || url.includes('/triwulan-bulanan'))) {
+                    window.alert(url.includes('/triwulan-bulanan') ? 'Pilih triwulan laporan terlebih dahulu.' : 'Pilih bulan laporan terlebih dahulu.');
+                    return;
+                }
+                const target = new URL(url, window.location.origin);
+                if (value) target.searchParams.set(parameter, value);
+                window.open(target.toString(), '_blank');
+            },
+            printPreview() {
+                const frame = this.$refs.previewFrame;
+                if (frame?.contentWindow) {
+                    frame.contentWindow.focus();
+                    frame.contentWindow.print();
+                }
+            }
+        }" @keydown.escape.window="previewOpen = false">
+            <div class="grid gap-2 md:grid-cols-2">
+                @foreach ([['tahunan', 'Tahunan', 'Pagu setahun per sumber dana (Operasi/Modal).'], ['tahap', 'Tahap', 'Alokasi Tahap 1 (TW 1+2) dan Tahap 2 (TW 3+4).'], ['triwulan', 'Triwulan', 'Alokasi TW 1 sampai TW 4.']] as [$reportScope, $reportLabel, $reportDesc])
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+                        <div class="min-w-0">
+                            <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $reportLabel }}</p>
+                            <p class="text-xs text-[var(--ui-fg-muted)]">{{ $reportDesc }}</p>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <button type="button" class="ui-btn rkas-report-action rkas-report-action-preview"
+                                title="Pratinjau {{ $reportLabel }}" aria-label="Pratinjau {{ $reportLabel }}"
+                                @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => $reportScope], $reportQuery))))"><x-ui.icon name="preview"
+                                    size="sm" /></button>
+                            <a class="ui-btn rkas-report-action rkas-report-action-pdf"
+                                title="Unduh PDF {{ $reportLabel }}" aria-label="Unduh PDF {{ $reportLabel }}"
+                                href="{{ route('rkas-reports.pdf', array_merge(['scope' => $reportScope], $reportQuery)) }}"
+                                target="_blank"><x-ui.icon name="pdf" size="sm" /></a>
+                            <a class="ui-btn rkas-report-action rkas-report-action-excel"
+                                title="Unduh Excel {{ $reportLabel }}" aria-label="Unduh Excel {{ $reportLabel }}"
+                                href="{{ route('rkas-reports.excel', array_merge(['scope' => $reportScope], $reportQuery)) }}"><x-ui.icon
+                                    name="excel" size="sm" /></a>
+                        </div>
+                    </div>
+                @endforeach
+                <div
+                    class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
                     <div class="min-w-0">
-                        <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $reportLabel }}</p>
-                        <p class="text-xs text-[var(--ui-fg-muted)]">{{ $reportDesc }}</p>
+                        <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Triwulan per Bulan</p>
+                        <p class="text-xs text-[var(--ui-fg-muted)]">Rincian tiga bulan dalam triwulan terpilih.</p>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                        <x-ui.button variant="secondary" icon="pdf" :href="route('rkas-reports.pdf', array_merge(['scope' => $reportScope], $reportQuery))" target="_blank">PDF</x-ui.button>
-                        <x-ui.button variant="secondary" icon="excel" :href="route('rkas-reports.excel', array_merge(['scope' => $reportScope], $reportQuery))">Excel</x-ui.button>
+                        <label class="sr-only" for="rkas-report-triwulan-bulanan">Triwulan laporan</label>
+                        <select id="rkas-report-triwulan-bulanan" x-ref="reportQuarter" required
+                            class="ui-select px-3 py-2 text-sm">
+                            <option value="">Pilih triwulan</option>
+                            <option value="1">Triwulan I</option>
+                            <option value="2">Triwulan II</option>
+                            <option value="3">Triwulan III</option>
+                            <option value="4">Triwulan IV</option>
+                        </select>
+                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-preview"
+                            title="Pratinjau Triwulan per Bulan" aria-label="Pratinjau Triwulan per Bulan"
+                            @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
+                                name="preview" size="sm" /></button>
+                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-pdf"
+                            title="Unduh PDF Triwulan per Bulan" aria-label="Unduh PDF Triwulan per Bulan"
+                            @click="openDownload(@js(route('rkas-reports.pdf', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
+                                name="pdf" size="sm" /></button>
+                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-excel"
+                            title="Unduh Excel Triwulan per Bulan" aria-label="Unduh Excel Triwulan per Bulan"
+                            @click="openDownload(@js(route('rkas-reports.excel', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
+                                name="excel" size="sm" /></button>
                     </div>
                 </div>
-            @endforeach
-            <form method="GET" action="{{ route('rkas-reports.pdf', ['scope' => 'bulanan']) }}" class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                @if ($reportRevisi !== null && $reportRevisi !== '')
-                    <input type="hidden" name="revisi" value="{{ $reportRevisi }}">
-                @endif
-                <div class="min-w-0">
-                    <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Bulanan</p>
-                    <p class="text-xs text-[var(--ui-fg-muted)]">Rincian per bulan terpilih.</p>
+                <div
+                    class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Bulanan</p>
+                        <p class="text-xs text-[var(--ui-fg-muted)]">Rincian per bulan terpilih.</p>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
+                        <select id="rkas-report-bulan" x-ref="reportMonth" required
+                            class="ui-select px-3 py-2 text-sm">
+                            <option value="">Pilih bulan…</option>
+                            @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
+                                <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-preview"
+                            title="Pratinjau Bulanan" aria-label="Pratinjau Bulanan"
+                            @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon
+                                name="preview" size="sm" /></button>
+                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-pdf"
+                            title="Unduh PDF Bulanan" aria-label="Unduh PDF Bulanan"
+                            @click="openDownload(@js(route('rkas-reports.pdf', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon
+                                name="pdf" size="sm" /></button>
+                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-excel"
+                            title="Unduh Excel Bulanan" aria-label="Unduh Excel Bulanan"
+                            @click="openDownload(@js(route('rkas-reports.excel', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon
+                                name="excel" size="sm" /></button>
+                    </div>
                 </div>
-                <div class="flex shrink-0 items-center gap-2">
-                    <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
-                    <select id="rkas-report-bulan" name="bulan" required class="ui-select px-3 py-2 text-sm">
-                        <option value="">Pilih bulan…</option>
-                        @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
-                            <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
-                        @endforeach
-                    </select>
-                    <x-ui.button variant="secondary" icon="pdf" type="submit" formaction="{{ route('rkas-reports.pdf', ['scope' => 'bulanan']) }}">PDF</x-ui.button>
-                    <x-ui.button variant="secondary" icon="excel" type="submit" formaction="{{ route('rkas-reports.excel', ['scope' => 'bulanan']) }}">Excel</x-ui.button>
+            </div>
+            <div x-show="previewOpen" x-cloak
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pr-8 pb-8" role="dialog"
+                aria-modal="true" aria-label="Pratinjau laporan RKAS">
+                <div class="flex h-[90vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-[var(--ui-surface)] shadow-2xl"
+                    @click.outside="previewOpen = false">
+                    <div class="flex items-center justify-between border-b border-[var(--ui-line)] px-4 py-3">
+                        <h2 class="font-bold text-[var(--ui-fg-strong)]">Pratinjau Laporan RKAS</h2>
+                        <div class="flex items-center gap-2">
+                            <button type="button" class="ui-btn ui-btn-primary !min-h-8 !px-3 !py-1.5 text-sm"
+                                @click="printPreview()" aria-label="Cetak laporan"><x-ui.icon name="print"
+                                    size="sm" /> Cetak</button>
+                            <button type="button" class="ui-btn ui-btn-secondary !min-h-8 !px-3 !py-1.5 text-sm"
+                                @click="previewOpen = false" aria-label="Tutup pratinjau">Tutup</button>
+                        </div>
+                    </div>
+                    <iframe x-ref="previewFrame" class="min-h-0 flex-1 bg-white px-8 py-8" :src="previewUrl"
+                        title="Pratinjau laporan RKAS" style="padding: 2rem 0.5rem 1.5rem 1.5rem !important"></iframe>
                 </div>
-            </form>
+            </div>
+            <style>
+                .rkas-report-action {
+                    min-height: 2.5rem;
+                    min-width: 2.5rem;
+                    padding: .5rem;
+                    color: #fff;
+                }
+
+                .rkas-report-action-preview {
+                    border-color: #2563eb;
+                    background: #2563eb;
+                }
+
+                .rkas-report-action-preview:hover {
+                    background: #1d4ed8;
+                }
+
+                .rkas-report-action-pdf {
+                    border-color: #dc2626;
+                    background: #dc2626;
+                }
+
+                .rkas-report-action-pdf:hover {
+                    background: #b91c1c;
+                }
+
+                .rkas-report-action-excel {
+                    border-color: #16a34a;
+                    background: #16a34a;
+                }
+
+                .rkas-report-action-excel:hover {
+                    background: #15803d;
+                }
+            </style>
         </div>
     </x-section-card>
 
@@ -119,16 +254,16 @@
                 data-pagination="none">
                 <thead style="background: var(--ui-surface-soft)">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-bold uppercase"
-                            style="color: var(--ui-fg-muted)">Kode Program</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
+                            Kode Program</th>
                         <th class="min-w-[260px] px-3 py-2 text-left text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Uraian</th>
-                        <th class="px-3 py-2 text-left text-xs font-bold uppercase"
-                            style="color: var(--ui-fg-muted)">Kode Rekening</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
+                            Kode Rekening</th>
                         <th class="px-3 py-2 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Volume</th>
-                        <th class="px-3 py-2 text-left text-xs font-bold uppercase"
-                            style="color: var(--ui-fg-muted)">Satuan</th>
+                        <th class="px-3 py-2 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
+                            Satuan</th>
                         <th class="px-3 py-2 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Tarif Harga</th>
                         <th class="px-3 py-2 text-right text-xs font-bold uppercase"
@@ -144,12 +279,10 @@
                         <tr
                             style="background: color-mix(in srgb, var(--theme-accent-soft) 45%, var(--ui-surface-base))">
                             <td colspan="6" class="px-3 py-1.5 text-xs">
-                                <button type="button"
-                                    class="inline-flex items-center gap-2 text-left font-bold"
+                                <button type="button" class="inline-flex items-center gap-2 text-left font-bold"
                                     style="color: var(--ui-fg-strong)"
                                     x-on:click="open['p-{{ $program['code'] }}'] = ! open['p-{{ $program['code'] }}']">
-                                    <span
-                                        class="inline-flex h-5 w-5 items-center justify-center rounded-full border"
+                                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border"
                                         style="color: var(--theme-content-accent); border-color: color-mix(in srgb, var(--theme-content-accent) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 55%, var(--ui-surface-base))">
                                         <x-ui.icon name="chevron-down" size="xs"
                                             x-show="open['p-{{ $program['code'] }}']" />
@@ -220,8 +353,7 @@
                                     <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
                                         style="color: var(--theme-content-accent)">
                                         {{ $rupiah($activity['amount']) }}</td>
-                                    <td
-                                        class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
+                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
                                         {{ $rupiah($activity['realization']) }}</td>
                                     <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
                                         style="color: var(--ui-fg-muted)">
@@ -234,8 +366,7 @@
                                             style="color: var(--ui-fg-muted)">
                                             {{ trim((string) $item->activity_code, '.') }}</td>
                                         <td class="px-3 py-1">
-                                            <p class="font-semibold leading-tight"
-                                                style="color: var(--ui-fg-strong)">
+                                            <p class="font-semibold leading-tight" style="color: var(--ui-fg-strong)">
                                                 {{ $item->description ?: 'Tanpa uraian' }}</p>
                                         </td>
                                         <td class="whitespace-nowrap px-3 py-1 font-mono"

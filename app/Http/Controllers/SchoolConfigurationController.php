@@ -79,6 +79,10 @@ class SchoolConfigurationController extends Controller
             'treasurer_nip' => ['nullable', 'string', 'max:40'],
             'treasurer_email' => ['nullable', 'email', 'max:180'],
             'treasurer_phone' => ['nullable', 'string', 'max:40'],
+            'committee_name' => ['nullable', 'string', 'max:180'],
+            'committee_signature' => ['nullable', 'image', 'max:1024'],
+            'principal_signature' => ['nullable', 'image', 'max:1024'],
+            'treasurer_signature' => ['nullable', 'image', 'max:1024'],
             'inventory_manager_name' => ['nullable', 'string', 'max:180'],
             'inventory_manager_nip' => ['nullable', 'string', 'max:40'],
             'document_storage_path' => ['required', 'string'],
@@ -98,9 +102,30 @@ class SchoolConfigurationController extends Controller
         $databases->activate($school);
         $year = FiscalYear::query()->find(session('active_fiscal_year_id'));
         if ($year) {
+            $profile = DB::connection('school')->table('school_profiles')
+                ->where('fiscal_year_id', $year->id)->first();
+            $profileData = collect($data)->only([
+                'principal_name', 'principal_nip', 'principal_email', 'principal_phone',
+                'treasurer_name', 'treasurer_nip', 'treasurer_email', 'treasurer_phone',
+                'committee_name', 'inventory_manager_name', 'inventory_manager_nip',
+            ])->toArray();
+            foreach ([
+                'committee_signature' => 'committee_signature_path',
+                'principal_signature' => 'principal_signature_path',
+                'treasurer_signature' => 'treasurer_signature_path',
+            ] as $input => $column) {
+                if (! $request->hasFile($input)) {
+                    continue;
+                }
+                $oldPath = trim((string) data_get($profile, $column, ''));
+                if ($oldPath !== '') {
+                    Storage::disk('local')->delete($oldPath);
+                }
+                $profileData[$column] = $request->file($input)->store('signatures', 'local');
+            }
             DB::connection('school')->table('school_profiles')->updateOrInsert(
                 ['fiscal_year_id' => $year->id],
-                array_merge(collect($data)->only(['principal_name', 'principal_nip', 'principal_email', 'principal_phone', 'treasurer_name', 'treasurer_nip', 'treasurer_email', 'treasurer_phone', 'inventory_manager_name', 'inventory_manager_nip'])->toArray(), ['updated_at' => now(), 'created_at' => now()])
+                array_merge($profileData, ['updated_at' => now(), 'created_at' => now()])
             );
         }
 

@@ -153,10 +153,16 @@ Sudah Bernomor    -> Paket NUMBERED / FINAL
 ### Unduh laporan Kertas Kerja RKAS
 
 Halaman Penganggaran RKAS menyediakan kartu **Unduh Laporan RKAS**: Tahunan,
-Tahap, Triwulan (langsung PDF/Excel), dan Bulanan (pilih bulan dulu). Setiap
-unduhan mengikuti tab revisi aktif sehingga pengesahan terdahulu dapat
-dicetak ulang dalam format ala ARKAS (kop sekolah, penerimaan, belanja
-hierarkis, jumlah, tanda tangan). Unduhan butuh data mirror hasil
+Tahap, Triwulan (rekap empat triwulan), Triwulan per Bulan (pilih TW I–IV
+dengan rincian tiga bulan), dan Bulanan (pilih bulan dulu). Setiap scope
+memiliki tombol ikon untuk pratinjau modal, PDF, dan Excel; pratinjau
+mengikuti tab revisi aktif sehingga pengesahan terdahulu dapat diperiksa dalam
+format ala ARKAS (header berulang, penerimaan sesuai scope, belanja hierarkis,
+kolom Satuan yang lebih lebar, footer halaman X dari Y, dan tanda tangan).
+Nama Komite Sekolah diambil dari `school_profiles.committee_name` dan dapat
+diatur dari Pengaturan Sekolah. Gambar tanda tangan Komite, Kepala Sekolah,
+dan Bendahara juga dapat diunggah secara opsional; bila tidak tersedia,
+laporan tetap menggunakan nama, garis, dan NIP. Unduhan/pratinjau butuh data mirror hasil
 sinkronisasi; bila belum ada, aplikasi menolak dengan pesan 422.
 
 ---

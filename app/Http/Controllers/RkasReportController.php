@@ -21,8 +21,13 @@ final class RkasReportController extends Controller
         $payload = $this->payload($request, $scope);
 
         return Pdf::loadView('rkas-reports.pdf', $payload)
-            ->setPaper('a4', 'landscape')
+            ->setPaper('folio', 'landscape')
             ->stream($payload['file_name'].'.pdf');
+    }
+
+    public function preview(Request $request, string $scope): Response
+    {
+        return response()->view('rkas-reports.pdf', $this->payload($request, $scope));
     }
 
     public function excel(Request $request, string $scope): Response
@@ -46,6 +51,10 @@ final class RkasReportController extends Controller
         if ($scope === 'bulanan') {
             abort_unless($month >= 1 && $month <= 12, 422, 'Bulan laporan belum dipilih atau tidak valid.');
         }
+        $quarter = $request->integer('triwulan');
+        if ($scope === 'triwulan-bulanan') {
+            abort_unless($quarter >= 1 && $quarter <= 4, 422, 'Triwulan laporan belum dipilih atau tidak valid.');
+        }
 
         $payload = $this->reports->build($scope, [
             'school_id' => (int) session('active_school_id'),
@@ -53,6 +62,7 @@ final class RkasReportController extends Controller
             'fund_source_id' => (int) session('active_fund_source_id'),
             'revision' => trim((string) $request->query('revisi', '')),
             'month' => $month,
+            'quarter' => $quarter,
         ]);
         abort_if($payload === null, 422, 'Data laporan RKAS belum siap. Jalankan sinkronisasi ARKAS terlebih dahulu.');
 
