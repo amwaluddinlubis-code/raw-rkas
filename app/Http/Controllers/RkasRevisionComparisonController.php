@@ -7,7 +7,6 @@ use App\Services\ArkasMirrorBudgetService;
 use App\Services\RkasRevisionComparisonService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 final class RkasRevisionComparisonController extends Controller
 {
@@ -24,16 +23,19 @@ final class RkasRevisionComparisonController extends Controller
         $comparison = null;
 
         if ($request->hasAny(['from', 'to'])) {
-            $validated = $request->validate([
-                'from' => ['sometimes', 'nullable', 'string', Rule::in($revisionIds)],
-                'to' => ['sometimes', 'nullable', 'string', Rule::in($revisionIds)],
-            ]);
-            $fromId = (string) ($validated['from'] ?? $fromId);
-            $toId = (string) ($validated['to'] ?? $toId);
+            $queryFrom = $request->query('from');
+            $queryTo = $request->query('to');
+            foreach (['from' => $queryFrom, 'to' => $queryTo] as $key => $value) {
+                if ($value !== null) {
+                    abort_unless(is_string($value) && in_array($value, $revisionIds, true), 422, 'Revisi yang dipilih tidak tersedia pada konteks aktif.');
+                }
+            }
+            $fromId = is_string($queryFrom) ? $queryFrom : $fromId;
+            $toId = is_string($queryTo) ? $queryTo : $toId;
 
             // The workspace tab link intentionally supplies only the selected
             // destination revision. Pick its preceding revision automatically.
-            if (empty($validated['from']) && ! empty($validated['to'])) {
+            if ($queryFrom === null && is_string($queryTo) && $queryTo !== '') {
                 $toIndex = array_search($toId, $revisionIds, true);
                 if (is_int($toIndex) && $toIndex > 0) {
                     $fromId = $revisionIds[$toIndex - 1];
