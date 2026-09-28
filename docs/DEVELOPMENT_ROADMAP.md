@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-29**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Commit source `b07d764` sudah memperoleh gate CI #39, tetapi Full Feature menemukan satu regresi styling RKAS; perbaikannya dan regression guard baru sedang menunggu gate ulang. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Gate CI #39 menemukan regresi styling RKAS; run #40 mengonfirmasi fix sumber tetapi menangkap assertion baru yang terlalu luas. Assertion sudah diperbaiki dan seluruh tombol laporan memakai kelas canonical; gate penuh berikutnya sedang menunggu hasil. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -18,9 +18,9 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: HISTORICAL GREEN BASELINE COMPLETE / LATEST SOURCE GATE #39 FOUND REGRESSION; FIX PENDING RE-RUN.**
+**Status: HISTORICAL GREEN BASELINE COMPLETE / GATE #40 CAUGHT OVERBROAD ASSERTION; FIX PENDING RE-RUN.**
 
-CI #486 dan #34 tetap historical green baselines. CI #39 pada `b07d764` lulus Artifact guard, Composer/platform, Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), dan Full Unit (79 / 281 assertions), tetapi Full Feature gagal satu test RKAS karena `<style>` lokal. Source diperbaiki dengan semantic theme button classes; focused regression baru mengunci kontrak tersebut. Gate penuh ulang diperlukan sebelum source ini disebut canonical functional PASS. Browser/operator runtime tetap RVR.
+CI #486, #34, #39, dan #40 adalah evidence historis berurutan: #39 menemukan pelanggaran source, sedangkan #40 mengonfirmasi fix source tetapi menemukan assertion baru yang terlalu luas. Seluruh tombol laporan dan assertion sudah diperbaiki; gate penuh perlu selesai sebelum source ini disebut canonical functional PASS. Browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -97,7 +97,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #39 (`36486277572`, code head `b07d764`) adalah source gate terbaru dan menemukan satu failure Full Feature; perubahan source selepas gate tersebut menunggu hasil run ulang. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #40 (`36487670910`, code head `d9fa690`) adalah source gate terbaru dan menemukan assertion Full Feature yang terlalu luas; perbaikan assertion serta seluruh tombol laporan canonical menunggu gate ulang. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 

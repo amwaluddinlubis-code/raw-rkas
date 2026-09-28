@@ -59,7 +59,7 @@ class RkasBudgetUiTest extends TestCase
         $this->assertStringContainsString('ui-btn ui-btn-danger !min-h-10 !min-w-10', $view);
         $this->assertStringContainsString('ui-btn ui-btn-success !min-h-10 !min-w-10', $view);
         $this->assertStringContainsString('pt-8 pr-2 pb-6 pl-6', $view);
-        $this->assertStringNotContainsString('rkas-report-action', $view);
+        $this->assertStringNotContainsString('class="ui-btn rkas-report-action', $view);
         $this->assertStringNotContainsString('<style>', $view);
     }
 

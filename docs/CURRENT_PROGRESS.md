@@ -53,11 +53,13 @@ Pint, frontend build, Blade compile, SPJ Critical (339 / 2.605 assertions), dan
 Unit (79 / 281 assertions). Full Feature menjalankan 629 test: 628 lulus dan
 satu gagal pada `RkasBudgetUiTest::test_rkas_hierarchy_table_uses_theme_tokens_without_local_overrides` (4.359 assertions),
 karena `<style>` lokal pada tombol laporan melanggar guard tema yang sudah ada.
-Perubahan CSS lokal dihapus dan report actions dipindah ke kelas tombol semantic
-canonical. Guard penemuan dipertahankan; regression tambahan mengunci tiga kelas
-tombol dan spacing iframe agar tidak kembali ke inline styling. PHP/Composer
-tidak tersedia lokal, jadi verifikasi ulang bergantung pada gate CI setelah
-perubahan source ini. Visual PDF/Excel tetap RVR.
+Perubahan CSS lokal dihapus dan seluruh report actions dipindah ke kelas tombol
+semantic canonical. Run ulang #40 (`36487670910`) lulus SPJ Critical dan Unit,
+namun Full Feature menemukan assertion test baru terlalu luas karena nama class
+dipakai oleh Alpine action yang tidak terkait styling. Assertion kini dibatasi
+ke atribut class tombol lama; coverage mengunci ketiga kelas semantic dan
+spacing iframe. PHP/Composer tidak tersedia lokal, jadi verifikasi ulang
+bergantung pada gate CI setelah perubahan ini. Visual PDF/Excel tetap RVR.
 
 ---
 

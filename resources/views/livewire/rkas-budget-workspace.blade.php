@@ -105,15 +105,15 @@
                             <p class="text-xs text-[var(--ui-fg-muted)]">{{ $reportDesc }}</p>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
-                            <button type="button" class="ui-btn rkas-report-action rkas-report-action-preview"
+                            <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                                 title="Pratinjau {{ $reportLabel }}" aria-label="Pratinjau {{ $reportLabel }}"
                                 @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => $reportScope], $reportQuery))))"><x-ui.icon name="preview"
                                     size="sm" /></button>
-                            <a class="ui-btn rkas-report-action rkas-report-action-pdf"
+                            <a class="ui-btn ui-btn-danger !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                                 title="Unduh PDF {{ $reportLabel }}" aria-label="Unduh PDF {{ $reportLabel }}"
                                 href="{{ route('rkas-reports.pdf', array_merge(['scope' => $reportScope], $reportQuery)) }}"
                                 target="_blank"><x-ui.icon name="pdf" size="sm" /></a>
-                            <a class="ui-btn rkas-report-action rkas-report-action-excel"
+                            <a class="ui-btn ui-btn-success !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                                 title="Unduh Excel {{ $reportLabel }}" aria-label="Unduh Excel {{ $reportLabel }}"
                                 href="{{ route('rkas-reports.excel', array_merge(['scope' => $reportScope], $reportQuery)) }}"><x-ui.icon
                                     name="excel" size="sm" /></a>
@@ -165,15 +165,15 @@
                                 <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
                             @endforeach
                         </select>
-                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-preview"
+                        <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Pratinjau Bulanan" aria-label="Pratinjau Bulanan"
                             @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon
                                 name="preview" size="sm" /></button>
-                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-pdf"
+                        <button type="button" class="ui-btn ui-btn-danger !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Unduh PDF Bulanan" aria-label="Unduh PDF Bulanan"
                             @click="openDownload(@js(route('rkas-reports.pdf', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon
                                 name="pdf" size="sm" /></button>
-                        <button type="button" class="ui-btn rkas-report-action rkas-report-action-excel"
+                        <button type="button" class="ui-btn ui-btn-success !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Unduh Excel Bulanan" aria-label="Unduh Excel Bulanan"
                             @click="openDownload(@js(route('rkas-reports.excel', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon
                                 name="excel" size="sm" /></button>
