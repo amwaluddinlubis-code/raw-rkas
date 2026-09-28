@@ -12,6 +12,14 @@ integration gate hijau -> operator flow -> temukan bug nyata -> perbaiki -> regr
 
 Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contract inti cukup dibuktikan. Exception: mutation boundary baru wajib mempunyai negative authorization/tenant regression bila permission tidak dapat dibuktikan tanpa test tersebut.
 
+## RKAS — perbandingan revisi, kesegaran mirror, dan ekspor paket (2026-09-28)
+
+Implementasi ditambahkan pada source lokal dan regresi khusus disiapkan. Scope
+fitur mencakup diff dua snapshot RKAS dalam konteks aktif, umur operasi mirror
+serta jumlah baris tabel penting, dan ZIP multi-scope PDF/XLSX dengan manifest.
+Status menunggu full gate CI; visual browser tetap RVR. Detail alur operator
+berada di `USER_SCENARIOS.md`.
+
 ---
 
 # P0 — Core Release Safety

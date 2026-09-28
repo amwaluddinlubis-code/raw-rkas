@@ -4,6 +4,8 @@ Terakhir diperbarui: **2026-09-25**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
+Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan sedang menunggu regression gate; lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
+
 ## Urutan sumber kebenaran
 
 Jika ada perbedaan antar dokumen, gunakan urutan berikut:

@@ -165,6 +165,24 @@ dan Bendahara juga dapat diunggah secara opsional; bila tidak tersedia,
 laporan tetap menggunakan nama, garis, dan NIP. Unduhan/pratinjau butuh data mirror hasil
 sinkronisasi; bila belum ada, aplikasi menolak dengan pesan 422.
 
+Kartu yang sama juga menampilkan umur sinkronisasi referensi dan data sekolah,
+jumlah baris mirror penting, status gagal/berjalan, serta penanda bila tabel
+belum tersedia atau kosong. Data dihitung dari waktu selesai operasi mirror
+(bukan `synced_at` per baris, karena baris yang tidak berubah memang tidak
+ditulis ulang). Ambang “mutakhir” adalah 24 jam. Tombol detail menuju panel
+administrasi ARKAS.
+
+Tautan **Bandingkan revisi** membuka dua snapshot dalam konteks tahun dan
+sumber dana aktif. Rincian memperlihatkan pos ditambah/dihapus/berubah,
+perbedaan pagu, volume, satuan, dan alokasi bulan; pilihan revisi tujuan dari
+tab RKAS otomatis dipasangkan dengan revisi sebelumnya. Perbandingan hanya
+untuk RKAS, tidak mencampur realisasi BKU lintas revisi.
+
+Form **Paket laporan** dapat menggabungkan beberapa scope dan format PDF
+dan/atau Excel menjadi satu ZIP. Bulanan meminta bulan, sedangkan Triwulan per
+Bulan meminta triwulan; semua file dalam paket memakai konteks sekolah, tahun,
+sumber dana, dan revisi yang sama. ZIP menyertakan manifest `INFO-PAKET.txt`.
+
 ---
 
 ## 6. Detail Transaksi

@@ -28,6 +28,14 @@ Dokumen ini bukan sumber status release. Gunakan:
 9. **Operator-locked employee tidak boleh ditimpa oleh source sync.**
 10. **Sinkronisasi tidak boleh memfabrikasi data agar workflow SPJ terlihat lengkap.**
 
+Untuk mirror ARKAS fixed yang dipakai workspace Penganggaran RKAS, indikator
+kesegaran menggunakan `BackgroundOperation.finished_at` untuk operasi referensi
+dan operasi sekolah per fiscal year. Timestamp `synced_at` pada row mirror tidak
+dipakai sebagai umur keseluruhan karena upsert yang tidak berubah tidak
+memperbarui timestamp. UI menampilkan umur 24 jam, status operasi, hitungan
+baris tabel, serta tabel wajib yang hilang/kosong; indikator ini bersifat
+observasi dan tidak memicu sinkronisasi otomatis.
+
 ---
 
 ## 2. Jenis jalur data

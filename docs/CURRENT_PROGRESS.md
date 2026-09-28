@@ -5,6 +5,22 @@ Terakhir diperbarui: **2026-09-29** (laporan RKAS + tanda tangan opsional, `raw-
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Pengembangan RKAS: perbandingan revisi, freshness, dan paket laporan (2026-09-28)
+
+Status: **IMPLEMENTASI + REGRESSION DITAMBAHKAN / MENUNGGU GATE CI**.
+
+Workspace RKAS kini memiliki halaman perbandingan dua snapshot revisi (pos
+ditambah/dihapus/berubah, pagu, volume/satuan, dan delta alokasi bulanan),
+indikator kesegaran mirror berdasarkan operasi sinkronisasi terakhir dan hitung
+baris tabel penting, serta unduhan satu ZIP berisi beberapa scope laporan PDF
+dan/atau Excel beserta manifest. Konteks tetap sekolah+tahun+sumber dana+revisi;
+source ARKAS/BKU tetap read-only.
+
+Regression baru mencakup comparison service/controller, paket ZIP dan validasi
+periode, freshness mutakhir/lama/tabel hilang, serta kontrak UI. PHP/Composer
+tidak tersedia di workspace lokal; jalankan full workflow setelah push sebelum
+mengganti status ini menjadi PASS. Visual browser tetap RVR.
+
 ---
 
 ## Laporan Kertas Kerja RKAS per pengesahan (2026-09-28)

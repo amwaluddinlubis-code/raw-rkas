@@ -56,6 +56,57 @@
                     <span>Belum ada revisi tersinkron pada konteks ini.</span>
                 @endif
             </div>
+            <a href="{{ route('rkas-budget.revisions.compare', ['to' => $activeRev['id'] ?? null]) }}"
+                class="ui-btn ui-btn-secondary ml-auto !min-h-9 px-3 py-1.5 text-sm">
+                <x-ui.icon name="report" size="sm" /> Bandingkan revisi
+            </a>
+        </section>
+    @endif
+
+    @if (!empty($syncFreshness))
+        @php($freshnessBadge = match ($syncFreshness['level']) {
+            'fresh' => 'SUCCESS', 'stale', 'incomplete' => 'WARNING', 'failed' => 'FAILED', 'running' => 'RUNNING', default => 'PENDING'
+        })
+        <section aria-label="Kesegaran sinkronisasi ARKAS"
+            class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-sm font-bold text-[var(--ui-fg-strong)]">Kesegaran data ARKAS</h2>
+                        <x-ui.status-badge :status="$freshnessBadge" :label="$syncFreshness['label']" size="xs" />
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-[var(--ui-fg-muted)]">
+                        Referensi: {{ $syncFreshness['lanes']['referensi']['finished_at']?->translatedFormat('d M Y H:i') ?? 'belum tercatat' }}
+                        · Sekolah: {{ $syncFreshness['lanes']['sekolah']['finished_at']?->translatedFormat('d M Y H:i') ?? 'belum tercatat' }}
+                        · Batas mutakhir {{ $syncFreshness['stale_after_hours'] }} jam.
+                    </p>
+                </div>
+                @if (auth()->user()?->role === 'ADMIN')
+                    <a href="{{ route('arkas.mirror') }}" class="ui-btn ui-btn-ghost px-3 py-1.5 text-xs">Detail sinkronisasi</a>
+                @endif
+            </div>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                @foreach ($syncFreshness['counts'] as $label => $count)
+                    <div class="flex items-center justify-between gap-2 rounded-lg bg-[var(--ui-surface-soft)] px-3 py-2 text-xs">
+                        <span class="text-[var(--ui-fg-muted)]">{{ $label }}</span>
+                        <span class="font-semibold tabular-nums text-[var(--ui-fg-strong)]">{{ $count === null ? 'Tidak tersedia' : number_format($count, 0, ',', '.') }}</span>
+                    </div>
+                @endforeach
+            </div>
+            @if ($syncFreshness['missing'] !== [])
+                <p class="mt-3 text-xs leading-5 text-[var(--ui-fg-muted)]">
+                    Data/tabel perlu diperiksa: {{ implode(', ', $syncFreshness['missing']) }}.
+                </p>
+            @endif
+            <div class="mt-2 grid gap-2 text-xs text-[var(--ui-fg-muted)] sm:grid-cols-2">
+                @foreach ($syncFreshness['lanes'] as $label => $lane)
+                    <p>{{ ucfirst($label) }}: {{ $lane['label'] }}
+                        @if ($lane['records_read'] !== null)
+                            · {{ number_format($lane['records_read'], 0, ',', '.') }} dibaca / {{ number_format($lane['records_written'], 0, ',', '.') }} ditulis
+                        @endif
+                    </p>
+                @endforeach
+            </div>
         </section>
     @endif
 
@@ -180,6 +231,53 @@
                     </div>
                 </div>
             </div>
+            <form method="GET" action="{{ route('rkas-reports.package') }}"
+                class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">
+                <input type="hidden" name="revisi" value="{{ $reportRevisi ?? '' }}">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-[var(--ui-fg-strong)]">Paket laporan</h3>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Pilih beberapa laporan untuk konteks sekolah, tahun, sumber dana, dan revisi aktif yang sama.</p>
+                    </div>
+                    <x-ui.button type="submit" icon="download">Unduh paket ZIP</x-ui.button>
+                </div>
+                <fieldset class="mt-4">
+                    <legend class="text-xs font-semibold text-[var(--ui-fg-strong)]">Jenis laporan</legend>
+                    <div class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        @foreach ([['tahunan', 'Tahunan'], ['tahap', 'Tahap'], ['triwulan', 'Triwulan'], ['triwulan-bulanan', 'Triwulan per bulan'], ['bulanan', 'Bulanan']] as [$packageScope, $packageLabel])
+                            <label class="flex items-center gap-2 rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm text-[var(--ui-fg)]">
+                                <input type="checkbox" name="scopes[]" value="{{ $packageScope }}">
+                                <span>{{ $packageLabel }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <fieldset>
+                        <legend class="text-xs font-semibold text-[var(--ui-fg-strong)]">Format</legend>
+                        <div class="mt-2 flex flex-wrap gap-3 text-sm text-[var(--ui-fg)]">
+                            <label class="inline-flex items-center gap-2"><input type="checkbox" name="formats[]" value="pdf" checked> PDF</label>
+                            <label class="inline-flex items-center gap-2"><input type="checkbox" name="formats[]" value="xlsx" checked> Excel</label>
+                        </div>
+                    </fieldset>
+                    <x-ui.field label="Bulan (untuk laporan Bulanan)" for="rkas-package-month">
+                        <x-ui.select id="rkas-package-month" name="bulan">
+                            <option value="">Pilih bulan</option>
+                            @foreach (\App\Services\RkasReportService::MONTH_NAMES as $monthIndex => $monthName)
+                                <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                    <x-ui.field label="Triwulan (untuk laporan Triwulan per bulan)" for="rkas-package-quarter">
+                        <x-ui.select id="rkas-package-quarter" name="triwulan">
+                            <option value="">Pilih triwulan</option>
+                            <option value="1">Triwulan I</option><option value="2">Triwulan II</option>
+                            <option value="3">Triwulan III</option><option value="4">Triwulan IV</option>
+                        </x-ui.select>
+                    </x-ui.field>
+                    <p class="self-end text-xs leading-5 text-[var(--ui-fg-muted)]">Laporan Bulanan dan Triwulan per bulan memerlukan periode yang dipilih.</p>
+                </div>
+            </form>
             <div x-show="previewOpen" x-cloak
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pr-8 pb-8" role="dialog"
                 aria-modal="true" aria-label="Pratinjau laporan RKAS">

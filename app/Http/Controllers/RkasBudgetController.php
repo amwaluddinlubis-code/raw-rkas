@@ -30,7 +30,10 @@ class RkasBudgetController extends Controller
         $search = trim((string) $request->query('q'));
         $fundSourceId = (int) session('active_fund_source_id');
         if ($this->hasUsableMirrorBudget($db, $yearId, $fundSourceId)) {
-            return app(ArkasMirrorBudgetService::class)->render($request, $yearId, $fundSourceId);
+            return [
+                ...app(ArkasMirrorBudgetService::class)->render($request, $yearId, $fundSourceId),
+                'syncFreshness' => app(\App\Services\ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
+            ];
         }
         $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
         $stagedActivityNames = $db->table('arkas_import_rows as rows')
@@ -377,7 +380,10 @@ class RkasBudgetController extends Controller
             $filterContext .= ' · pencarian "'.$search.'"';
         }
 
-        return compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel');
+        return [
+            ...compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'),
+            'syncFreshness' => app(\App\Services\ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
+        ];
     }
 
     private function hasUsableMirrorBudget(object $db, int $yearId, int $fundSourceId): bool

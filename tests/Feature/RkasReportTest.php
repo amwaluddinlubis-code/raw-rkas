@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Models\FiscalYear;
 use App\Models\FundSource;
+use App\Models\BackgroundOperation;
 use App\Models\School;
 use App\Models\User;
 use App\Services\RkasReportExcelService;
 use App\Services\RkasReportService;
+use App\Services\ArkasMirrorFreshnessService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -15,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
+use ZipArchive;
 
 class RkasReportTest extends TestCase
 {
@@ -220,6 +223,137 @@ class RkasReportTest extends TestCase
         $this->get(route('rkas-reports.excel', ['scope' => 'triwulan', 'revisi' => 'ANG-1']))
             ->assertOk()
             ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    }
+
+    public function test_revision_comparison_page_renders_selected_snapshots(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->get(route('rkas-budget.revisions.compare', ['from' => 'ANG-1', 'to' => 'ANG-2']))
+            ->assertOk()
+            ->assertSee('Perbandingan Revisi RKAS')
+            ->assertSee('Pagu revisi awal')
+            ->assertSee('Pagu revisi tujuan');
+
+        // The workspace sends the active revision as the destination only;
+        // the controller should choose its predecessor as the source.
+        $this->get(route('rkas-budget.revisions.compare', ['to' => 'ANG-2']))
+            ->assertOk()
+            ->assertSee('value="ANG-1" selected', false)
+            ->assertSee('value="ANG-2" selected', false);
+
+        $this->get(route('rkas-budget.revisions.compare', ['from' => 'ANG-1', 'to' => 'ANG-1']))
+            ->assertStatus(422);
+    }
+
+    public function test_report_package_download_contains_selected_scopes_and_revision_context(): void
+    {
+        $this->withoutMiddleware();
+        $response = $this->get(route('rkas-reports.package', [
+            'scopes' => ['tahunan', 'tahap'],
+            'formats' => ['pdf', 'xlsx'],
+            'revisi' => 'ANG-1',
+        ]));
+
+        $response->assertOk()->assertHeader('content-type', 'application/zip');
+        $path = $response->baseResponse->getFile()->getPathname();
+        $archive = new ZipArchive;
+        $this->assertTrue($archive->open($path) === true);
+        try {
+            $entries = [];
+            for ($index = 0; $index < $archive->numFiles; $index++) {
+                $entries[] = $archive->getNameIndex($index);
+            }
+            $this->assertContains('RKAS-TAHUNAN-2026-BOSP-REGULER-PENGESAHAN-1.pdf', $entries);
+            $this->assertContains('RKAS-TAHAP-2026-BOSP-REGULER-PENGESAHAN-1.pdf', $entries);
+            $this->assertContains('RKAS-TAHUNAN-2026-BOSP-REGULER-PENGESAHAN-1.xlsx', $entries);
+            $this->assertContains('RKAS-TAHAP-2026-BOSP-REGULER-PENGESAHAN-1.xlsx', $entries);
+            $this->assertStringContainsString('Pengesahan ke-1', (string) $archive->getFromName('INFO-PAKET.txt'));
+        } finally {
+            $archive->close();
+        }
+    }
+
+    public function test_report_package_requires_a_scope_and_period_for_selected_month_reports(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->getJson(route('rkas-reports.package', ['formats' => ['pdf']]))
+            ->assertUnprocessable();
+        $this->get(route('rkas-reports.package', ['scopes' => ['bulanan'], 'formats' => ['pdf']]))
+            ->assertStatus(422);
+    }
+
+    public function test_rkas_page_freshness_uses_completed_mirror_runs_and_reports_counts(): void
+    {
+        $schoolId = (int) session('active_school_id');
+        BackgroundOperation::query()->create([
+            'school_id' => $schoolId,
+            'fiscal_year_id' => 1,
+            'type' => 'ARKAS_FIXED_MIRROR_REFS',
+            'status' => 'COMPLETED',
+            'result' => ['read' => 40, 'written' => 12],
+            'finished_at' => now(),
+        ]);
+        BackgroundOperation::query()->create([
+            'school_id' => $schoolId,
+            'fiscal_year_id' => 1,
+            'type' => 'ARKAS_FIXED_MIRROR_SCHOOL',
+            'status' => 'COMPLETED',
+            'result' => ['read' => 100, 'written' => 25],
+            'finished_at' => now(),
+        ]);
+
+        $freshness = app(ArkasMirrorFreshnessService::class)->summarize($schoolId, 1);
+
+        $this->assertSame('fresh', $freshness['level']);
+        $this->assertSame(40, $freshness['lanes']['referensi']['records_read']);
+        $this->assertSame(25, $freshness['lanes']['sekolah']['records_written']);
+        $this->assertGreaterThan(0, $freshness['counts']['RKAS']);
+    }
+
+    public function test_rkas_page_freshness_flags_an_old_school_mirror_run(): void
+    {
+        $schoolId = (int) session('active_school_id');
+        foreach ([
+            ['type' => 'ARKAS_FIXED_MIRROR_REFS', 'finished_at' => now()],
+            ['type' => 'ARKAS_FIXED_MIRROR_SCHOOL', 'finished_at' => now()->subHours(25)],
+        ] as $run) {
+            BackgroundOperation::query()->create([
+                'school_id' => $schoolId,
+                'fiscal_year_id' => 1,
+                'type' => $run['type'],
+                'status' => 'COMPLETED',
+                'result' => ['read' => 10, 'written' => 10],
+                'finished_at' => $run['finished_at'],
+            ]);
+        }
+
+        $freshness = app(ArkasMirrorFreshnessService::class)->summarize($schoolId, 1);
+
+        $this->assertSame('stale', $freshness['level']);
+        $this->assertSame('stale', $freshness['lanes']['sekolah']['level']);
+    }
+
+    public function test_rkas_page_freshness_flags_a_missing_required_mirror_table(): void
+    {
+        DB::connection('school')->getSchemaBuilder()->drop('arkas_mirror_rapbs_periode');
+        $schoolId = (int) session('active_school_id');
+        foreach (['ARKAS_FIXED_MIRROR_REFS', 'ARKAS_FIXED_MIRROR_SCHOOL'] as $type) {
+            BackgroundOperation::query()->create([
+                'school_id' => $schoolId,
+                'fiscal_year_id' => 1,
+                'type' => $type,
+                'status' => 'COMPLETED',
+                'result' => ['read' => 10, 'written' => 10],
+                'finished_at' => now(),
+            ]);
+        }
+
+        $freshness = app(ArkasMirrorFreshnessService::class)->summarize($schoolId, 1);
+
+        $this->assertSame('incomplete', $freshness['level']);
+        $this->assertContains('Periode RKAS', $freshness['missing']);
     }
 
     public function test_report_preview_uses_html_report_view_and_committee_profile(): void

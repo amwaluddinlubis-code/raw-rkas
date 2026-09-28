@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\User;
 use App\Services\ArkasMirrorBudgetService;
+use App\Services\RkasRevisionComparisonService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -163,6 +164,32 @@ class RkasRevisionModesTest extends TestCase
         $this->assertSame(200000.0, $old['realization_fallback']['OLD-1']);
         $displayedTotal = $old['rows']->sum(fn (array $row): float => (float) ($old['realization'][$row['source_rapbs_id']] ?? 0) + (float) ($old['realization_fallback'][$row['source_rapbs_id']] ?? 0));
         $this->assertSame(200000.0, $displayedTotal);
+    }
+
+    public function test_revision_comparison_reports_changed_added_removed_and_period_deltas(): void
+    {
+        $this->seedAnggaran('ANG-OLD', ['ID_ANGGARAN' => 'ANG-OLD', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-05-06 08:00:00', 'CREATE_DATE' => '2026-04-16 05:00:00']);
+        $this->seedAnggaran('ANG-NEW', ['ID_ANGGARAN' => 'ANG-NEW', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-09-18 20:00:00', 'CREATE_DATE' => '2026-09-17 12:00:00']);
+        $this->seedRapbs('OLD-CHANGE', ['ID_RAPBS' => 'OLD-CHANGE', 'ID_ANGGARAN' => 'ANG-OLD', 'KODE_REKENING' => '5.1.02.01', 'URAIAN' => 'Alat tulis', 'VOLUME_TOTAL' => 10, 'SATUAN' => 'paket', 'JUMLAH' => 600]);
+        $this->seedRapbs('NEW-CHANGE', ['ID_RAPBS' => 'NEW-CHANGE', 'ID_ANGGARAN' => 'ANG-NEW', 'KODE_REKENING' => '5.1.02.01', 'URAIAN' => 'Alat tulis', 'VOLUME_TOTAL' => 12, 'SATUAN' => 'paket', 'JUMLAH' => 800]);
+        $this->seedRapbsPeriode('OLD-PERIOD', ['ID_RAPBS_PERIODE' => 'OLD-PERIOD', 'ID_RAPBS' => 'OLD-CHANGE', 'ID_PERIODE' => '84', 'JUMLAH' => 600, 'VOLUME' => 10]);
+        $this->seedRapbsPeriode('NEW-PERIOD', ['ID_RAPBS_PERIODE' => 'NEW-PERIOD', 'ID_RAPBS' => 'NEW-CHANGE', 'ID_PERIODE' => '84', 'JUMLAH' => 800, 'VOLUME' => 12]);
+        $this->seedRapbs('OLD-REMOVE', ['ID_RAPBS' => 'OLD-REMOVE', 'ID_ANGGARAN' => 'ANG-OLD', 'KODE_REKENING' => '5.1.02.02', 'URAIAN' => 'Barang lama', 'JUMLAH' => 100]);
+        $this->seedRapbs('NEW-ADD', ['ID_RAPBS' => 'NEW-ADD', 'ID_ANGGARAN' => 'ANG-NEW', 'KODE_REKENING' => '5.1.02.03', 'URAIAN' => 'Barang baru', 'JUMLAH' => 300]);
+
+        $comparison = app(RkasRevisionComparisonService::class)->compare(1, 2026, 'ANG-OLD', 'ANG-NEW');
+
+        $this->assertNotNull($comparison);
+        $this->assertSame(['added' => 1, 'removed' => 1, 'changed' => 1, 'unchanged' => 0], $comparison['counts']);
+        $this->assertSame(['from' => 700.0, 'to' => 1100.0, 'delta' => 400.0], $comparison['totals']);
+        $changed = collect($comparison['rows'])->firstWhere('description', 'Alat tulis');
+        $this->assertSame(200.0, $changed['amount_delta']);
+        $this->assertSame(2.0, $changed['volume_delta']);
+        $this->assertCount(1, $changed['periods']);
+        $this->assertSame(200.0, $changed['periods'][0]['delta']);
+        $this->assertSame(2.0, $changed['periods'][0]['volume_delta']);
+        $this->assertSame('added', collect($comparison['rows'])->firstWhere('description', 'Barang baru')['status']);
+        $this->assertSame('removed', collect($comparison['rows'])->firstWhere('description', 'Barang lama')['status']);
     }
 
     public function test_identity_fallback_splits_proportionally_on_duplicate_lines(): void
