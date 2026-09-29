@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\BackgroundOperation;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
-use App\Models\BackgroundOperation;
 use App\Models\School;
 use App\Models\User;
+use App\Services\ArkasMirrorFreshnessService;
 use App\Services\RkasReportExcelService;
 use App\Services\RkasReportService;
-use App\Services\ArkasMirrorFreshnessService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
@@ -234,15 +234,41 @@ class RkasReportTest extends TestCase
             ->assertSee('Perbandingan Revisi RKAS')
             ->assertSee('Pagu revisi awal')
             ->assertSee('Pagu revisi tujuan');
+    }
 
-        // The workspace sends the active revision as the destination only;
-        // the controller should choose its predecessor as the source.
+    public function test_revision_comparison_destination_only_selects_predecessor(): void
+    {
+        $this->withoutMiddleware();
+
         $this->get(route('rkas-budget.revisions.compare', ['to' => 'ANG-2']))
             ->assertOk()
             ->assertSee('value="ANG-1" selected', false)
             ->assertSee('value="ANG-2" selected', false);
+    }
+
+    public function test_revision_comparison_blank_source_is_treated_as_omitted(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->get(route('rkas-budget.revisions.compare', ['from' => '', 'to' => 'ANG-2']))
+            ->assertOk()
+            ->assertSee('value="ANG-1" selected', false)
+            ->assertSee('value="ANG-2" selected', false);
+    }
+
+    public function test_revision_comparison_rejects_same_revision(): void
+    {
+        $this->withoutMiddleware();
 
         $this->get(route('rkas-budget.revisions.compare', ['from' => 'ANG-1', 'to' => 'ANG-1']))
+            ->assertStatus(422);
+    }
+
+    public function test_revision_comparison_rejects_revision_outside_active_context(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->get(route('rkas-budget.revisions.compare', ['from' => 'ANG-1', 'to' => 'ANG-404']))
             ->assertStatus(422);
     }
 
