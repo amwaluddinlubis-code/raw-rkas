@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diverifikasi: **2026-09-12**
+Terakhir diverifikasi: **2026-09-29** (source review; browser runtime remains RVR)
 
 Dokumen ini adalah acuan visual dan UX untuk branch aktif `main` di repository mirror `raw-rkas`.
 
@@ -356,6 +356,17 @@ UI tidak boleh mengubah relasi tersebut menjadi field package form biasa.
 ## 17. Dokumen & Template
 
 Gunakan compact list `status / nama / tipe-format / actions`. Metadata padat, status semantic, action mudah ditemukan, dan theme-aware.
+
+### Bulk Preview pada Laporan SPJ
+
+Tab Laporan SPJ menyediakan checkbox per baris dan pilih-semua untuk baris pada
+halaman aktif. **Bulk Preview** mengirim paket terpilih melalui POST dan
+menampilkan semuanya pada modal yang sama dengan preview tunggal. Pratinjau
+gabungan dibatasi maksimal 20 paket, mempertahankan urutan pilihan, dan dapat
+dicetak dengan pemisah halaman per paket. Backend tetap memeriksa sekolah,
+tahun anggaran, dan sumber dana aktif; interaksi ini tidak mengubah lifecycle
+atau numbering. Modal, hasil cetak, batas perangkat, dan repeated navigation
+masih memerlukan browser QA.
 
 ## 18. Dashboard dan Database Aktif
 

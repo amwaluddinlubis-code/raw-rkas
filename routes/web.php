@@ -165,6 +165,7 @@ Route::middleware('auth')->group(function () {
         Route::match(['GET', 'POST'], '/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
         Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
         Route::get('/spj/paket/{packageId}/pratinjau-pdf', [SpjController::class, 'previewPackagePdf'])->name('spj.preview-package-pdf');
+        Route::post('/spj/laporan/pratinjau-bulk', [SpjController::class, 'previewPackages'])->name('spj.preview-packages');
         Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau', [SpjController::class, 'previewTemplate'])->name('spj.preview-template');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau-pdf', [SpjController::class, 'previewTemplatePdf'])->name('spj.preview-template-pdf');

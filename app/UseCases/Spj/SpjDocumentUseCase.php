@@ -272,6 +272,51 @@ class SpjDocumentUseCase
         return $this->inlinePdfResponse($contents, 'PRATINJAU-PAKET-SPJ-'.$package->document_number.'.pdf');
     }
 
+    /**
+     * Print-ready HTML preview for a selected set of report packages.
+     * Preview is read-only and each package is checked against the active
+     * school, fiscal year, and fund source before any workbook is rendered.
+     *
+     * @param  list<string>  $packageIds
+     */
+    public function previewPackages(array $packageIds): View
+    {
+        abort_if($packageIds === [] || count($packageIds) > 20, 422, 'Pilih antara 1 sampai 20 paket laporan.');
+
+        $packagesById = SpjPackage::query()
+            ->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])
+            ->whereIn('id', $packageIds)
+            ->get()
+            ->keyBy(fn (SpjPackage $package): string => (string) $package->id);
+
+        abort_unless($packagesById->count() === count(array_unique($packageIds)), 404, 'Satu atau beberapa paket laporan tidak ditemukan.');
+
+        $school = $this->context->school();
+        $renderedPackages = collect($packageIds)->map(function (string $packageId) use ($packagesById, $school): array {
+            /** @var SpjPackage $package */
+            $package = $packagesById->get($packageId);
+            abort_unless($package && $this->context->matchesTransaction($package->transaction), 404, 'Paket laporan tidak tersedia pada konteks aktif.');
+
+            $this->applyDocumentContext($package);
+            $templates = $this->spreadsheetTemplatesForPackage($package);
+            abort_if($templates->isEmpty(), 422, 'Paket '.$package->report_document_number.' belum memiliki template Excel aktif.');
+
+            $html = app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school);
+            preg_match_all('/<style[^>]*>.*?<\/style>/is', $html, $styles);
+            preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body);
+
+            return [
+                'number' => (string) $package->report_document_number,
+                'styles' => implode('', $styles[0] ?? []),
+                'html' => $body[1] ?? '',
+            ];
+        });
+
+        return view('spj-documents.bulk-preview', [
+            'packages' => $renderedPackages,
+        ]);
+    }
+
     /** @return Collection<int, DocumentTemplate> */
     private function spreadsheetTemplatesForPackage(SpjPackage $package): Collection
     {

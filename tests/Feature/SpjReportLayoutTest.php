@@ -92,7 +92,28 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString("@include('spj.partials.preview-modal')", $index);
         $this->assertStringNotContainsString('id="template-preview-modal"', $index);
         $this->assertStringContainsString('data-template-preview', $report);
+        $this->assertStringContainsString('data-bulk-preview-form', $report);
+        $this->assertStringContainsString('name="package_ids[]"', $report);
+        $this->assertStringContainsString('data-bulk-select-all', $report);
+        $this->assertStringContainsString("route('spj.preview-packages')", $report);
         $this->assertStringNotContainsString('target="_blank">Preview dokumen', $report);
+    }
+
+    public function test_bulk_report_preview_is_print_ready_and_read_only(): void
+    {
+        $view = file_get_contents(resource_path('views/spj-documents/bulk-preview.blade.php'));
+        $useCase = file_get_contents(base_path('app/UseCases/Spj/SpjDocumentUseCase.php'));
+        $routes = file_get_contents(base_path('routes/web.php'));
+
+        $this->assertIsString($view);
+        $this->assertIsString($useCase);
+        $this->assertIsString($routes);
+        $this->assertStringContainsString('onclick="window.print()"', $view);
+        $this->assertStringContainsString('break-after: page', $view);
+        $this->assertStringContainsString('foreach ($packages as $package)', $view);
+        $this->assertStringContainsString('count($packageIds) > 20', $useCase);
+        $this->assertStringContainsString('$this->context->matchesTransaction($package->transaction)', $useCase);
+        $this->assertStringContainsString("Route::post('/spj/laporan/pratinjau-bulk'", $routes);
     }
 
     public function test_spj_main_tabs_render_as_segmented_control(): void

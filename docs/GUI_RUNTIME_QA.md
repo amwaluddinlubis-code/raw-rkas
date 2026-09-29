@@ -1,6 +1,6 @@
 # GUI Runtime QA — Desktop, Laptop, Mobile, dan Tablet
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-09-29**
 
 Dokumen ini adalah checklist runtime untuk menutup **GUI-AUDIT-12** dan **GUI-AUDIT-13**. Source-level regression dan CI tidak boleh dipakai sebagai pengganti verifikasi visual/runtime di browser.
 
@@ -65,6 +65,8 @@ Pemeriksaan umum:
 - tidak ada pagination/filter ganda;
 - sticky action tidak menutup field terakhir;
 - focus/hover/disabled state jelas;
+- pada tab Laporan SPJ, tandai beberapa baris dan gunakan Bulk Preview; pastikan semua paket tampil dalam urutan pilihan, modal dapat discroll, dan Cetak menghasilkan pemisah halaman per paket;
+- set jumlah baris ke 25 atau lebih, pilih lebih dari 20 paket dan pastikan pesan batas muncul; satu pilihan harus menghasilkan satu paket;
 - theme token tidak menghasilkan foreground/background berkontras buruk;
 - icon canonical sejajar dengan label dan tidak menggeser row height berlebihan.
 

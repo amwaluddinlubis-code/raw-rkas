@@ -63,7 +63,14 @@
             </section>
         </div>
     </div>
-    <div class="overflow-x-auto p-5"><table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">AKSI</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">
+    <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
+        <p class="text-sm text-[var(--ui-fg-muted)]">Tandai hingga 20 baris laporan, lalu buka pratinjau gabungan untuk mencetaknya sekaligus.</p>
+        <form id="spj-bulk-preview-form" method="POST" action="{{ route('spj.preview-packages') }}" target="template-preview-frame" data-bulk-preview-form>
+            @csrf
+            <button type="submit" class="ui-btn ui-btn-primary min-h-10 px-4">Bulk Preview</button>
+        </form>
+    </div>
+    <div class="overflow-x-auto p-5"><table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500"><input type="checkbox" data-bulk-select-all aria-label="Pilih semua paket pada halaman ini" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">AKSI</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">
             @php
                 $isCancelled = false;
             @endphp
@@ -73,6 +80,7 @@
                     $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
                 @endphp
                 <tr wire:key="spj-report-{{ $package->id }}" class="transition {{ $isCancelled ? 'bg-rose-50/70 text-slate-500' : 'hover:bg-indigo-50/40' }}">
+                    <td class="px-4 py-3"><input type="checkbox" name="package_ids[]" value="{{ $package->id }}" form="spj-bulk-preview-form" data-bulk-package class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" aria-label="Pilih paket {{ $package->report_document_number }}"></td>
                     <td class="px-4 py-3 font-mono text-xs font-bold {{ $isCancelled ? 'text-rose-700 line-through' : 'text-indigo-700' }}">
                         <a href="{{ $packageUrl }}" class="hover:underline">{{ $package->report_document_number }}</a>
                     </td>
@@ -102,7 +110,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="8" class="px-5 py-14 text-center text-slate-500">Belum ada riwayat paket SPJ untuk filter ini.</td></tr>
+                <tr><td colspan="9" class="px-5 py-14 text-center text-slate-500">Belum ada riwayat paket SPJ untuk filter ini.</td></tr>
             @endforelse
         </tbody></table></div>
     @if($packages->hasPages())

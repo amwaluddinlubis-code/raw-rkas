@@ -1,9 +1,32 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-29** (regression gate RKAS #46, `raw-rkas`)
+Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
+
+## Bulk Preview paket pada Laporan SPJ — 2026-09-29
+
+Status: **SOURCE IMPLEMENTED / PHP TEST + BROWSER RUNTIME RVR**.
+
+Tab Laporan SPJ menyediakan checkbox per baris, pilih semua pada halaman
+aktif, dan tombol **Bulk Preview**. Paket terpilih dikirim melalui POST dan
+ditampilkan bersama dalam modal yang sama dengan preview dokumen tunggal.
+Pratinjau gabungan menyediakan tombol Cetak, pemisah halaman per paket, batas
+maksimal 20 paket, dan mempertahankan urutan baris yang dipilih. Pilihan berlaku
+pada halaman tabel yang sedang tampil.
+
+Use case memeriksa sekolah, tahun anggaran, dan sumber dana aktif untuk setiap
+paket serta memakai template XLSX aktif sesuai paket. Preview tetap read-only
+dan tidak menerbitkan nomor SPJ. Regression source/layout telah diperbarui.
+`git diff --check` dan `node --check` untuk delegated UI script berhasil.
+PHP/PHPUnit tidak tersedia lokal sehingga test PHP belum dijalankan; browser
+modal dan hasil cetak masih **RVR**.
+
+Latest verified code gate tetap run #46 pada `e4ba5cf`; perubahan Bulk Preview
+ini belum tercakup dan menunggu PHP/CI verification.
+
+---
 
 ## Pengembangan RKAS: perbandingan revisi, freshness, dan paket laporan (2026-09-28)
 
@@ -145,7 +168,7 @@ Deterministic source/regression gate kembali hijau. Browser/operator visual-runt
 
 ## Current main audit + SK file regression hardening (2026-09-25)
 
-Status: **AUDIT COMPLETE / CURRENT MAIN SOURCE GATE GREEN**.
+Status: **AUDIT COMPLETE / VERIFIED IN GATE #25 (HISTORICAL)**.
 
 Audit dimulai dari `main@89e1866d7b9fecc6197ad71ec9674c6fa6a3d614` (`feat: tab SK kanonis + upload unduh pindaian SK`). Baseline commit tersebut sudah hijau pada CI run #20, tetapi audit source menemukan gap data-integrity yang belum dibuktikan regression:
 
@@ -190,7 +213,7 @@ Debt test/style pra-eksis juga ditutup tanpa mengubah business rule: coverage sc
 
 ## Repository containment hardening (2026-09-24)
 
-Status: **SOURCE HARDENING APPLIED / ARTIFACT GUARD PASS / CURRENT SOURCE GATE GREEN**.
+Status: **SOURCE HARDENING APPLIED / ARTIFACT GUARD PASS / VERIFIED IN GATE #25 (HISTORICAL)**.
 
 Audit repository menemukan dump ARKAS/BKU dan backup archive terlacak di bawah
 `public/`, serta archive migration dan shortcut lokal Windows yang tidak
@@ -502,7 +525,7 @@ Definisi status:
 
 ## Checkpoint terbaru
 
-### Latest successful canonical code gate
+### Latest successful canonical code gate before Bulk Preview
 
 ```text
 LATEST SUCCESSFUL CODE HEAD: e4ba5cf869f554cee9f0b9d230e437f1aee676ae
@@ -520,7 +543,7 @@ FULL UNIT                  : PASS / 79 tests / 281 assertions
 FULL FEATURE               : PASS / 642 tests / 4,417 assertions
 ```
 
-Run #46 adalah code gate canonical terbaru untuk source `main`. Ia menutup failure `RkasReportTest` pada run #42–#45 dengan mengisolasi skenario HTTP revision-comparison dan menambah guard input tanpa mengubah business rule. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
+Run #46 adalah code gate terakhir yang terverifikasi untuk source `main` sebelum perubahan Bulk Preview. Ia menutup failure `RkasReportTest` pada run #42–#45 dengan mengisolasi skenario HTTP revision-comparison dan menambah guard input tanpa mengubah business rule. Source change Bulk Preview belum tercakup pada run tersebut dan menunggu focused PHP/CI verification.
 
 ### P0 dependency-platform repair — CI #483 → #486
 
@@ -601,8 +624,8 @@ Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 asserti
 ## Status release saat ini
 
 ```text
-FUNCTIONAL BASELINE : PASS
-CURRENT CODE GATE   : GREEN / main@24a19333 / run #22
+FUNCTIONAL BASELINE : PREVIOUS VERIFIED GATE PASS / run #46
+CURRENT CODE GATE   : PENDING VERIFICATION after Bulk Preview source change
 REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang terdokumentasi
 GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
 TEMPLATE OFFICE QA : RVR
@@ -611,7 +634,7 @@ LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE / CODE GATE
 FINAL RELEASE       : NOT YET
 ```
 
-P0 code/dependency integration gate sudah hijau pada current canonical code head. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
+P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Source change terbaru belum mendapat PHP/CI verification. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
 ---
 
@@ -674,7 +697,7 @@ Browser/operator behavior tetap RVR sampai `GUI_RUNTIME_QA.md` dijalankan pada r
 
 ```text
 GUI STANDARDIZATION CORE : ESTABLISHED
-SOURCE-LEVEL REGRESSION  : COVERED oleh green gate #486 untuk current canonical code head
+SOURCE-LEVEL REGRESSION  : covered by latest verified pre-Bulk-Preview gate #46; new change pending verification
 BROWSER DESKTOP/LAPTOP   : RVR ACTIVE
 MOBILE/TABLET RUNTIME    : RVR / NON-BLOCKER untuk target desktop-laptop
 ```
@@ -768,7 +791,7 @@ Gate #486 mempertahankan regression suite yang mencakup first numbering, cancel/
 HTTP/ROUTE AUTH BASELINE       : PASS
 LIVEWIRE MUTATION BOUNDARY     : HARDENED
 NEGATIVE ROLE REGRESSION       : PASS di current SPJ Critical gate
-OVERALL CURRENT CODE GATE      : GREEN / CI #486
+LAST VERIFIED CODE GATE        : GREEN / CI #46; predates Bulk Preview source change
 RUNTIME/BROWSER VERIFICATION   : RVR
 ```
 

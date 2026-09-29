@@ -455,6 +455,14 @@ Core reconciliation multi-penerima sudah menjadi bagian dari behavior aplikasi; 
 
 Pada tab **Laporan** > **Ekspor**, operator dapat mengunduh daftar penerima pembayaran Jasa Lainnya dalam format PDF atau Excel. Daftar mengikuti filter bulan, triwulan, atau semester yang sedang dipilih dan menampilkan penerima, jenis/uraian jasa, kuantitas, bruto, pajak, serta nilai dibayarkan.
 
+Pada tab **Laporan SPJ**, operator dapat menandai satu atau beberapa baris
+paket pada halaman yang sedang tampil, lalu memilih **Bulk Preview**. Modal
+menampilkan seluruh paket terpilih dalam urutan baris dan tombol **Cetak**
+mencetaknya berurutan dengan pemisah halaman per paket. Maksimal 20 paket dapat
+dipreview dalam satu permintaan. Preview hanya membaca paket pada sekolah,
+tahun anggaran, dan sumber dana aktif; proses ini tidak mengubah lifecycle atau
+menerbitkan nomor SPJ.
+
 ---
 
 ## 21. SiPLah

@@ -311,6 +311,45 @@
                 if (!button || button.closest('[inert]')) return;
                 templatePreview('open', button);
             });
+            document.addEventListener('change', (event) => {
+                const selectAll = event.target.closest('[data-bulk-select-all]');
+                if (selectAll) {
+                    const report = selectAll.closest('table');
+                    report?.querySelectorAll('[data-bulk-package]').forEach((checkbox) => { checkbox.checked = selectAll.checked; });
+                    return;
+                }
+                if (event.target.matches('[data-bulk-package]')) {
+                    const report = event.target.closest('table');
+                    const boxes = [...(report?.querySelectorAll('[data-bulk-package]') || [])];
+                    const selectAllBox = report?.querySelector('[data-bulk-select-all]');
+                    if (selectAllBox) {
+                        selectAllBox.checked = boxes.length > 0 && boxes.every((checkbox) => checkbox.checked);
+                        selectAllBox.indeterminate = boxes.some((checkbox) => checkbox.checked) && !selectAllBox.checked;
+                    }
+                }
+            });
+            document.addEventListener('submit', (event) => {
+                const form = event.target.closest('[data-bulk-preview-form]');
+                if (!form) return;
+                const selected = document.querySelectorAll('[data-bulk-package]:checked');
+                if (selected.length === 0) {
+                    event.preventDefault();
+                    window.alert('Tandai minimal satu baris laporan untuk membuat Bulk Preview.');
+                    return;
+                }
+                if (selected.length > 20) {
+                    event.preventDefault();
+                    window.alert('Bulk Preview dibatasi maksimal 20 paket dalam satu kali cetak.');
+                    return;
+                }
+                const modal = document.getElementById('template-preview-modal');
+                const title = document.getElementById('template-preview-title');
+                const frame = document.getElementById('template-preview-frame');
+                if (title) title.textContent = `Bulk Preview ${selected.length} Paket SPJ`;
+                if (frame) frame.src = 'about:blank';
+                modal?.classList.remove('hidden');
+                modal?.classList.add('flex');
+            });
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') templatePreview('close'); });
         })();
     </script>

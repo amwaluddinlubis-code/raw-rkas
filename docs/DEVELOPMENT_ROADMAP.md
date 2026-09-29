@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-29**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Current canonical code gate adalah CI #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest verified code gate sebelum Bulk Preview adalah CI #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Source change Bulk Preview belum diverifikasi PHP/CI. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -26,9 +26,9 @@ RVR. Detail alur operator berada di `USER_SCENARIOS.md`.
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: CURRENT SOURCE INTEGRATION GATE GREEN / RUN #46.**
+**Status: RUN #46 GREEN / Bulk Preview verification pending.**
 
-CI #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Browser/operator runtime tetap RVR.
+CI #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Gate tersebut mendahului perubahan Bulk Preview; verifikasi source terbaru pending. Browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -105,7 +105,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #46 (`36515608353`, code head `e4ba5cf`) adalah current green source gate. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #46 (`36515608353`, code head `e4ba5cf`) adalah latest verified source gate sebelum Bulk Preview; source verification setelah perubahan itu pending. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 
@@ -254,7 +254,7 @@ Importer mapping → preview → sync tidak menjadi target migrasi Livewire oppo
 
 # P1 — Real Data, Output, dan Operational Quality
 
-**P1 sekarang menjadi fokus produk utama karena P0-00 code/dependency integration gate sudah hijau.**
+**P1 tetap menjadi fokus produk utama berdasarkan P0-00 gate terakhir yang terverifikasi; Bulk Preview source verification masih pending.**
 
 ## P1-01 — Generated-document real-data QA
 
@@ -304,7 +304,7 @@ Viewport prioritas:
 - [ ] 1440×900;
 - [ ] 1920×1080.
 
-Fokus: sidebar, Paket SPJ, SPA tab navigation, repeated `Livewire.navigate`, modal preview setelah body swap, dropdown, pagination, filter URL state, preview/download, overflow/clipping.
+Fokus: sidebar, Paket SPJ, SPA tab navigation, repeated `Livewire.navigate`, modal preview setelah body swap, dropdown, pagination, filter URL state, preview/download, Bulk Preview multi-paket dan hasil cetak, overflow/clipping.
 
 ## P1-06 — Official-template visual/output QA
 

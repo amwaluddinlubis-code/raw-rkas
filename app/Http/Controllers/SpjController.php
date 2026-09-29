@@ -154,6 +154,16 @@ class SpjController extends Controller
         return $useCase->previewPackagePdf($packageId);
     }
 
+    public function previewPackages(Request $request, SpjDocumentUseCase $useCase): View
+    {
+        $validated = $request->validate([
+            'package_ids' => ['required', 'array', 'min:1', 'max:20'],
+            'package_ids.*' => ['required', 'string', 'distinct'],
+        ]);
+
+        return $useCase->previewPackages(array_values($validated['package_ids']));
+    }
+
     public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
     {
         return $useCase->downloadTemplate($packageId, $templateId);
