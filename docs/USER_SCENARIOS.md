@@ -459,9 +459,14 @@ Pada tab **Laporan SPJ**, operator dapat menandai satu atau beberapa baris
 paket pada halaman yang sedang tampil, lalu memilih **Bulk Preview**. Modal
 menampilkan seluruh paket terpilih dalam urutan baris dan tombol **Cetak**
 mencetaknya berurutan dengan pemisah halaman per paket. Maksimal 20 paket dapat
-dipreview dalam satu permintaan. Preview hanya membaca paket pada sekolah,
-tahun anggaran, dan sumber dana aktif; proses ini tidak mengubah lifecycle atau
-menerbitkan nomor SPJ.
+dipreview dalam satu permintaan. Modal merangkum kesiapan tiap paket dan alasan
+paket yang perlu dilengkapi. Tombol **Cetak** aktif hanya jika semua paket
+terpilih lolos validasi dan memiliki template yang bisa dirender. Di tabel,
+penghitung menunjukkan jumlah paket terpilih dari batas 20; tombol Bulk Preview
+nonaktif jika belum ada pilihan atau jumlahnya melebihi batas, dan operator
+diberi tahu berapa pilihan yang perlu dibatalkan. Preview hanya membaca paket
+pada sekolah, tahun anggaran, dan sumber dana aktif; proses ini tidak mengubah
+lifecycle atau menerbitkan nomor SPJ.
 
 ---
 

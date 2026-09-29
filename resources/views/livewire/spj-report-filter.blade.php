@@ -8,7 +8,7 @@
     };
     $exportQuery = array_filter(['tab' => 'laporan', ...$periodQuery]);
 @endphp
-<div>
+<div data-bulk-report-root>
     <div class="border-b border-[var(--ui-line)] px-5 py-4 sm:px-6">
         <div class="grid items-stretch gap-4 xl:grid-cols-5">
             <section aria-label="Filter laporan" class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3 sm:p-4 xl:col-span-3">
@@ -64,10 +64,13 @@
         </div>
     </div>
     <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
-        <p class="text-sm text-[var(--ui-fg-muted)]">Tandai hingga 20 baris laporan, lalu buka pratinjau gabungan untuk mencetaknya sekaligus.</p>
+        <div class="space-y-1">
+            <p class="text-sm text-[var(--ui-fg-muted)]">Tandai baris laporan yang ingin digabungkan dalam pratinjau.</p>
+            <p data-bulk-selection-status role="status" aria-live="polite" class="text-sm font-semibold text-[var(--ui-fg-muted)]">0 dari 20 paket dipilih. Pilih 1–20 paket.</p>
+        </div>
         <form id="spj-bulk-preview-form" method="POST" action="{{ route('spj.preview-packages') }}" target="template-preview-frame" data-bulk-preview-form>
             @csrf
-            <button type="submit" class="ui-btn ui-btn-primary min-h-10 px-4">Bulk Preview</button>
+            <button type="submit" data-bulk-submit class="ui-btn ui-btn-primary min-h-10 px-4 disabled:cursor-not-allowed disabled:opacity-50">Bulk Preview</button>
         </form>
     </div>
     <div class="overflow-x-auto p-5"><table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500"><input type="checkbox" data-bulk-select-all aria-label="Pilih semua paket pada halaman ini" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">AKSI</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">

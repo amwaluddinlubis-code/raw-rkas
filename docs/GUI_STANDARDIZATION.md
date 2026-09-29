@@ -365,8 +365,12 @@ menampilkan semuanya pada modal yang sama dengan preview tunggal. Pratinjau
 gabungan dibatasi maksimal 20 paket, mempertahankan urutan pilihan, dan dapat
 dicetak dengan pemisah halaman per paket. Backend tetap memeriksa sekolah,
 tahun anggaran, dan sumber dana aktif; interaksi ini tidak mengubah lifecycle
-atau numbering. Modal, hasil cetak, batas perangkat, dan repeated navigation
-masih memerlukan browser QA.
+atau numbering. Modal merangkum validasi setiap paket dan alasan data/template
+yang belum siap; tombol cetak nonaktif selama masih ada paket bermasalah.
+Penghitung di atas tabel menunjukkan jumlah paket yang dipilih dari batas 20;
+tombol Bulk Preview nonaktif untuk pilihan kosong atau yang melewati batas.
+Modal, hasil cetak, batas perangkat, dan repeated navigation masih memerlukan
+browser QA.
 
 ## 18. Dashboard dan Database Aktif
 

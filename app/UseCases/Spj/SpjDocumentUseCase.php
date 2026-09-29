@@ -27,6 +27,7 @@ class SpjDocumentUseCase
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjPackageTemplateSelector $templateSelector,
+        private readonly SpjPackageValidationService $packageValidator,
     ) {}
 
     public function download(string $packageId)
@@ -284,7 +285,17 @@ class SpjDocumentUseCase
         abort_if($packageIds === [] || count($packageIds) > 20, 422, 'Pilih antara 1 sampai 20 paket laporan.');
 
         $packagesById = SpjPackage::query()
-            ->with(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])
+            ->with([
+                'transaction.items',
+                'transaction.goods',
+                'transaction.goodsReceipts',
+                'transaction.workOrder',
+                'transaction.workers',
+                'transaction.participants',
+                'transaction.travels',
+                'transaction.honors',
+                'transaction.serviceRecipients',
+            ])
             ->whereIn('id', $packageIds)
             ->get()
             ->keyBy(fn (SpjPackage $package): string => (string) $package->id);
@@ -299,21 +310,54 @@ class SpjDocumentUseCase
 
             $this->applyDocumentContext($package);
             $templates = $this->spreadsheetTemplatesForPackage($package);
-            abort_if($templates->isEmpty(), 422, 'Paket '.$package->report_document_number.' belum memiliki template Excel aktif.');
+            $issues = $this->packageValidator->validate($package);
+            if ($templates->isEmpty()) {
+                $issues[] = [
+                    'label' => 'Template laporan',
+                    'message' => 'Belum ada template Excel aktif untuk paket ini.',
+                    'url' => '',
+                ];
+            }
 
-            $html = app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school);
-            preg_match_all('/<style[^>]*>.*?<\/style>/is', $html, $styles);
-            preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body);
+            $html = '';
+            $stylesHtml = '';
+            if ($templates->isNotEmpty()) {
+                try {
+                    $html = app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school);
+                    preg_match_all('/<style[^>]*>.*?<\/style>/is', $html, $styles);
+                    preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body);
+                    $stylesHtml = implode('', $styles[0] ?? []);
+                    $html = $body[1] ?? '';
+                    if (trim($html) === '') {
+                        $issues[] = [
+                            'label' => 'Isi dokumen',
+                            'message' => 'Template tidak menghasilkan isi dokumen untuk paket ini.',
+                            'url' => '',
+                        ];
+                    }
+                } catch (Throwable $exception) {
+                    report($exception);
+                    $issues[] = [
+                        'label' => 'Pembuatan preview',
+                        'message' => 'Preview dokumen gagal dibuat. Periksa data dan template paket ini, lalu coba lagi.',
+                        'url' => '',
+                    ];
+                }
+            }
 
             return [
                 'number' => (string) $package->report_document_number,
-                'styles' => implode('', $styles[0] ?? []),
-                'html' => $body[1] ?? '',
+                'ready' => $issues === [],
+                'issues' => $issues,
+                'styles' => $stylesHtml,
+                'html' => $html,
             ];
         });
 
         return view('spj-documents.bulk-preview', [
             'packages' => $renderedPackages,
+            'readyCount' => $renderedPackages->where('ready', true)->count(),
+            'blockedCount' => $renderedPackages->where('ready', false)->count(),
         ]);
     }
 

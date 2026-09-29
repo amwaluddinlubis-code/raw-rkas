@@ -23,6 +23,21 @@ dan tidak menerbitkan nomor SPJ. Regression source/layout telah diperbarui.
 PHP/PHPUnit tidak tersedia lokal sehingga test PHP belum dijalankan; browser
 modal dan hasil cetak masih **RVR**.
 
+Pemeriksaan kesiapan Bulk Preview kini menggunakan validasi paket yang sama
+dengan preview dokumen: modal merangkum jumlah paket siap dan perlu dilengkapi,
+menampilkan alasan untuk setiap paket, dan mempertahankan preview semua baris
+terpilih untuk pemeriksaan. Tombol cetak dinonaktifkan jika ada paket yang
+belum siap. Template yang tidak tersedia atau gagal dirender dilaporkan pada
+paket terkait tanpa menghilangkan paket lain dari ringkasan. Regression source
+layout mencakup kontrak status dan blokir cetak ini; verifikasi runtime PHP dan
+browser masih menunggu.
+
+Tahap 2 memperjelas seleksi baris dengan penghitung langsung `x dari 20`,
+status instruksi saat belum ada pilihan, dan pesan jumlah paket yang harus
+dibatalkan saat melewati batas. Tombol Bulk Preview nonaktif ketika belum ada
+pilihan atau pilihan melebihi 20; pilih-semua tetap memperbarui penghitung.
+Regression source/layout diperluas. Verifikasi PHPUnit dan browser tetap RVR.
+
 Latest verified code gate tetap run #46 pada `e4ba5cf`; perubahan Bulk Preview
 ini belum tercakup dan menunggu PHP/CI verification.
 

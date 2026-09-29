@@ -297,6 +297,26 @@
                 frame.src = button.dataset.templatePreviewPdf || button.dataset.templatePreview;
                 modal.classList.remove('hidden'); modal.classList.add('flex');
             };
+            const updateBulkSelection = () => {
+                const selectedCount = document.querySelectorAll('[data-bulk-package]:checked').length;
+                const status = document.querySelector('[data-bulk-selection-status]');
+                const submit = document.querySelector('[data-bulk-submit]');
+                const overLimit = selectedCount > 20;
+
+                if (status) {
+                    const message = selectedCount === 0
+                        ? '0 dari 20 paket dipilih. Pilih minimal 1 paket.'
+                        : overLimit
+                            ? `${selectedCount} paket dipilih. Maksimal 20; batalkan pilihan ${selectedCount - 20} paket.`
+                            : `${selectedCount} dari 20 paket dipilih. Siap untuk Bulk Preview.`;
+                    if (status.textContent.trim() !== message) status.textContent = message;
+                    status.classList.toggle('text-rose-700', overLimit);
+                    status.classList.toggle('text-[var(--ui-fg-muted)]', !overLimit);
+                }
+                if (submit) submit.disabled = selectedCount === 0 || overLimit;
+
+                return selectedCount;
+            };
             document.addEventListener('click', (event) => {
                 if (event.target.closest('[data-close-template-preview]')) {
                     templatePreview('close');
@@ -316,6 +336,7 @@
                 if (selectAll) {
                     const report = selectAll.closest('table');
                     report?.querySelectorAll('[data-bulk-package]').forEach((checkbox) => { checkbox.checked = selectAll.checked; });
+                    updateBulkSelection();
                     return;
                 }
                 if (event.target.matches('[data-bulk-package]')) {
@@ -326,30 +347,30 @@
                         selectAllBox.checked = boxes.length > 0 && boxes.every((checkbox) => checkbox.checked);
                         selectAllBox.indeterminate = boxes.some((checkbox) => checkbox.checked) && !selectAllBox.checked;
                     }
+                    updateBulkSelection();
                 }
             });
             document.addEventListener('submit', (event) => {
                 const form = event.target.closest('[data-bulk-preview-form]');
                 if (!form) return;
-                const selected = document.querySelectorAll('[data-bulk-package]:checked');
-                if (selected.length === 0) {
+                const selectedCount = updateBulkSelection();
+                if (selectedCount === 0 || selectedCount > 20) {
                     event.preventDefault();
-                    window.alert('Tandai minimal satu baris laporan untuk membuat Bulk Preview.');
-                    return;
-                }
-                if (selected.length > 20) {
-                    event.preventDefault();
-                    window.alert('Bulk Preview dibatasi maksimal 20 paket dalam satu kali cetak.');
                     return;
                 }
                 const modal = document.getElementById('template-preview-modal');
                 const title = document.getElementById('template-preview-title');
                 const frame = document.getElementById('template-preview-frame');
-                if (title) title.textContent = `Bulk Preview ${selected.length} Paket SPJ`;
+                if (title) title.textContent = `Bulk Preview ${selectedCount} Paket SPJ`;
                 if (frame) frame.src = 'about:blank';
                 modal?.classList.remove('hidden');
                 modal?.classList.add('flex');
             });
+            updateBulkSelection();
+            const bulkReportRoot = document.querySelector('[data-bulk-report-root]');
+            if (bulkReportRoot && 'MutationObserver' in window) {
+                new MutationObserver(updateBulkSelection).observe(bulkReportRoot, { childList: true, subtree: true });
+            }
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') templatePreview('close'); });
         })();
     </script>

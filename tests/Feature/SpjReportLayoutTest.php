@@ -93,10 +93,16 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringNotContainsString('id="template-preview-modal"', $index);
         $this->assertStringContainsString('data-template-preview', $report);
         $this->assertStringContainsString('data-bulk-preview-form', $report);
+        $this->assertStringContainsString('data-bulk-selection-status', $report);
+        $this->assertStringContainsString('0 dari 20 paket dipilih', $report);
+        $this->assertStringContainsString('data-bulk-submit', $report);
         $this->assertStringContainsString('name="package_ids[]"', $report);
         $this->assertStringContainsString('data-bulk-select-all', $report);
         $this->assertStringContainsString("route('spj.preview-packages')", $report);
         $this->assertStringNotContainsString('target="_blank">Preview dokumen', $report);
+        $this->assertStringContainsString('updateBulkSelection', $index);
+        $this->assertStringContainsString('Maksimal 20; batalkan pilihan', $index);
+        $this->assertStringContainsString('submit.disabled = selectedCount === 0 || overLimit', $index);
     }
 
     public function test_bulk_report_preview_is_print_ready_and_read_only(): void
@@ -113,6 +119,15 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('foreach ($packages as $package)', $view);
         $this->assertStringContainsString('count($packageIds) > 20', $useCase);
         $this->assertStringContainsString('$this->context->matchesTransaction($package->transaction)', $useCase);
+        $this->assertStringContainsString('$this->packageValidator->validate($package)', $useCase);
+        $this->assertStringContainsString("'ready' => \$issues === []", $useCase);
+        $this->assertStringContainsString("'issues' => \$issues", $useCase);
+        $this->assertStringContainsString("'readyCount' =>", $useCase);
+        $this->assertStringContainsString("'blockedCount' =>", $useCase);
+        $this->assertStringContainsString('Pemeriksaan kesiapan paket', $view);
+        $this->assertStringContainsString('Perlu dilengkapi', $view);
+        $this->assertStringContainsString('@disabled($blockedCount > 0)', $view);
+        $this->assertStringContainsString('Cetak semua paket', $view);
         $this->assertStringContainsString("Route::post('/spj/laporan/pratinjau-bulk'", $routes);
     }
 
