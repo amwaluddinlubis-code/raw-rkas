@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-29**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Run CI #41 pada `a22f7d5` lulus setelah memperbaiki styling seluruh tombol laporan RKAS dan mempersempit regression guard. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Current canonical code gate adalah CI #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -14,11 +14,11 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 ## RKAS — perbandingan revisi, kesegaran mirror, dan ekspor paket (2026-09-28)
 
-Implementasi ditambahkan pada source lokal dan regresi khusus disiapkan. Scope
-fitur mencakup diff dua snapshot RKAS dalam konteks aktif, umur operasi mirror
-serta jumlah baris tabel penting, dan ZIP multi-scope PDF/XLSX dengan manifest.
-Status menunggu full gate CI; visual browser tetap RVR. Detail alur operator
-berada di `USER_SCENARIOS.md`.
+Scope fitur mencakup diff dua snapshot RKAS dalam konteks aktif, umur operasi
+mirror serta jumlah baris tabel penting, dan ZIP multi-scope PDF/XLSX dengan
+manifest. Full regression gate sudah hijau pada CI #46: SPJ Critical 339,
+Full Unit 79, dan Full Feature 642 test PASS. Visual browser/operator tetap
+RVR. Detail alur operator berada di `USER_SCENARIOS.md`.
 
 ---
 
@@ -26,9 +26,9 @@ berada di `USER_SCENARIOS.md`.
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: CURRENT SOURCE INTEGRATION GATE GREEN / RUN #41.**
+**Status: CURRENT SOURCE INTEGRATION GATE GREEN / RUN #46.**
 
-CI #41 pada `a22f7d5` menyelesaikan gate penuh setelah dua kegagalan terarah pada #39 dan #40. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (630 / 4.370 assertions) semuanya PASS. Browser/operator runtime tetap RVR.
+CI #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -105,7 +105,7 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #41 (`36488216251`, code head `a22f7d5`) adalah current green source gate. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #46 (`36515608353`, code head `e4ba5cf`) adalah current green source gate. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 
