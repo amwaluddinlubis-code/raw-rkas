@@ -7,7 +7,7 @@
     <style>
         @page {
             size: folio landscape;
-            margin: 25mm 9mm 13mm 9mm;
+            margin: 10mm 9mm 13mm 9mm;
 
             @bottom-left {
                 content: "{{ $footer_tag }} - NPSN : {{ $school['npsn'] }}, Nama Sekolah : {{ $school['name'] }}";
@@ -65,6 +65,10 @@
             width: 100%;
         }
 
+        .report-detail-table {
+            table-layout: fixed;
+        }
+
         th,
         td {
             border: 1px solid #111827;
@@ -88,14 +92,12 @@
 
         th.volume,
         td.volume {
-            width: 3%;
-            min-width: 32px;
+            width: 5%;
         }
 
         th.satuan,
         td.satuan {
-            width: 4%;
-            min-width: 40px;
+            width: 7%;
         }
 
         .num {
@@ -202,10 +204,10 @@
     @php($monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'])
     @php(
     $detailWidths = match ($scope) {
-        'triwulan' => ['2%', '4%', '3%', '50%', '3%', '5%', '4%', '5%', '4%', '4%', '4%', '4%'],
-        'triwulan-bulanan' => ['2%', '4%', '3%', '50%', '4%', '4%', '4%', '4%', '4%', '4%', '4%'],
-        'tahap' => ['2%', '6%', '4%', '59%', '3%', '5%', '5%', '6%', '5%', '5%'],
-        default => ['2%', '6%', '4%', '68%', '4%', '6%', '5%', '5%']
+        'triwulan' => ['3%', '8%', '5%', '', '4%', '6%', '4%', '7%', '6%', '6%', '6%', '6%'],
+        'triwulan-bulanan' => ['3%', '8%', '5%', '', '4%', '6%', '5%', '7%', '6%', '6%', '6%'],
+        'tahap' => ['3%', '8%', '5%', '', '6%', '6%', '5%', '7%', '6.5%', '6.5%'],
+        default => ['3%', '8%', '5%', '', '4%', '6%', '5%', '6%']
     }
 )
 
@@ -299,7 +301,19 @@
     <p class="section-title">B. BELANJA</p>
 
     @if ($scope === 'tahunan')
-        <table>
+        <table class="report-detail-table">
+            <colgroup>
+                <col style="width: 3%">
+                <col style="width: 8%">
+                <col style="width: 5%">
+                <col style="width: 24%">
+                <col style="width: 7%">
+                <col style="width: 6.5%">
+                <col style="width: 6.5%">
+                @for ($column = 0; $column < 10; $column++)
+                    <col style="width: 4%">
+                @endfor
+            </colgroup>
             <thead>
                 <tr>
                     <th rowspan="3">No. Urut</th>
@@ -349,7 +363,7 @@
             </tr>
         </table>
     @else
-        <table>
+        <table class="report-detail-table">
             <colgroup>
                 @foreach ($detailWidths as $width)
                     <col style="width: {{ $width }}">

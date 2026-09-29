@@ -41,7 +41,7 @@ class SpjTemplateService
             'Dokumen & periode' => ['NOMOR_SPJ', 'NOMOR_DOKUMEN', 'NO_BUKTI', 'NOMOR_BUKTI', 'TANGGAL_TRANSAKSI', 'TANGGAL_DOKUMEN', 'TAHUN_ANGGARAN', 'SUMBER_DANA', 'SUMBER_DANA_PERIODE', 'TRIWULAN', 'SEMESTER', 'JENIS_SPJ'],
             'Sekolah & pejabat' => ['NAMA_SEKOLAH', 'NAMA_SATUAN_PENDIDIKAN', 'NPSN', 'ALAMAT_SEKOLAH', 'DESA', 'KECAMATAN', 'KABUPATEN_KOTA', 'PROVINSI', 'KOP_SURAT', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG'],
             'Acara konsumsi' => ['NAMA_ACARA', 'TANGGAL_ACARA', 'TEMPAT_ACARA'],
-            'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
+            'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
             'Transaksi & pembayaran' => ['KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
             'Pembelian SiPLah' => ['SIPLAH_MARKETPLACE', 'SIPLAH_TRANSACTION_ID', 'SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_ALAMAT_PENYEDIA', 'SIPLAH_NPWP_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_TANGGAL_PEMBAYARAN', 'SIPLAH_REFERENSI_BAYAR', 'SIPLAH_STATUS_DQ', 'SIPLAH_STATUS_MAPPING', 'SIPLAH_RINCIAN_ITEM'],
             'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_BAP', 'TANGGAL_BAP', 'NOMOR_BAST', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'NILAI_BAHAN', 'NILAI_BAHAN_TERBILANG', 'NILAI_UPAH', 'NILAI_UPAH_TERBILANG', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
@@ -201,6 +201,7 @@ class SpjTemplateService
         $workCompleted = $workOrder?->work_completed_at?->translatedFormat('d F Y') ?: '';
         $handoverDate = $bastDate ?: ($workCompleted ?: $transactionDate);
         $vendorName = (string) ($transaction->vendor_name ?: $transaction->effective_receipt_recipient_name);
+        $partnerAddress = $this->businessPartnerAddress($transaction);
         $paymentMethod = $this->paymentMethodLabel((string) $transaction->payment_method);
         $siplahResponse = data_get($transaction->siplah_metadata, 'siplahResponse', []);
         $siplahMerchant = (string) (data_get($siplahResponse, 'merchant') ?: $transaction->vendor_name ?: '');
@@ -259,6 +260,7 @@ class SpjTemplateService
             'NAMA_PENERIMA_KUITANSI' => (string) $transaction->effective_receipt_recipient_name,
             'PENERIMA_PENYEDIA' => $vendorName,
             'NAMA_PENYEDIA' => $vendorName,
+            'ALAMAT_REKANAN' => $partnerAddress,
             'NPWP_PENYEDIA' => (string) $transaction->vendor_npwp,
             'KODE_PROGRAM' => (string) ($activityHierarchy['program_code'] ?? ''),
             'NAMA_PROGRAM' => (string) ($activityHierarchy['program_name'] ?? ''),
@@ -349,6 +351,46 @@ class SpjTemplateService
         ];
 
         return $this->normalizeScalarPlaceholders($allValues);
+    }
+
+    private function businessPartnerAddress(Transaction $transaction): string
+    {
+        $names = collect([
+            $transaction->vendor_name,
+            $transaction->signatory_name,
+        ])
+            ->map(fn (mixed $name): string => $this->normalizeBusinessPartnerName((string) $name))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($names->isEmpty()) {
+            return '';
+        }
+
+        $partners = DB::connection('school')
+            ->table('business_partners')
+            ->whereNotNull('address')
+            ->where(function ($query) use ($names): void {
+                foreach ($names as $name) {
+                    $query->orWhereRaw('LOWER(TRIM(name)) = ?', [$name]);
+                }
+            })
+            ->get(['name', 'address']);
+
+        foreach ($names as $name) {
+            $partner = $partners->first(fn (object $row): bool => $this->normalizeBusinessPartnerName((string) $row->name) === $name);
+            if ($partner && trim((string) $partner->address) !== '') {
+                return trim((string) $partner->address);
+            }
+        }
+
+        return '';
+    }
+
+    private function normalizeBusinessPartnerName(string $name): string
+    {
+        return mb_strtolower(preg_replace('/\s+/u', ' ', trim($name)) ?? trim($name));
     }
 
     /**

@@ -140,6 +140,12 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
             'amount' => 150000,
             'source_status' => 'ACTIVE',
         ]);
+        DB::connection('school')->table('business_partners')->insert([
+            'name' => 'Toko Sumber',
+            'address' => 'Jl. Rekanan No. 10',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $result = app(DocumentTemplatePlaceholderInspectorService::class)->inspect(
             '001/SPJ/2026',
@@ -160,6 +166,18 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
         $this->assertSame('BPU-001', $values['NO_BUKTI']);
         $this->assertSame('SMP Negeri Test', $values['NAMA_SEKOLAH']);
         $this->assertSame('Kepala Sekolah Test', $values['NAMA_KEPALA_SEKOLAH']);
+        $this->assertSame('Jl. Rekanan No. 10', $values['ALAMAT_REKANAN']);
+
+        $package->transaction->forceFill(['vendor_name' => 'Nama Toko Lain'])->save();
+        DB::connection('school')->table('school_profiles')
+            ->where('fiscal_year_id', $this->activeYearId)
+            ->update(['principal_name' => 'Toko Sumber']);
+        $signatoryResult = app(DocumentTemplatePlaceholderInspectorService::class)->inspect(
+            '001/SPJ/2026',
+            $this->school(),
+        );
+        $signatoryValues = $this->placeholderValues($signatoryResult['groups']);
+        $this->assertSame('Jl. Rekanan No. 10', $signatoryValues['ALAMAT_REKANAN']);
         $this->assertSame('Kertas A4 80 gsm', $values['ITEM_URAIAN']);
         $this->assertSame('2.00', $values['ITEM_VOLUME']);
         $this->assertSame('75000', $values['ITEM_HARGA_SATUAN']);

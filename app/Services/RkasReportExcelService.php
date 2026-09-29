@@ -29,6 +29,12 @@ final class RkasReportExcelService
         $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_FOLIO);
         $sheet->getPageSetup()->setFitToWidth(1);
         $sheet->getPageSetup()->setFitToHeight(0);
+        $sheet->getPageSetup()->setFitToPage(true);
+        $sheet->getPageSetup()->setHorizontalCentered(true);
+        $sheet->getPageMargins()->setTop(0.35);
+        $sheet->getPageMargins()->setBottom(0.55);
+        $sheet->getPageMargins()->setLeft(0.25);
+        $sheet->getPageMargins()->setRight(0.25);
 
         $row = 1;
         $lastCol = $this->columnCount($payload['scope']);
@@ -155,23 +161,12 @@ final class RkasReportExcelService
             $this->setCellValue($sheet, $this->col($lastCol - 2).$row, 'NIP: '.$payload['signatories']['treasurer_nip']);
         }
 
-        foreach (range(1, $lastCol) as $col) {
-            $sheet->getColumnDimension($this->col($col))->setAutoSize(true);
-        }
+        $this->configureColumnWidths($sheet, $payload['scope']);
+        $sheet->getStyle('D1:D'.$row)->getAlignment()->setWrapText(true);
         if ($payload['scope'] !== 'tahunan') {
-            // Kolom Volume (E) dan Satuan (F) dibuat sama-sama ringkas.
-            $detailWidths = match ($payload['scope']) {
-                'triwulan' => ['D' => 32, 'E' => 6, 'F' => 9],
-                'triwulan-bulanan' => ['D' => 34, 'E' => 6, 'F' => 9],
-                'tahap' => ['D' => 38, 'E' => 6, 'F' => 9],
-                default => ['D' => 45, 'E' => 6, 'F' => 9],
-            };
-            foreach ($detailWidths as $column => $width) {
-                $sheet->getColumnDimension($column)->setAutoSize(false);
-                $sheet->getColumnDimension($column)->setWidth($width);
-            }
             $sheet->getStyle('E1:F'.$row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         }
+        $sheet->getPageSetup()->setPrintArea('A1:'.$lastLetter.$row);
         $footTag = str_replace('&', '&&', $payload['footer_tag'].' - NPSN : '.$payload['school']['npsn'].', '.$payload['school']['name']);
         $sheet->getHeaderFooter()->setOddFooter('&L&8 '.$footTag.'&R&8 Halaman &P dari &N');
 
@@ -225,6 +220,21 @@ final class RkasReportExcelService
         }
 
         $sheet->setCellValue($coordinate, $value);
+    }
+
+    private function configureColumnWidths(object $sheet, string $scope): void
+    {
+        $widths = match ($scope) {
+            'tahunan' => [7, 16, 14, 36, 14, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11],
+            'triwulan' => [7, 16, 14, 34, 7, 9, 13, 13, 10, 10, 10, 10],
+            'triwulan-bulanan' => [7, 16, 14, 36, 7, 9, 13, 13, 12, 12, 12],
+            'tahap' => [7, 16, 14, 38, 7, 9, 13, 13, 12, 12],
+            default => [7, 16, 14, 42, 7, 9, 13, 13],
+        };
+
+        foreach ($widths as $index => $width) {
+            $sheet->getColumnDimension($this->col($index + 1))->setAutoSize(false)->setWidth($width);
+        }
     }
 
     private function headerRow(object $sheet, int $row, int $cols): void

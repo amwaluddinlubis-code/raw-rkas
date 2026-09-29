@@ -23,6 +23,7 @@ class SpjTemplateScalarFallbackTest extends TestCase
         $this->assertContains('NAMA_KEGIATAN', $groups['Transaksi & pembayaran']);
         $this->assertContains('NAMA_PENGURUS_BARANG', $groups['Sekolah & pejabat']);
         $this->assertContains('NIP_PENGURUS_BARANG', $groups['Sekolah & pejabat']);
+        $this->assertContains('ALAMAT_REKANAN', $groups['Penerima & penyedia']);
     }
 
     public function test_empty_scalar_values_render_as_dash_while_image_marker_stays_empty(): void

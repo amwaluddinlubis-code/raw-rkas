@@ -107,6 +107,7 @@ NAMA_PENERIMA_KUITANSI
 PENERIMA_PENYEDIA
 NAMA_PENYEDIA
 ALAMAT_PENYEDIA
+ALAMAT_REKANAN
 NPWP_PENYEDIA
 TELEPON_PENYEDIA
 NAMA_PENANDATANGAN
@@ -121,6 +122,7 @@ Ownership penting:
 - `NAMA_PENERIMA` saat ini mengikuti effective receipt recipient.
 - `PENERIMA_PENYEDIA` dan `NAMA_PENYEDIA` mengikuti vendor/effective recipient sesuai mapping service.
 - `ALAMAT_PENYEDIA` saat ini terutama dapat berasal dari metadata merchant SiPLah bila tersedia.
+- `ALAMAT_REKANAN` mencari alamat pada tabel `business_partners` ketika nama rekanan sama dengan `vendor_name` (nama toko) atau `signatory_name` (nama penandatangan), tanpa membedakan huruf besar-kecil dan spasi berulang.
 - `TELEPON_PENYEDIA` belum mempunyai source schema aktif dan dapat dirender `-`.
 
 Jangan menukar source recipient dan receipt recipient hanya demi menyesuaikan template.

@@ -209,7 +209,7 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['BARANG', 'KONSUMSI', 'JASA_LAINNYA'],
                 'required' => [
-                    'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA',
+                    'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN',
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'NILAI_BRUTO',
                     'TANGGAL_PENYERAHAN', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
@@ -236,7 +236,7 @@ final class SpjDocumentTypeRegistry
                     'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG',
                 ],
                 'optional' => [
-                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NPWP_PENYEDIA',
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NPWP_PENYEDIA', 'ALAMAT_REKANAN',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN'],
                 'repeat_optional' => ['ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
@@ -256,7 +256,7 @@ final class SpjDocumentTypeRegistry
                     'NIP_KEPALA_SEKOLAH', 'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG',
                 ],
                 'optional' => [
-                    'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'ALAMAT_PENYEDIA', 'NPWP_PENYEDIA',
+                    'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN', 'NPWP_PENYEDIA',
                     'TELEPON_PENYEDIA', 'NILAI_BRUTO',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME'],
@@ -273,7 +273,7 @@ final class SpjDocumentTypeRegistry
                 'applicable_categories' => ['BARANG', 'KONSUMSI', 'JASA_LAINNYA'],
                 'required' => ['NOMOR_INVOICE', 'TANGGAL_INVOICE', 'NAMA_PENYEDIA', 'NILAI_BRUTO', 'TOTAL_PAJAK', 'NILAI_TERBILANG_BRUTO'],
                 'optional' => [
-                    'STATUS_INVOICE', 'NPWP_PENYEDIA', 'ALAMAT_PENYEDIA', 'TELEPON_PENYEDIA',
+                    'STATUS_INVOICE', 'NPWP_PENYEDIA', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN', 'TELEPON_PENYEDIA',
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'PPN', 'PPH21', 'PPH22', 'PPH23',
                     'PPH4', 'SSPD', 'TERBILANG_NETO', 'CARA_BAYAR_REFERENSI',
                     'SIPLAH_NOMOR_PESANAN', 'SIPLAH_REFERENSI_BAYAR',
