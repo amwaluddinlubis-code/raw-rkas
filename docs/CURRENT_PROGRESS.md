@@ -1,13 +1,13 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-29** (laporan RKAS + tanda tangan opsional, `raw-rkas`)
+Terakhir diperbarui: **2026-09-29** (regression gate RKAS #46, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
 ## Pengembangan RKAS: perbandingan revisi, freshness, dan paket laporan (2026-09-28)
 
-Status: **IMPLEMENTASI + REGRESSION DITAMBAHKAN / MENUNGGU GATE CI**.
+Status: **FUNCTIONAL PASS / FULL REGRESSION GATE GREEN / VISUAL BROWSER RVR**.
 
 Workspace RKAS kini memiliki halaman perbandingan dua snapshot revisi (pos
 ditambah/dihapus/berubah, pagu, volume/satuan, dan delta alokasi bulanan),
@@ -16,10 +16,17 @@ baris tabel penting, serta unduhan satu ZIP berisi beberapa scope laporan PDF
 dan/atau Excel beserta manifest. Konteks tetap sekolah+tahun+sumber dana+revisi;
 source ARKAS/BKU tetap read-only.
 
-Regression baru mencakup comparison service/controller, paket ZIP dan validasi
-periode, freshness mutakhir/lama/tabel hilang, serta kontrak UI. PHP/Composer
-tidak tersedia di workspace lokal; jalankan full workflow setelah push sebelum
-mengganti status ini menjadi PASS. Visual browser tetap RVR.
+Regression mencakup comparison service/controller, paket ZIP dan validasi
+periode, freshness mutakhir/lama/tabel hilang, serta kontrak UI. Regression
+controller dipisah menjadi satu request per test dan diperkuat untuk jalur
+`to`-only, `from` kosong yang diperlakukan sebagai omitted, revisi sama, dan
+revision ID di luar konteks aktif. Source behavior tidak dilonggarkan.
+
+Evidence canonical: source `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`,
+workflow `SPJ Critical Verification` run `36515608353` (#46) **SUCCESS**:
+Repository Pint PASS, frontend build PASS, Blade compile PASS, SPJ Critical
+339 tests / 2.605 assertions PASS, Full Unit 79 / 281 PASS, dan Full Feature
+642 / 4.417 PASS. Visual browser/operator tetap RVR.
 
 ---
 
@@ -498,8 +505,8 @@ Definisi status:
 ### Latest successful canonical code gate
 
 ```text
-LATEST SUCCESSFUL CODE HEAD: a22f7d54306f173e51e3ad5da30dd2152f013e99
-LATEST SUCCESSFUL CODE GATE: run 36488216251 (#41) / SUCCESS
+LATEST SUCCESSFUL CODE HEAD: e4ba5cf869f554cee9f0b9d230e437f1aee676ae
+LATEST SUCCESSFUL CODE GATE: run 36515608353 (#46) / SUCCESS
 WORKFLOW                   : SPJ Critical Verification
 COMPOSER VALIDATE          : PASS
 LOCKED PLATFORM CHECK      : PASS pada PHP 8.3
@@ -510,10 +517,10 @@ BLADE COMPILE              : PASS
 CHECKLIST PHP LINT         : PASS
 SPJ CRITICAL               : PASS / 339 tests / 2,605 assertions
 FULL UNIT                  : PASS / 79 tests / 281 assertions
-FULL FEATURE               : PASS / 630 tests / 4,370 assertions
+FULL FEATURE               : PASS / 642 tests / 4,417 assertions
 ```
 
-Run #41 adalah code gate canonical terbaru untuk source `main`. Ia mencakup regression UI RKAS yang sebelumnya terlewat pada run #39–#40. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
+Run #46 adalah code gate canonical terbaru untuk source `main`. Ia menutup failure `RkasReportTest` pada run #42–#45 dengan mengisolasi skenario HTTP revision-comparison dan menambah guard input tanpa mengubah business rule. Commit dokumentasi sesudah source head ini tidak menggantikan code gate tersebut.
 
 ### P0 dependency-platform repair — CI #483 → #486
 
