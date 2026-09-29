@@ -1,10 +1,10 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-25**
+Terakhir diperbarui: **2026-09-29**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
-Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan sedang menunggu regression gate; lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
+Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada CI #46; visual browser/operator tetap RVR. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
 
 ## Urutan sumber kebenaran
 
@@ -29,7 +29,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Current source gate `main@ac75b5bed646be70a4a2688512f75fbc6b55c46a` telah melewati workflow `SPJ Critical Verification` run `36120237766` (#25) dengan hasil SUCCESS: Repository Pint 495 file PASS, SPJ Critical 330, Full Unit 79, dan Full Feature 569 test PASS. Commit docs-only sesudah gate tersebut tidak dipromosikan sebagai code gate baru.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Current source gate `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae` telah melewati workflow `SPJ Critical Verification` run `36515608353` (#46) dengan hasil SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Commit docs-only sesudah gate tersebut tidak dipromosikan sebagai code gate baru.
 
 ## Dokumen aktif utama
 
