@@ -1,6 +1,6 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-25**
+Terakhir diperbarui: **2026-09-29**
 
 Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release authoritative berada di `CURRENT_PROGRESS.md`.
 
@@ -12,22 +12,22 @@ Latest verified source gate pada branch aktif:
 
 ```text
 active branch      : main
-source commit      : ac75b5bed646be70a4a2688512f75fbc6b55c46a
-CI run             : 36120237766 (#25)
+source commit      : e4ba5cf869f554cee9f0b9d230e437f1aee676ae
+CI run             : 36515608353 (#46)
 workflow           : SPJ Critical Verification
 result             : SUCCESS
 artifact guard     : PASS
 composer/platform  : PASS
-Repository Pint    : PASS / 495 files
+Repository Pint    : PASS
 frontend build     : PASS
 blade compile      : PASS
 checklist PHP lint : PASS
-SPJ Critical       : PASS / 330 tests / 2,570 assertions
+SPJ Critical       : PASS / 339 tests / 2,605 assertions
 Full Unit          : PASS / 79 tests / 281 assertions
-Full Feature       : PASS / 569 tests / 4,051 assertions
+Full Feature       : PASS / 642 tests / 4,417 assertions
 ```
 
-Run #25 membuktikan regression gate setelah audit fitur SK pegawai dan cleanup harness. Hardening yang tercakup: MIME server + ekstensi untuk PDF/JPEG/PNG, replacement file tanpa menghapus file lama sebelum storage+DB sukses, nama file unik dengan suffix random, cleanup pindaian saat SK/pegawai dihapus, dan boundary mutation/read route. `EmployeeCertificateTest` PASS sebagai bagian Full Feature suite. Coverage schema tenant tidak lengkap kini berada di `SpjQuarterAuditCommandTest` dengan assertion nyata, `TmpAuditDebugTest` sudah dihapus, dan Repository Pint kembali PASS untuk 495 file. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak menjadi code gate baru.
+Run #46 membuktikan current full regression gate setelah regression revision-comparison RKAS diisolasi menjadi satu HTTP request per test dan diperkuat untuk jalur destination-only, blank source, same-revision, serta revision ID di luar konteks aktif. Source behavior dan business rule tidak dilonggarkan. Evidence code gate melekat pada source commit di atas; commit dokumentasi sesudahnya tidak menjadi code gate baru.
 
 Latest historical completed green source gate:
 
@@ -137,7 +137,7 @@ Historical green SPJ Critical/Unit/Feature gate #486 mencakup functional regress
 
 Functional gate tidak sama dengan browser/document visual verification. Microsoft Excel/LibreOffice fidelity, print area, page breaks, header/footer, drawing, defined-name/formula kompleks, browser interactions, dan installed runtime tetap RVR/DEFERRED sesuai `CURRENT_PROGRESS.md`.
 
-Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah #486 tidak menggantikan code gate `ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4`.
+Workflow `.github/workflows/spj-critical.yml` mengabaikan `docs/**` dan root `*.md`; dokumentasi-only commit setelah run #46 tidak menggantikan code gate `e4ba5cf869f554cee9f0b9d230e437f1aee676ae`.
 
 ---
 
