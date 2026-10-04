@@ -182,7 +182,7 @@
                 aria-labelledby="tab-kesehatan"
                 class="p-4 sm:p-5"
             >
-                @if($mirrorHealth !== null) <div class="space-y-4">
+                @if($mirrorHealth !== null) <section aria-label="Kesehatan mirror kas" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm"><div class="space-y-4">
                 <div class="p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -268,7 +268,7 @@
                         </form>
                     @endif
                 </div>
-                </div> @endif
+                </section> @endif
             </div>
             </div>
         </section>
