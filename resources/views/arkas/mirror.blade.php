@@ -25,7 +25,7 @@
 
         @php($mirrorCentral = collect($status)->where('connection', 'central'))
         @php($mirrorSchool = collect($status)->where('connection', 'school'))
-        @php($activeMirrorTab = in_array(request('mirror_tab'), ['referensi', 'sekolah'], true) ? request('mirror_tab') : 'referensi')
+        @php($activeMirrorTab = in_array(request('mirror_tab'), ['referensi', 'sekolah', 'kesehatan'], true) ? request('mirror_tab') : 'referensi')
 
                 <section aria-label="Lajur sinkronisasi" class="grid gap-4 lg:grid-cols-2">
             <article class="relative overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
@@ -99,8 +99,90 @@
 
         <p class="text-xs leading-5 text-[var(--ui-fg-muted)]">Diperbarui otomatis tiap 2 detik selama proses berjalan. Sekolah pertama jalankan kedua lajur; sekolah berikutnya cukup Sinkronisasi Sekolah Aktif.</p>
 
-        @if($mirrorHealth !== null)
-            <section aria-label="Kesehatan mirror kas" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+        <section
+            id="mirror-tables"
+            class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow"
+            @click="const btn = $event.target.closest('[data-tab]'); if (btn) selectMirrorTab(btn.dataset.tab)"
+            @keydown="if ($event.key === 'ArrowRight' || $event.key === 'ArrowLeft') { const buttons = [...$el.querySelectorAll('[data-tab]')]; const current = buttons.indexOf(document.activeElement); if (current >= 0) { const next = $event.key === 'ArrowRight' ? (current + 1) % buttons.length : (current - 1 + buttons.length) % buttons.length; buttons[next].focus(); selectMirrorTab(buttons[next].dataset.tab); } }"
+        >
+            <x-tabs :tabs="[
+                ['id' => 'referensi', 'label' => 'Referensi — Database Pusat', 'icon' => 'database', 'badge' => (string) $mirrorCentral->count()],
+                ['id' => 'sekolah', 'label' => 'Operasional — Database Sekolah', 'icon' => 'school', 'badge' => (string) $mirrorSchool->count()],
+                ['id' => 'kesehatan', 'label' => 'Kesehatan Kas', 'icon' => 'audit', 'badge' => (string) ($mirrorHealth !== null && ($healthStaleTotal ?? 0) > 0 ? $healthStaleTotal : '−')],
+            ]" :activeTab="$activeMirrorTab" />
+
+            <div
+                x-show="mirrorTab === 'referensi'"
+                x-transition
+                role="tabpanel"
+                id="panel-referensi"
+                aria-labelledby="tab-referensi"
+                class="p-4 sm:p-5"
+            >
+                <p class="mb-3 text-sm text-[var(--ui-fg-muted)]">Referensi ARKAS di database pusat, dipakai bersama semua sekolah.</p>
+                <x-ui.table pagination="auto" compact>
+                    <thead>
+                        <tr>
+                            <th>Tabel ARKAS</th>
+                            <th>Tabel Sinkronisasi</th>
+                            <th>Label</th>
+                            <th class="text-right">Baris</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($mirrorCentral as $row)
+                            <tr>
+                                <td class="font-mono text-xs">{{ $row['source'] }}</td>
+                                <td class="font-mono text-xs">{{ $row['mirror'] }}</td>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right font-semibold tabular-nums">{{ number_format($row['rows']) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </x-ui.table>
+            </div>
+
+            <div
+                x-show="mirrorTab === 'sekolah'"
+                x-cloak
+                x-transition
+                role="tabpanel"
+                id="panel-sekolah"
+                aria-labelledby="tab-sekolah"
+                class="p-4 sm:p-5"
+            >
+                <p class="mb-3 text-sm text-[var(--ui-fg-muted)]">Data operasional ARKAS di database sekolah aktif. Tabel aplikasi cukup memanggil data ini, tidak menulis ulang kolom.</p>
+                <x-ui.table pagination="auto" compact>
+                    <thead>
+                        <tr>
+                            <th>Tabel ARKAS</th>
+                            <th>Tabel Sinkronisasi</th>
+                            <th>Label</th>
+                            <th class="text-right">Baris</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($mirrorSchool as $row)
+                            <tr>
+                                <td class="font-mono text-xs">{{ $row['source'] }}</td>
+                                <td class="font-mono text-xs">{{ $row['mirror'] }}</td>
+                                <td>{{ $row['label'] }}</td>
+                                <td class="text-right font-semibold tabular-nums">{{ number_format($row['rows']) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </x-ui.table>
+
+            <div
+                x-show="mirrorTab === 'kesehatan'"
+                x-cloak
+                x-transition
+                role="tabpanel"
+                id="panel-kesehatan"
+                aria-labelledby="tab-kesehatan"
+                class="p-4 sm:p-5"
+            >
+                @if($mirrorHealth !== null) <div class="space-y-4">
                 <div class="p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div class="flex items-center gap-3">
@@ -186,81 +268,8 @@
                         </form>
                     @endif
                 </div>
-            </section>
-        @endif
-
-        <section
-            id="mirror-tables"
-            class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow"
-            @click="const btn = $event.target.closest('[data-tab]'); if (btn) selectMirrorTab(btn.dataset.tab)"
-            @keydown="if ($event.key === 'ArrowRight' || $event.key === 'ArrowLeft') { const buttons = [...$el.querySelectorAll('[data-tab]')]; const current = buttons.indexOf(document.activeElement); if (current >= 0) { const next = $event.key === 'ArrowRight' ? (current + 1) % buttons.length : (current - 1 + buttons.length) % buttons.length; buttons[next].focus(); selectMirrorTab(buttons[next].dataset.tab); } }"
-        >
-            <x-tabs :tabs="[
-                ['id' => 'referensi', 'label' => 'Referensi — Database Pusat', 'icon' => 'database', 'badge' => (string) $mirrorCentral->count()],
-                ['id' => 'sekolah', 'label' => 'Operasional — Database Sekolah', 'icon' => 'school', 'badge' => (string) $mirrorSchool->count()],
-            ]" :activeTab="$activeMirrorTab" />
-
-            <div
-                x-show="mirrorTab === 'referensi'"
-                x-transition
-                role="tabpanel"
-                id="panel-referensi"
-                aria-labelledby="tab-referensi"
-                class="p-4 sm:p-5"
-            >
-                <p class="mb-3 text-sm text-[var(--ui-fg-muted)]">Referensi ARKAS di database pusat, dipakai bersama semua sekolah.</p>
-                <x-ui.table pagination="auto" compact>
-                    <thead>
-                        <tr>
-                            <th>Tabel ARKAS</th>
-                            <th>Tabel Sinkronisasi</th>
-                            <th>Label</th>
-                            <th class="text-right">Baris</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($mirrorCentral as $row)
-                            <tr>
-                                <td class="font-mono text-xs">{{ $row['source'] }}</td>
-                                <td class="font-mono text-xs">{{ $row['mirror'] }}</td>
-                                <td>{{ $row['label'] }}</td>
-                                <td class="text-right font-semibold tabular-nums">{{ number_format($row['rows']) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </x-ui.table>
+                </div> @endif
             </div>
-
-            <div
-                x-show="mirrorTab === 'sekolah'"
-                x-cloak
-                x-transition
-                role="tabpanel"
-                id="panel-sekolah"
-                aria-labelledby="tab-sekolah"
-                class="p-4 sm:p-5"
-            >
-                <p class="mb-3 text-sm text-[var(--ui-fg-muted)]">Data operasional ARKAS di database sekolah aktif. Tabel aplikasi cukup memanggil data ini, tidak menulis ulang kolom.</p>
-                <x-ui.table pagination="auto" compact>
-                    <thead>
-                        <tr>
-                            <th>Tabel ARKAS</th>
-                            <th>Tabel Sinkronisasi</th>
-                            <th>Label</th>
-                            <th class="text-right">Baris</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($mirrorSchool as $row)
-                            <tr>
-                                <td class="font-mono text-xs">{{ $row['source'] }}</td>
-                                <td class="font-mono text-xs">{{ $row['mirror'] }}</td>
-                                <td>{{ $row['label'] }}</td>
-                                <td class="text-right font-semibold tabular-nums">{{ number_format($row['rows']) }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </x-ui.table>
             </div>
         </section>
     </div>
@@ -270,7 +279,7 @@
             return {
                 mirrorTab: @json($activeMirrorTab),
                 selectMirrorTab(name) {
-                    if (name !== 'referensi' && name !== 'sekolah') return;
+                    if (name !== 'referensi' && name !== 'sekolah' && name !== 'kesehatan') return;
                     this.mirrorTab = name;
                     const url = new URL(window.location.href);
                     url.searchParams.set('mirror_tab', name);
