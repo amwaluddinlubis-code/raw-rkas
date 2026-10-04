@@ -131,7 +131,7 @@ class Transaction extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(TransactionItem::class);
+        return $this->hasMany(TransactionItem::class)->orderByRaw('COALESCE(NULLIF(sort_order, 0), id)');
     }
 
     public function goods(): HasManyThrough

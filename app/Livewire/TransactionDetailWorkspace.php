@@ -11,6 +11,7 @@ use App\Support\ActiveSpjContext;
 use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -225,10 +226,44 @@ class TransactionDetailWorkspace extends Component
         ]);
     }
 
+    public function moveItem(int $itemId, string $direction): void
+    {
+        $transaction = $this->transaction();
+        if ($transaction->spjPackage?->status === 'FINAL') {
+            $this->addError('form', 'Urutan rincian tidak dapat diubah karena paket sudah FINAL.');
+
+            return;
+        }
+        $ordered = $transaction->items->values()->all();
+        $index = collect($ordered)->search(fn ($item): bool => (int) $item->id === $itemId);
+        if ($index === false) {
+            return;
+        }
+        $swapWith = $direction === 'up' ? $index - 1 : ($direction === 'down' ? $index + 1 : $index);
+        if ($swapWith < 0 || $swapWith >= count($ordered)) {
+            return;
+        }
+        [$ordered[$index], $ordered[$swapWith]] = [$ordered[$swapWith], $ordered[$index]];
+        DB::transaction(function () use ($ordered): void {
+            foreach ($ordered as $position => $item) {
+                DB::connection('school')->table('transaction_items')->where('id', $item->id)->update(['sort_order' => $position + 1]);
+            }
+        });
+        app(OperationalAuditService::class)->record(
+            (int) $transaction->fiscal_year_id ?: null,
+            'TRANSACTION',
+            (int) $transaction->id,
+            'TRANSACTION_ITEMS_REORDERED',
+            'Urutan rincian barang/jasa untuk SPJ diperbarui.',
+        );
+        $this->loadTransaction();
+        $this->dispatch('app-notify', type: 'success', message: 'Urutan rincian diperbarui.');
+    }
+
     private function transaction(): Transaction
     {
         return Transaction::query()->with([
-            'items' => fn ($query) => $query->orderBy('id'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
+            'items' => fn ($query) => $query->orderByRaw('COALESCE(NULLIF(sort_order, 0), id)'), 'goods', 'workers', 'participants', 'travels', 'honors', 'workOrder', 'spjPackage',
         ])->findOrFail($this->transactionId);
     }
 
