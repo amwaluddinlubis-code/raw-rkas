@@ -130,6 +130,9 @@
                                 @include('spj.partials.package.validation')
                                 @include('spj.partials.package.documents')
                             </div>
+                            <div class="grid grid-cols-1 gap-2 px-4 py-4 sm:grid-cols-2">
+                                @include('spj.partials.package.package-navigation', ['packageTab' => 'rincian'])
+                            </div>
                         </div>
 
                         <div x-show="packageTab === 'isian'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-isian" role="tabpanel" aria-labelledby="package-tab-isian" data-panel="isian" class="tab-panel" x-data="{saving:false}">
@@ -178,13 +181,13 @@
                                 @include('spj.partials.package.categories.jasa-lainnya')
                                 <div class="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
                                     @if($previousPackageId ?? null)
-                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $previousPackageId])" title="Buka paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center">← Prev</x-ui.button>
+                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $previousPackageId, 'package_tab' => 'isian'])" title="Buka paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center">← Prev</x-ui.button>
                                     @else
                                         <x-ui.button variant="secondary" disabled title="Tidak ada paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">← Prev</x-ui.button>
                                     @endif
                                     <x-ui.button type="submit" x-bind:disabled="saving" class="justify-center px-4 py-1.5 text-base"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></x-ui.button>
                                     @if($nextPackageId ?? null)
-                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $nextPackageId])" title="Buka paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center">Next →</x-ui.button>
+                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $nextPackageId, 'package_tab' => 'isian'])" title="Buka paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center">Next →</x-ui.button>
                                     @else
                                         <x-ui.button variant="secondary" disabled title="Tidak ada paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">Next →</x-ui.button>
                                     @endif
@@ -196,10 +199,16 @@
 
                         <div x-show="packageTab === 'pajak'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-pajak" role="tabpanel" aria-labelledby="package-tab-pajak" data-panel="pajak" class="tab-panel p-4">
                             @include('spj.partials.package.tax-reference')
+                            <div class="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2">
+                                @include('spj.partials.package.package-navigation', ['packageTab' => 'pajak'])
+                            </div>
                         </div>
 
                         <div x-show="packageTab === 'penomoran'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-penomoran" role="tabpanel" aria-labelledby="package-tab-penomoran" data-panel="penomoran" class="tab-panel p-4">
                             @include('spj.partials.package.numbering')
+                            <div class="grid grid-cols-1 gap-2 pt-4 sm:grid-cols-2">
+                                @include('spj.partials.package.package-navigation', ['packageTab' => 'penomoran'])
+                            </div>
                         </div>
                     </section>
                 @php
