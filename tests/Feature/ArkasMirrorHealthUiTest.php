@@ -26,6 +26,9 @@ class ArkasMirrorHealthUiTest extends TestCase
         $this->assertStringContainsString('<x-ui.button', $blade);
         $this->assertStringContainsString("route('arkas.mirror.health-repair')", $blade);
         $this->assertStringContainsString('data-confirm=', $blade);
+        $this->assertStringContainsString('name="health_year"', $blade);
+        $this->assertStringContainsString('name="health_category"', $blade);
+        $this->assertStringContainsString('data-auto-submit="true"', $blade);
         $this->assertStringContainsString('var(--ui-', $blade);
         $this->assertStringNotContainsString('text-slate-', $blade);
         $this->assertStringNotContainsString('bg-white', $blade);

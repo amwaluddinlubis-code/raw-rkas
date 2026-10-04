@@ -64,7 +64,7 @@ class ArkasMirrorHealthCommand extends Command
             }
             foreach ($report['scopes'] as $scope) {
                 $flag = ($scope['stale_n'] > 0 || $scope['missing_n'] > 0) ? ' BASI' : ' ok';
-                $this->line('  TA '.$scope['year'].' fund '.$scope['fund'].': mirror n='.$scope['mirror_n'].' sum='.$this->rupiah($scope['mirror_sum'])
+                $this->line('  TA '.$scope['year'].' fund '.$scope['fund'].' '.$scope['category'].': mirror n='.$scope['mirror_n'].' sum='.$this->rupiah($scope['mirror_sum'])
                     .' | bku n='.$scope['bku_n'].' sum='.$this->rupiah($scope['bku_sum'])
                     .' | stale n='.$scope['stale_n'].' sum='.$this->rupiah($scope['stale_sum'])
                     .' | hilang-di-mirror n='.$scope['missing_n'].$flag);
@@ -86,7 +86,7 @@ class ArkasMirrorHealthCommand extends Command
                 }
                 $this->line('  backup: '.$backup);
                 foreach ($health->repair() as $done) {
-                    $this->line('  dihapus TA '.$done['year'].' fund '.$done['fund'].': n='.$done['deleted_n'].' sum='.$this->rupiah($done['deleted_sum']));
+                    $this->line('  dihapus TA '.$done['year'].' fund '.$done['fund'].' '.$done['category'].': n='.$done['deleted_n'].' sum='.$this->rupiah($done['deleted_sum']));
                 }
                 $after = $health->check();
                 $this->line('  pasca-repair: '.($after['ok'] ? 'SEHAT' : 'MASIH BERMASALAH — telaah manual'));

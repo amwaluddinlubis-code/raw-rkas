@@ -115,7 +115,6 @@
         <p class="text-xs leading-5 text-[var(--ui-fg-muted)]">Diperbarui otomatis tiap 2 detik selama proses berjalan. Sekolah pertama jalankan kedua lajur; sekolah berikutnya cukup Sinkronisasi Sekolah Aktif.</p>
 
         @if($mirrorHealth !== null)
-            @php($healthStale = collect($mirrorHealth['scopes'] ?? [])->sum('stale_n'))
             <section aria-label="Kesehatan mirror kas" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <div class="p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -135,11 +134,33 @@
                         @endif
                     </div>
                     <div class="mt-4">
+                        <form method="GET" action="{{ route('arkas.mirror') }}" class="mb-3 flex flex-wrap items-end gap-3">
+                            @if(request('mirror_tab'))
+                                <input type="hidden" name="mirror_tab" value="{{ request('mirror_tab') }}">
+                            @endif
+                            <x-ui.field label="Tahun" for="health-year">
+                                <x-ui.select id="health-year" name="health_year" data-auto-submit="true">
+                                    <option value="">Semua tahun</option>
+                                    @foreach(array_keys($healthYears ?? []) as $year)
+                                        <option value="{{ $year }}" @selected((string) ($healthYear ?? '') === (string) $year)>TA {{ $year }}</option>
+                                    @endforeach
+                                </x-ui.select>
+                            </x-ui.field>
+                            <x-ui.field label="Kategori" for="health-category">
+                                <x-ui.select id="health-category" name="health_category" data-auto-submit="true">
+                                    <option value="">Semua kategori</option>
+                                    @foreach(array_keys($healthCategories ?? []) as $category)
+                                        <option value="{{ $category }}" @selected((string) ($healthCategory ?? '') === (string) $category)>{{ $category === 'TANPA_KATEGORI' ? '—' : $category }}</option>
+                                    @endforeach
+                                </x-ui.select>
+                            </x-ui.field>
+                        </form>
                         <x-ui.table pagination="auto" compact>
                             <thead>
                                 <tr>
                                     <th>Tahun</th>
                                     <th>Dana</th>
+                                    <th>Kategori</th>
                                     <th class="text-right">Mirror (baris)</th>
                                     <th class="text-right">Mirror (Rp)</th>
                                     <th class="text-right">BKU (baris)</th>
@@ -153,6 +174,7 @@
                                     <tr>
                                         <td class="tabular-nums">{{ $scope['year'] }}</td>
                                         <td class="tabular-nums">{{ $scope['fund'] }}</td>
+                                        <td>{{ $scope['category'] === 'TANPA_KATEGORI' ? '—' : $scope['category'] }}</td>
                                         <td class="text-right tabular-nums">{{ number_format($scope['mirror_n']) }}</td>
                                         <td class="text-right tabular-nums">{{ number_format($scope['mirror_sum'], 0, ',', '.') }}</td>
                                         <td class="text-right tabular-nums">{{ number_format($scope['bku_n']) }}</td>
@@ -162,7 +184,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-[var(--ui-fg-muted)]">Belum ada kas terscope pada sekolah aktif.</td>
+                                        <td colspan="9" class="text-center text-[var(--ui-fg-muted)]">Belum ada kas terscope pada sekolah aktif.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -171,11 +193,11 @@
                     @if(($mirrorHealth['unscoped_n'] ?? 0) > 0)
                         <p class="mt-2 text-xs text-[var(--ui-fg-muted)]">{{ number_format($mirrorHealth['unscoped_n']) }} baris tanpa tahun/dana teridentifikasi — dilaporkan saja, tidak tersentuh repair.</p>
                     @endif
-                    @if($healthStale > 0)
-                        <form method="POST" action="{{ route('arkas.mirror.health-repair') }}" data-confirm="Hapus {{ number_format($healthStale) }} baris mirror kas basi pada sekolah aktif? Database dibackup otomatis terlebih dahulu." class="mt-3">
+                    @if(($healthStaleTotal ?? 0) > 0)
+                        <form method="POST" action="{{ route('arkas.mirror.health-repair') }}" data-confirm="Hapus {{ number_format($healthStaleTotal) }} baris mirror kas basi pada sekolah aktif (seluruh tahun dan kategori)? Database dibackup otomatis terlebih dahulu." class="mt-3">
                             @csrf
                             <input type="hidden" name="confirm_sync" value="1">
-                            <x-ui.button type="submit" variant="danger" class="w-full" icon="trash">Bersihkan {{ number_format($healthStale) }} baris basi</x-ui.button>
+                            <x-ui.button type="submit" variant="danger" class="w-full" icon="trash">Bersihkan {{ number_format($healthStaleTotal) }} baris basi (semua filter)</x-ui.button>
                         </form>
                     @endif
                 </div>

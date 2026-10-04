@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\File;
 class ArkasMirrorHealthService
 {
     /**
-     * @return array{scopes: array<int, array{year: int|string, fund: int|string, fiscal_year_id: ?int, mirror_n: int, mirror_sum: float, bku_n: int, bku_sum: float, stale_n: int, stale_sum: float, missing_n: int}>, unscoped_n: int, ok: bool}
+     * @return array{scopes: array<int, array{year: int, fund: int, category: string, fiscal_year_id: ?int, mirror_n: int, mirror_sum: float, bku_n: int, bku_sum: float, stale_n: int, stale_sum: float, missing_n: int}>, unscoped_n: int, ok: bool}
      */
     public function check(): array
     {
@@ -26,8 +26,8 @@ class ArkasMirrorHealthService
         $years = $db->table('fiscal_years')->pluck('year', 'id')->all();
 
         $truth = [];
-        foreach ($db->table('arkas_bku_rows')->get(['fiscal_year_id', 'fund_source_id', 'source_kas_id', 'amount']) as $row) {
-            $key = ((int) ($years[$row->fiscal_year_id] ?? 0)).'|'.((int) $row->fund_source_id);
+        foreach ($db->table('arkas_bku_rows')->get(['fiscal_year_id', 'fund_source_id', 'source_kas_id', 'category', 'amount']) as $row) {
+            $key = self::scopeKey((int) ($years[$row->fiscal_year_id] ?? 0), (int) $row->fund_source_id, self::normalizeCategory($row->category));
             $truth[$key]['ids'][(string) $row->source_kas_id] = true;
             $truth[$key]['n'] = ($truth[$key]['n'] ?? 0) + 1;
             $truth[$key]['sum'] = ($truth[$key]['sum'] ?? 0) + (float) $row->amount;
@@ -44,21 +44,21 @@ class ArkasMirrorHealthService
 
                 continue;
             }
-            $year = substr((string) (ArkasMirrorResolver::field($payload, ['TANGGAL_TRANSAKSI', 'tanggal_transaksi']) ?? ''), 0, 4);
-            $fund = (string) (ArkasMirrorResolver::field($payload, ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?? '');
-            $kasId = (string) (ArkasMirrorResolver::field($payload, ['ID_KAS_UMUM', 'id_kas_umum']) ?? '');
-            if ($year === '' || $fund === '' || $kasId === '') {
+            $parts = self::scopeParts($payload);
+            if ($parts === null) {
                 $unscoped++;
 
                 continue;
             }
-            $key = ((int) $year).'|'.((int) $fund);
+            [$year, $fund, $category] = $parts;
+            $key = self::scopeKey($year, $fund, $category);
             $scope = &$scopes[$key];
-            $scope['year'] = (int) $year;
-            $scope['fund'] = (int) $fund;
+            $scope['year'] = $year;
+            $scope['fund'] = $fund;
+            $scope['category'] = $category;
             $scope['mirror_n'] = ($scope['mirror_n'] ?? 0) + 1;
             $scope['mirror_sum'] = ($scope['mirror_sum'] ?? 0) + (float) (ArkasMirrorResolver::field($payload, ['JUMLAH', 'jumlah']) ?? 0);
-            $mirrorIds[$key][$kasId] = (float) (ArkasMirrorResolver::field($payload, ['JUMLAH', 'jumlah']) ?? 0);
+            $mirrorIds[$key][$parts[3]] = (float) (ArkasMirrorResolver::field($payload, ['JUMLAH', 'jumlah']) ?? 0);
             unset($scope);
         }
 
@@ -87,6 +87,7 @@ class ArkasMirrorHealthService
                 foreach ($mirrorIds as $ids) {
                     if (isset($ids[$kasId])) {
                         $found = true;
+
                         break;
                     }
                 }
@@ -107,7 +108,7 @@ class ArkasMirrorHealthService
      * Hapus baris mirror basi pada scope yang punya acuan bku. Mengembalikan
      * jumlah dan nilai yang dihapus per scope.
      *
-     * @return array<int, array{year: int, fund: int, deleted_n: int, deleted_sum: float}>
+     * @return array<int, array{year: int, fund: int, category: string, deleted_n: int, deleted_sum: float}>
      */
     public function repair(): array
     {
@@ -126,20 +127,22 @@ class ArkasMirrorHealthService
             if (! is_array($payload)) {
                 continue;
             }
-            $year = substr((string) (ArkasMirrorResolver::field($payload, ['TANGGAL_TRANSAKSI', 'tanggal_transaksi']) ?? ''), 0, 4);
-            $fund = (string) (ArkasMirrorResolver::field($payload, ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?? '');
-            $kasId = (string) (ArkasMirrorResolver::field($payload, ['ID_KAS_UMUM', 'id_kas_umum']) ?? '');
-            if ($year === '' || $fund === '' || $kasId === '') {
+            $parts = self::scopeParts($payload);
+            if ($parts === null) {
                 continue;
             }
+            [$year, $fund, $category, $kasId] = $parts;
+            // Acuan kebenaran tetap per (tahun, dana) mengikuti kontrak prune
+            // sync agar repair CLI/GUI konsisten dengan perilaku sync.
             $key = ((int) $year).'|'.((int) $fund);
             if (! isset($keep[$key]) || isset($keep[$key][$kasId])) {
                 continue;
             }
             $db->table('arkas_mirror_kas_umum')->where('source_key', $row->source_key)->delete();
-            $index = $key;
-            $deleted[$index]['year'] = (int) $year;
-            $deleted[$index]['fund'] = (int) $fund;
+            $index = $key.'|'.$category;
+            $deleted[$index]['year'] = $year;
+            $deleted[$index]['fund'] = $fund;
+            $deleted[$index]['category'] = $category;
             $deleted[$index]['deleted_n'] = ($deleted[$index]['deleted_n'] ?? 0) + 1;
             $deleted[$index]['deleted_sum'] = ($deleted[$index]['deleted_sum'] ?? 0) + (float) (ArkasMirrorResolver::field($payload, ['JUMLAH', 'jumlah']) ?? 0);
         }
@@ -149,6 +152,37 @@ class ArkasMirrorHealthService
         }
 
         return array_values($deleted);
+    }
+
+    /**
+     * Pecah payload menjadi [tahun, dana, kategori, idKas] yang
+     * dinormalisasi, atau null bila tidak bisa di-scope.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return ?array{0:int, 1:int, 2:string, 3:string}
+     */
+    private static function scopeParts(array $payload): ?array
+    {
+        $year = substr((string) (ArkasMirrorResolver::field($payload, ['TANGGAL_TRANSAKSI', 'tanggal_transaksi']) ?? ''), 0, 4);
+        $fund = (string) (ArkasMirrorResolver::field($payload, ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?? '');
+        $kasId = (string) (ArkasMirrorResolver::field($payload, ['ID_KAS_UMUM', 'id_kas_umum']) ?? '');
+        if ($year === '' || $fund === '' || $kasId === '') {
+            return null;
+        }
+
+        return [(int) $year, (int) $fund, self::normalizeCategory(ArkasMirrorResolver::field($payload, ['KATEGORI_BKU', 'kategori_bku'])), $kasId];
+    }
+
+    private static function normalizeCategory(mixed $value): string
+    {
+        $normalized = strtoupper(trim((string) $value));
+
+        return $normalized === '' ? 'TANPA_KATEGORI' : $normalized;
+    }
+
+    private static function scopeKey(int $year, int $fund, string $category): string
+    {
+        return $year.'|'.$fund.'|'.$category;
     }
 
     /**

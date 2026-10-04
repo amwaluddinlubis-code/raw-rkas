@@ -32,6 +32,25 @@ class ArkasMirrorController extends Controller
             }
         }
 
+        $healthYears = [];
+        $healthCategories = [];
+        $healthStaleTotal = 0;
+        $healthYear = request('health_year') !== null ? (string) request('health_year') : '';
+        $healthCategory = request('health_category') !== null ? (string) request('health_category') : '';
+        if (is_array($mirrorHealth['scopes'] ?? null)) {
+            foreach ($mirrorHealth['scopes'] as $scope) {
+                $healthYears[(string) $scope['year']] = true;
+                $healthCategories[(string) $scope['category']] = true;
+            }
+            ksort($healthYears);
+            ksort($healthCategories);
+            $healthStaleTotal = collect($mirrorHealth['scopes'])->sum('stale_n');
+            $mirrorHealth['scopes'] = array_values(array_filter($mirrorHealth['scopes'], function (array $scope) use ($healthYear, $healthCategory): bool {
+                return ($healthYear === '' || (string) $scope['year'] === $healthYear)
+                    && ($healthCategory === '' || (string) $scope['category'] === $healthCategory);
+            }));
+        }
+
         foreach (ArkasFixedMirrorService::registry() as $entry) {
             $connection = $entry['connection'] === 'central' ? null : 'school';
             $rows = 0;
@@ -57,7 +76,7 @@ class ArkasMirrorController extends Controller
             ->latest('id')
             ->first();
 
-        return view('arkas.mirror', compact('status', 'lastRun', 'lastRefsRun', 'mirrorHealth'));
+        return view('arkas.mirror', compact('status', 'lastRun', 'lastRefsRun', 'mirrorHealth', 'healthYears', 'healthCategories', 'healthYear', 'healthCategory', 'healthStaleTotal'));
     }
 
     public function repairHealth(Request $request, SchoolDatabaseManager $databases, ArkasMirrorHealthService $health): RedirectResponse

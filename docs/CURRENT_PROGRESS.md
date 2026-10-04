@@ -1241,7 +1241,13 @@ throttle:3,1, validasi `confirm_sync`). Logic backup dipindah ke
 `ArkasMirrorHealthService::backupActiveDatabase` agar dipakai command
 dan controller. Mengikuti pola halaman: `x-page-header`,
 `x-ui.table`/`x-ui.button`/`x-ui.alert`, token `--ui-*`, tanpa card
-raksasa baru.
+raksasa baru. Update 2026-10-04: tabel dipecah per kategori BKU
+(TA, dana, kategori) karena total gabungan membingungkan; scope service
+ikut dipecah (`tahun|dana|kategori`, kategori dinormalisasi uppercase)
+sementara perilaku repair tidak berubah.
+Filter tahun + kategori (GET, auto-submit pola importer) ditambahkan
+pada section GUI; badge + tombol repair tetap memakai total seluruh
+sekolah agar tidak menyesatkan saat filter aktif.
 
 Evidence: `ArkasMirrorHealthUiTest` (route + middleware + primitive
 kanonis), `php artisan view:cache` sukses, 26 test / 135 assertions

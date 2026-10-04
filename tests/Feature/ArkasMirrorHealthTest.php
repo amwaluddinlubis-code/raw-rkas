@@ -36,16 +36,22 @@ class ArkasMirrorHealthTest extends TestCase
             'fiscal_year_id' => 1, 'fund_source_id' => 1, 'source_kas_id' => 'KAS-NEW',
             'category' => 'BELANJA', 'amount' => 500000, 'payload' => json_encode([]),
         ]);
+        DB::connection('school')->table('arkas_bku_rows')->insert([
+            'fiscal_year_id' => 1, 'fund_source_id' => 1, 'source_kas_id' => 'TAX-1',
+            'category' => 'PAJAK', 'amount' => 50000, 'payload' => json_encode([]),
+        ]);
         $this->seedMirrorKas('KAS-NEW', ['ID_KAS_UMUM' => 'KAS-NEW', 'ID_REF_SUMBER_DANA' => 1, 'KATEGORI_BKU' => 'BELANJA', 'TANGGAL_TRANSAKSI' => '2026-03-11', 'JUMLAH' => 500000]);
         $this->seedMirrorKas('KAS-OLD', ['ID_KAS_UMUM' => 'KAS-OLD', 'ID_REF_SUMBER_DANA' => 1, 'KATEGORI_BKU' => 'BELANJA', 'TANGGAL_TRANSAKSI' => '2026-03-11', 'JUMLAH' => 500000]);
+        $this->seedMirrorKas('TAX-1', ['ID_KAS_UMUM' => 'TAX-1', 'ID_REF_SUMBER_DANA' => 1, 'KATEGORI_BKU' => 'PAJAK', 'TANGGAL_TRANSAKSI' => '2026-03-11', 'JUMLAH' => 50000]);
 
         $service = app(ArkasMirrorHealthService::class);
         $report = $service->check();
 
         $this->assertFalse($report['ok']);
-        $this->assertCount(1, $report['scopes']);
+        $this->assertCount(2, $report['scopes']);
         $this->assertSame(2026, $report['scopes'][0]['year']);
         $this->assertSame(1, $report['scopes'][0]['fund']);
+        $this->assertSame('BELANJA', $report['scopes'][0]['category']);
         $this->assertSame(2, $report['scopes'][0]['mirror_n']);
         $this->assertSame(1, $report['scopes'][0]['bku_n']);
         $this->assertSame(1, $report['scopes'][0]['stale_n']);
@@ -55,7 +61,8 @@ class ArkasMirrorHealthTest extends TestCase
 
         $this->assertCount(1, $deleted);
         $this->assertSame(1, $deleted[0]['deleted_n']);
-        $this->assertSame(['KAS-NEW'], DB::connection('school')->table('arkas_mirror_kas_umum')->pluck('source_key')->all());
+        $this->assertSame('BELANJA', $deleted[0]['category']);
+        $this->assertSame(['KAS-NEW', 'TAX-1'], DB::connection('school')->table('arkas_mirror_kas_umum')->orderBy('source_key')->pluck('source_key')->all());
         $this->assertTrue($service->check()['ok']);
     }
 
