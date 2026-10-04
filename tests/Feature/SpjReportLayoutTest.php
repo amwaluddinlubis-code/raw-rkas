@@ -199,7 +199,7 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/livewire/spj-preparation-filter.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('sm:grid-cols-2 lg:grid-cols-5 lg:items-end', $blade);
+        $this->assertStringContainsString('sm:grid-cols-2 lg:grid-cols-6 lg:items-end', $blade);
         $this->assertStringContainsString('icon="refresh"', $blade);
         $this->assertStringContainsString('>Reset Filter</x-ui.button>', $blade);
     }
