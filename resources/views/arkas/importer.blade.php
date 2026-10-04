@@ -139,6 +139,28 @@
                                     <div><p class="text-[11px] font-bold uppercase tracking-wide" style="color: var(--ui-fg-muted)">Rekonsiliasi penuh</p><p class="mt-1 text-xs" style="color: var(--ui-fg-muted)">Bridge {{ number_format($reconciliation['source_count']) }} baris · staging {{ number_format($reconciliation['staged_count']) }} baris</p></div>
                                     <div class="flex flex-wrap gap-2 text-xs font-semibold"><span class="rounded-full border px-2 py-1" style="border-color: #86efac; color: #15803d">Baru {{ $reconciliation['new'] }}</span><span class="rounded-full border px-2 py-1" style="border-color: #fcd34d; color: #a16207">Berubah {{ $reconciliation['changed'] }}</span><span class="rounded-full border px-2 py-1" style="border-color: var(--ui-line); color: var(--ui-fg-muted)">Tetap {{ $reconciliation['unchanged'] }}</span><span class="rounded-full border px-2 py-1" style="border-color: #fda4af; color: #be123c">Hilang {{ $reconciliation['removed'] }}</span></div>
                                 </div>
+                                @if(!empty($reconciliation['diffs']))
+                                    <div class="mt-3 overflow-x-auto rounded-lg border" style="border-color: var(--ui-line)">
+                                        <table class="min-w-full text-xs">
+                                            <thead><tr style="color: var(--ui-fg-muted)"><th class="px-2 py-1.5 text-left">Status</th><th class="px-2 py-1.5 text-left">Kunci</th><th class="px-2 py-1.5 text-left">Kolom</th><th class="px-2 py-1.5 text-right">Sebelum</th><th class="px-2 py-1.5 text-right">Sesudah</th><th class="px-2 py-1.5 text-right">Selisih</th></tr></thead>
+                                            <tbody>
+                                                @foreach($reconciliation['diffs'] as $diff)
+                                                    @foreach($diff['deltas'] as $delta)
+                                                        <tr class="border-t" style="border-color: var(--ui-line)">
+                                                            <td class="px-2 py-1">{{ $diff['type'] === 'new' ? 'Baru' : 'Berubah' }}</td>
+                                                            <td class="px-2 py-1 font-mono">{{ $diff['source_key'] }}</td>
+                                                            <td class="px-2 py-1">{{ $delta['field'] }}</td>
+                                                            <td class="px-2 py-1 text-right tabular-nums">{{ $delta['old'] === null ? '—' : number_format($delta['old'], 0, ',', '.') }}</td>
+                                                            <td class="px-2 py-1 text-right tabular-nums">{{ $delta['new'] === null ? '—' : number_format($delta['new'], 0, ',', '.') }}</td>
+                                                            <td class="px-2 py-1 text-right tabular-nums">{{ number_format($delta['delta'], 0, ',', '.') }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p class="mt-2 text-[11px]" style="color: var(--ui-fg-muted)">Maks 25 baris dengan perubahan nominal. Pemeriksaan ini hanya membaca staging; tidak menulis data.</p>
+                                @endif
                             </div>
                         @endif
                         @if($schemaDrift['new'] !== [] || $schemaDrift['missing'] !== [])

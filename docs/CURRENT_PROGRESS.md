@@ -5,6 +5,22 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Import diff preview nominal (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+Preview rekonsiliasi Generic Importer kini menampilkan tabel diff sampai
+25 baris pertama yang mengalami perubahan nominal, dengan kolom status,
+kunci sumber, kolom, nilai sebelum/sesudah, dan selisih. Hanya kolom
+numerik berpola `jumlah|nominal|pagu|total|nilai|harga|amount|volume|sisa`
+yang ditampilkan; staging tidak ditulis oleh preview. Perubahan ini
+mempermudah operator meninjau arah dan besarnya perubahan sebelum klik
+Sinkronkan (P3 rencana diagnostik ARKAS).
+
+Evidence: `tests/Unit/ArkasReconciliationDiffTest.php` 3 passed / 8
+assertions; `ArkasGenericImportReleaseSafetyTest` 5/29 tetap hijau;
+`view:cache`/`view:clear` bersih; Pint passed; `git diff --check` bersih.
+
 ## Diagnostik integritas mirror ARKAS (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.
@@ -1151,3 +1167,45 @@ prune stale mirror + write-path soft-delete + guard nota),
 `test_legacy_period_counts_exclude_soft_deleted_rows`), Pint passed,
 `git diff --check` bersih. Kedua guard write/legacy terbukti gagal tanpa
 fix.
+
+## Repair stale kas mirror SDN 316 Ranto Panjang (10208246) 2026-10-04
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Gejala sama seperti 10208183: realisasi 324jt vs pagu 216jt (1,5x),
+TW1-TW3 tepat 2x pagu (108jt vs 54jt) di ketiga tab revisi 2026-BOS
+(`DTflFNheek6Zlw`, `OQAaOGDZr0qpNf`, `_N4R481jcUS6Kv`). Diagnosis:
+mirror memuat 3 batch (`2026-07-01` 113 baris/108jt +
+`2026-09-27` 74/54jt + `2026-10-02` 187/162jt); `arkas_bku_rows` yang
+dibersihkan sync = tepat batch Oktober (187/162jt). Repair (backup
+`spj-10208246-preprune-20261004.sqlite`): 321 baris basi dihapus
+(BELANJA 187/162jt, PENERIMAAN_BOS 4/432jt, PAJAK 90/17,2jt, plus
+SALDO_AWAL/PERGESERAN/BUNGA_BANK/PAJAK_BANK), acuan silang 323
+`source_kas_id` bku FY2026-BOS seluruhnya ada di mirror. Hasil: ketiga
+tab identik — ALL 216jt/162jt; TW1-TW3 54jt/54jt; TW4 54jt/0. Tidak ada
+perubahan kode (prune otomatis `pruneStaleKasMirror` yang sudah rilis
+mencegah terulang pada sync berikutnya).
+
+## Perintah arkas:mirror-health + repair 10260756 2026-10-04
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Menjawab audit "apakah ada yang harus diupdate di proses mirror":
+inti proses dinyatakan sound (cakupan prune tepat, ID konsisten 22-char,
+isolasi tahun via peta identitas). Satu-satunya update: perintah
+deteksi dini `php artisan arkas:mirror-health [--npsn=] [--repair]`
+(`ArkasMirrorHealthCommand` tipis → `ArkasMirrorHealthService` yang
+testable). Default dry-run melapor per (sekolah, tahun, dana):
+mirror vs `arkas_bku_rows`, baris basi, baris hilang-di-mirror, dan
+baris tanpa-scope (dilapor, tak tersentuh repair). `--repair` backup
+file DB otomatis ke `storage/app/arkas-mirror-backups/` dulu.
+
+Dry-run perdana langsung menangkap kasus hidup: 10260756 TA 2026-BOS
+5 baris basi / 276,39jt (PENERIMAAN_BOS ganda 138,195jt + 4 SALDO_AWAL
+basi; BELANJA-nya sendiri sudah pas). Repair (backup
+`20261004-094444-10260756.sqlite`): 5 baris dihapus, pasca-repair
+SEHAT (361 = 361). 10208183/10208246 sehat; 10211735 belum punya kas
+tersinkron.
+
+Evidence: `ArkasMirrorHealthTest` 2 passed / 16 assertions, Pint passed,
+`git diff --check` bersih.
