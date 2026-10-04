@@ -296,6 +296,8 @@
                         <div class="mt-4"><x-ui.status-badge :status="$latestSync->status" size="xs" /></div>
                     @endif
                 </section>
+
+                <livewire:arkas-health-banner />
             </aside>
         </section>
     </div>

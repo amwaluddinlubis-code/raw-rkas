@@ -1,5 +1,4 @@
 <div class="space-y-6">
-    <livewire:arkas-health-banner />
     @php($rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
     @php(
     $spjTypeLabel = fn($value) => match (strtoupper((string) $value)) {

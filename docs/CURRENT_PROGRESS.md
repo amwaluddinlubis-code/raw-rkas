@@ -5,6 +5,16 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Kesegaran mirror ARKAS dipusatkan di Dashboard (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+`<livewire:arkas-health-banner />` dihapus dari empat halaman (Penganggaran
+RKAS, Transaksi, Rekonsiliasi, Data Hasil Sinkron) dan dipasang sekali di
+samping "Kondisi Sistem" pada Dashboard (`dashboard-workspace`). Alasan UX:
+panel yang sama tidak perlu muncul berulang tiap halaman. Evidence:
+view:cache/view:clear valid, `WebRouteSmokeTest` 6/8 hijau.
+
 ## Sidebar: link fitur baru + state aktif (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.

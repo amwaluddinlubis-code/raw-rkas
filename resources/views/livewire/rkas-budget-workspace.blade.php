@@ -71,8 +71,6 @@
         </section>
     @endif
 
-    <livewire:arkas-health-banner />
-
     @include('rkas-budget.partials.filter')
 
     @php($reportRevisi = request()->query('revisi'))
