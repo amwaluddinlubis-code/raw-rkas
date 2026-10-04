@@ -23,6 +23,8 @@
         --theme-accent-soft: #ccfbf1;
         --theme-sidebar: #134e4a;
         --theme-sidebar-deep: #042f2e;
+        --btn-success-bg: #4d7f6a;
+        --btn-success-bg-hover: #3e6c59;
     }
 
     /* Interactive controls use the same hand cursor as navigational links. */
@@ -117,8 +119,8 @@
             radial-gradient(130% 150% at 85% 0%, color-mix(in srgb, var(--theme-accent) 34%, transparent), transparent 65%),
             color-mix(in srgb, var(--theme-accent-soft) 88%, var(--ui-component-surface, #fff));
     }
-    .btn-success { background: #4d7f6a; color: var(--text-comfort-on-dark, #e8edf4); }
-    .btn-success:hover { background: #3e6c59; }
+    .btn-success { background: var(--btn-success-bg); color: var(--text-comfort-on-dark, #e8edf4); }
+    .btn-success:hover { background: var(--btn-success-bg-hover); }
     .btn-outline-primary,
     .theme-btn-outline { border: 1px solid var(--theme-content-accent, var(--theme-accent-strong)); background: var(--ui-component-surface, #fff); color: var(--theme-content-accent, var(--theme-accent-strong)); }
     .btn-outline-primary:hover,
