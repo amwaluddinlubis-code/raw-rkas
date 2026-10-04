@@ -69,6 +69,7 @@
                             <div class="h-full rounded-full bg-[var(--theme-action-bg)] transition-all" :style="'width: ' + refs.progress + '%'"></div>
                         </div>
                         <p class="mt-1 min-h-4 text-xs text-[var(--ui-fg-muted)]" x-text="refs.message"></p>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]" x-text="refs.finished_at ? 'Selesai: ' + refs.finished_at : ''"></p>
                     </div>
                     <form method="POST" action="{{ route('arkas.mirror.sync-refs') }}" data-confirm="Jalankan sinkronisasi referensi (13 tabel) ke database pusat? Cukup sekali untuk sekolah pertama." class="mt-3">
                         @csrf
@@ -102,6 +103,7 @@
                             <div class="h-full rounded-full bg-[var(--theme-action-bg)] transition-all" :style="'width: ' + school.progress + '%'"></div>
                         </div>
                         <p class="mt-1 min-h-4 text-xs text-[var(--ui-fg-muted)]" x-text="school.message"></p>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]" x-text="school.finished_at ? 'Selesai: ' + school.finished_at : ''"></p>
                     </div>
                     <form method="POST" action="{{ route('arkas.mirror.sync-school') }}" data-confirm="Jalankan sinkronisasi sekolah (17 tabel) untuk sekolah aktif? Data sumber ditimpa dari ARKAS, overlay SPJ dipertahankan." class="mt-3">
                         @csrf
@@ -299,8 +301,8 @@
                         });
                     });
                 },
-                refs: { progress: {{ (int) ($lastRefsRun?->progress ?? 0) }}, message: @json((string) ($lastRefsRun?->message ?? '')), status: @json((string) ($lastRefsRun?->status ?? '')) },
-                school: { progress: {{ (int) ($lastRun?->progress ?? 0) }}, message: @json((string) ($lastRun?->message ?? '')), status: @json((string) ($lastRun?->status ?? '')) },
+                refs: { progress: {{ (int) ($lastRefsRun?->progress ?? 0) }}, message: @json((string) ($lastRefsRun?->message ?? '')), status: @json((string) ($lastRefsRun?->status ?? '')), finished_at: @json($lastRefsRun?->finished_at?->translatedFormat('d M Y H:i')) },
+                school: { progress: {{ (int) ($lastRun?->progress ?? 0) }}, message: @json((string) ($lastRun?->message ?? '')), status: @json((string) ($lastRun?->status ?? '')), finished_at: @json($lastRun?->finished_at?->translatedFormat('d M Y H:i')) },
                 timer: null,
                 get refsLabel() { return this.refs.status ? this.refs.status + ' · ' + this.refs.progress + '%' : 'Belum pernah berjalan'; },
                 get schoolLabel() { return this.school.status ? this.school.status + ' · ' + this.school.progress + '%' : 'Belum pernah berjalan'; },

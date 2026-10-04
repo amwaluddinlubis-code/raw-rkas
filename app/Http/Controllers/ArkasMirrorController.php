@@ -105,6 +105,8 @@ class ArkasMirrorController extends Controller
             'status' => $operation->status,
             'progress' => (int) ($operation->progress ?? 0),
             'message' => (string) ($operation->message ?? ''),
+            'finished_at' => $operation->finished_at?->translatedFormat('d M Y H:i'),
+            'started_at' => $operation->started_at?->translatedFormat('d M Y H:i'),
         ] : null;
 
         return response()->json([
