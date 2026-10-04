@@ -5,6 +5,93 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Relink 88 + hapus 2 SOURCE_MISSING tenant 10260756 (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused, real tenant data) / BROWSER RVR**.
+
+Sync ARKAS #41 (487 baris) menghapus + membuat ulang BKU: 94 transaksi
+baru ACTIVE, 90 lama `SOURCE_MISSING` (status benar, bukan bug sync).
+Relink rincian menemukan 0 pasangan karena mirror lama ter-prune → ditambah
+fallback **sidik snapshot agregat** (`SpjSourceRelinkService::
+snapshotFingerprint/lastContentSnapshot/rebuiltSnapshot/
+previewSnapshotPairs`, guard unik 1:1 + tanggal + jumlah rincian sama,
+refresh ulang sebelum tulis). Tier-2 **identitas tanpa penerima** (koreksi
+vendor dinas, mis. RIZKY PONSEL → Naufal Fotocopy) diposisikan berurutan
+dengan flag review → `requires_reconciliation`. Tier-3 **nomor pesanan Siplah
+identik** (`previewOrderPairs`, guard jumlah rincian; tanggal tak diketahui
+→ review). Saran `--suggest` (skor kata + bonus akun/tanggal/nominal) +
+eksekusi eksplisit `--pair=OLD:NEW` tervalidasi untuk sisa yang butuh
+keputusan operator. Eksekusi sempat gagal total
+oleh FK gantung `spj_external_checklist_ticks.checked_by → users` (skema
+lama, hanya di tenant ini; migrasi kanonis sudah "tanpa FK") → diperbaiki
+migrasi repair baru `2026_10_04_000003` (rebuild tanpa FK, idempotent,
+0 baris terdampak). Bug fp validasi tier-2 (identitas vs penuh) ditemukan
+dan diperbaiki sebelum eksekusi penuh; sync ulang pre-execute (run #42)
+me-refresh sisi baru tanpa mengubah pasangan.
+
+Hasil: **90 tuntas, missing 0** (31 eksak + 26 koreksi vendor + 12 pesanan
+Siplah + 19 manual operator via `--pair`, 88 audit `SOURCE_RELINK` + event
+`SOURCE_RETURNED`, flag review untuk koreksi/vendor, paket/overlay ID lama
+utuh kecuali 2 hapus paksa atas instruksi eksplisit: #183 (paket #80/0079)
+dan #184 (paket #81/0080) yang dilebur ke 3 transaksi — nomor hilang tanpa
+jejak CANCELLED, hanya backup file. Mirror health 34/34 ok; backup di
+`storage/app/school-backups/relink-10260756-*`.
+
+Evidence: `SpjSourceRelinkTest` 8 passed / 35+ assertions, Pint passed,
+`git diff --check` bersih.
+
+## Hapus endpoint rekap umum spj.export (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+`GET /spj/unduh/{format}` (`spj.export` → `SpjController@export` →
+`SpjReportUseCase::export`) tidak tertaut di view/service mana pun —
+halaman susun honor/jasa memakai `spj.honor-payments.export` /
+`spj.service-recipients.export`. Dihapus: route, controller method,
+`SpjReportUseCase::export` + helper khusus `addRealizationSheet`
+(`report()`/`reportData()` tetap dipakai tab Laporan/Monitoring),
+entri smoke test, dan baris `API.md` (header count 27→26).
+
+Evidence: `WebRouteSmokeTest` 6 passed, `SpjReportLayoutTest` +
+`SpjSupplementaryTemplateContractTest` 25 passed / 245 assertions,
+Pint passed, `route:list` tak lagi memuat `/spj/unduh`, `git diff --check`
+bersih.
+
+## Navigasi Prev/Next di semua tab internal Paket SPJ (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Workspace paket (`spj?tab=paket`) kini menampilkan tombol `← Prev` /
+`Next →` antar paket (tenant sama) di tab Rincian, Rincian Pajak, dan
+Penomoran via partial baru `spj/partials/package/package-navigation`
+— sebelumnya hanya ada di Isian Manual. Link navigasi mempertahankan
+`package_tab` aktif (termasuk dua link Isian Manual yang sebelumnya
+me-reset ke Rincian); kontrak GUI §10 (tenant scope, disabled state
+bila tetangga tidak ada) tidak berubah.
+
+Evidence: `SpjPackageNavigationButtonsTest` 3 passed / 16 assertions,
+`SpjMainTabsRenderingTest` 8 passed, `SpjPackageNavigationContextTest`
+1 passed, Pint passed, `view:cache` sukses, `git diff --check` bersih.
+Run gabungan dua suite sekaligus sempat flaky (`disk I/O error` SQLite
+Windows); hijau saat dijalankan per-file.
+
+## Explorer Tabel Database Aktif dipisah pusat vs sekolah (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Halaman `/pengaturan/database-aktif` kini membedakan sumber Explorer via
+toggle `Sekolah Aktif` vs `Database Pusat` (`DatabaseTableExplorer::$scope`,
+`$schoolCount`/`$centralCount`). `SchoolDatabaseManager::listTables /
+tableSchema / tableData` menerima koneksi eksplisit `school|central`
+(`resolveExplorerConnection`, koneksi arbitrer ditolak); daftar pusat
+menyembunyikan `CENTRAL_DENIED_TABLES` (`users`, `sessions`,
+`password_reset_tokens`, `cache*`, `jobs*`, `failed_jobs`), endpoint
+`table-summary` mendukung `?scope=central` dengan deny-list yang sama.
+Masking kolom sensitif tetap via `spj.database_manager_sensitive_columns`.
+
+Evidence: `DatabaseTableExplorerScopeTest` 4 passed / 18 assertions,
+Pint passed, `view:cache` sukses, `git diff --check` bersih.
+
 ## Kesegaran mirror ARKAS dipusatkan di Dashboard (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.

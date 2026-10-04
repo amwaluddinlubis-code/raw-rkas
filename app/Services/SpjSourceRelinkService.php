@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -61,6 +62,103 @@ final class SpjSourceRelinkService
     }
 
     /**
+     * Sidik agregat transaksi dari snapshot sumber. Dipakai ketika rincian
+     * mirror lama sudah di-prune (sync sudah berjalan setelah BKU dibuat
+     * ulang) sehingga itemFingerprint tak bisa dibangun untuk sisi lama.
+     *
+     * Bentuk snapshot identik dengan after_snapshot sync V2
+     * (transaction_date, description, activity_*, account_*, recipient_*,
+     * gross/tax/net, is_siplah).
+     *
+     * @param  array<string, mixed>  $snapshot
+     */
+    public static function snapshotFingerprint(array $snapshot, bool $includeRecipient = true): string
+    {
+        $text = static fn (mixed $value): string => mb_strtolower(trim((string) preg_replace('/\s+/', ' ', (string) $value)));
+        $number = static function (mixed $value): string {
+            if (! is_numeric($value)) {
+                return '0';
+            }
+
+            return rtrim(rtrim(number_format((float) $value, 6, '.', ''), '0'), '.');
+        };
+        $date = static function (mixed $value) use ($text): string {
+            try {
+                return Carbon::parse((string) $value)->format('Y-m-d');
+            } catch (\Throwable) {
+                return $text($value);
+            }
+        };
+
+        return hash('sha256', implode("\n", [
+            $date($snapshot['transaction_date'] ?? null),
+            $text($snapshot['description'] ?? null),
+            $text($snapshot['activity_code'] ?? null),
+            $text($snapshot['activity_name'] ?? null),
+            $text($snapshot['account_code'] ?? null),
+            $text($snapshot['account_name'] ?? null),
+            $includeRecipient ? $text($snapshot['recipient_name'] ?? null) : '0',
+            $number($snapshot['gross_amount'] ?? null),
+            $number($snapshot['ppn'] ?? null),
+            $number($snapshot['pph21'] ?? null),
+            $number($snapshot['pph22'] ?? null),
+            $number($snapshot['pph23'] ?? null),
+            $number($snapshot['pph4'] ?? null),
+            $number($snapshot['sspd'] ?? null),
+            $number($snapshot['tax_total'] ?? null),
+            $number($snapshot['net_amount'] ?? null),
+            ! empty($snapshot['is_siplah']) ? '1' : '0',
+        ]));
+    }
+
+    /**
+     * Konten sumber terakhir yang diketahui untuk transaksi missing:
+     * after_snapshot event SOURCE_CHANGED terbaru. Null bila tak ada
+     * (transaksi tak pernah berubah sejak dibuat).
+     */
+    public function lastContentSnapshot(int $transactionId): ?array
+    {
+        $event = DB::connection('school')->table('transaction_source_events')
+            ->where('transaction_id', $transactionId)
+            ->where('event_type', 'SOURCE_CHANGED')
+            ->orderByDesc('id')
+            ->first();
+        if (! $event || ! is_string($event->after_snapshot ?? null) || trim((string) $event->after_snapshot) === '') {
+            return null;
+        }
+        $snapshot = json_decode((string) $event->after_snapshot, true);
+
+        return is_array($snapshot) ? $snapshot : null;
+    }
+
+    /**
+     * Bangun ulang snapshot agregat dari mirror AKTIF untuk satu transaksi
+     * (bentuk identik dengan after_snapshot sync V2). Null bila ada rincian
+     * yang tak lagi termuat di mirror.
+     */
+    public function rebuiltSnapshot(object $transaction): ?array
+    {
+        $kasIds = DB::connection('school')->table('transaction_items')
+            ->where('transaction_id', $transaction->id)
+            ->orderBy('id')
+            ->pluck('source_item_id')
+            ->map(static fn ($id): string => (string) $id)
+            ->filter()
+            ->values()
+            ->all();
+        if ($kasIds === []) {
+            return null;
+        }
+        $aggregate = app(ArkasMirrorResolver::class)->transactionSource($kasIds);
+        if (! is_array($aggregate)) {
+            return null;
+        }
+        unset($aggregate['rows'], $aggregate['no_bukti']);
+
+        return $aggregate;
+    }
+
+    /**
      * Fallback untuk sync V2: adopsi transaksi SOURCE_MISSING yang isinya
      * identik ketika source_key + id_kas_umum tidak cocok.
      *
@@ -115,7 +213,7 @@ final class SpjSourceRelinkService
      * (pengiriman bulanan seperti pulsa Juli/Agustus/September tetap
      * berpasangan bulan-ke-bulan); selisih tanggal ditandai untuk review.
      *
-     * @return array{relinkable: array<int, array<string, mixed>>, manual_missing: array<int, array<string, mixed>>, manual_new: array<int, array<string, mixed>>}
+     * @return array{relinkable: array<int, array<string, mixed>>, manual_missing: array<int, array<string, mixed>>, manual_new: array<int, array<string, mixed>>, order_relinkable: array<int, array<string, mixed>>, order_manual: array<int, array<string, mixed>>, snapshot_relinkable: array<int, array<string, mixed>>, snapshot_manual: array<int, array<string, mixed>>}
      */
     public function preview(int $fiscalYearId, int $fundSourceId): array
     {
@@ -202,7 +300,574 @@ final class SpjSourceRelinkService
             }
         }
 
-        return ['relinkable' => $relinkable, 'manual_missing' => $manualMissing, 'manual_new' => $manualNew];
+        // Nomor pesanan Siplah identik = identitas pembelian yang sama.
+        // Dijalankan sebelum sidik snapshot agar pasangan eksak tak
+        // berebut dengan fuzzy.
+        $missingIds = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'SOURCE_MISSING')
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+        $pairedOldIds = array_map(static fn (array $pair): int => (int) $pair['old']['transaction']->id, $relinkable);
+        $order = $this->previewOrderPairs(
+            $fiscalYearId,
+            $fundSourceId,
+            array_values(array_diff($missingIds, $pairedOldIds)),
+            $usedNew
+        );
+        $usedNew = array_merge($usedNew, $order['used_new']);
+
+        // Sisi lama yang rincian mirrornya sudah di-prune dicoba ulang via
+        // sidik snapshot (isi agregat terakhir yang diketahui).
+        $snapshotOldIds = [];
+        foreach ($missing['complete'] as $candidate) {
+            if ($candidate['complete'] === false) {
+                $snapshotOldIds[] = (int) $candidate['transaction']->id;
+            }
+        }
+        $snapshot = $this->previewSnapshotPairs($fiscalYearId, $fundSourceId, $snapshotOldIds, $usedNew);
+
+        return [
+            'relinkable' => $relinkable,
+            'manual_missing' => $manualMissing,
+            'manual_new' => $manualNew,
+            'order_relinkable' => $order['order_relinkable'],
+            'order_manual' => $order['order_manual'],
+            'snapshot_relinkable' => $snapshot['snapshot_relinkable'],
+            'snapshot_manual' => $snapshot['snapshot_manual'],
+        ];
+    }
+
+    /**
+     * Pasangan relink via sidik snapshot untuk sisi lama yang rincian
+     * mirrornya sudah di-prune (sync sudah berjalan setelah BKU dibuat
+     * ulang di ARKAS). Hanya pasangan unik 1:1 dengan tanggal dan jumlah
+     * rincian yang sama yang otomatis; selebihnya telaah manual.
+     *
+     * @param  array<int, int>  $oldPoolIds  batasi sisi lama (mis. yang incomplete di jalur rincian)
+     * @param  array<int, int>  $skipNewIds  transaksi baru yang sudah terpakai di jalur rincian
+     * @return array{snapshot_relinkable: array<int, array<string, mixed>>, snapshot_manual: array<int, array<string, mixed>>}
+     */
+    public function previewSnapshotPairs(int $fiscalYearId, int $fundSourceId, array $oldPoolIds = [], array $skipNewIds = []): array
+    {
+        $relinkable = [];
+        $manual = [];
+
+        $missingQuery = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'SOURCE_MISSING');
+        if ($oldPoolIds !== []) {
+            $missingQuery->whereIn('id', $oldPoolIds);
+        }
+        $missing = $missingQuery->get();
+
+        $oldByFp = [];
+        foreach ($missing as $row) {
+            $snapshot = $this->lastContentSnapshot((int) $row->id);
+            if ($snapshot === null) {
+                $manual[] = [
+                    'transaction_id' => (int) $row->id,
+                    'reason' => 'tanpa snapshot perubahan sumber — butuh telaah manual',
+                ];
+
+                continue;
+            }
+            $oldByFp[self::snapshotFingerprint($snapshot)][(int) $row->id] = ['transaction' => $row, 'snapshot' => $snapshot];
+        }
+
+        $newQuery = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'ACTIVE')
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')->from('spj_packages')->whereColumn('spj_packages.transaction_id', 'transactions.id');
+            });
+        if ($skipNewIds !== []) {
+            $newQuery->whereNotIn('id', $skipNewIds);
+        }
+        $news = $newQuery->get();
+
+        $newByFp = [];
+        foreach ($news as $row) {
+            $snapshot = $this->rebuiltSnapshot($row);
+            if ($snapshot === null) {
+                continue;
+            }
+            $newByFp[self::snapshotFingerprint($snapshot)][(int) $row->id] = ['transaction' => $row, 'snapshot' => $snapshot];
+        }
+
+        $usedNew = [];
+        // Tingkat 1: sidik penuh (termasuk penerima) unik 1:1.
+        // Tingkat 2: sidik identitas (tanpa penerima) — BKU dibuat ulang
+        // dengan koreksi vendor; pasangan diposisikan berurutan dan
+        // ditandai review agar operator menelaah perubahan vendor.
+        $identityOlds = [];
+        $identityNews = [];
+        foreach ($oldByFp as $fp => $olds) {
+            $candidates = array_filter(
+                $newByFp[$fp] ?? [],
+                fn (array $candidate): bool => ! in_array((int) $candidate['transaction']->id, $usedNew, true)
+            );
+            $candidates = array_values($candidates);
+            $olds = array_values($olds);
+
+            if (count($olds) === 1 && count($candidates) === 1) {
+                $pair = $this->buildSnapshotPair($olds[0], $candidates[0], false);
+                if (is_array($pair)) {
+                    $usedNew[] = (int) $candidates[0]['transaction']->id;
+                    $relinkable[] = $pair;
+
+                    continue;
+                }
+                $manual[] = [
+                    'transaction_id' => (int) $olds[0]['transaction']->id,
+                    'reason' => $pair,
+                ];
+
+                continue;
+            }
+
+            foreach ($olds as $candidate) {
+                $identityOlds[self::snapshotFingerprint($candidate['snapshot'], false)][] = $candidate;
+            }
+            foreach ($candidates as $candidate) {
+                $identityNews[self::snapshotFingerprint($candidate['snapshot'], false)][] = $candidate;
+            }
+        }
+
+        // Sisi baru yang tak bertabrakan sidik penuh ikut dikelompokkan
+        // identitas agar koreksi vendor tetap ketemu pasangannya.
+        foreach ($newByFp as $candidates) {
+            foreach ($candidates as $candidate) {
+                if (in_array((int) $candidate['transaction']->id, $usedNew, true)) {
+                    continue;
+                }
+                $fp = self::snapshotFingerprint($candidate['snapshot'], false);
+                $exists = false;
+                foreach ($identityNews[$fp] ?? [] as $stored) {
+                    if ((int) $stored['transaction']->id === (int) $candidate['transaction']->id) {
+                        $exists = true;
+
+                        break;
+                    }
+                }
+                if (! $exists) {
+                    $identityNews[$fp][] = $candidate;
+                }
+            }
+        }
+
+        foreach ($identityOlds as $fp => $olds) {
+            $candidates = array_filter(
+                $identityNews[$fp] ?? [],
+                fn (array $candidate): bool => ! in_array((int) $candidate['transaction']->id, $usedNew, true)
+            );
+            $candidates = array_values($candidates);
+            $olds = array_values($olds);
+            usort($olds, fn (array $a, array $b): int => strcmp(
+                (string) ($a['snapshot']['transaction_date'] ?? '').'#'.$a['transaction']->id,
+                (string) ($b['snapshot']['transaction_date'] ?? '').'#'.$b['transaction']->id
+            ));
+            usort($candidates, fn (array $a, array $b): int => strcmp(
+                (string) ($a['snapshot']['transaction_date'] ?? '').'#'.$a['transaction']->id,
+                (string) ($b['snapshot']['transaction_date'] ?? '').'#'.$b['transaction']->id
+            ));
+
+            if ($olds === [] || count($olds) !== count($candidates)) {
+                foreach ($olds as $candidate) {
+                    $manual[] = [
+                        'transaction_id' => (int) $candidate['transaction']->id,
+                        'reason' => 'kandidat identitas sama tak seimbang ('.count($olds).' lama : '.count($candidates).' baru) — butuh telaah manual',
+                    ];
+                }
+
+                continue;
+            }
+
+            foreach ($olds as $index => $old) {
+                $pair = $this->buildSnapshotPair($old, $candidates[$index], true);
+                if (is_array($pair)) {
+                    $usedNew[] = (int) $candidates[$index]['transaction']->id;
+                    $relinkable[] = $pair;
+                } else {
+                    $manual[] = [
+                        'transaction_id' => (int) $old['transaction']->id,
+                        'reason' => $pair,
+                    ];
+                }
+            }
+        }
+
+        foreach ($newByFp as $fp => $candidates) {
+            foreach ($candidates as $candidate) {
+                if (! in_array((int) $candidate['transaction']->id, $usedNew, true)
+                    && ! array_key_exists($fp, $oldByFp)) {
+                    $manual[] = [
+                        'transaction_id' => (int) $candidate['transaction']->id,
+                        'reason' => 'transaksi baru tanpa pasangan lama (snapshot)',
+                    ];
+                }
+            }
+        }
+
+        return ['snapshot_relinkable' => $relinkable, 'snapshot_manual' => $manual];
+    }
+
+    /**
+     * Pasangan via nomor pesanan Siplah yang sama persis (identitas
+     * pembelian unik). Terkuat setelah sidik isi: nomor pesanan tak
+     * berubah saat BKU dibuat ulang. Guard jumlah rincian; beda tanggal
+     * atau tanggal lama tak diketahui → flag review.
+     *
+     * @param  array<int, int>  $oldPoolIds
+     * @param  array<int, int>  $skipNewIds
+     * @return array{order_relinkable: array<int, array<string, mixed>>, order_manual: array<int, array<string, mixed>>, used_new: array<int, int>}
+     */
+    public function previewOrderPairs(int $fiscalYearId, int $fundSourceId, array $oldPoolIds = [], array $skipNewIds = []): array
+    {
+        $relinkable = [];
+        $manual = [];
+        $usedNew = [];
+
+        $missingQuery = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'SOURCE_MISSING')
+            ->whereNotNull('siplah_order_number');
+        if ($oldPoolIds !== []) {
+            $missingQuery->whereIn('id', $oldPoolIds);
+        }
+        $missing = $missingQuery->get();
+
+        $newQuery = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'ACTIVE')
+            ->whereNotNull('siplah_order_number')
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')->from('spj_packages')->whereColumn('spj_packages.transaction_id', 'transactions.id');
+            });
+        if ($skipNewIds !== []) {
+            $newQuery->whereNotIn('id', $skipNewIds);
+        }
+        $news = $newQuery->get();
+
+        $newByOrder = [];
+        foreach ($news as $row) {
+            $key = mb_strtoupper(trim((string) $row->siplah_order_number));
+            if ($key === '') {
+                continue;
+            }
+            $newByOrder[$key][] = $row;
+        }
+
+        foreach ($missing as $row) {
+            $key = mb_strtoupper(trim((string) $row->siplah_order_number));
+            $candidates = array_filter(
+                $newByOrder[$key] ?? [],
+                fn (object $candidate): bool => ! in_array((int) $candidate->id, $usedNew, true)
+            );
+            $candidates = array_values($candidates);
+            if (count($candidates) !== 1) {
+                continue;
+            }
+            $new = $candidates[0];
+
+            $oldCount = DB::connection('school')->table('transaction_items')->where('transaction_id', $row->id)->count();
+            $newIds = DB::connection('school')->table('transaction_items')->where('transaction_id', $new->id)->orderBy('id')
+                ->pluck('source_item_id')->map(static fn ($id): string => (string) $id)->all();
+            if ($oldCount === 0 || $oldCount !== count($newIds)) {
+                $manual[] = [
+                    'transaction_id' => (int) $row->id,
+                    'reason' => 'nomor pesanan sama tetapi jumlah rincian beda ('.$oldCount.' vs '.count($newIds).') — butuh telaah manual',
+                ];
+
+                continue;
+            }
+
+            $newSnapshot = $this->rebuiltSnapshot($new);
+            if ($newSnapshot === null) {
+                $manual[] = [
+                    'transaction_id' => (int) $row->id,
+                    'reason' => 'rincian baru tak termuat di mirror — butuh telaah manual',
+                ];
+
+                continue;
+            }
+            $oldSnapshot = $this->lastContentSnapshot((int) $row->id);
+            $oldDate = $oldSnapshot['transaction_date'] ?? null;
+            $newDate = $newSnapshot['transaction_date'] ?? null;
+            $needsReview = $oldDate === null
+                || trim((string) $oldDate) !== trim((string) $newDate);
+
+            $oldItems = DB::connection('school')->table('transaction_items')->where('transaction_id', $row->id)->orderBy('id')->get();
+            $usedNew[] = (int) $new->id;
+            $relinkable[] = [
+                'old' => [
+                    'transaction' => $row,
+                    'items' => $oldItems->map(static fn (object $item): array => ['item' => $item, 'fp' => ''])->all(),
+                    'first_date' => $oldDate,
+                ],
+                'new' => [
+                    'transaction' => $new,
+                    'ids' => $newIds,
+                    'first_date' => $newDate,
+                ],
+                'via_snapshot' => true,
+                'explicit' => false,
+                'snapshot_fp' => self::snapshotFingerprint($newSnapshot),
+                'snapshot_review' => $needsReview,
+                'order_match' => trim((string) $row->siplah_order_number),
+            ];
+        }
+
+        return ['order_relinkable' => $relinkable, 'order_manual' => $manual, 'used_new' => $usedNew];
+    }
+
+    /**
+     * Bangun satu pasangan snapshot (guard jumlah rincian + tanggal sama).
+     * Mengembalikan pasangan atau string alasan manual.
+     *
+     * @param  array<string, mixed>  $old
+     * @param  array<string, mixed>  $new
+     * @return array<string, mixed>|string
+     */
+    private function buildSnapshotPair(array $old, array $new, bool $needsReview): array|string
+    {
+        $oldItemIds = DB::connection('school')->table('transaction_items')
+            ->where('transaction_id', $old['transaction']->id)
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+        $newItemIds = DB::connection('school')->table('transaction_items')
+            ->where('transaction_id', $new['transaction']->id)
+            ->orderBy('id')
+            ->pluck('source_item_id')
+            ->map(static fn ($id): string => (string) $id)
+            ->all();
+        if ($oldItemIds === [] || count($oldItemIds) !== count($newItemIds)) {
+            return 'jumlah rincian lama ('.count($oldItemIds).') vs baru ('.count($newItemIds).') berbeda — butuh telaah manual';
+        }
+        if (trim((string) ($old['snapshot']['transaction_date'] ?? '')) !== trim((string) ($new['snapshot']['transaction_date'] ?? ''))) {
+            return 'tanggal berubah ('.($old['snapshot']['transaction_date'] ?? '-').' → '.($new['snapshot']['transaction_date'] ?? '-').') — butuh telaah manual';
+        }
+
+        return [
+            'old' => [
+                'transaction' => $old['transaction'],
+                'items' => array_map(static fn (int $id): array => ['item' => (object) ['id' => $id], 'fp' => ''],
+                    array_map(intval(...), $oldItemIds)),
+                'snapshot' => $old['snapshot'],
+                'first_date' => $old['snapshot']['transaction_date'] ?? null,
+            ],
+            'new' => [
+                'transaction' => $new['transaction'],
+                'ids' => $newItemIds,
+                'snapshot' => $new['snapshot'],
+                'first_date' => $new['snapshot']['transaction_date'] ?? null,
+            ],
+            'via_snapshot' => true,
+            'snapshot_fp' => self::snapshotFingerprint($new['snapshot']),
+            'snapshot_review' => $needsReview,
+        ];
+    }
+
+    /**
+     * Saran kandidat pasangan untuk sisi lama yang tak terpasangkan otomatis
+     * (read-only). Skor = kelangkaan kata bersama antara overlay operator
+     * lama (uraian/vendor/penerima) dan isi mirror baru, plus bonus
+     * kecocokan akun/tanggal/nominal bila snapshot lama tersedia.
+     *
+     * @return array<int, array<int, array<string, mixed>>> old_id => saran
+     */
+    public function suggestPairs(int $fiscalYearId, int $fundSourceId, int $maxPerOld = 5): array
+    {
+        $missing = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'SOURCE_MISSING')
+            ->orderBy('id')
+            ->get();
+        $news = DB::connection('school')->table('transactions')
+            ->where('fiscal_year_id', $fiscalYearId)
+            ->where('fund_source_id', $fundSourceId)
+            ->where('source_status', 'ACTIVE')
+            ->whereNotExists(function ($query): void {
+                $query->selectRaw('1')->from('spj_packages')->whereColumn('spj_packages.transaction_id', 'transactions.id');
+            })
+            ->orderBy('id')
+            ->get();
+
+        $tokenize = static fn (?string $value): array => array_values(array_unique(array_filter(
+            preg_split('/[^a-z0-9]+/', mb_strtolower((string) $value)) ?: [],
+            static fn (string $word): bool => mb_strlen($word) > 3
+        )));
+
+        $newTexts = [];
+        $docFreq = [];
+        foreach ($news as $row) {
+            $texts = [];
+            foreach ($this->newMirrorTexts((int) $row->id) as $text) {
+                $texts[] = $text;
+            }
+            $words = $tokenize(implode(' ', $texts));
+            $newTexts[(int) $row->id] = ['transaction' => $row, 'words' => $words, 'snapshot' => $this->rebuiltSnapshot($row)];
+            foreach (array_unique($words) as $word) {
+                $docFreq[$word] = ($docFreq[$word] ?? 0) + 1;
+            }
+        }
+
+        $suggestions = [];
+        foreach ($missing as $row) {
+            $oldId = (int) $row->id;
+            $oldSnapshot = $this->lastContentSnapshot($oldId);
+            $oldText = implode(' ', [
+                (string) ($row->payment_description ?? ''),
+                (string) ($row->vendor_name ?? ''),
+                (string) ($row->spj_recipient_name ?? ''),
+                (string) ($row->receipt_recipient_name ?? ''),
+                $oldSnapshot ? implode(' ', [
+                    (string) ($oldSnapshot['description'] ?? ''),
+                    (string) ($oldSnapshot['activity_name'] ?? ''),
+                    (string) ($oldSnapshot['account_name'] ?? ''),
+                    (string) ($oldSnapshot['recipient_name'] ?? ''),
+                ]) : '',
+            ]);
+            $oldWords = $tokenize($oldText);
+
+            $ranked = [];
+            foreach ($newTexts as $newId => $candidate) {
+                $shared = array_values(array_intersect($oldWords, $candidate['words']));
+                if ($shared === []) {
+                    continue;
+                }
+                $score = 0.0;
+                foreach ($shared as $word) {
+                    $score += 1.0 / (float) ($docFreq[$word] ?? 1);
+                }
+                $bonus = [];
+                $newSnapshot = $candidate['snapshot'];
+                if ($oldSnapshot !== null && is_array($newSnapshot)) {
+                    if (trim((string) ($oldSnapshot['account_code'] ?? '')) !== ''
+                        && trim((string) ($oldSnapshot['account_code'] ?? '')) === trim((string) ($newSnapshot['account_code'] ?? ''))) {
+                        $score += 2.0;
+                        $bonus[] = 'akun sama';
+                    }
+                    if (trim((string) ($oldSnapshot['transaction_date'] ?? '')) !== ''
+                        && trim((string) ($oldSnapshot['transaction_date'] ?? '')) === trim((string) ($newSnapshot['transaction_date'] ?? ''))) {
+                        $score += 1.0;
+                        $bonus[] = 'tanggal sama';
+                    }
+                    if (is_numeric($oldSnapshot['gross_amount'] ?? null) && is_numeric($newSnapshot['gross_amount'] ?? null)
+                        && (float) $oldSnapshot['gross_amount'] === (float) $newSnapshot['gross_amount']) {
+                        $score += 2.0;
+                        $bonus[] = 'nominal sama';
+                    }
+                }
+                $ranked[] = [
+                    'new_id' => $newId,
+                    'score' => round($score, 3),
+                    'shared' => $shared,
+                    'bonus' => $bonus,
+                    'date' => $newSnapshot['transaction_date'] ?? null,
+                    'desc' => $newSnapshot['description'] ?? null,
+                    'gross' => $newSnapshot['gross_amount'] ?? null,
+                ];
+            }
+            usort($ranked, static fn (array $a, array $b): int => $b['score'] <=> $a['score']);
+            $suggestions[$oldId] = array_slice($ranked, 0, max(1, $maxPerOld));
+        }
+
+        return $suggestions;
+    }
+
+    /**
+     * Teks mirror (URAIAN + NAMA_TOKO + NO_BUKTI) untuk seluruh rincian satu
+     * transaksi baru. Dipakai pembobotan saran pasangan.
+     *
+     * @return array<int, string>
+     */
+    private function newMirrorTexts(int $transactionId): array
+    {
+        $texts = [];
+        $resolver = app(ArkasMirrorResolver::class);
+        $items = DB::connection('school')->table('transaction_items')
+            ->where('transaction_id', $transactionId)
+            ->orderBy('id')
+            ->get();
+        foreach ($items as $item) {
+            $payload = $resolver->kasUmum((string) $item->source_item_id);
+            if (! is_array($payload)) {
+                continue;
+            }
+            $texts[] = implode(' ', [
+                (string) (ArkasMirrorResolver::field($payload, ['URAIAN']) ?? ''),
+                (string) (ArkasMirrorResolver::field($payload, ['NAMA_TOKO']) ?? ''),
+                (string) (ArkasMirrorResolver::field($payload, ['NO_BUKTI']) ?? ''),
+            ]);
+        }
+
+        return $texts;
+    }
+
+    /**
+     * Bangun pasangan eksplisit pilihan operator (--pair OLD:NEW).
+     * Validasi ketat: scope FY+dana sama, lama masih missing, baru masih
+     * aktif tanpa paket, jumlah rincian sama dan > 0.
+     *
+     * @return array<string, mixed> pasangan siap executePairs (selalu review)
+     */
+    public function buildExplicitPair(int $fiscalYearId, int $fundSourceId, int $oldId, int $newId): array
+    {
+        $old = DB::connection('school')->table('transactions')->where('id', $oldId)->first();
+        $new = DB::connection('school')->table('transactions')->where('id', $newId)->first();
+        if (! $old || (int) $old->fiscal_year_id !== $fiscalYearId || (int) $old->fund_source_id !== $fundSourceId) {
+            throw new \RuntimeException("transaksi lama #{$oldId} tidak ada pada scope FY+dana aktif");
+        }
+        if (! $new) {
+            throw new \RuntimeException("transaksi baru #{$newId} tidak ada");
+        }
+        if ((int) $new->fiscal_year_id !== $fiscalYearId || (int) $new->fund_source_id !== $fundSourceId) {
+            throw new \RuntimeException("transaksi baru #{$newId} beda scope FY+dana");
+        }
+        if ($old->source_status !== 'SOURCE_MISSING') {
+            throw new \RuntimeException("transaksi lama #{$oldId} tidak lagi missing ({$old->source_status})");
+        }
+        if ($new->source_status !== 'ACTIVE') {
+            throw new \RuntimeException("transaksi baru #{$newId} tidak aktif ({$new->source_status})");
+        }
+        if ($this->newHasPackage($newId)) {
+            throw new \RuntimeException("transaksi baru #{$newId} sudah memiliki paket");
+        }
+
+        $oldCount = DB::connection('school')->table('transaction_items')->where('transaction_id', $oldId)->count();
+        $newIds = DB::connection('school')->table('transaction_items')->where('transaction_id', $newId)->orderBy('id')
+            ->pluck('source_item_id')->map(static fn ($id): string => (string) $id)->all();
+        if ($oldCount === 0 || $oldCount !== count($newIds)) {
+            throw new \RuntimeException("jumlah rincian lama ({$oldCount}) vs baru (".count($newIds).') berbeda');
+        }
+
+        $oldItems = DB::connection('school')->table('transaction_items')->where('transaction_id', $oldId)->orderBy('id')->get();
+
+        return [
+            'old' => [
+                'transaction' => $old,
+                'items' => $oldItems->map(static fn (object $item): array => ['item' => $item, 'fp' => ''])->all(),
+                'first_date' => null,
+            ],
+            'new' => [
+                'transaction' => $new,
+                'ids' => $newIds,
+                'first_date' => null,
+            ],
+            'via_snapshot' => true,
+            'explicit' => true,
+            'snapshot_fp' => '',
+            'snapshot_review' => true,
+        ];
     }
 
     /**
@@ -274,7 +939,7 @@ final class SpjSourceRelinkService
                     }
                     DB::connection('school')->table('transactions')->where('id', $oldId)->update($update);
 
-                    $this->audit->record($fiscalYearId, 'TRANSACTION', $oldId, 'SOURCE_RELINK', 'Transaksi #'.$oldId.' di-relink ke identitas BKU baru (duplikat #'.$newId.' dihapus).');
+                    $this->audit->record($fiscalYearId, 'TRANSACTION', $oldId, 'SOURCE_RELINK', 'Transaksi #'.$oldId.' di-relink ke identitas BKU baru (duplikat #'.$newId.' dihapus).'.(($pair['explicit'] ?? false) ? ' Pasangan manual pilihan operator.' : ''));
                     $relinked[$oldId] = $newId;
                 });
             } catch (\Throwable $exception) {
@@ -450,8 +1115,55 @@ final class SpjSourceRelinkService
     }
 
     /** @param  array<string, mixed>  $pair */
+    /**
+     * Validasi ulang pasangan snapshot sesaat sebelum eksekusi: sisi lama
+     * masih missing, sisi baru masih aktif tanpa paket, dan sidik snapshot
+     * sisi baru tak berubah. Rincian lama tak bisa disidik ulang (mirror
+     * di-prune) sehingga kesetaraan isi dipegang oleh sidik saat preview
+     * + jumlah rincian yang sama.
+     */
+    private function refreshSnapshotPair(array $pair): ?array
+    {
+        $oldId = (int) $pair['old']['transaction']->id;
+        $newId = (int) $pair['new']['transaction']->id;
+
+        $old = DB::connection('school')->table('transactions')->where('id', $oldId)->first();
+        $new = DB::connection('school')->table('transactions')->where('id', $newId)->first();
+        if (! $old || ! $new || $old->source_status !== 'SOURCE_MISSING' || $new->source_status !== 'ACTIVE') {
+            return null;
+        }
+        if ($this->newHasPackage($newId)) {
+            return null;
+        }
+
+        $rebuilt = $this->rebuiltSnapshot($new);
+        if (! ($pair['explicit'] ?? false)
+            && ($rebuilt === null || self::snapshotFingerprint($rebuilt) !== (string) ($pair['snapshot_fp'] ?? ''))) {
+            return null;
+        }
+
+        $oldItems = DB::connection('school')->table('transaction_items')->where('transaction_id', $oldId)->orderBy('id')->get();
+        $newIds = DB::connection('school')->table('transaction_items')->where('transaction_id', $newId)->orderBy('id')
+            ->pluck('source_item_id')->map(static fn ($id): string => (string) $id)->all();
+        if ($oldItems->isEmpty() || $oldItems->count() !== count($newIds)) {
+            return null;
+        }
+
+        $oldRows = $oldItems->map(static fn (object $item): array => ['item' => $item, 'fp' => ''])->all();
+
+        return [
+            ['transaction' => $old, 'items' => $oldRows, 'first_date' => $pair['old']['first_date'] ?? null, 'first_payload' => [],
+                'snapshot_review' => (bool) ($pair['snapshot_review'] ?? false)],
+            ['transaction' => $new, 'ids' => $newIds, 'first_date' => $pair['new']['first_date'] ?? null, 'first_payload' => []],
+        ];
+    }
+
     private function refreshPair(array $pair): ?array
     {
+        if (($pair['via_snapshot'] ?? false) === true) {
+            return $this->refreshSnapshotPair($pair);
+        }
+
         $oldId = (int) $pair['old']['transaction']->id;
         $newId = (int) $pair['new']['transaction']->id;
 
@@ -514,7 +1226,8 @@ final class SpjSourceRelinkService
     {
         // Rincian dan nominal sudah dibuktikan identik oleh fingerprint;
         // review hanya dipicu bila tanggal transaksi ikut berubah.
-        return $this->firstDatesDiffer($old, $new);
+        // Pasangan snapshot dengan koreksi vendor selalu butuh telaah.
+        return (bool) ($old['snapshot_review'] ?? false) || $this->firstDatesDiffer($old, $new);
     }
 
     /** @param  array<string, mixed>  $old  @param  array<string, mixed>  $new */
