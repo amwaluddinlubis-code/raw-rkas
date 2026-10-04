@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
+use App\Models\FundSource;
 use App\Models\School;
 use App\Models\User;
 use App\Services\SchoolDatabaseManager;
@@ -32,9 +33,13 @@ class InitialSetupController extends Controller
         $result = DB::transaction(function () use ($data, $databases) {
             $school = School::create(collect($data)->only(['npsn', 'school_code', 'desa', 'address', 'district', 'regency', 'province'])->merge(['name' => $data['school_name']])->all());
             $databases->provision($school);
+            $bosSource = FundSource::query()->firstOrCreate(
+                ['name' => 'BOSP'],
+                ['code' => 'BOSP', 'is_hidden' => false],
+            );
             $year = FiscalYear::updateOrCreate(
                 ['year' => $data['year'], 'fund_source' => 'BOSP'],
-                ['is_active' => true],
+                ['is_active' => true, 'fund_source_id' => $bosSource->id],
             );
             $user = User::create(['school_id' => $school->id, 'role' => 'ADMIN', 'name' => $data['admin_name'], 'email' => $data['email'], 'password' => $data['password']]);
 

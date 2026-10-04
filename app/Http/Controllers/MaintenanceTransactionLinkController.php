@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Services\ArkasMirrorResolver;
+use App\Services\OperationalAuditService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MaintenanceTransactionLinkController extends Controller
@@ -87,14 +89,24 @@ class MaintenanceTransactionLinkController extends Controller
             ]);
         }
 
-        $transaction->forceFill([
-            'maintenance_material_transaction_id' => $currentRole === 'material'
-                ? null
-                : ($data['material_transaction_id'] ?? null),
-            'maintenance_labor_transaction_id' => $currentRole === 'labor'
-                ? null
-                : ($data['labor_transaction_id'] ?? null),
-        ])->save();
+        DB::transaction(function () use ($transaction, $currentRole, $data): void {
+            $transaction->forceFill([
+                'maintenance_material_transaction_id' => $currentRole === 'material'
+                    ? null
+                    : ($data['material_transaction_id'] ?? null),
+                'maintenance_labor_transaction_id' => $currentRole === 'labor'
+                    ? null
+                    : ($data['labor_transaction_id'] ?? null),
+            ])->save();
+
+            app(OperationalAuditService::class)->record(
+                (int) $transaction->fiscal_year_id ?: null,
+                'TRANSACTION',
+                (int) $transaction->id,
+                'MAINTENANCE_LINKS_UPDATE',
+                'Tautan transaksi pemeliharaan diperbarui.',
+            );
+        });
 
         return response()->json(['message' => 'Transaksi terkait pemeliharaan berhasil disimpan.']);
     }
@@ -114,7 +126,11 @@ class MaintenanceTransactionLinkController extends Controller
     private function candidateQuery(Transaction $transaction): Builder
     {
         $rawDate = $transaction->sourceValue('transaction_date');
-        $date = $rawDate ? Carbon::parse($rawDate)->format('Y-m-d') : null;
+        try {
+            $date = $rawDate ? Carbon::parse((string) $rawDate)->format('Y-m-d') : null;
+        } catch (\Throwable) {
+            $date = null;
+        }
 
         $query = Transaction::query()->activeContext();
         ArkasMirrorResolver::joinKasUmum($query);

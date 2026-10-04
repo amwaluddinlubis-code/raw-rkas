@@ -6,6 +6,7 @@ use App\Models\School;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -23,7 +24,8 @@ class UserManagementController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
-        User::query()->create($data);
+        $user = User::query()->create($data);
+        Log::info('User created.', ['user_id' => $user->id, 'admin_id' => auth()->id()]);
 
         return back()->with('success', 'User baru berhasil dibuat.');
     }
@@ -46,6 +48,7 @@ class UserManagementController extends Controller
         }
 
         $user->update($data);
+        Log::info('User updated.', ['user_id' => $user->id, 'admin_id' => auth()->id()]);
 
         return back()->with('success', 'User berhasil diperbarui.');
     }
@@ -63,6 +66,7 @@ class UserManagementController extends Controller
         }
 
         $user->delete();
+        Log::info('User deleted.', ['user_id' => $user->id, 'admin_id' => auth()->id()]);
 
         return back()->with('success', 'User berhasil dihapus.');
     }

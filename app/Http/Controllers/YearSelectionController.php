@@ -81,8 +81,9 @@ class YearSelectionController extends Controller
     {
         abort_unless($request->user()->isAdministrator() || $request->user()->school_id === (int) session('active_school_id'), 403);
 
+        $request->validate(['confirm_sync' => ['accepted']]);
+
         try {
-            $request->validate(['confirm_sync' => ['accepted']]);
             $school = School::findOrFail(session('active_school_id'));
             $source = ArkasSource::where('school_id', $school->id)->first();
 

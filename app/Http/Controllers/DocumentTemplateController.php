@@ -101,7 +101,7 @@ class DocumentTemplateController extends Controller
         $data = $request->validateWithBag('templateUpload', [
             'document_type' => ['required', 'string', 'in:'.implode(',', SpjDocumentTypeRegistry::codes())],
             'name' => ['required', 'string', 'max:120'],
-            'template' => ['required', 'file', 'extensions:docx,xlsx', 'max:10240'],
+            'template' => ['required', 'file', 'extensions:docx,xlsx', 'mimetypes:application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'max:10240'],
             'applicable_categories' => ['nullable', 'array'],
             'applicable_categories.*' => ['string', 'in:'.implode(',', $categories)],
             'siplah_scope' => ['nullable', 'string', 'in:all,siplah,non_siplah'],
@@ -140,7 +140,7 @@ class DocumentTemplateController extends Controller
         $this->ensurePostBodyWithinLimit($request, 'template_package', 'templatePackageUpload');
 
         $request->validateWithBag('templatePackageUpload', [
-            'template_package' => ['required', 'file', 'extensions:xlsx', 'max:20480'],
+            'template_package' => ['required', 'file', 'extensions:xlsx', 'mimetypes:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'max:20480'],
             'replace_existing' => ['nullable', 'boolean'],
         ], [
             'template_package.required' => 'Pilih workbook master XLSX yang akan diimpor.',

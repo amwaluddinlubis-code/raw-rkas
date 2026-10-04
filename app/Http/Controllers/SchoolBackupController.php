@@ -35,6 +35,8 @@ class SchoolBackupController extends Controller
             return back()->with('error', 'Backup database gagal. Periksa log aplikasi.');
         }
 
+        Log::info('Manual school backup completed.', ['school_id' => $school->id, 'backup_id' => $backup->id, 'admin_id' => auth()->id()]);
+
         return back()->with('success', 'Backup database sekolah berhasil dibuat: '.$backup->file_name);
     }
 
@@ -47,6 +49,7 @@ class SchoolBackupController extends Controller
 
         try {
             $backups->restore($school, $backup, $request->user()->id);
+            Log::info('School database restored.', ['school_id' => $school->id, 'backup_id' => $backup->id, 'admin_id' => auth()->id()]);
         } catch (\Throwable $exception) {
             Log::error('School database restore failed.', ['school_id' => $school->id, 'backup_id' => $backup->id, 'exception' => $exception]);
 

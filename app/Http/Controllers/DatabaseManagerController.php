@@ -88,10 +88,11 @@ class DatabaseManagerController extends Controller
     public function activate(string $schoolId, Request $request, SchoolDatabaseManager $manager, OperationalAuditService $audit): RedirectResponse
     {
         $school = School::findOrFail($schoolId);
+        $previousFiscalYearId = session('active_fiscal_year_id');
         $manager->activate($school);
         session(['active_school_id' => $school->id]);
         session()->forget(['active_fiscal_year_id', 'active_fund_source_id']);
-        $audit->record(session('active_fiscal_year_id'), 'SCHOOL_DATABASE', $school->id, 'AKTIFKAN', 'Database sekolah diaktifkan.');
+        $audit->record($previousFiscalYearId, 'SCHOOL_DATABASE', $school->id, 'AKTIFKAN', 'Database sekolah diaktifkan.');
 
         return back()->with('success', 'Database aktif diganti ke '.$school->name.' ('.$school->npsn.')');
     }

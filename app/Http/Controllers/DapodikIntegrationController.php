@@ -7,6 +7,7 @@ use App\Services\DapodikSynchronizationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DapodikIntegrationController extends Controller
 {
@@ -38,7 +39,9 @@ class DapodikIntegrationController extends Controller
 
             return back()->with('success', 'Koneksi berhasil: '.collect($counts)->map(fn ($v, $k) => "{$k}={$v}")->join(', '));
         } catch (\Throwable $e) {
-            return back()->with('error', $e->getMessage());
+            Log::error('Dapodik test failed.', ['exception' => $e]);
+
+            return back()->with('error', 'Koneksi Dapodik gagal. Periksa konfigurasi dan log aplikasi.');
         }
     }
 
@@ -51,8 +54,9 @@ class DapodikIntegrationController extends Controller
             return back()->with('success', "Sinkronisasi selesai: {$result['employees']} GTK dan {$result['students']} siswa.");
         } catch (\Throwable $e) {
             $connection->update(['last_status' => 'FAILED', 'last_message' => $e->getMessage()]);
+            Log::error('Dapodik sync failed.', ['exception' => $e]);
 
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', 'Sinkronisasi Dapodik gagal. Periksa konfigurasi dan log aplikasi.');
         }
     }
 }
