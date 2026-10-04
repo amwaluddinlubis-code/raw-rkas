@@ -10,6 +10,8 @@
             </x-slot:actions>
         </x-page-header>
 
+        @include('spj.partials.numbering-nav')
+
         <div class="grid gap-5 xl:grid-cols-2">
             <x-section-card title="Rollback dari nomor tertentu" description="Nomor target sampai nomor terakhir akan dilepas. Paket terdampak kembali ke DRAFT dan nomor dapat digunakan ulang sesuai urutan ARKAS.">
                 <form method="POST" action="{{ route('spj.numbering.rollback') }}" class="space-y-4">

@@ -37,6 +37,8 @@
             </div>
         </x-page-header>
 
+        @include('spj.partials.numbering-nav')
+
         <x-section-card title="Pilih triwulan" description="Pilih triwulan yang ingin diperiksa atau diberi nomor.">
             <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 @foreach($quarterSummaries as $quarter => $summary)
