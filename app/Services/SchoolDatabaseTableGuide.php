@@ -70,5 +70,16 @@ class SchoolDatabaseTableGuide
         'arkas_import_runs' => ['group' => 'Operasional', 'label' => 'Riwayat impor ARKAS', 'blurb' => 'Jejak setiap proses impor file ARKAS.'],
         'operational_audit_logs' => ['group' => 'Operasional', 'label' => 'Jejak aktivitas', 'blurb' => 'Log siapa mengubah apa di aplikasi.'],
         'migrations' => ['group' => 'Sistem', 'label' => 'Versi struktur', 'blurb' => 'Catatan migrasi struktur database (internal).'],
+        'schools' => ['group' => 'Operasional', 'label' => 'Sekolah (pusat)', 'blurb' => 'Daftar sekolah pada database pusat.'],
+        'school_databases' => ['group' => 'Operasional', 'label' => 'Database sekolah (pusat)', 'blurb' => 'File database per sekolah pada database pusat.'],
+        'school_backups' => ['group' => 'Operasional', 'label' => 'Backup database (pusat)', 'blurb' => 'Arsip backup database pada database pusat.'],
+        'arkas_sources' => ['group' => 'Operasional', 'label' => 'Sumber ARKAS (pusat)', 'blurb' => 'Koneksi sumber ARKAS per sekolah; kata sandi disensor.'],
+        'background_operations' => ['group' => 'Operasional', 'label' => 'Operasi latar (pusat)', 'blurb' => 'Antrean/progres pekerjaan latar pada database pusat.'],
+        'arkas_mirror_ref_kode' => ['group' => 'Referensi', 'label' => 'Referensi kode (pusat)', 'blurb' => 'Kode kegiatan ARKAS pada database pusat.'],
+        'arkas_mirror_ref_periode' => ['group' => 'Referensi', 'label' => 'Referensi periode (pusat)', 'blurb' => 'Bulan/triwulan/semester ARKAS pada database pusat.'],
+        'arkas_mirror_ref_sumber_dana' => ['group' => 'Referensi', 'label' => 'Referensi sumber dana (pusat)', 'blurb' => 'Sumber dana ARKAS pada database pusat.'],
+        'arkas_mirror_ref_rekening' => ['group' => 'Referensi', 'label' => 'Referensi rekening (pusat)', 'blurb' => 'Rekening ARKAS pada database pusat.'],
+        'arkas_mirror_ref_satuan' => ['group' => 'Referensi', 'label' => 'Referensi satuan (pusat)', 'blurb' => 'Satuan barang ARKAS pada database pusat.'],
+        'arkas_mirror_ref_acuan_barang' => ['group' => 'Referensi', 'label' => 'Acuan harga (pusat)', 'blurb' => 'Acuan harga barang ARKAS pada database pusat.'],
     ];
 }

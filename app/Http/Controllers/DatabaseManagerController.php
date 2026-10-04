@@ -49,24 +49,27 @@ class DatabaseManagerController extends Controller
         return view('database-manager.index', compact('active', 'list', 'activeStatus', 'tables', 'table', 'tableError'));
     }
 
-    public function tableSummary(SchoolDatabaseManager $manager, string $table): JsonResponse
+    public function tableSummary(Request $request, SchoolDatabaseManager $manager, string $table): JsonResponse
     {
         $active = $manager->activeInfo();
         if (! $active['school']) {
             abort(404);
         }
 
+        $scope = $request->query('scope', 'school') === 'central' ? 'central' : 'school';
+
         try {
             $guide = app(SchoolDatabaseTableGuide::class);
-            $schema = $manager->tableSchema($active['school'], $table);
-            $data = $manager->tableData($active['school'], $table, 10);
+            $schema = $manager->tableSchema($active['school'], $table, $scope);
+            $data = $manager->tableData($active['school'], $table, 10, $scope);
         } catch (\Throwable $e) {
-            Log::warning('Database table summary failed.', ['table' => $table, 'exception' => $e]);
+            Log::warning('Database table summary failed.', ['table' => $table, 'scope' => $scope, 'exception' => $e]);
             abort(404);
         }
 
         return response()->json([
             'name' => $table,
+            'scope' => $scope,
             'meta' => $guide->describe($table),
             'total' => $data->total(),
             'columns' => collect($schema)->map(fn ($column) => [

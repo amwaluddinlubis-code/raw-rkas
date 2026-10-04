@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\School;
 use App\Models\SchoolDatabase;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
@@ -472,19 +473,43 @@ class SchoolDatabaseManager
     // ==================== TABLE MANAGER ====================
 
     /**
-     * Daftar tabel pada database sekolah aktif (sqlite_master).
+     * Tabel database pusat yang tidak boleh diintip Explorer (kredensial,
+     * sesi, antrean: payload dapat membawa rahasia tanpa keyword kolom).
+     *
+     * @var array<int, string>
+     */
+    public const CENTRAL_DENIED_TABLES = [
+        'users',
+        'sessions',
+        'password_reset_tokens',
+        'cache',
+        'cache_locks',
+        'jobs',
+        'job_batches',
+        'failed_jobs',
+    ];
+
+    /**
+     * Daftar tabel (sqlite_master). Param koneksi hanya 'school' (default)
+     * atau 'central'; koneksi lain ditolak.
      *
      * @return array<int, array{name:string, sql:string, count:int|null}>
      */
-    public function listTables(School $school): array
+    public function listTables(School $school, string $connection = 'school'): array
     {
-        $this->activate($school);
-        $rows = DB::connection('school')->select("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
+        $db = $this->resolveExplorerConnection($connection);
+        if ($connection === 'school') {
+            $this->activate($school);
+        }
+        $rows = $db->select("SELECT name, sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
         $out = [];
         foreach ($rows as $r) {
+            if ($connection !== 'school' && in_array($r->name, self::CENTRAL_DENIED_TABLES, true)) {
+                continue;
+            }
             $cnt = null;
             try {
-                $cnt = DB::connection('school')->table($r->name)->count();
+                $cnt = $db->table($r->name)->count();
             } catch (\Throwable) {
             }
             $out[] = ['name' => $r->name, 'sql' => $r->sql, 'count' => $cnt];
@@ -496,33 +521,45 @@ class SchoolDatabaseManager
     /**
      * Schema kolom via PRAGMA table_info
      */
-    public function tableSchema(School $school, string $table): array
+    public function tableSchema(School $school, string $table, string $connection = 'school'): array
     {
-        $this->activate($school);
+        $db = $this->resolveExplorerConnection($connection);
+        if ($connection === 'school') {
+            $this->activate($school);
+        }
         // validasi nama tabel alfanum
         if (! preg_match('/^[A-Za-z0-9_]+$/', $table)) {
             throw new \InvalidArgumentException('Nama tabel tidak valid');
         }
+        if ($connection !== 'school' && in_array($table, self::CENTRAL_DENIED_TABLES, true)) {
+            throw new \InvalidArgumentException('Tabel tidak tersedia di Explorer');
+        }
 
-        return DB::connection('school')->select("PRAGMA table_info('".str_replace("'", "''", $table)."')");
+        return $db->select("PRAGMA table_info('".str_replace("'", "''", $table)."')");
     }
 
     /**
      * Data paginasi untuk tabel
      */
-    public function tableData(School $school, string $table, int $perPage = 15): LengthAwarePaginator
+    public function tableData(School $school, string $table, int $perPage = 15, string $connection = 'school'): LengthAwarePaginator
     {
-        $this->activate($school);
+        $db = $this->resolveExplorerConnection($connection);
+        if ($connection === 'school') {
+            $this->activate($school);
+        }
         if (! preg_match('/^[A-Za-z0-9_]+$/', $table)) {
             throw new \InvalidArgumentException('Nama tabel tidak valid');
         }
+        if ($connection !== 'school' && in_array($table, self::CENTRAL_DENIED_TABLES, true)) {
+            throw new \InvalidArgumentException('Tabel tidak tersedia di Explorer');
+        }
         // ensure table exists
-        $exists = DB::connection('school')->select("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [$table]);
+        $exists = $db->select("SELECT name FROM sqlite_master WHERE type='table' AND name=?", [$table]);
         if (empty($exists)) {
             throw new \RuntimeException('Tabel tidak ditemukan');
         }
 
-        $paginator = DB::connection('school')->table($table)->paginate($perPage);
+        $paginator = $db->table($table)->paginate($perPage);
         $sensitiveColumns = config('spj.database_manager_sensitive_columns', []);
         $paginator->getCollection()->transform(function (object $row) use ($sensitiveColumns): object {
             foreach (get_object_vars($row) as $column => $value) {
@@ -539,6 +576,22 @@ class SchoolDatabaseManager
         });
 
         return $paginator;
+    }
+
+    /**
+     * Koneksi database untuk Explorer. Hanya dua nilai yang diizinkan agar
+     * nama koneksi arbitrer tidak bisa disuntik dari UI.
+     */
+    private function resolveExplorerConnection(string $connection): Connection
+    {
+        if ($connection === 'central') {
+            return DB::connection();
+        }
+        if ($connection === 'school') {
+            return DB::connection('school');
+        }
+
+        throw new \InvalidArgumentException('Koneksi database tidak valid');
     }
 
     public function tableIndexes(School $school, string $table): array

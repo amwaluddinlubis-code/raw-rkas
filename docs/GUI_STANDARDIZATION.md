@@ -19,7 +19,7 @@ Halaman pengaturan yang dimigrasikan ke pola TALL menggunakan Livewire untuk sta
 
 Data Sinkronisasi menggunakan Livewire pada navigasi kelompok tabel dan pencarian read-only. Query serta batas konteks sekolah/tahun tetap dimiliki controller canonical.
 
-Modul Database Aktif dimigrasikan bertahap. Ringkasan status database, navigasi tab, panel overview, diagnostik, Explorer Tabel, daftar sekolah, maintenance, dan reset memakai Livewire; Explorer Tabel juga memakai Livewire untuk pencarian, sorting, pagination, serta detail baca-saja. Operasi database tetap dijalankan melalui service canonical dan audit yang ada.
+Modul Database Aktif dimigrasikan bertahap. Ringkasan status database, navigasi tab, panel overview, diagnostik, Explorer Tabel, daftar sekolah, maintenance, dan reset memakai Livewire; Explorer Tabel juga memakai Livewire untuk pencarian, sorting, pagination, serta detail baca-saja. Explorer Tabel dibedakan eksplisit per sumber via toggle `Sekolah Aktif` vs `Database Pusat` (dengan jumlah tabel per sumber pada label tombol); tabel kredensial/sesi/antrean (`users`, `sessions`, `password_reset_tokens`, `cache*`, `jobs*`, `failed_jobs`) disembunyikan pada sumber pusat. Operasi database tetap dijalankan melalui service canonical dan audit yang ada.
 
 Isi setiap tab Database Aktif dirakit melalui partial Blade di `resources/views/database-manager/partials/`; partial hanya menjadi komposisi view, sedangkan state dan aksi reactive tetap dimiliki komponen Livewire.
 

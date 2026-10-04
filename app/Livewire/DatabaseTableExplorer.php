@@ -14,6 +14,10 @@ class DatabaseTableExplorer extends Component
 
     public array $tables = [];
 
+    public array $centralTables = [];
+
+    public string $scope = 'school';
+
     public string $search = '';
 
     public string $sort = 'name';
@@ -29,9 +33,19 @@ class DatabaseTableExplorer extends Component
     public function mount(array $tables = [], ?string $initialTable = null): void
     {
         $this->tables = $tables;
+        $this->centralTables = $this->loadCentralTables();
         if ($initialTable !== null) {
             $this->openTable($initialTable);
         }
+    }
+
+    public function updatedScope(): void
+    {
+        if (! in_array($this->scope, ['school', 'central'], true)) {
+            $this->scope = 'school';
+        }
+        $this->closeTable();
+        $this->resetPage();
     }
 
     public function updatedSearch(): void
@@ -62,7 +76,9 @@ class DatabaseTableExplorer extends Component
 
     public function openTable(string $name): void
     {
-        if (! collect($this->tables)->contains(fn (array $table): bool => $table['name'] === $name)) {
+        $scope = $this->scope === 'central' ? 'central' : 'school';
+        $list = $scope === 'central' ? $this->centralTables : $this->tables;
+        if (! collect($list)->contains(fn (array $table): bool => $table['name'] === $name)) {
             return;
         }
 
@@ -74,10 +90,11 @@ class DatabaseTableExplorer extends Component
 
         try {
             $manager = app(SchoolDatabaseManager::class);
-            $schema = $manager->tableSchema($active['school'], $name);
-            $data = $manager->tableData($active['school'], $name, 10);
+            $schema = $manager->tableSchema($active['school'], $name, $scope);
+            $data = $manager->tableData($active['school'], $name, 10, $scope);
             $this->detail = [
                 'name' => $name,
+                'scope' => $scope,
                 'meta' => app(SchoolDatabaseTableGuide::class)->describe($name),
                 'total' => $data->total(),
                 'columns' => collect($schema)->map(fn (object $column): array => [
@@ -101,7 +118,8 @@ class DatabaseTableExplorer extends Component
 
     public function render(): View
     {
-        $filtered = collect($this->tables)
+        $tables = $this->scope === 'central' ? $this->centralTables : $this->tables;
+        $filtered = collect($tables)
             ->filter(function (array $table): bool {
                 $needle = strtolower(trim($this->search));
                 if ($needle === '') {
@@ -128,6 +146,39 @@ class DatabaseTableExplorer extends Component
             'pageTables' => $page,
             'total' => $filtered->count(),
             'pages' => max(1, (int) ceil($filtered->count() / $this->perPage)),
+            'schoolCount' => count($this->tables),
+            'centralCount' => count($this->centralTables),
         ]);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function loadCentralTables(): array
+    {
+        $active = app(SchoolDatabaseManager::class)->activeInfo();
+        if (! $active['school']) {
+            return [];
+        }
+
+        try {
+            $manager = app(SchoolDatabaseManager::class);
+            $guide = app(SchoolDatabaseTableGuide::class);
+
+            return collect($manager->listTables($active['school'], 'central'))
+                ->map(function (array $row) use ($manager, $active, $guide): array {
+                    try {
+                        $row['columns'] = count($manager->tableSchema($active['school'], (string) $row['name'], 'central'));
+                    } catch (\Throwable) {
+                        $row['columns'] = null;
+                    }
+
+                    return $row + $guide->describe((string) ($row['name'] ?? ''));
+                })
+                ->sortBy([fn ($row) => array_search($row['group'], $guide->groups()), fn ($row) => $row['label']])
+                ->values()->all();
+        } catch (\Throwable) {
+            return [];
+        }
     }
 }

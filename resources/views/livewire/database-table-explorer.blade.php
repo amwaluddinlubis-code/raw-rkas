@@ -1,9 +1,13 @@
 <div data-livewire-explorer="true" data-panel="tables" class="db-panel db-table-single space-y-3">
+    <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Sumber database">
+        <x-ui.button type="button" variant="{{ $scope === 'school' ? 'primary' : 'secondary' }}" wire:click="$set('scope', 'school')">Sekolah Aktif ({{ $schoolCount }})</x-ui.button>
+        <x-ui.button type="button" variant="{{ $scope === 'central' ? 'primary' : 'secondary' }}" wire:click="$set('scope', 'central')">Database Pusat ({{ $centralCount }})</x-ui.button>
+    </div>
     <div class="flex flex-wrap items-end justify-between gap-3">
         <div>
-            <p class="db-eyebrow">Explorer · {{ count($tables) }} tabel</p>
+            <p class="db-eyebrow">Explorer · {{ $scope === 'central' ? 'Database Pusat' : 'Sekolah Aktif' }} · {{ $total }} tabel</p>
             <h3 class="text-base font-bold text-[var(--ui-fg-strong)]">Daftar tabel database</h3>
-            <p class="mt-1 max-w-2xl text-xs leading-5 text-[var(--ui-fg-muted)]">Pilih <strong>Buka</strong> untuk melihat struktur kolom dan contoh data. Semua data bersifat baca-saja.</p>
+            <p class="mt-1 max-w-2xl text-xs leading-5 text-[var(--ui-fg-muted)]">Pilih <strong>Buka</strong> untuk melihat struktur kolom dan contoh data. Semua data bersifat baca-saja.{{ $scope === 'central' ? ' Tabel kredensial, sesi, dan antrean disembunyikan.' : '' }}</p>
         </div>
         <label class="w-full sm:max-w-xs">
             <span class="sr-only">Cari tabel</span>
