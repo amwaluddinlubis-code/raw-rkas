@@ -12,6 +12,7 @@ use App\Http\Controllers\DocumentNumberFormatController;
 use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\EmployeeCertificateController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeIdentityReviewController;
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\InitialSetupController;
 use App\Http\Controllers\LoginController;
@@ -110,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/transaksi', [TransactionController::class, 'index'])->name('transactions.index');
         Route::get('/rekonsiliasi', [ReconciliationController::class, 'index'])->name('reconciliation.index');
         Route::get('/pegawai', [EmployeeController::class, 'index'])->name('employees.index');
+        Route::get('/pegawai/tinjau-identitas', EmployeeIdentityReviewController::class)->name('employees.identity-review');
         Route::get('/siswa', [StudentController::class, 'index'])->name('students.index');
         Route::get('/referensi', [ReferenceController::class, 'index'])->name('references.index');
 

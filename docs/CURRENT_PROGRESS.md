@@ -5,6 +5,21 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Tinjau identitas pegawai lintas feed (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+Halaman `/pegawai/tinjau-identitas` menampilkan daftar grup pegawai yang
+memiliki nama ternormalisasi sama di feed berbeda tetapi tidak memenuhi
+syarat fusi kuat (`ID_REF_KODE` ber-nuptk vs nik vs dapodik pelengkap).
+Setiap grup menunjukkan sumber, NUPTK/NIP/NIK, Dapodik ID, dan status
+terkunci operator sehingga admin/operator dapat memutuskan gabungan atau
+pemisahan di sumber ARKAS/Dapodik. Read-only; tidak mengubah `employees`.
+
+Evidence: `tests/Feature/EmployeeIdentityReviewTest.php` 2 passed / 7
+assertions (service grouping + render halaman); Pint passed;
+`view:cache`/`view:clear` bersih; `git diff --check` bersih.
+
 ## Simulasi what-if pagu RKAS (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.
