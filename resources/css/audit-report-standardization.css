@@ -58,7 +58,7 @@ main:has(nav[aria-label='Tab laporan audit']) .audit-table thead {
 }
 
 main:has(nav[aria-label='Tab laporan audit']) .audit-table th {
-    padding: .75rem 1rem !important;
+    padding: .5rem .75rem !important;
     color: var(--ui-component-text-muted, var(--text-comfort-muted, #718096)) !important;
     font-size: .68rem !important;
     font-weight: 700 !important;
@@ -69,7 +69,7 @@ main:has(nav[aria-label='Tab laporan audit']) .audit-table th {
 
 main:has(nav[aria-label='Tab laporan audit']) .audit-table td {
     border-top: 1px solid var(--ui-component-border, var(--ui-border, #dbe3ec)) !important;
-    padding: .7rem 1rem !important;
+    padding: .45rem .75rem !important;
     color: var(--ui-component-text, var(--text-comfort-primary, #334155)) !important;
     vertical-align: top !important;
     white-space: nowrap !important;

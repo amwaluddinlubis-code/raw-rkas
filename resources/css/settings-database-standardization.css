@@ -69,8 +69,8 @@
 #database-control-center .db-search input:focus,#database-control-center #table-search:focus{border-color:var(--theme-content-accent);outline:2px solid color-mix(in srgb,var(--theme-content-accent) 28%,transparent);outline-offset:1px}
 #database-control-center .db-data-table{border-collapse:separate;border-spacing:0;color:var(--db-text);font-size:.76rem}
 #database-control-center .db-data-table thead{background:var(--db-soft);color:var(--db-subtle)}
-#database-control-center .db-data-table th{padding:.62rem .75rem;border-bottom:1px solid var(--db-border);font-size:.65rem;font-weight:800;letter-spacing:.045em;text-align:left;text-transform:uppercase}
-#database-control-center .db-data-table td{padding:.7rem .75rem;border-bottom:1px solid var(--db-border);vertical-align:middle}
+#database-control-center .db-data-table th{padding:.4rem .6rem;border-bottom:1px solid var(--db-border);font-size:.65rem;font-weight:800;letter-spacing:.045em;text-align:left;text-transform:uppercase}
+#database-control-center .db-data-table td{padding:.45rem .6rem;border-bottom:1px solid var(--db-border);vertical-align:middle}
 #database-control-center .db-data-table tbody tr{background:var(--db-surface)}
 #database-control-center .db-data-table tbody tr:hover{background:color-mix(in srgb,var(--theme-accent) 4%,var(--db-surface))}
 #database-control-center .db-data-table tbody tr.is-active{background:color-mix(in srgb,var(--theme-accent) 8%,var(--db-surface))}
@@ -83,11 +83,11 @@
 #database-control-center .db-table-sidebar{display:flex;flex-direction:column;border-right:1px solid var(--db-border);background:var(--db-soft)}
 #database-control-center .db-table-sidebar-head{padding:.85rem;border-bottom:1px solid var(--db-border);background:var(--db-surface)}
 #database-control-center .db-table-sidebar-list{flex:1;min-height:0;overflow:auto}
-#database-control-center .db-table-sidebar-list th{padding:.55rem .65rem;border-bottom:1px solid var(--db-border);color:var(--db-subtle);font-size:.62rem;text-transform:uppercase;cursor:pointer}
-#database-control-center .db-table-sidebar-list td{padding:.58rem .65rem;border-bottom:1px solid var(--db-border)}
+#database-control-center .db-table-sidebar-list th{padding:.35rem .5rem;border-bottom:1px solid var(--db-border);color:var(--db-subtle);font-size:.62rem;text-transform:uppercase;cursor:pointer}
+#database-control-center .db-table-sidebar-list td{padding:.4rem .5rem;border-bottom:1px solid var(--db-border)}
 #database-control-center .db-table-sidebar-list tr:hover{background:color-mix(in srgb,var(--theme-accent) 5%,var(--db-soft))}
 #database-control-center .db-table-sidebar-list tr.is-active{background:color-mix(in srgb,var(--theme-accent) 10%,var(--db-surface));box-shadow:inset 3px 0 0 var(--theme-content-accent)}
-#database-control-center .db-table-pagination{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.55rem .65rem;border-top:1px solid var(--db-border);background:var(--db-surface);color:var(--db-subtle);font-size:.68rem}
+#database-control-center .db-table-pagination{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.35rem .5rem;border-top:1px solid var(--db-border);background:var(--db-surface);color:var(--db-subtle);font-size:.68rem}
 #database-control-center .db-table-detail-head{background:var(--db-soft)}
 #database-control-center .db-inner-tabs{display:flex;gap:.35rem;padding:.55rem .75rem;border-bottom:1px solid var(--db-border);background:var(--db-surface)}
 #database-control-center .tm-tab{min-height:2rem;border:1px solid var(--db-border);border-radius:.55rem;padding:.35rem .75rem;background:var(--db-soft);color:var(--db-subtle);font-size:.7rem;font-weight:800}

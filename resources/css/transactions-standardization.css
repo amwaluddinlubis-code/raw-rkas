@@ -323,7 +323,7 @@ main:has(#modul-buat-spj) #rincian-transaksi>div:first-child p {
 }
 
 main:has(#modul-buat-spj) #rincian-transaksi>div:first-child>span {
-    padding: .35rem .625rem !important;
+    padding: .2rem .5rem !important;
     font-size: .75rem !important;
 }
 
@@ -377,8 +377,8 @@ main:has(#modul-buat-spj) #rincian-transaksi tbody td:nth-child(2)>p {
 }
 
 main:has(#modul-buat-spj) #rincian-transaksi .ui-input {
-    min-height: 2.15rem !important;
-    padding: .35rem .625rem !important;
+    min-height: 1.75rem !important;
+    padding: .2rem .5rem !important;
     border-color: var(--transaction-line-strong) !important;
     background: var(--transaction-surface) !important;
     color: var(--transaction-fg-strong) !important;

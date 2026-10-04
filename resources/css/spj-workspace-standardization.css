@@ -395,7 +395,7 @@ main[data-page="spj"] .spj-semantic-workspace [class~="px-5"][class~="py-4"] {
 }
 
 main[data-page="spj"] .spj-semantic-workspace table :is(th, td) {
-    padding-block: .625rem !important;
+    padding-block: .375rem !important;
 }
 
 main[data-page="spj"] .spj-semantic-workspace .page-header-main {

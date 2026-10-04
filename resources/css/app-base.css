@@ -78,8 +78,8 @@
     .audit-table.completeness-table { min-width: 900px; }
     .audit-table.history-table { min-width: 780px; }
     .audit-table thead { background: var(--ui-component-surface-soft, #f8fafc); color: var(--ui-component-text-muted, #718096); font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; }
-    .audit-table th { padding: .75rem 1rem; text-align: left; font-weight: 700; white-space: nowrap; }
-    .audit-table td { border-top: 1px solid var(--ui-component-border, #dbe3ec); padding: .75rem 1rem; vertical-align: top; white-space: nowrap; }
+    .audit-table th { padding: .5rem .75rem; text-align: left; font-weight: 700; white-space: nowrap; }
+    .audit-table td { border-top: 1px solid var(--ui-component-border, #dbe3ec); padding: .5rem .75rem; vertical-align: top; white-space: nowrap; }
     .audit-table td.wrap { white-space: normal; overflow-wrap: anywhere; }
     .audit-panel > nav { border-top: 1px solid var(--ui-component-border, #dbe3ec); padding: 1rem 1.25rem; }
     .empty-cell { padding: 2.5rem 1.25rem; text-align: center; color: var(--ui-component-text-muted, #718096); }
@@ -146,8 +146,8 @@
     form textarea { font-size: 1rem !important; }
 
     .table { width: 100%; border-collapse: collapse; text-align: left; font-size: 1rem; color: var(--ui-component-text, #334155); }
-    .table th { border-bottom: 1px solid var(--ui-component-border, #dbe3ec); background: var(--ui-component-surface-soft, #f8fafc); padding: .75rem; color: var(--ui-component-text-muted, #718096); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
-    .table td { border-bottom: 1px solid var(--ui-component-border, #dbe3ec); padding: .75rem; vertical-align: top; }
+    .table th { border-bottom: 1px solid var(--ui-component-border, #dbe3ec); background: var(--ui-component-surface-soft, #f8fafc); padding: .5rem .75rem; color: var(--ui-component-text-muted, #718096); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+    .table td { border-bottom: 1px solid var(--ui-component-border, #dbe3ec); padding: .5rem .75rem; vertical-align: top; }
     .small-box { border-radius: var(--profile-card-radius, 1rem); padding: 1.25rem; box-shadow: var(--profile-card-shadow, 0 1px 3px rgb(15 23 42 / .08)); }
 
     /* Small compatibility helpers retained for legacy markup only. */
@@ -181,6 +181,6 @@
 
     @media (max-width: 640px) {
         .audit-table th,
-        .audit-table td { padding: .5rem .75rem; }
+        .audit-table td { padding: .35rem .6rem; }
     }
 }

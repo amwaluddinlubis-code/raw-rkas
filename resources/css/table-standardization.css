@@ -40,7 +40,7 @@ main table:not(.fi-ta-table):not([data-ui-table="off"]) thead {
 
 main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th {
     border-bottom: 1px solid var(--ui-table-border) !important;
-    padding: .72rem .8rem;
+    padding: .45rem .6rem;
     color: var(--ui-table-head-text) !important;
     font-size: .72rem;
     font-weight: 800;
@@ -53,7 +53,7 @@ main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th {
 
 main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td {
     border-bottom: 1px solid var(--ui-table-border-soft) !important;
-    padding: .72rem .8rem;
+    padding: .45rem .6rem;
     vertical-align: top;
     color: var(--ui-component-text, #475569);
 }
@@ -117,7 +117,7 @@ main table:not(.fi-ta-table):not([data-ui-table="off"]) th:last-child {
 main table:not(.fi-ta-table):not([data-ui-table="off"]) td[colspan].text-center,
 main table:not(.fi-ta-table):not([data-ui-table="off"]) td.empty-cell,
 main table:not(.fi-ta-table):not([data-ui-table="off"]) td.app-table-empty {
-    padding: 2.5rem 1rem !important;
+    padding: 1rem !important;
     color: var(--ui-component-text-muted, #64748b);
     background: var(--ui-component-surface-soft, #f8fafc);
     text-align: center !important;
@@ -138,7 +138,7 @@ main .app-table-pagination {
     border: 1px solid var(--ui-table-border);
     border-top: 0;
     border-radius: 0;
-    padding: .7rem .85rem;
+    padding: .45rem .6rem;
 }
 
 main .app-table-pagination button,
@@ -163,7 +163,7 @@ main :is(.overflow-x-auto,.audit-table-wrap,[data-table-container]):has(> table:
 
     main table:not(.fi-ta-table):not([data-ui-table="off"]) thead th,
     main table:not(.fi-ta-table):not([data-ui-table="off"]) tbody td {
-        padding: .62rem .68rem;
+        padding: .4rem .5rem;
     }
 
     main table:not(.fi-ta-table):not([data-ui-table="off"]) td:first-child,
