@@ -110,6 +110,24 @@
         </section>
     @endif
 
+    @if (!empty($integrity) && !$integrity['ok'])
+        <section aria-label="Integritas mirror ARKAS"
+            class="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm dark:border-amber-700 dark:bg-amber-950">
+            <h2 class="text-sm font-bold text-amber-900 dark:text-amber-100">Perlu diperiksa: konsistensi data ARKAS</h2>
+            <p class="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">Realisasi/pagu di atas dihitung dari subset data yang tertaut benar. Baris berikut perlu ditindak di ARKAS atau saat sinkronisasi berikutnya.</p>
+            <ul class="mt-3 grid gap-2 sm:grid-cols-2">
+                @foreach ($integrity['checks'] as $check)
+                    @if (! $check['ok'])
+                        <li class="rounded-lg border border-amber-200 bg-white/60 px-3 py-2 text-xs dark:border-amber-800 dark:bg-black/20">
+                            <span class="font-semibold text-amber-900 dark:text-amber-100">{{ $check['label'] }}: {{ number_format($check['count'], 0, ',', '.') }}</span>
+                            <p class="mt-0.5 text-amber-800 dark:text-amber-200">{{ $check['hint'] }}</p>
+                        </li>
+                    @endif
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
     @include('rkas-budget.partials.filter')
 
     @php($reportRevisi = request()->query('revisi'))

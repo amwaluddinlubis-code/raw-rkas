@@ -5,6 +5,33 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Diagnostik integritas mirror ARKAS (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+Tugas operator tidak lagi menegakkan konsistensi mirror secara manual.
+Service baru `ArkasMirrorIntegrityService::summarize($yearId, $fundSourceId)`
+mengaudit 4 hal yang sebelumnya hanya ditangani diam-diam oleh fallback/
+orphan shares:
+
+- kas BELANJA yang `ID_RAPBS`-nya tidak ada di mirror RKAS (realisasi tidak
+  dapat diatribusikan ke pagu);
+- kas yang tautannya menunjuk RKAS tahun/dana lain — ditampilkan informatif,
+  sengaja tidak masuk total konteks aktif;
+- baris periode yang `ID_RAPBS`-nya tidak ada di mirror RKAS;
+- revisi anggaran yang tersetujui tetapi belum memiliki baris RKAS.
+
+Hasil muncul sebagai panel "Perlu diperiksa: konsistensi data ARKAS" pada
+`/penganggaran-rkas` tepat di bawah banner Kesegaran, hanya ketika ada
+temuan. Data tetap read-only; tidak ada perubahan lifecycle numbering atau
+business rule.
+
+Evidence: `tests/Feature/ArkasMirrorIntegrityTest.php` 4 passed / 15
+assertions; `RkasBudgetUiTest` 6/52 dan `RkasRevisionModesTest` 12/51 tetap
+hijau; Pint passed; `git diff --check` bersih. Pada data nyata 10208183
+(2026, BOS): 0 kas tak ber-RKAS, 0 periode yatim, 0 anggaran kosong; 424 kas
+manunjuk RKAS tahun lain — informatif, tidak dihitung pada konteks aktif.
+
 ## Bulk Preview paket pada Laporan SPJ — 2026-09-29
 
 Status: **SOURCE IMPLEMENTED / PHP TEST + BROWSER RUNTIME RVR**.
