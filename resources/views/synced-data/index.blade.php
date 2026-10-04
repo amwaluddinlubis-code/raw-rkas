@@ -36,6 +36,8 @@
             </div>
         </x-page-header>
 
+        <livewire:arkas-health-banner />
+
         @include('synced-data.partials.navigation')
 
         <style>nav[aria-label="Navigasi kelompok data"] { display: none; }</style>
