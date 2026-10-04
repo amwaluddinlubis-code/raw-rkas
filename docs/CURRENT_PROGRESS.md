@@ -21,7 +21,9 @@ Evidence: `php artisan view:cache` + `view:clear` berhasil,
 
 ## Monitor kesehatan importer lintas sekolah + audit mirror (2026-10-04)
 
-Status: **FUNCTIONAL PASS (focused)**.
+Catatan: halaman `/pengaturan/arkas/import-monitor` beserta cluster importer
+terhapus oleh `ea8c507`. Bagian ini dipertahankan untuk jejak historis; fitur
+audit mirror tetap hidup di `/penganggaran-rkas/audit-mirror`.
 
 - Halaman admin `/pengaturan/arkas/import-monitor` mengagregasi run
   importer terakhir per sekolah/tabel/tahun anggaran: status, baris
@@ -31,13 +33,6 @@ Status: **FUNCTIONAL PASS (focused)**.
 - Halaman `/penganggaran-rkas/audit-mirror` merangkum jejak mirror:
   baris ditambah/dihapus/berubah antar dua pengesahan terakhir, jumlah
   periode soft-deleted, dan kandidat kas yatim. Landing kerja KPA.
-
-Evidence: `tests/Feature/ArkasImportMonitorAndAuditTest.php` 2 passed
-(router render untuk kedua halaman); runtime real 10208183: 41 baris
-importer (2 stagnan, 0 gagal, 0 belum), audit pagu 2026: 2 baris
-ditambah (+8,5jt), 4 dihapus (−2,275jt), 18 berubah (Δ−6,225jt), 414
-periode soft-deleted, 248 kandidat kas yatim; Pint passed;
-`view:cache`/`view:clear` bersih; `git diff --check` bersih.
 
 ## Tinjau identitas pegawai lintas feed (2026-10-04)
 
@@ -71,21 +66,13 @@ assertions; `RkasBudgetUiTest` + `RkasRevisionModesTest` 18/103 hijau;
 route terdaftar `rkas-budget.simulate`; `view:cache`/`view:clear`
 bersih; Pint passed; `git diff --check` bersih.
 
-## Import diff preview nominal (2026-10-04)
+## Import diff preview nominal (2026-10-04) — DIHAPUS
 
-Status: **FUNCTIONAL PASS (focused)**.
-
-Preview rekonsiliasi Generic Importer kini menampilkan tabel diff sampai
-25 baris pertama yang mengalami perubahan nominal, dengan kolom status,
-kunci sumber, kolom, nilai sebelum/sesudah, dan selisih. Hanya kolom
-numerik berpola `jumlah|nominal|pagu|total|nilai|harga|amount|volume|sisa`
-yang ditampilkan; staging tidak ditulis oleh preview. Perubahan ini
-mempermudah operator meninjau arah dan besarnya perubahan sebelum klik
-Sinkronkan (P3 rencana diagnostik ARKAS).
-
-Evidence: `tests/Unit/ArkasReconciliationDiffTest.php` 3 passed / 8
-assertions; `ArkasGenericImportReleaseSafetyTest` 5/29 tetap hijau;
-`view:cache`/`view:clear` bersih; Pint passed; `git diff --check` bersih.
+Modul Generic Importer (route `arkas.importer*`, controller, service,
+view, dan nav) telah dihapus oleh `ea8c507`; tabel staging/history tidak
+dihapus tetapi subsystem importer tidak lagi tersedia. Bagian ini
+dipertahankan hanya sebagai jejak sejarah; audit mirror kini diteruskan
+di `/penganggaran-rkas/audit-mirror`.
 
 ## Diagnostik integritas mirror ARKAS (2026-10-04)
 
