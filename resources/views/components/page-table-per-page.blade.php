@@ -28,7 +28,39 @@
     @endif
 </div>
 
+<style>
+    @media (min-width: 1280px) {
+        .spj-semantic-workspace form[data-spj-preparation-toolbar] {
+            display: flex;
+            align-items: flex-end;
+            gap: .75rem;
+            overflow-x: auto;
+        }
 
+        .spj-semantic-workspace form[data-spj-preparation-toolbar] > [data-spj-filter-grid] {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(9.5rem, 1fr));
+            flex: 1 1 auto;
+            min-width: 0;
+            gap: .75rem;
+        }
+
+        .spj-semantic-workspace form[data-spj-preparation-toolbar] > [data-spj-filter-actions] {
+            flex: 0 0 auto;
+            flex-wrap: nowrap;
+            margin-top: 0;
+        }
+
+        .spj-semantic-workspace form[data-spj-preparation-toolbar] > [data-page-table-per-page] {
+            flex: 0 0 auto;
+            min-height: 2.25rem;
+            margin-left: .25rem;
+            padding-left: .75rem;
+            border-left: 1px solid var(--ui-line);
+            white-space: nowrap;
+        }
+    }
+</style>
 
 <script>
     (() => {

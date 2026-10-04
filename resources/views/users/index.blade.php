@@ -10,10 +10,10 @@
             kicker="Pengaturan pengguna"
         >
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
-                <x-stat-item label="Total pengguna" :value="number_format($users->count(), 0, ',', '.')" hint="Akun terdaftar" value-class="text-[var(--ui-fg-strong)]" icon="users" icon-class="text-[var(--ui-fg-strong)]" />
+                <x-stat-item label="Total pengguna" :value="number_format($users->count(), 0, ',', '.')" hint="Akun terdaftar" value-class="text-slate-800" icon="users" icon-class="text-slate-800" />
                 <x-stat-item label="Administrator" :value="number_format($users->where('role', \App\Models\User::ROLE_ADMIN)->count(), 0, ',', '.')" hint="Akses penuh" value-class="text-indigo-700" icon="user" icon-class="text-indigo-700" />
                 <x-stat-item label="Operator" :value="number_format($users->where('role', \App\Models\User::ROLE_OPERATOR)->count(), 0, ',', '.')" hint="Mengelola SPJ" value-class="text-emerald-700" icon="edit" icon-class="text-emerald-700" />
-                <x-stat-item label="Pemeriksa" :value="number_format($users->where('role', \App\Models\User::ROLE_VIEWER)->count(), 0, ',', '.')" hint="Hanya melihat data" value-class="text-[var(--ui-fg)]" icon="eye" icon-class="text-[var(--ui-fg)]" />
+                <x-stat-item label="Pemeriksa" :value="number_format($users->where('role', \App\Models\User::ROLE_VIEWER)->count(), 0, ',', '.')" hint="Hanya melihat data" value-class="text-slate-700" icon="eye" icon-class="text-slate-700" />
             </div>
         </x-page-header>
 
@@ -56,9 +56,9 @@
                 <div class="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5 shadow-sm">
                     <p class="text-xs font-bold uppercase tracking-wide text-indigo-500">Hak akses</p>
                     <div class="mt-4 space-y-4 text-sm">
-                        <div><p class="font-bold text-[var(--ui-fg-strong)]">Administrator</p><p class="mt-1 text-[var(--ui-fg)]">Mengelola aplikasi, pengguna, pengaturan, dan seluruh proses SPJ.</p></div>
-                        <div><p class="font-bold text-[var(--ui-fg-strong)]">Operator</p><p class="mt-1 text-[var(--ui-fg)]">Mengelola transaksi dan menyiapkan dokumen SPJ.</p></div>
-                        <div><p class="font-bold text-[var(--ui-fg-strong)]">Pemeriksa</p><p class="mt-1 text-[var(--ui-fg)]">Melihat data dan hasil pemeriksaan tanpa mengubah transaksi.</p></div>
+                        <div><p class="font-bold text-slate-900">Administrator</p><p class="mt-1 text-slate-600">Mengelola aplikasi, pengguna, pengaturan, dan seluruh proses SPJ.</p></div>
+                        <div><p class="font-bold text-slate-900">Operator</p><p class="mt-1 text-slate-600">Mengelola transaksi dan menyiapkan dokumen SPJ.</p></div>
+                        <div><p class="font-bold text-slate-900">Pemeriksa</p><p class="mt-1 text-slate-600">Melihat data dan hasil pemeriksaan tanpa mengubah transaksi.</p></div>
                     </div>
                 </div>
             </aside>
@@ -68,10 +68,10 @@
             <div class="flex flex-col gap-2 border-b border-[var(--ui-line)] px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
                 <div>
                     <p class="text-[11px] font-bold uppercase tracking-wide text-slate-400">Akun terdaftar</p>
-                    <h2 class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Daftar pengguna</h2>
-                    <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Ubah hanya bagian yang diperlukan, lalu pilih Simpan.</p>
+                    <h2 class="mt-1 text-lg font-bold text-slate-900">Daftar pengguna</h2>
+                    <p class="mt-1 text-sm text-slate-500">Ubah hanya bagian yang diperlukan, lalu pilih Simpan.</p>
                 </div>
-                <span class="inline-flex w-fit rounded-full bg-[var(--ui-surface-muted)] px-3 py-1 text-xs font-bold text-[var(--ui-fg)]">{{ $users->count() }} pengguna</span>
+                <span class="inline-flex w-fit rounded-full bg-[var(--ui-surface-muted)] px-3 py-1 text-xs font-bold text-slate-600">{{ $users->count() }} pengguna</span>
             </div>
 
             <div class="divide-y divide-[var(--ui-line)]">
@@ -82,8 +82,8 @@
                             <div class="flex gap-3">
                                 <div class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-indigo-50 text-sm font-black uppercase text-indigo-700">{{ mb_substr($user->name, 0, 1) }}</div>
                                 <div class="min-w-0">
-                                    <p class="truncate font-bold text-[var(--ui-fg-strong)]">{{ $user->name }}</p>
-                                    <p class="mt-0.5 break-all text-xs text-[var(--ui-fg-muted)]">{{ $user->email }}</p>
+                                    <p class="truncate font-bold text-slate-900">{{ $user->name }}</p>
+                                    <p class="mt-0.5 break-all text-xs text-slate-500">{{ $user->email }}</p>
                                     @if($user->is(auth()->user()))<span class="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-bold text-emerald-700">Akun Anda</span>@endif
                                 </div>
                             </div>

@@ -110,7 +110,21 @@
     );
 @endphp
 
+<style>
+    :root {
+        --app-sticky-header-height: 72px;
+    }
 
+    main nav[aria-label="Breadcrumb"]:not(.app-global-breadcrumb) {
+        display: none !important;
+    }
+
+    .app-global-breadcrumb {
+        position: sticky;
+        top: calc(var(--app-sticky-header-height) + .5rem);
+        z-index: 25;
+    }
+</style>
 
 <nav class="app-global-breadcrumb module-breadcrumb mb-4 flex min-w-0 flex-wrap items-center gap-1.5 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)]/95 px-3 py-2 text-sm shadow-sm backdrop-blur-md"
     aria-label="Lokasi halaman">

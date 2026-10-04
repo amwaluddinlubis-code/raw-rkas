@@ -5,23 +5,6 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
-## Refactor visual-token Blade + ekstraksi `<style>` (2026-10-04)
-
-Status: **FUNCTIONAL PASS (focused)**.
-
-- 10 halaman Blade terpanas diberi tokenisasi teks/border (`text-slate-*`→
-  `text-[var(--ui-fg-*)]`, `border-slate-*`→`border-[var(--ui-line*)]`).
-  Semua kelas background (`bg-white`, `bg-slate-50`, dsb) **tidak
-  diubah** — perubahan warna background tidak disertakan.
-- Blok `<style>` lokal dari 6 view (synced-data, schools/settings,
-  errors/layout, welcome, global-breadcrumb, page-table-per-page)
-  dipindahkan ke `resources/css/blade-extracted.css` dan diimport di
-  `app.css` tanpa modifikasi selector — render identik.
-
-Evidence: `npm run build` sukses (asset CSS `app-BNdRJHtR.css`), `view:cache`/
-`view:clear` bersih, route test mirror 3/8 hijau, `git diff --check`
-bersih.
-
 ## Sidebar: link fitur baru + state aktif (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.
