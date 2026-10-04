@@ -33,13 +33,6 @@ class ArkasImportMonitorAndAuditTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_import_monitor_page_renders(): void
-    {
-        $response = $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1, 'active_school_id' => 1])->get(route('arkas.import-monitor'));
-
-        $response->assertOk();
-    }
-
     public function test_mirror_audit_page_renders(): void
     {
         $response = $this->withoutMiddleware()->withSession(['active_fiscal_year_id' => 1, 'active_fund_source_id' => 1, 'active_school_id' => 1])->get(route('rkas-budget.audit'));

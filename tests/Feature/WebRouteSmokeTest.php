@@ -199,7 +199,6 @@ class WebRouteSmokeTest extends TestCase
     {
         $this->assertUrisOk([
             '/pengaturan/arkas',
-            '/pengaturan/arkas/importer',
             '/pengaturan/arkas/mirror',
             '/pengaturan/arkas/mirror/status',
             '/pengaturan/backup',

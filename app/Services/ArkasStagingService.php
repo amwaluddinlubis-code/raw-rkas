@@ -28,11 +28,11 @@ class ArkasStagingService
     /** @return array<int, array<string, mixed>> */
     public function stage(string $sourceTable, string $command, FiscalYear $year, ArkasSource $source, string $parser = 'decode', ?int $bridgeYear = null, ?int $fundSource = null): array
     {
+        $preset = self::presetFor($sourceTable);
         $profile = ArkasImportProfile::query()->firstOrCreate(
             ['source_table' => $sourceTable],
-            [...ArkasDomainAdapter::presetFor($sourceTable), 'label' => 'Auto '.$sourceTable],
+            [...$preset, 'label' => 'Auto '.$sourceTable],
         );
-        $preset = ArkasDomainAdapter::presetFor($sourceTable);
         $lock = Cache::lock(
             ArkasTenantLockKey::staging($source, $sourceTable, (int) $year->id),
             900,
@@ -81,7 +81,7 @@ class ArkasStagingService
     /** @return array<int, array<string, mixed>> */
     public function fetch(ArkasImportProfile $profile, FiscalYear $year, ArkasSource $source, string $command, string $parser = 'decode', ?int $bridgeYear = null, ?int $fundSource = null): array
     {
-        $preset = ArkasDomainAdapter::presetFor($profile->source_table);
+        $preset = self::presetFor($profile->source_table);
         $bridgeYear ??= in_array($command, ['bku', 'rkas', 'fund-sources'], true) ? $year->year : null;
         $fundSource ??= in_array($command, ['bku', 'rkas'], true) ? $year->fund_source_id : null;
         $table = $command === 'rows' ? $profile->source_table : null;
@@ -201,6 +201,29 @@ class ArkasStagingService
         }
 
         return null;
+    }
+
+    /**
+     * Kolom kunci sumber per tabel ARKAS untuk staging pipeline kanonis.
+     * Pengganti ArkasDomainAdapter::presetFor yang ikut dihapus bersama
+     * UI mapping importer; hanya membawa yang dipakai staging.
+     *
+     * @return array{target_domain: ?string, source_key_column: ?string}
+     */
+    private static function presetFor(string $sourceTable): array
+    {
+        return match (strtolower($sourceTable)) {
+            'kas_umum' => ['target_domain' => 'bku', 'source_key_column' => 'id_kas_umum'],
+            'rapbs' => ['target_domain' => 'rkas', 'source_key_column' => 'id_rapbs'],
+            'rapbs_periode' => ['target_domain' => 'rkas_periods', 'source_key_column' => 'id_rapbs_periode'],
+            'ref_kode' => ['target_domain' => 'activity_reference', 'source_key_column' => 'id_kode'],
+            'ref_periode' => ['target_domain' => 'period_reference', 'source_key_column' => 'id_periode'],
+            'kas_umum_nota' => ['target_domain' => 'raw', 'source_key_column' => 'id_kas_nota'],
+            'kas_umum_nota_pajak' => ['target_domain' => 'raw', 'source_key_column' => 'id_kas_nota_pajak'],
+            'ref_rekening' => ['target_domain' => 'raw', 'source_key_column' => 'id_rekening'],
+            'ref_level_kode' => ['target_domain' => 'raw', 'source_key_column' => 'id_level_kode'],
+            default => ['target_domain' => 'raw', 'source_key_column' => null],
+        };
     }
 
     /** @param array<int, array<string, mixed>> $records @param array<string, mixed> $preset @return array<int, array<string, mixed>> */

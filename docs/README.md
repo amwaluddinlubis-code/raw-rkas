@@ -57,7 +57,6 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 
 | Dokumen | Peran / status |
 |---|---|
-| `ARKAS_IMPORTER.md` | **ACTIVE** — Generic ARKAS Importer, source key, profile-driven import, hardening, dan operator-data verification. |
 | `DOCUMENT_TEMPLATE_PLACEHOLDERS.md` | **ACTIVE** — placeholder registry/usage dan template contract. |
 | `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE** — lifecycle import paket, update individual template, single-sheet download, dan master recomposition. |
 | `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command release-safety, historical green baseline, dan status gate HEAD terbaru. |

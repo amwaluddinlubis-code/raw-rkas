@@ -11,8 +11,7 @@ Status: **FUNCTIONAL PASS (focused)**.
 
 Sidebar `tailwind-app` sekarang menautkan halaman fitur baru: Simulasi
 Pagu dan Audit Mirror pada kelompok Keuangan, Tinjau Identitas pada
-kelompok Referensi, serta Importer ARKAS dan Monitor Importer pada
-kelompok Data & Integrasi (administrator). State aktif Penganggaran
+kelompok Referensi. State aktif Penganggaran
 RKAS disempitkan ke `rkas-budget.index` (+ revisi/laporan) supaya
 Simulasi Pagu / Audit Mirror dapat memiliki state aktifnya sendiri;
 Tinjau Identitas tidak lagi menyalakan state Pegawai.
@@ -1276,6 +1275,30 @@ tersinkron.
 
 Evidence: `ArkasMirrorHealthTest` 2 passed / 16 assertions, Pint passed,
 `git diff --check` bersih.
+
+## Hapus subsystem importer mapping ARKAS 2026-10-04
+
+Status: **FUNCTIONAL PASS (full suite) / BROWSER RVR**.
+
+Audit membuktikan tidak ada modul lain yang memakai UI mapping importer:
+satu-satunya pemakai adalah controller/job/service/test cluster itu
+sendiri; pipeline kanonis (`ArkasSyncController`, `YearSelectionController`
+→ `ArkasCanonicalSyncService` → V2) tidak tersentuh. Dihapus: route
+`arkas.importer*` + `arkas.import-monitor`, 2 controller, 9 service/job
+(`GenericImport`, guard, row synchronizer pemakai, reconciliation-service,
+configuration, monitor, explorer, `DomainAdapter`, `FullSync` tanpa
+pemakai), job import, model Profile/Run, 3 view, 2 blok nav, 8 file test,
+dan entri phpunit.xml. `ArkasStagingService` dipertahankan sebagai infra
+pipeline kanonis (preset kunci sumber di-inline; model Profile/Run dan
+`ArkasImportRowSynchronizer` dikembalikan sebagai penyangga staging).
+Migrasi/tabel staging tidak dihapus. Docs: `ARKAS_IMPORTER.md` dihapus,
+README/matrix/`SYNCHRONIZATION` (§2.2, §18) disesuaikan.
+
+Evidence: full suite Unit 82/82 + Feature 661+7 hijau setelah 2 sisa
+referensi (`ArkasImportMonitorAndAuditTest`, `WebRouteSmokeTest`)
+dibersihkan; `route:list` 8 route arkas valid; Pint + `git diff --check`
+bersih. Kegagalan massal di tengah jalan (`malformed` sqlite Windows)
+terbukti flaky env, hilang pada run ulang per-suite.
 
 ## GUI kesehatan mirror kas di Pusat Sinkronisasi ARKAS 2026-10-04
 

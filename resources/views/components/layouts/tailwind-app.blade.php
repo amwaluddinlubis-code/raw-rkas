@@ -198,16 +198,6 @@
                                     class="nav-label">Integrasi ARKAS</span></a>
                         @endif
                         @if (auth()->user()->isAdministrator())
-                            <a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}"
-                                href="{{ route('arkas.importer') }}"><x-ui.icon name="download" /><span
-                                    class="nav-label">Importer ARKAS</span></a>
-                        @endif
-                        @if (auth()->user()->isAdministrator())
-                            <a class="app-nav {{ request()->routeIs('arkas.import-monitor*') ? 'app-nav-active' : '' }}"
-                                href="{{ route('arkas.import-monitor') }}"><x-ui.icon name="refresh" /><span
-                                    class="nav-label">Monitor Importer</span></a>
-                        @endif
-                        @if (auth()->user()->isAdministrator())
                             <a class="app-nav {{ request()->routeIs('arkas.mirror*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('arkas.mirror') }}"><x-ui.icon name="database" /><span
                                     class="nav-label">Sinkronisasi ARKAS</span></a>

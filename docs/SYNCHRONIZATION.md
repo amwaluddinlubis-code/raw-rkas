@@ -62,25 +62,14 @@ Tujuan:
 - membuat reconciliation jika source berubah;
 - membangun derived references seperti kegiatan dan rekanan.
 
-### 2.2 Generic ARKAS Importer
+### 2.2 Generic ARKAS Importer (dihapus 2026-10-04)
 
-Entry point terpisah yang profile-driven:
-
-```text
-ArkasImporterController
-→ ArkasDatabaseExplorer / Bridge
-→ ArkasImportProfile
-→ ArkasStagingService
-→ ArkasReconciliationService
-→ ArkasGenericImportService
-→ ArkasDomainAdapter
-```
-
-Gunakan `ARKAS_IMPORTER.md` untuk detail mapping, sync mode, stable source key, preview, concurrency lock, dan metrics.
-
-Generic Importer **bukan pengganti otomatis** canonical transaction sync; keduanya memiliki tujuan dan boundary berbeda.
-
-Pada UI, Generic Importer memiliki mode **Sederhana** (preset tabel yang dikenal) dan **Lanjutan** (mapping/profile custom). Mode sederhana tetap hanya tersedia untuk administrator. Untuk referensi Program/Subprogram/Kegiatan, gunakan profile `ref_kode` dengan target `activity_reference`; setelah itu canonical sync RKAS/BKU tetap diperlukan bila transaksi lama perlu menerima perubahan nama kegiatan.
+Subsystem importer mapping/profile-driven (controller, GenericImportService,
+guard, reconciliation-service, monitor, nav, dan testnya) dihapus karena
+tidak dipakai modul lain; satu-satunya pipeline yang hidup adalah canonical
+sync di bawah. `ArkasStagingService` dipertahankan sebagai infra staging
+pipeline kanonis (preset kunci sumber di-inline, tanpa DomainAdapter).
+Tabel staging `arkas_import_rows` tetap ditulis dan dibaca jalur legacy.
 
 ### 2.3 Dapodik synchronization
 
@@ -550,30 +539,13 @@ Jika metadata SiPLah berasal dari source:
 
 ---
 
-## 18. Sync mode Generic Importer
+## 18. Sync mode Generic Importer (dihapus 2026-10-04)
 
-Generic ARKAS Importer mendukung mode yang berbeda dari canonical sync, termasuk:
-
-```text
-Upsert
-Incremental
-Full Refresh
-```
-
-Mode tersebut hanya boleh bekerja pada scope target yang benar.
-
-Full Refresh tidak berarti menghapus seluruh database tenant atau overlay SPJ.
-
-Stable source key harus konsisten antara:
-
-```text
-preview
-staging
-reconciliation
-sync
-```
-
-Detail kontrak importer berada di `ARKAS_IMPORTER.md`.
+Bagian ini dipertahankan sebagai penanda: mode Upsert/Incremental/Full
+Refresh milik subsystem importer yang sudah dihapus. Pipeline kanonis
+tidak memakai mode tersebut; full-refresh di pipeline kanonis tidak
+menghapus database tenant atau overlay SPJ. Stable source key tetap
+konsisten antara staging dan sync via `ArkasSourceKeyResolver`.
 
 ---
 
@@ -603,7 +575,7 @@ Sinkronisasi operasional sebaiknya meninggalkan evidence yang cukup untuk menjaw
 - apakah ada reconciliation;
 - apakah sync berhasil/gagal.
 
-Generic Importer sudah mempunyai semantic metrics dan import runs. Canonical sync/reconciliation harus tetap dapat diaudit melalui operational audit/log yang relevan.
+Staging pipeline kanonis mencatat runs dan metrics. Canonical sync/reconciliation harus tetap dapat diaudit melalui operational audit/log yang relevan.
 
 ---
 

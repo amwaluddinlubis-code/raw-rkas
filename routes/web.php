@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Controllers\ArkasImporterController;
-use App\Http\Controllers\ArkasImportMonitorController;
 use App\Http\Controllers\ArkasMirrorAuditController;
 use App\Http\Controllers\ArkasMirrorController;
 use App\Http\Controllers\ArkasSourceController;
@@ -83,15 +81,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/arkas', [ArkasSourceController::class, 'index'])->name('arkas.settings');
         Route::post('/pengaturan/arkas', [ArkasSourceController::class, 'store'])->name('arkas.settings.store');
         Route::get('/pengaturan/arkas/mirror', [ArkasMirrorController::class, 'index'])->middleware('active-school')->name('arkas.mirror');
-        Route::get('/pengaturan/arkas/import-monitor', ArkasImportMonitorController::class)->middleware('administrator')->name('arkas.import-monitor');
         Route::get('/pengaturan/arkas/mirror/status', [ArkasMirrorController::class, 'status'])->middleware('active-school')->name('arkas.mirror.status');
         Route::post('/pengaturan/arkas/mirror/sync-refs', [ArkasMirrorController::class, 'syncRefs'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.sync-refs');
         Route::post('/pengaturan/arkas/mirror/sync-school', [ArkasMirrorController::class, 'syncSchool'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.sync-school');
         Route::post('/pengaturan/arkas/mirror/health-repair', [ArkasMirrorController::class, 'repairHealth'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.health-repair');
-        Route::get('/pengaturan/arkas/importer', ArkasImporterController::class)->name('arkas.importer');
-        Route::post('/pengaturan/arkas/importer/mapping', [ArkasImporterController::class, 'store'])->name('arkas.importer.mapping.store');
-        Route::post('/pengaturan/arkas/importer/{profileId}/preview', [ArkasImporterController::class, 'preview'])->name('arkas.importer.preview');
-        Route::post('/pengaturan/arkas/importer/{profileId}/sync', [ArkasImporterController::class, 'sync'])->name('arkas.importer.sync');
         Route::get('/pengaturan/database-aktif', [DatabaseManagerController::class, 'index'])->name('database-manager.index');
         Route::get('/pengaturan/database-aktif/tabel/{table}', [DatabaseManagerController::class, 'tableSummary'])->name('database-manager.table-summary');
         Route::get('/pengaturan/database-reset', [DatabaseManagerController::class, 'resetForm'])->name('database-manager.reset-form');

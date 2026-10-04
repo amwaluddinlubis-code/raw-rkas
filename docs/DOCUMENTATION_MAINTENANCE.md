@@ -52,7 +52,6 @@ Gunakan urutan berikut ketika terjadi konflik:
 | Numbering/cancel/rollback | `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` |
 | Template/generator/placeholder | `docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md` dan guide terkait |
 | GUI/layout/component/theme | `docs/GUI_STANDARDIZATION.md`, `docs/CSS_USAGE_GUIDE.md`, `docs/UI_ICON_MIGRATION.md` bila relevan |
-| Importer ARKAS | `docs/ARKAS_IMPORTER.md` |
 | Dokumen baru/status dokumen berubah | `docs/README.md` |
 | Aturan kerja contributor/AI agent berubah | `AGENTS.md`, `.ai/rules/index.md`, dan entrypoint agent terkait |
 
