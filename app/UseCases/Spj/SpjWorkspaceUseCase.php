@@ -74,6 +74,7 @@ class SpjWorkspaceUseCase
             'quarter' => ['nullable', 'integer', 'between:1,4'],
             'spj_category' => ['nullable', 'string', 'max:40'],
             'state' => ['nullable', 'in:all,attention,needs_details,unprepared,draft,ready,numbered'],
+            'search' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -87,6 +88,7 @@ class SpjWorkspaceUseCase
     {
         $month = isset($filters['month']) && $filters['month'] !== null ? (int) $filters['month'] : null;
         $quarter = isset($filters['quarter']) && $filters['quarter'] !== null ? (int) $filters['quarter'] : null;
+        $search = trim((string) ($filters['search'] ?? ''));
 
         $query = Transaction::query()->forSpjContext($this->context);
         ArkasMirrorResolver::joinKasUmum($query);
@@ -96,7 +98,15 @@ class SpjWorkspaceUseCase
                 $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($quarter - 1) * 3) + 1])
                     ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$quarter * 3]);
             })
-            ->when($filters['spj_category'] ?? null, fn ($q, $type) => $q->where('transactions.spj_category', $type));
+            ->when($filters['spj_category'] ?? null, fn ($q, $type) => $q->where('transactions.spj_category', $type))
+            ->when($search !== '', function ($q) use ($search): void {
+                $q->where(function ($searchQuery) use ($search): void {
+                    $searchQuery->whereRaw('mkas.sx_no_bukti like ?', ['%'.$search.'%'])
+                        ->orWhereRaw(ArkasMirrorResolver::mirrorTextSearchExists($search))
+                        ->orWhere('transactions.payment_description', 'like', '%'.$search.'%')
+                        ->orWhere('transactions.vendor_name', 'like', '%'.$search.'%');
+                });
+            });
 
         $workQueueCounts = ['all' => (clone $query)->count()];
         foreach (array_keys($this->workflowFilters->options()) as $state) {

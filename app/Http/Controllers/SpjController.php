@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class SpjController extends Controller
 {
@@ -144,6 +145,11 @@ class SpjController extends Controller
         return $useCase->downloadPackageExcel($packageId);
     }
 
+    public function previewPackageExcel(string $packageId, SpjDocumentUseCase $useCase)
+    {
+        return $useCase->previewPackageExcel($packageId);
+    }
+
     public function previewPackage(string $packageId, SpjDocumentUseCase $useCase): View|RedirectResponse
     {
         return $useCase->previewPackage($packageId);
@@ -154,7 +160,7 @@ class SpjController extends Controller
         return $useCase->previewPackagePdf($packageId);
     }
 
-    public function previewPackages(Request $request, SpjDocumentUseCase $useCase): View
+    public function previewPackages(Request $request, SpjDocumentUseCase $useCase): Response
     {
         $validated = $request->validate([
             'package_ids' => ['required', 'array', 'min:1', 'max:20'],

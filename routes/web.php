@@ -32,8 +32,10 @@ use App\Http\Controllers\SpjController;
 use App\Http\Controllers\SpjExternalChecklistController;
 use App\Http\Controllers\SpjNumberingCorrectionController;
 use App\Http\Controllers\SpjNumberingWorkflowController;
+use App\Http\Controllers\SpjOperatorNoteController;
 use App\Http\Controllers\SpjPackageChecklistController;
 use App\Http\Controllers\SpjPreparationController;
+use App\Http\Controllers\SpjQuarterRecapController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SyncedDataController;
 use App\Http\Controllers\TaxController;
@@ -133,6 +135,8 @@ Route::middleware('auth')->group(function () {
 
             Route::put('/spj/paket/{packageId}', [SpjController::class, 'updateDetails'])->name('spj.update');
             Route::post('/spj/paket/{packageId}/checklist-eksternal', SpjExternalChecklistController::class)->name('spj.external-checklist.toggle');
+            Route::post('/spj/paket/{packageId}/catatan', [SpjOperatorNoteController::class, 'store'])->name('spj.operator-notes.store');
+            Route::delete('/spj/paket/catatan/{noteId}', [SpjOperatorNoteController::class, 'destroy'])->name('spj.operator-notes.destroy');
             Route::post('/spj/paket/{packageId}/siap', [SpjController::class, 'markReady'])->name('spj.ready');
             Route::post('/spj/paket/{packageId}/nomor', [SpjController::class, 'assignNumber'])->name('spj.assign-number');
             Route::post('/spj/paket/{packageId}/dokumen/{documentType}/nomor', [SpjController::class, 'assignDocumentNumber'])->name('spj.documents.assign-number');
@@ -156,6 +160,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pajak', [TaxController::class, 'index'])->name('taxes.index');
         Route::get('/transaksi/{transactionId}/pemeliharaan/transaksi-terkait', [MaintenanceTransactionLinkController::class, 'show'])->name('transactions.maintenance-links.show');
         Route::get('/spj', [SpjController::class, 'index'])->name('spj.index');
+        Route::get('/spj/rekap-triwulan', SpjQuarterRecapController::class)->name('spj.quarter-recap');
         Route::view('/laporan-periode', 'periodic-reports.index')->name('spj.periodic-reports.index');
         Route::get('/laporan-periode/{scope}/{report}/cetak', [PeriodicReportController::class, 'show'])->name('spj.periodic-reports.print');
         Route::get('/laporan-periode/{scope}/{report}/pdf', [PeriodicReportController::class, 'pdf'])->name('spj.periodic-reports.pdf');
@@ -165,8 +170,9 @@ Route::middleware('auth')->group(function () {
         Route::match(['GET', 'POST'], '/spj/paket/{packageId}/unduh', [SpjController::class, 'download'])->name('spj.download');
         Route::get('/spj/paket/{packageId}/pratinjau', [SpjController::class, 'previewPackage'])->name('spj.preview-package');
         Route::get('/spj/paket/{packageId}/pratinjau-pdf', [SpjController::class, 'previewPackagePdf'])->name('spj.preview-package-pdf');
+        Route::get('/spj/paket/{packageId}/pratinjau-excel', [SpjController::class, 'previewPackageExcel'])->name('spj.preview-package-excel');
         Route::post('/spj/laporan/pratinjau-bulk', [SpjController::class, 'previewPackages'])->name('spj.preview-packages');
-        Route::post('/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
+        Route::match(['GET', 'POST'], '/spj/paket/{packageId}/unduh-excel', [SpjController::class, 'downloadPackageExcel'])->name('spj.download-package-excel');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau', [SpjController::class, 'previewTemplate'])->name('spj.preview-template');
         Route::get('/spj/paket/{packageId}/template/{templateId}/pratinjau-pdf', [SpjController::class, 'previewTemplatePdf'])->name('spj.preview-template-pdf');
         Route::post('/spj/paket/{packageId}/template/{templateId}/unduh', [SpjController::class, 'downloadTemplate'])->name('spj.download-template');

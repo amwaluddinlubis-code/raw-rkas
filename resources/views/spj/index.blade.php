@@ -287,14 +287,26 @@
                 if (!modal) return;
                 const frame = document.getElementById('template-preview-frame');
                 const title = document.getElementById('template-preview-title');
+                const downloadPdf = document.getElementById('template-preview-download-pdf');
+                const downloadExcel = document.getElementById('template-preview-download-excel');
                 if (action === 'close') {
                     modal.classList.add('hidden'); modal.classList.remove('flex');
                     if (frame) frame.src = 'about:blank';
+                    [downloadPdf, downloadExcel].forEach((link) => {
+                        if (!link) return;
+                        link.href = '#';
+                        link.classList.add('hidden');
+                    });
                     return;
                 }
                 if (!button || !frame) return;
                 if (title) title.textContent = button.dataset.templateName || 'Pratinjau Template';
                 frame.src = button.dataset.templatePreviewPdf || button.dataset.templatePreview;
+                [[downloadPdf, button.dataset.templateDownloadPdf], [downloadExcel, button.dataset.templateDownloadExcel]].forEach(([link, url]) => {
+                    if (!link) return;
+                    link.classList.toggle('hidden', !url);
+                    if (url) link.href = url;
+                });
                 modal.classList.remove('hidden'); modal.classList.add('flex');
             };
             const updateBulkSelection = () => {
@@ -361,7 +373,7 @@
                 const modal = document.getElementById('template-preview-modal');
                 const title = document.getElementById('template-preview-title');
                 const frame = document.getElementById('template-preview-frame');
-                if (title) title.textContent = `Bulk Preview ${selectedCount} Paket SPJ`;
+                if (title) title.textContent = `Pratinjau Massal ${selectedCount} Paket SPJ`;
                 if (frame) frame.src = 'about:blank';
                 modal?.classList.remove('hidden');
                 modal?.classList.add('flex');

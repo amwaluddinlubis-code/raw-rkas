@@ -19,6 +19,10 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('text-xl font-extrabold', $blade);
         $this->assertStringContainsString('wire:click="setMode(', $blade);
         $this->assertStringContainsString('wire:model.live="periode"', $blade);
+        $this->assertStringContainsString('wire:model.live.debounce.300ms="search"', $blade);
+        $this->assertStringContainsString('Pratinjau Massal', $blade);
+        $this->assertStringContainsString('$vendorName', $blade);
+        $this->assertStringContainsString('$recipientName', $blade);
         $this->assertStringContainsString('wire:model.live="perPage"', $blade);
         $this->assertStringContainsString("'bulan' => ['month' => \$periode]", $blade);
         $this->assertStringContainsString("route('spj.honor-payments.select', \$exportQuery)", $blade);
@@ -88,13 +92,17 @@ class SpjReportLayoutTest extends TestCase
         $this->assertIsString($report);
         $this->assertSame(1, substr_count($partial, 'id="template-preview-modal"'));
         $this->assertSame(1, substr_count($partial, 'id="template-preview-frame"'));
+        $this->assertStringContainsString('name="template-preview-frame"', $partial);
+        $this->assertStringContainsString('id="template-preview-download-pdf"', $partial);
+        $this->assertStringContainsString('id="template-preview-download-excel"', $partial);
         $this->assertStringContainsString('class="h-full min-h-[760px] w-full border-0 bg-transparent"', $partial);
         $this->assertStringContainsString("@include('spj.partials.preview-modal')", $index);
         $this->assertStringNotContainsString('id="template-preview-modal"', $index);
         $this->assertStringContainsString('data-template-preview', $report);
+        $this->assertStringContainsString('data-template-download-pdf', $report);
+        $this->assertStringContainsString('data-template-download-excel', $report);
+        $this->assertStringContainsString("route('spj.preview-package-excel'", $report);
         $this->assertStringContainsString('data-bulk-preview-form', $report);
-        $this->assertStringContainsString('data-bulk-selection-status', $report);
-        $this->assertStringContainsString('0 dari 20 paket dipilih', $report);
         $this->assertStringContainsString('data-bulk-submit', $report);
         $this->assertStringContainsString('name="package_ids[]"', $report);
         $this->assertStringContainsString('data-bulk-select-all', $report);
@@ -105,29 +113,28 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('submit.disabled = selectedCount === 0 || overLimit', $index);
     }
 
-    public function test_bulk_report_preview_is_print_ready_and_read_only(): void
+    public function test_bulk_report_preview_uses_the_same_inline_pdf_pipeline_as_single_preview(): void
     {
-        $view = file_get_contents(resource_path('views/spj-documents/bulk-preview.blade.php'));
+        $templateService = file_get_contents(base_path('app/Services/SpjTemplateService.php'));
+        $alignedTemplateService = file_get_contents(base_path('app/Services/PreviewAlignedSpjTemplateService.php'));
         $useCase = file_get_contents(base_path('app/UseCases/Spj/SpjDocumentUseCase.php'));
+        $controller = file_get_contents(base_path('app/Http/Controllers/SpjController.php'));
         $routes = file_get_contents(base_path('routes/web.php'));
 
-        $this->assertIsString($view);
+        $this->assertIsString($templateService);
+        $this->assertIsString($alignedTemplateService);
         $this->assertIsString($useCase);
+        $this->assertIsString($controller);
         $this->assertIsString($routes);
-        $this->assertStringContainsString('onclick="window.print()"', $view);
-        $this->assertStringContainsString('break-after: page', $view);
-        $this->assertStringContainsString('foreach ($packages as $package)', $view);
+        $this->assertStringContainsString('packagesPreviewPdfBytes', $templateService);
+        $this->assertStringContainsString('packagesPreviewPdfBytes', $alignedTemplateService);
         $this->assertStringContainsString('count($packageIds) > 20', $useCase);
+        $this->assertStringContainsString("'transaction.payments'", $useCase);
+        $this->assertStringContainsString("'transaction.spjPackage'", $useCase);
         $this->assertStringContainsString('$this->context->matchesTransaction($package->transaction)', $useCase);
-        $this->assertStringContainsString('$this->packageValidator->validate($package)', $useCase);
-        $this->assertStringContainsString("'ready' => \$issues === []", $useCase);
-        $this->assertStringContainsString("'issues' => \$issues", $useCase);
-        $this->assertStringContainsString("'readyCount' =>", $useCase);
-        $this->assertStringContainsString("'blockedCount' =>", $useCase);
-        $this->assertStringContainsString('Pemeriksaan kesiapan paket', $view);
-        $this->assertStringContainsString('Perlu dilengkapi', $view);
-        $this->assertStringContainsString('@disabled($blockedCount > 0)', $view);
-        $this->assertStringContainsString('Cetak semua paket', $view);
+        $this->assertStringContainsString("'Content-Type' => 'application/pdf'", $useCase);
+        $this->assertStringContainsString("'PRATINJAU-MASSAL-PAKET-SPJ.pdf'", $useCase);
+        $this->assertStringContainsString('public function previewPackages(Request $request, SpjDocumentUseCase $useCase): Response', $controller);
         $this->assertStringContainsString("Route::post('/spj/laporan/pratinjau-bulk'", $routes);
     }
 

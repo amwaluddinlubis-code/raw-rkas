@@ -10,6 +10,8 @@
             <div class="flex items-center gap-2">
                 <button type="button" data-template-preview="{{ route('spj.preview-package', $package->id) }}"
                     data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}"
+                    data-template-download-pdf="{{ route('spj.preview-package-pdf', [$package->id, 'download' => 1]) }}"
+                    data-template-download-excel="{{ route('spj.preview-package-excel', $package->id) }}"
                     data-template-name="Pratinjau Paket SPJ" title="Pratinjau Paket"
                     class="ui-btn ui-btn-secondary min-h-10 min-w-10 justify-center px-3 py-2"><x-ui-icon name="preview"
                         class="h-5 w-5" /><span class="sr-only">Pratinjau Paket</span></button>

@@ -2,7 +2,7 @@
 
 Terakhir diperbarui: **2026-09-29**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest verified code gate sebelum Bulk Preview adalah CI #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Source change Bulk Preview belum diverifikasi PHP/CI. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah CI #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -26,9 +26,9 @@ RVR. Detail alur operator berada di `USER_SCENARIOS.md`.
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: RUN #46 GREEN / Bulk Preview verification pending.**
+**Status: RUN #46 GREEN / Bulk Preview focused verification complete / full CI and browser verification pending.**
 
-CI #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Gate tersebut mendahului perubahan Bulk Preview; verifikasi source terbaru pending. Browser/operator runtime tetap RVR.
+CI #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Gate tersebut mendahului perubahan Bulk Preview; focused source verification terbaru tercatat di `CURRENT_PROGRESS.md`. Browser/operator runtime tetap RVR.
 
 Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
 
@@ -254,7 +254,7 @@ Importer mapping → preview → sync tidak menjadi target migrasi Livewire oppo
 
 # P1 — Real Data, Output, dan Operational Quality
 
-**P1 tetap menjadi fokus produk utama berdasarkan P0-00 gate terakhir yang terverifikasi; Bulk Preview source verification masih pending.**
+**P1 tetap menjadi fokus produk utama berdasarkan P0-00 gate terakhir yang terverifikasi; Bulk Preview focused source verification sudah tercatat, sedangkan full CI dan browser/operator verification masih pending.**
 
 ## P1-01 — Generated-document real-data QA
 

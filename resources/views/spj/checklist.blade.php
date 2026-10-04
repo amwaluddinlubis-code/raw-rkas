@@ -29,7 +29,8 @@
             kicker="Checklist Paket SPJ"
         >
             <x-slot:actions>
-                <x-ui.button variant="secondary" :href="$packageUrl">Buka paket</x-ui.button>
+                <x-ui.button variant="secondary" :href="$packageUrl" class="print:hidden">Buka paket</x-ui.button>
+                <x-ui.button variant="secondary" type="button" onclick="window.print()" class="print:hidden">Cetak pendamping</x-ui.button>
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
@@ -46,9 +47,9 @@
                 <p class="mt-0.5">Kerjakan berurutan dari nomor 1. Setiap baris menunjukkan di mana memperbaikinya (Paket atau Transaksi).</p>
             </section>
 
-            <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-                <div class="border-b border-[var(--ui-line)] px-5 py-3">
-                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Yang menghalangi ({{ $blockingCount }})</h2>
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-3">
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Yang menghalangi ({{ $blockingCount }})</h2>
                 </div>
                 <ol class="divide-y divide-[var(--ui-line)]">
                     @foreach($failedChecks as $index => $check)
@@ -60,7 +61,7 @@
                                     <p class="mt-0.5 text-sm leading-6 text-amber-800">{{ $check['message'] }}</p>
                                 </div>
                             </div>
-                            <x-ui.button variant="secondary" :href="$check['url']" class="shrink-0 text-xs">Perbaiki →</x-ui.button>
+                            <x-ui.button variant="secondary" :href="$check['url']" class="shrink-0 text-xs print:hidden">Perbaiki →</x-ui.button>
                         </li>
                     @endforeach
                     @foreach($blockingRequirements as $index => $item)
@@ -78,7 +79,7 @@
                                     <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $item['group'] }} · {{ $item['source'] }}</p>
                                 </div>
                             </div>
-                            <x-ui.button variant="secondary" :href="$fixUrl" class="shrink-0 text-xs">Perbaiki →</x-ui.button>
+                            <x-ui.button variant="secondary" :href="$fixUrl" class="shrink-0 text-xs print:hidden">Perbaiki →</x-ui.button>
                         </li>
                     @endforeach
                 </ol>
@@ -97,12 +98,70 @@
         <?php endif; ?>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-3">
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Cocokkan BKU – Kwitansi</h2>
+                <p class="mt-0.5 text-xs leading-5 text-[var(--ui-fg-muted)]">Kiri: fakta ARKAS/BKU (readonly). Kanan: isian operator. Nomor, nilai, dan penerima harus saling cocok sebelum final.</p>
+            </div>
+            <ul class="divide-y divide-[var(--ui-line)]">
+                @foreach($bkuMatch['rows'] as $row)
+                    <li class="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $row['label'] }}</p>
+                        <div class="flex min-w-0 flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-6">
+                            <p class="min-w-0 text-[var(--ui-fg-muted)]"><span class="font-semibold">BKU:</span> {{ $row['source'] }}</p>
+                            <p class="min-w-0 font-semibold {{ $row['match'] ? 'text-emerald-700' : 'text-amber-800' }}"><span class="font-semibold">Kwitansi:</span> {{ $row['overlay'] }}</p>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+
+        @if($categorySuggestion !== null || $helperHints !== [])
+            <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="border-b border-[var(--ui-line)] px-5 py-3">
+                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Saran pemeriksa — tidak memblokir penomoran</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-[var(--ui-fg-muted)]">Hint dari ambang poster (materai, pajak) dan kemiripan invoice. Keputusan akhir tetap di tangan operator.</p>
+                </div>
+                <ul class="divide-y divide-[var(--ui-line)]">
+                    @if($categorySuggestion !== null)
+                        <li class="px-5 py-3 text-sm">
+                            <p class="font-bold text-[var(--ui-fg-strong)]">Saran kategori: {{ $categorySuggestion['label'] }}</p>
+                            <p class="mt-0.5 text-[var(--ui-fg-muted)]">{{ $categorySuggestion['reason'] }}</p>
+                        </li>
+                    @endif
+                    @foreach($helperHints as $hint)
+                        <li class="px-5 py-3 text-sm">
+                            <p class="font-bold text-[var(--ui-fg-strong)]">{{ $hint['label'] }}</p>
+                            <p class="mt-0.5 text-[var(--ui-fg-muted)]">{{ $hint['message'] }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
+        @if($packageTimeline !== [])
+            <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm print:hidden">
+                <div class="border-b border-[var(--ui-line)] px-5 py-3">
+                    <h2 class="font-bold text-[var(--ui-fg-strong)]">Riwayat paket</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-[var(--ui-fg-muted)]">Dari log operasional — siapa melakukan apa, tanpa istilah teknis.</p>
+                </div>
+                <ul class="divide-y divide-[var(--ui-line)]">
+                    @foreach($packageTimeline as $event)
+                        <li class="px-5 py-2.5 text-sm">
+                            <p class="font-semibold text-[var(--ui-fg-strong)]">{{ $event['label'] }} <span class="font-normal text-xs text-[var(--ui-fg-muted)]">{{ $event['at'] }}</span></p>
+                            <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $event['description'] }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="flex flex-col gap-3 border-b border-[var(--ui-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="font-bold text-[var(--ui-fg-strong)]">Bukti Dukung Eksternal ({{ $externalCheckedCount }}/{{ count($externalPatternItems) }})</h2>
                     <p class="mt-0.5 text-xs leading-5 text-[var(--ui-fg-muted)]">Checklist manual sesuai pola kegiatan — tidak memblokir penomoran. Dokumen yang dibuat aplikasi (A2) hanya informatif.</p>
                 </div>
-                <form method="GET" action="{{ route('spj.checklist', $package->id) }}" class="flex items-center gap-2">
+                <form method="GET" action="{{ route('spj.checklist', $package->id) }}" class="flex items-center gap-2 print:hidden">
                     <x-ui.field label="Pola kegiatan">
                         <x-ui.select name="pola" onchange="this.form.submit()">
                             @foreach($externalPatterns as $patternKey => $pattern)
@@ -127,7 +186,7 @@
                             <x-ui.badge variant="neutral">{{ $isGenerated ? 'Aplikasi' : 'Manual' }}</x-ui.badge>
                         </div>
                         <span class="{{ $isGenerated ? 'shrink-0 text-xs text-[var(--ui-fg-muted)]' : 'hidden' }}">Ikut status A2 di atas</span>
-                        <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="{{ $canToggleExternal ? 'shrink-0' : 'hidden' }}">
+                        <form method="POST" action="{{ route('spj.external-checklist.toggle', $package->id) }}" class="{{ $canToggleExternal ? 'shrink-0 print:hidden' : 'hidden' }}">
                             <input type="hidden" name="_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="item_key" value="{{ $itemKey }}">
                             <input type="hidden" name="pola" value="{{ $externalPatternKey }}">
@@ -137,6 +196,41 @@
                     </li>
                 @endforeach
             </ul>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+            <div class="border-b border-[var(--ui-line)] px-5 py-3">
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Catatan operator ({{ $operatorNotes->count() }})</h2>
+                <p class="mt-0.5 text-xs leading-5 text-[var(--ui-fg-muted)]">Handover shift dan pengingat internal — tidak tercetak ke dokumen SPJ dan tidak memblokir penomoran.</p>
+            </div>
+            <ul class="divide-y divide-[var(--ui-line)]">
+                @forelse($operatorNotes as $note)
+                    <li class="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="min-w-0">
+                            <p class="text-sm text-[var(--ui-fg-strong)]">{{ $note->body }}</p>
+                            <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $noteAuthorNames[$note->created_by] ?? 'Operator' }} · {{ $note->created_at?->translatedFormat('d M Y H:i') }}</p>
+                        </div>
+                        @if($canNote && (auth()->user()?->role === 'ADMIN' || (int) $note->created_by === (int) auth()->id()))
+                            <form method="POST" action="{{ route('spj.operator-notes.destroy', $note->id) }}" class="shrink-0 print:hidden" onsubmit="return confirm('Hapus catatan ini?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                <input type="hidden" name="_method" value="DELETE">
+                                <x-ui.button variant="secondary" type="submit" class="text-xs">Hapus</x-ui.button>
+                            </form>
+                        @endif
+                    </li>
+                @empty
+                    <li class="px-5 py-4 text-sm text-[var(--ui-fg-muted)]">Belum ada catatan untuk paket ini.</li>
+                @endforelse
+            </ul>
+            @if($canNote)
+                <form method="POST" action="{{ route('spj.operator-notes.store', $package->id) }}" class="border-t border-[var(--ui-line)] px-5 py-4 print:hidden">
+                    <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                    <x-ui.field label="Tambah catatan (maks 500 karakter)" for="operator-note-body">
+                        <x-ui.textarea id="operator-note-body" name="body" rows="2" maxlength="500" required placeholder="cth: nota asli menunggu stempel toko, lanjutkan besok pagi" />
+                    </x-ui.field>
+                    <div class="mt-2"><x-ui.button variant="secondary" type="submit" class="text-xs">Simpan catatan</x-ui.button></div>
+                </form>
+            @endif
         </section>
 
         <details class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">

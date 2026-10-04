@@ -9,37 +9,30 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 
 Status: **SOURCE IMPLEMENTED / PHP TEST + BROWSER RUNTIME RVR**.
 
-Tab Laporan SPJ menyediakan checkbox per baris, pilih semua pada halaman
-aktif, dan tombol **Bulk Preview**. Paket terpilih dikirim melalui POST dan
-ditampilkan bersama dalam modal yang sama dengan preview dokumen tunggal.
-Pratinjau gabungan menyediakan tombol Cetak, pemisah halaman per paket, batas
-maksimal 20 paket, dan mempertahankan urutan baris yang dipilih. Pilihan berlaku
-pada halaman tabel yang sedang tampil.
+Tab Laporan SPJ menyediakan pencarian, filter periode, checkbox per baris,
+pilih semua pada halaman aktif, dan tombol **Pratinjau Massal**. Paket terpilih
+dikirim melalui POST dan dikembalikan sebagai satu PDF inline pada iframe modal
+yang sama dengan preview dokumen tunggal. Pipeline workbook/PDF-nya sama dengan
+preview individu; perbedaannya hanya jumlah halaman, dengan batas maksimal 20
+paket dan urutan baris yang dipilih tetap dipertahankan.
 
 Use case memeriksa sekolah, tahun anggaran, dan sumber dana aktif untuk setiap
 paket serta memakai template XLSX aktif sesuai paket. Preview tetap read-only
 dan tidak menerbitkan nomor SPJ. Regression source/layout telah diperbarui.
-`git diff --check` dan `node --check` untuk delegated UI script berhasil.
-PHP/PHPUnit tidak tersedia lokal sehingga test PHP belum dijalankan; browser
-modal dan hasil cetak masih **RVR**.
-
-Pemeriksaan kesiapan Bulk Preview kini menggunakan validasi paket yang sama
-dengan preview dokumen: modal merangkum jumlah paket siap dan perlu dilengkapi,
-menampilkan alasan untuk setiap paket, dan mempertahankan preview semua baris
-terpilih untuk pemeriksaan. Tombol cetak dinonaktifkan jika ada paket yang
-belum siap. Template yang tidak tersedia atau gagal dirender dilaporkan pada
-paket terkait tanpa menghilangkan paket lain dari ringkasan. Regression source
-layout mencakup kontrak status dan blokir cetak ini; verifikasi runtime PHP dan
-browser masih menunggu.
+Focused verification terbaru: Pint pada file PHP tersentuh, lint PHP, Blade
+cache, `SpjReportLayoutTest` 15 test / 188 assertions, dan `git diff --check`
+berhasil. Browser modal, jumlah halaman pada PDF nyata, dan hasil cetak masih
+**RVR**.
 
 Tahap 2 memperjelas seleksi baris dengan penghitung langsung `x dari 20`,
 status instruksi saat belum ada pilihan, dan pesan jumlah paket yang harus
-dibatalkan saat melewati batas. Tombol Bulk Preview nonaktif ketika belum ada
+dibatalkan saat melewati batas. Tombol Pratinjau Massal nonaktif ketika belum ada
 pilihan atau pilihan melebihi 20; pilih-semua tetap memperbarui penghitung.
 Regression source/layout diperluas. Verifikasi PHPUnit dan browser tetap RVR.
 
-Latest verified code gate tetap run #46 pada `e4ba5cf`; perubahan Bulk Preview
-ini belum tercakup dan menunggu PHP/CI verification.
+Latest full verified code gate tetap run #46 pada `e4ba5cf`; perubahan ini sudah
+melewati focused verification lokal, tetapi belum tercakup full CI. Browser dan
+operator runtime tetap RVR.
 
 ---
 
@@ -558,7 +551,7 @@ FULL UNIT                  : PASS / 79 tests / 281 assertions
 FULL FEATURE               : PASS / 642 tests / 4,417 assertions
 ```
 
-Run #46 adalah code gate terakhir yang terverifikasi untuk source `main` sebelum perubahan Bulk Preview. Ia menutup failure `RkasReportTest` pada run #42–#45 dengan mengisolasi skenario HTTP revision-comparison dan menambah guard input tanpa mengubah business rule. Source change Bulk Preview belum tercakup pada run tersebut dan menunggu focused PHP/CI verification.
+Run #46 adalah code gate terakhir yang terverifikasi untuk source `main` sebelum perubahan Bulk Preview. Ia menutup failure `RkasReportTest` pada run #42–#45 dengan mengisolasi skenario HTTP revision-comparison dan menambah guard input tanpa mengubah business rule. Source change Bulk Preview belum tercakup pada run tersebut; focused verification lokal terbaru tercatat pada bagian status aktif di atas.
 
 ### P0 dependency-platform repair — CI #483 → #486
 
@@ -640,7 +633,7 @@ Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 asserti
 
 ```text
 FUNCTIONAL BASELINE : PREVIOUS VERIFIED GATE PASS / run #46
-CURRENT CODE GATE   : PENDING VERIFICATION after Bulk Preview source change
+CURRENT CODE GATE   : FOCUSED VERIFICATION COMPLETE; FULL CI PENDING after Bulk Preview source change
 REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang terdokumentasi
 GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
 TEMPLATE OFFICE QA : RVR
@@ -649,7 +642,7 @@ LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE / CODE GATE
 FINAL RELEASE       : NOT YET
 ```
 
-P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Source change terbaru belum mendapat PHP/CI verification. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
+P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Source change terbaru sudah mendapat focused verification lokal, tetapi belum full CI. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
 ---
 
@@ -956,7 +949,7 @@ Audit static route terhadap 132 route non-vendor menemukan ketidakkonsistenan su
 
 Evidence timing dari `storage/logs/performance-2026-09-19.log` menunjukkan masalah performa nyata masih perlu RVR/browser follow-up: `transactions.index` 9--12 detik, `spj.index` maksimum 28,9 detik, `references.index` maksimum 13,7 detik, dan `database-manager.index` maksimum 9,4 detik. Penyebab terbesar yang teridentifikasi adalah scan JSON tanpa indeks pada referensi, agregasi mirror berulang pada halaman SPJ, dan route penganggaran-RKAS yang masih memakai tabel normalisasi legacy.
 
-Update: `ArkasMirrorBudgetService` sekarang menjadi adapter utama untuk `/penganggaran-rkas` dan `RkasBudgetFilter`. Pagu, periode, realisasi, hierarki, filter program/subprogram/kegiatan, dan pencarian membaca `arkas_mirror_rapbs`, `arkas_mirror_rapbs_periode`, `arkas_mirror_kas_umum`, serta `arkas_mirror_ref_kode`. Snapshot mirror melakukan preload referensi dan cache per request. Snapshot memilih revisi RKAS terakhir dengan kontrak ARKASBridge: per tahun+sumber dana, urut `IS_AKTIF`, `IS_APPROVE`, `LAST_UPDATE`, lalu `CREATE_DATE`, kemudian hanya memakai `rapbs` yang menunjuk ke `ID_ANGGARAN` tersebut. Kontrak tampilan direvisi 2026-09-24 (permintaan operator): halaman penganggaran menampilkan tab per revisi — seluruh revisi yang disetujui (kronologis) ditambah tab pengajuan terakhir bila masih ada yang belum disetujui; default tab persetujuan terakhir; satu tab = satu snapshot `ID_ANGGARAN` (`ArkasMirrorBudgetService::revisions()`). Label tab "Pengesahan ke-N"/"Pengajuan ke-N" tanpa tanggal (tanggal di teks info + tooltip); tanggal pengesahan dari kolom `tanggal_pengesahan`, pengajuan dari `tanggal_pengajuan`. Revisi: BKU menaut ke rapbs revisi berjalan sehingga tab lama nol realisasi — ditambah fallback identitas pos (`ID_REF_KODE|rekening|uraian`, sisa proporsional pagu, direct didahulukan; total tetap pas, view terbaru tidak berubah; scope identitas lewat record anggaran agar uang tahun lain tidak bocor lintas tahun). Volume tahunan fallback `VOLUME_TOTAL` → `VOLUME` untuk payload skema huruf kecil. Jalur tabel legacy masih ada sebagai fallback untuk database yang belum memiliki mirror; pada database dengan `arkas_mirror_rapbs`, jalur tersebut tidak dieksekusi. Regression runtime mirror tetap RVR karena database testing lokal mengalami `disk I/O`/`no such table: schools` setelah batch test sebelumnya.
+Update: `ArkasMirrorBudgetService` sekarang menjadi adapter utama untuk `/penganggaran-rkas` dan `RkasBudgetFilter`. Pagu, periode, realisasi, hierarki, filter program/subprogram/kegiatan, dan pencarian membaca `arkas_mirror_rapbs`, `arkas_mirror_rapbs_periode`, `arkas_mirror_kas_umum`, serta `arkas_mirror_ref_kode`. Snapshot mirror melakukan preload referensi dan cache per request. Snapshot memilih revisi RKAS terakhir dengan kontrak ARKASBridge: per tahun+sumber dana, urut `IS_AKTIF`, `IS_APPROVE`, `LAST_UPDATE`, lalu `CREATE_DATE`, kemudian hanya memakai `rapbs` yang menunjuk ke `ID_ANGGARAN` tersebut. Kontrak tampilan direvisi 2026-09-24 (permintaan operator): halaman penganggaran menampilkan tab per revisi — seluruh revisi yang disetujui (kronologis) ditambah tab pengajuan terakhir bila masih ada yang belum disetujui; default tab persetujuan terakhir; satu tab = satu snapshot `ID_ANGGARAN` (`ArkasMirrorBudgetService::revisions()`). Label tab "Pengesahan ke-N"/"Pengajuan ke-N" tanpa tanggal (tanggal di teks info + tooltip); tanggal pengesahan dari kolom `tanggal_pengesahan`, pengajuan dari `tanggal_pengajuan`. Revisi: BKU menaut ke rapbs revisi berjalan sehingga tab lama nol realisasi — ditambah fallback identitas pos (`ID_REF_KODE|rekening|uraian`, sisa proporsional pagu, direct didahulukan; total tetap pas, view terbaru tidak berubah; scope identitas lewat record anggaran agar uang tahun lain tidak bocor lintas tahun). Sejak 2026-10-04 fallback dilengkapi: kas beridentitas yang tidak tampil pada revisi ini ikut dibagi proporsional pagu (tidak dibuang), residual per bulan hanya ke baris yang memiliki bulan itu, dan konsumsi kuartal/semester menjumlahkan share bulan dalam scope — sehingga seluruh tab pengesahan menampilkan realisasi yang sama untuk kas yang sama. Volume tahunan fallback `VOLUME_TOTAL` → `VOLUME` untuk payload skema huruf kecil. Jalur tabel legacy masih ada sebagai fallback untuk database yang belum memiliki mirror; pada database dengan `arkas_mirror_rapbs`, jalur tersebut tidak dieksekusi. Regression runtime mirror tetap RVR karena database testing lokal mengalami `disk I/O`/`no such table: schools` setelah batch test sebelumnya.
 
 ## Authenticated route performance sweep + searchable-select fix 2026-09-25
 
@@ -1017,3 +1010,88 @@ Menu tindakan pada tabel laporan SPJ memiliki positioning khusus: tiga baris ter
 ## Canonical tab visual 2026-09-20
 
 Tab global, tab SPJ, tab paket SPJ, tab referensi, dan tab Database Control Center kini memakai lebar penuh yang seimbang, ikon dalam lingkaran, tinggi tetap, serta hover glass bertoken tema. Tab tidak lagi membuka overflow vertikal; daftar tab memakai clipping horizontal yang terkendali dan label tetap terpotong secara aman pada ruang sempit.
+
+## RKAS revision-tab realization parity 2026-10-04
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Temuan operator (SDN 318 Bangun Saroha, NPSN 10208183, BOS 2026): tab
+Pengesahan ke-1 dan ke-2 menampilkan realisasi berbeda (ALL 146,5jt vs
+150,75jt; TW1 56,97jt vs 60,3jt; TW4 13,44jt vs 0), padahal kas tahun+sumber
+dana yang mendasarinya sama. Pagu sudah sama (120,6jt / 30,15jt per triwulan).
+
+Akar masalah di `ArkasMirrorBudgetService` (tanpa hardcode, tanpa ubah lifecycle):
+
+- fallback identitas pos bersifat lossy: kas untuk baris yang diganti pada
+  revisi lain (identitas `ID_REF_KODE|rekening|uraian` tidak tampil pada tab
+  ini — mis. bola/net/peluit → meja/kursi) dibuang dari tab lama;
+- share fallback per bulan dibagi dengan bobot pagu tahun ke semua baris
+  seidentitas sehingga bocor ke bulan/triwulan lain;
+- jalur konsumsi kuartal/semester memakai bulan perwakilan `periods[0]`
+  untuk baris satu-periode, sehingga share bulan yang sama terhitung pada
+  dua triwulan (jumlah render kuartal 162,55jt > total tahun 150,75jt).
+
+Perbaikan: kas "yatim" (identitas dalam scope tahun+sumber dana yang tidak
+tampil pada revisi ini) ikut dibagi proporsional pagu; residual per bulan
+hanya dibagi ke baris yang memiliki bulan itu (bobot pagu bulan, pelebaran
+triwulan lalu tahun bila tidak ada baris yang cocok, tanpa ganda); konsumsi
+kuartal/semester selalu menjumlahkan share bulan-bulan dalam scope yang
+diminta. View revisi terbaru tidak berubah (direct didahulukan, fallback nol
+bila semua kas tertaut langsung).
+
+Hasil pada data nyata 10208183 (BOS 2026): kedua tab identik —
+ALL 120,6jt/150,75jt; TW1 30,15jt/60,3jt; TW2 30,15jt/60,3jt;
+TW3 30,15jt/30,15jt; TW4 30,15jt/0; semester dan bulan juga sama per
+realisasi (pagu bulanan boleh berbeda karena split rencana memang berubah).
+Isolasi tahun+sumber dana dipertahankan (uang 2024/2025 tidak bocor).
+
+Evidence: `RkasRevisionModesTest` 12 passed / 51 assertions (termasuk test
+baru `test_revision_tabs_show_same_budget_and_realization_when_lines_change`
+yang gagal pada source lama dan lulus pada source baru), `RkasBudgetFilterTest`
+5/23, `RkasScopedRealizationTest` + `RkasBudgetUiTest` + `RkasReportTest`
+29/148, Pint passed, `git diff --check` bersih. Catatan lingkungan: file
+`database/testing.sqlite` lokal rusak (`malformed`) sehingga suite tidak
+jalan; dihapus dan dibuat ulang otomatis oleh test run — data uji tidak
+terpengaruh. Browser/operator visual tetap RVR.
+
+## RKAS over-budget: stale kas mirror ganda pasca pengesahan ulang 2026-10-04
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Tindak lanjut temuan "realisasi tidak mungkin melebihi pagu" (SDN 318,
+10208183, BOS 2026: realisasi 150,75jt vs pagu 120,6jt). Hasil audit per
+baris: 53 dari 80 baris Hammer revisi terbaru menunjukkan realisasi tepat
+2x pagu — pola sistematis, bukan overspend organik. Verifikasi per nota:
+111/111 nota balance (`sum(items) == TOTAL_NOTA`), tidak ada duplikat
+`ID_KAS_UMUM`, seluruh kas bertanggal 2026 dan `IS_SPJ=1`.
+
+Akar masalah: ARKAS menerbitkan ulang `ID_KAS_UMUM` saat pengesahan ulang
+(2026-09-22). Sync 2026-07-01 menulis 90 baris/60,3jt (TW1+TW2); sync
+2026-10-02/03 menulis 132 baris/90,45jt (TW1-TW3, ID baru, data vendor
+diperkaya — 46/46 `NO_BUKTI` Juli muncul lagi di Oktober). `arkas_bku_rows`
+punya cleanup (`whereNotIn(source_kas_id)` → 132 baris/90,45jt, benar),
+tetapi `arkas_mirror_kas_umum` hanya upsert tanpa prune sehingga baris Juli
+yang basi menumpuk: 60,3jt + 90,45jt = 150,75jt. Terkait pertanyaan
+`soft_delete`: filter `SOFT_DELETE`/`IS_DELETED` sudah ada untuk
+rapbs/anggaran/periode (7 titik di `ArkasMirrorBudgetService`); payload
+`kas_umum` tidak memiliki key tersebut (0/1119 baris) sehingga tidak ada
+yang terlewat; tabel `kas_umum_nota`/`*_pajak` tidak dikonsumsi render RKAS.
+
+Perbaikan (`ArkasSynchronizationServiceV2::pruneStaleKasMirror`, dipanggil
+di `saveBkuAndTransactions` dalam transaksi yang sama): hapus baris mirror
+kas yang `ID_ANGGARAN`-nya ikut dalam fetch ini tetapi `ID_KAS_UMUM`-nya
+tidak dikembalikan API. Scope ketat per himpunan anggaran fetch; tanpa
+`ID_ANGGARAN` atau fetch kosong, prune dilewati (tidak bisa scope).
+Regression: `SafeArkasSynchronizationTest::
+test_resynced_kas_ids_prune_stale_mirror_rows_within_synced_anggaran`
+(gagal tanpa fix, lulus dengan fix; baris tahun lain dipertahankan).
+
+Repair data 10208183 (dengan backup
+`spj-10208183-preprune-20261004.sqlite` di folder temp opencode):
+178 baris basi / 463,6jt dihapus dari mirror (acuan silang:
+seluruh 258 `source_kas_id` `arkas_bku_rows` FY2026-BOS ada di mirror).
+Hasil render kedua tab kini identik dan wajar: ALL 120,6jt/90,45jt;
+TW1-TW3 30,15jt/30,15jt; TW4 30,15jt/0.
+
+Evidence: `SafeArkasSynchronizationTest` 6/54 + `RkasRevisionModesTest`
+12/51 (gabungan 18/105), Pint passed, `git diff --check` bersih.

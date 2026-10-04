@@ -18,6 +18,7 @@ class ArkasSynchronizationServiceV2
     public function __construct(
         private ArkasBridgeClient $bridge,
         private ?ArkasFixedMirrorService $mirror = null,
+        private ?SpjSourceRelinkService $relinker = null,
     ) {}
 
     /** @var array<int, bool> */
@@ -26,6 +27,11 @@ class ArkasSynchronizationServiceV2
     private function mirrors(): ?ArkasFixedMirrorService
     {
         return $this->mirror ??= app(ArkasFixedMirrorService::class);
+    }
+
+    private function relinker(): SpjSourceRelinkService
+    {
+        return $this->relinker ??= app(SpjSourceRelinkService::class);
     }
 
     /**
@@ -466,6 +472,7 @@ class ArkasSynchronizationServiceV2
                 $taxesByParent[$record['PARENT_ID_KAS_UMUM']][] = $record;
             }
         }
+        $this->pruneStaleKasMirror($records);
 
         $processedTransactionIds = [];
         foreach ($belanja as $noBukti => $items) {
@@ -577,6 +584,10 @@ class ArkasSynchronizationServiceV2
                 ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id)->where('source_key', $sourceKey)->first();
             $existing ??= DB::connection('school')->table('transactions')
                 ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id)->where('id_kas_umum', $first['ID_KAS_UMUM'])->first();
+            // BKU dihapus + dibuat ulang (ID baru, isi sama): adopsi
+            // transaksi SOURCE_MISSING dengan rincian identik agar Paket
+            // dan overlay tetap menempel pada identitas yang sama.
+            $existing ??= $this->relinker()->adoptForSync($year->id, $year->fund_source_id, $items, $sourceKey, $runId);
             $hasPackage = $existing && DB::connection('school')->table('spj_packages')->where('transaction_id', $existing->id)->exists();
             $data['source_hash'] = $sourceHash;
             $isOrderingMetadataOnlyHash = $existing && $existing->source_hash === $hashWithOrderingMetadata;
@@ -849,6 +860,57 @@ class ArkasSynchronizationServiceV2
     private function ids(array $records, string $field): array
     {
         return array_values(array_unique(array_filter(array_map(fn ($record) => (string) ($record[$field] ?? ''), $records))));
+    }
+
+    /**
+     * Buang baris mirror kas yang ID-nya tidak lagi dikembalikan ARKAS.
+     *
+     * ARKAS menerbitkan ulang ID_KAS_UMUM saat pengesahan ulang sehingga
+     * fetch terbaru berisi ID baru untuk belanja yang sama; tanpa prune,
+     * baris lama menumpuk di mirror dan realisasi menghitung ganda.
+     * Scope dibatasi pada ID_ANGGARAN yang ikut dalam fetch ini agar
+     * tahun/sumber dana lain tidak tersentuh. Tanpa ID_ANGGARAN pada
+     * fetch, prune dilewati karena scope tidak dapat ditentukan.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     */
+    private function pruneStaleKasMirror(array $records): void
+    {
+        $currentIds = $this->ids($records, 'ID_KAS_UMUM');
+        if ($currentIds === []) {
+            return;
+        }
+        $anggaranIds = [];
+        foreach ($records as $record) {
+            $anggaranId = (string) ArkasMirrorResolver::field($record, ['ID_ANGGARAN', 'id_anggaran']);
+            if ($anggaranId !== '') {
+                $anggaranIds[$anggaranId] = true;
+            }
+        }
+        if ($anggaranIds === []) {
+            return;
+        }
+        $db = DB::connection('school');
+        $pruned = false;
+        foreach ($db->table('arkas_mirror_kas_umum')->get(['source_key', 'payload']) as $row) {
+            $payload = json_decode((string) $row->payload, true);
+            if (! is_array($payload)) {
+                continue;
+            }
+            $rowAnggaran = (string) ArkasMirrorResolver::field($payload, ['ID_ANGGARAN', 'id_anggaran']);
+            if ($rowAnggaran === '' || ! isset($anggaranIds[$rowAnggaran])) {
+                continue;
+            }
+            $rowKasId = (string) ArkasMirrorResolver::field($payload, ['ID_KAS_UMUM', 'id_kas_umum']);
+            if ($rowKasId === '' || in_array($rowKasId, $currentIds, true)) {
+                continue;
+            }
+            $db->table('arkas_mirror_kas_umum')->where('source_key', $row->source_key)->delete();
+            $pruned = true;
+        }
+        if ($pruned) {
+            app(ArkasMirrorResolver::class)->forget('arkas_mirror_kas_umum');
+        }
     }
 
     /** @param array<int, array<string, mixed>> $records @return array<int, array<string, mixed>> */

@@ -359,16 +359,20 @@ Gunakan compact list `status / nama / tipe-format / actions`. Metadata padat, st
 
 ### Bulk Preview pada Laporan SPJ
 
-Tab Laporan SPJ menyediakan checkbox per baris dan pilih-semua untuk baris pada
-halaman aktif. **Bulk Preview** mengirim paket terpilih melalui POST dan
-menampilkan semuanya pada modal yang sama dengan preview tunggal. Pratinjau
-gabungan dibatasi maksimal 20 paket, mempertahankan urutan pilihan, dan dapat
-dicetak dengan pemisah halaman per paket. Backend tetap memeriksa sekolah,
-tahun anggaran, dan sumber dana aktif; interaksi ini tidak mengubah lifecycle
-atau numbering. Modal merangkum validasi setiap paket dan alasan data/template
-yang belum siap; tombol cetak nonaktif selama masih ada paket bermasalah.
-Penghitung di atas tabel menunjukkan jumlah paket yang dipilih dari batas 20;
-tombol Bulk Preview nonaktif untuk pilihan kosong atau yang melewati batas.
+Tab Laporan SPJ menyediakan pencarian, pilihan periode, checkbox per baris, dan
+pilih-semua untuk baris pada halaman aktif. **Pratinjau Massal** mengirim paket terpilih melalui POST dan
+menampilkan PDF gabungan pada iframe modal yang sama dengan preview tunggal.
+PDF gabungan dirender melalui pipeline workbook/PDF yang sama; perbedaannya
+hanya jumlah halaman yang berasal dari paket terpilih. Pratinjau dibatasi
+maksimal 20 paket dan mempertahankan urutan pilihan. Backend tetap memeriksa
+sekolah, tahun anggaran, dan sumber dana aktif; interaksi ini tidak mengubah
+lifecycle atau numbering.
+Pada pratinjau paket individual, header modal juga menyediakan aksi unduh PDF
+dan Excel melalui endpoint hasil pratinjau yang sama dengan isi modal; aksi
+tersebut hanya ditampilkan jika paket dapat diunduh.
+Tombol Pratinjau Massal berada sejajar dengan filter Baris, sedangkan pencarian
+berada pada baris pilihan periode, serta
+nonaktif untuk pilihan kosong atau yang melewati batas.
 Modal, hasil cetak, batas perangkat, dan repeated navigation masih memerlukan
 browser QA.
 

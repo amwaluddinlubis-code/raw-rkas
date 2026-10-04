@@ -46,7 +46,11 @@
                     bernomor</span><strong>{{ $workQueueCounts['numbered'] ?? 0 }}</strong></button>
         </nav>
         <div class="spj-filter-bar mt-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
+                <x-ui.field label="Cari bukti / uraian / vendor" for="spj-preparation-search"><x-ui.input id="spj-preparation-search"
+                        type="search" placeholder="No. bukti, uraian, vendor…" autocomplete="off"
+                        wire:model.live.debounce.300ms="search" />
+                </x-ui.field>
                 <x-ui.field label="Bulan" for="spj-preparation-month"><x-ui.select id="spj-preparation-month"
                         wire:model.live="month">
                         <option value="">Semua bulan</option>
@@ -84,6 +88,7 @@
                         <option value="numbered">Sudah bernomor</option>
                     </x-ui.select></x-ui.field>
                 <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="resetFilters">Reset Filter</x-ui.button>
+                <x-ui.button variant="secondary" :href="route('spj.quarter-recap', ['quarter' => $quarter ?? (int) ceil((int) now()->format('n') / 3)])">Rekap triwulan</x-ui.button>
             </div>
         </div>
     </div>

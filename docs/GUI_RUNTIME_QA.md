@@ -65,7 +65,7 @@ Pemeriksaan umum:
 - tidak ada pagination/filter ganda;
 - sticky action tidak menutup field terakhir;
 - focus/hover/disabled state jelas;
-- pada tab Laporan SPJ, tandai beberapa baris dan gunakan Bulk Preview; pastikan semua paket tampil dalam urutan pilihan, modal dapat discroll, dan Cetak menghasilkan pemisah halaman per paket;
+- pada tab Laporan SPJ, gunakan pencarian dan filter periode, tandai beberapa baris, lalu gunakan Pratinjau Massal; pastikan PDF gabungan tampil dalam iframe/modal yang sama dengan pratinjau individu, toolbar menunjukkan jumlah halaman gabungan, urutan paket benar, modal dapat discroll, dan Cetak menghasilkan dokumen yang sama;
 - set jumlah baris ke 25 atau lebih, pilih lebih dari 20 paket dan pastikan pesan batas muncul; satu pilihan harus menghasilkan satu paket;
 - theme token tidak menghasilkan foreground/background berkontras buruk;
 - icon canonical sejajar dengan label dan tidak menggeser row height berlebihan.

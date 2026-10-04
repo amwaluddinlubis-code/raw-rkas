@@ -7,7 +7,6 @@ use App\Services\SpjTemplateService;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpSpreadsheet\Shared\Drawing as SharedDrawing;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Font;
 use Tests\TestCase;
 
 class SpjLetterheadAutofitTest extends TestCase
@@ -18,6 +17,7 @@ class SpjLetterheadAutofitTest extends TestCase
         Storage::disk('local')->put('kop/test.png', $this->png(400, 100));
 
         $spreadsheet = new Spreadsheet;
+        $spreadsheet->getDefaultStyle()->getFont()->setName('Arial')->setSize(10);
         $sheet = $spreadsheet->getActiveSheet();
         foreach (['A', 'B', 'C', 'D'] as $column) {
             $sheet->getColumnDimension($column)->setWidth(20);
@@ -39,7 +39,7 @@ class SpjLetterheadAutofitTest extends TestCase
 
         $expectedWidth = 0;
         foreach (['A', 'B', 'C', 'D'] as $column) {
-            $expectedWidth += SharedDrawing::cellDimensionToPixels(20, new Font(false));
+            $expectedWidth += SharedDrawing::cellDimensionToPixels(20, $spreadsheet->getDefaultStyle()->getFont());
         }
         $expectedWidth = max(1, $expectedWidth - 4);
         $this->assertSame($expectedWidth, $drawing->getWidth());
@@ -63,6 +63,34 @@ class SpjLetterheadAutofitTest extends TestCase
         $method->invoke($service, $sheet, new School(['letterhead_path' => 'kop/hilang.png']));
 
         $this->assertCount(0, $sheet->getDrawingCollection());
+    }
+
+    public function test_kop_uses_only_columns_inside_print_area(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('kop/test.png', $this->png(400, 100));
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        foreach (['A', 'B', 'C', 'D', 'E'] as $column) {
+            $sheet->getColumnDimension($column)->setWidth(20);
+        }
+        $sheet->getPageSetup()->setPrintArea('B1:E20');
+        $sheet->setCellValue('B1', '{{KOP_SURAT}}');
+
+        $service = app(SpjTemplateService::class);
+        $method = new \ReflectionMethod(SpjTemplateService::class, 'fillExcelLetterhead');
+        $method->setAccessible(true);
+        $method->invoke($service, $sheet, new School(['letterhead_path' => 'kop/test.png']));
+
+        $drawings = iterator_to_array($sheet->getDrawingCollection());
+        $drawing = reset($drawings);
+        $expectedWidth = 0;
+        foreach (['B', 'C', 'D', 'E'] as $column) {
+            $expectedWidth += SharedDrawing::cellDimensionToPixels(20, $spreadsheet->getDefaultStyle()->getFont());
+        }
+
+        $this->assertSame(max(1, $expectedWidth - 4), $drawing->getWidth());
     }
 
     private function png(int $width, int $height): string

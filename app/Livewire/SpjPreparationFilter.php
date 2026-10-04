@@ -24,6 +24,9 @@ class SpjPreparationFilter extends Component
     #[Url(except: 'all')]
     public string $state = 'all';
 
+    #[Url(except: '')]
+    public string $search = '';
+
     #[Url(except: 15)]
     public int|string $perPage = 15;
 
@@ -34,12 +37,13 @@ class SpjPreparationFilter extends Component
         $this->spj_category = trim((string) request('spj_category', ''));
         $state = (string) request('state', 'all');
         $this->state = in_array($state, $this->allowedStates(), true) ? $state : 'all';
+        $this->search = trim((string) request('search', ''));
         $this->perPage = $this->normalizePerPage(request('perPage', 15));
     }
 
     public function updating($property): void
     {
-        if (in_array($property, ['month', 'quarter', 'spj_category', 'state', 'perPage'], true)) {
+        if (in_array($property, ['month', 'quarter', 'spj_category', 'state', 'perPage', 'search'], true)) {
             $this->resetPage();
         }
     }
@@ -56,7 +60,7 @@ class SpjPreparationFilter extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['month', 'quarter', 'spj_category', 'state', 'perPage']);
+        $this->reset(['month', 'quarter', 'spj_category', 'state', 'perPage', 'search']);
         $this->resetPage();
     }
 
@@ -71,7 +75,7 @@ class SpjPreparationFilter extends Component
         ]);
     }
 
-    /** @return array{month: int|null, quarter: int|null, spj_category: string|null, state: string} */
+    /** @return array{month: int|null, quarter: int|null, spj_category: string|null, state: string, search: string|null} */
     private function filters(): array
     {
         return [
@@ -79,6 +83,7 @@ class SpjPreparationFilter extends Component
             'quarter' => $this->quarter,
             'spj_category' => $this->spj_category === '' ? null : $this->spj_category,
             'state' => $this->state,
+            'search' => $this->search === '' ? null : $this->search,
         ];
     }
 

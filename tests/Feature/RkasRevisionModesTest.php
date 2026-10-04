@@ -251,4 +251,49 @@ class RkasRevisionModesTest extends TestCase
         $this->assertCount(1, $periods);
         $this->assertSame('PER-1', $periods[0]['ID_RAPBS_PERIODE']);
     }
+
+    public function test_revision_tabs_show_same_budget_and_realization_when_lines_change(): void
+    {
+        $this->seedAnggaran('ANG-OLD', ['ID_ANGGARAN' => 'ANG-OLD', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-05-06 08:00:00', 'CREATE_DATE' => '2026-04-16 05:00:00']);
+        $this->seedAnggaran('ANG-NEW', ['ID_ANGGARAN' => 'ANG-NEW', 'TAHUN_ANGGARAN' => 2026, 'ID_REF_SUMBER_DANA' => 1, 'IS_AKTIF' => 1, 'IS_APPROVE' => 1, 'LAST_UPDATE' => '2026-09-18 20:00:00', 'CREATE_DATE' => '2026-09-17 12:00:00']);
+        // Baris bersama pada kedua revisi: split Januari + Februari.
+        $this->seedRapbs('OLD-S', ['ID_RAPBS' => 'OLD-S', 'ID_ANGGARAN' => 'ANG-OLD', 'ID_REF_KODE' => 'REF-1', 'KODE_REKENING' => '5.1.02.01', 'URAIAN' => 'Batu Kali', 'JUMLAH' => 1000000]);
+        $this->seedRapbs('NEW-S', ['ID_RAPBS' => 'NEW-S', 'ID_ANGGARAN' => 'ANG-NEW', 'ID_REF_KODE' => 'REF-1', 'KODE_REKENING' => '5.1.02.01', 'URAIAN' => 'Batu Kali', 'JUMLAH' => 1000000]);
+        $this->seedRapbsPeriode('OLD-S-JAN', ['ID_RAPBS_PERIODE' => 'OLD-S-JAN', 'ID_RAPBS' => 'OLD-S', 'ID_PERIODE' => '81', 'JUMLAH' => 400000]);
+        $this->seedRapbsPeriode('OLD-S-FEB', ['ID_RAPBS_PERIODE' => 'OLD-S-FEB', 'ID_RAPBS' => 'OLD-S', 'ID_PERIODE' => '82', 'JUMLAH' => 600000]);
+        $this->seedRapbsPeriode('NEW-S-JAN', ['ID_RAPBS_PERIODE' => 'NEW-S-JAN', 'ID_RAPBS' => 'NEW-S', 'ID_PERIODE' => '81', 'JUMLAH' => 400000]);
+        $this->seedRapbsPeriode('NEW-S-FEB', ['ID_RAPBS_PERIODE' => 'NEW-S-FEB', 'ID_RAPBS' => 'NEW-S', 'ID_PERIODE' => '82', 'JUMLAH' => 600000]);
+        // Baris diganti antar revisi: bola hanya di lama, meja hanya di baru.
+        $this->seedRapbs('OLD-R', ['ID_RAPBS' => 'OLD-R', 'ID_ANGGARAN' => 'ANG-OLD', 'ID_REF_KODE' => 'REF-2', 'KODE_REKENING' => '5.1.02.02', 'URAIAN' => 'Bola Kaki', 'JUMLAH' => 400000]);
+        $this->seedRapbs('NEW-A', ['ID_RAPBS' => 'NEW-A', 'ID_ANGGARAN' => 'ANG-NEW', 'ID_REF_KODE' => 'REF-3', 'KODE_REKENING' => '5.1.02.03', 'URAIAN' => 'Meja Siswa', 'JUMLAH' => 400000]);
+        $this->seedRapbsPeriode('OLD-R-JAN', ['ID_RAPBS_PERIODE' => 'OLD-R-JAN', 'ID_RAPBS' => 'OLD-R', 'ID_PERIODE' => '81', 'JUMLAH' => 400000]);
+        $this->seedRapbsPeriode('NEW-A-JAN', ['ID_RAPBS_PERIODE' => 'NEW-A-JAN', 'ID_RAPBS' => 'NEW-A', 'ID_PERIODE' => '81', 'JUMLAH' => 400000]);
+        // Seluruh kas menaut ke revisi baru (seperti BKU ARKAS pasca pengesahan ulang).
+        $this->seedKas('KAS-S-JAN', ['ID_RAPBS' => 'NEW-S', 'ID_RAPBS_PERIODE' => 'NEW-S-JAN', 'KATEGORI_BKU' => 'BELANJA', 'ID_REF_SUMBER_DANA' => 1, 'JUMLAH' => 100000]);
+        $this->seedKas('KAS-S-FEB', ['ID_RAPBS' => 'NEW-S', 'ID_RAPBS_PERIODE' => 'NEW-S-FEB', 'KATEGORI_BKU' => 'BELANJA', 'ID_REF_SUMBER_DANA' => 1, 'JUMLAH' => 200000]);
+        $this->seedKas('KAS-A-JAN', ['ID_RAPBS' => 'NEW-A', 'ID_RAPBS_PERIODE' => 'NEW-A-JAN', 'KATEGORI_BKU' => 'BELANJA', 'ID_REF_SUMBER_DANA' => 1, 'JUMLAH' => 400000]);
+
+        $service = app(ArkasMirrorBudgetService::class);
+        $oldYear = $service->render(Request::create('/penganggaran-rkas?revisi=ANG-OLD', 'GET'), 1, 1);
+        $newYear = $service->render(Request::create('/penganggaran-rkas?revisi=ANG-NEW', 'GET'), 1, 1);
+
+        $this->assertSame(1400000.0, $oldYear['budget']);
+        $this->assertSame($newYear['budget'], $oldYear['budget']);
+        $this->assertSame(700000.0, $newYear['spent']);
+        $this->assertSame($newYear['spent'], $oldYear['spent']);
+
+        $oldQuarter = $service->render(Request::create('/penganggaran-rkas?mode=triwulan&periode=1&revisi=ANG-OLD', 'GET'), 1, 1);
+        $newQuarter = $service->render(Request::create('/penganggaran-rkas?mode=triwulan&periode=1&revisi=ANG-NEW', 'GET'), 1, 1);
+
+        $this->assertSame(1400000.0, $oldQuarter['budget']);
+        $this->assertSame($newQuarter['budget'], $oldQuarter['budget']);
+        $this->assertSame(700000.0, $newQuarter['spent']);
+        $this->assertSame($newQuarter['spent'], $oldQuarter['spent']);
+
+        $oldFeb = $service->render(Request::create('/penganggaran-rkas?mode=bulan&periode=2&revisi=ANG-OLD', 'GET'), 1, 1);
+        $newFeb = $service->render(Request::create('/penganggaran-rkas?mode=bulan&periode=2&revisi=ANG-NEW', 'GET'), 1, 1);
+
+        $this->assertSame(200000.0, $newFeb['spent']);
+        $this->assertSame($newFeb['spent'], $oldFeb['spent']);
+    }
 }

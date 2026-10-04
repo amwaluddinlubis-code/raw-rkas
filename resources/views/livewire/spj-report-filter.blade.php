@@ -32,6 +32,10 @@
                                     <option value="100">100 baris</option>
                                 </x-ui.select>
                             </div>
+                            <form id="spj-bulk-preview-form" method="POST" action="{{ route('spj.preview-packages') }}" target="template-preview-frame" data-bulk-preview-form>
+                                @csrf
+                                <button type="submit" data-bulk-submit class="ui-btn ui-btn-primary min-h-10 whitespace-nowrap px-4 disabled:cursor-not-allowed disabled:opacity-50">Pratinjau Massal</button>
+                            </form>
                         </div>
                         <label for="spj-report-periode" class="shrink-0 whitespace-nowrap text-sm font-semibold text-[var(--ui-fg-strong)]">Pilih periode</label>
                         <div class="flex min-w-0 flex-wrap items-center gap-3">
@@ -45,6 +49,9 @@
                                     @foreach(range(1,12) as $month)<option value="{{ $month }}">{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach
                                 @endif
                             </x-ui.select>
+                            <x-ui.input id="spj-report-search" wire:model.live.debounce.300ms="search" type="search"
+                                placeholder="Cari nomor, bukti, penerima..." aria-label="Cari laporan"
+                                class="min-w-[14rem] flex-1" />
                             <x-ui.action-menu label="Ekspor">
                                 <div class="ui-action-menu-label">Susun Laporan</div>
                                 <a class="ui-action-menu-item" href="{{ route('spj.honor-payments.select', $exportQuery) }}">Honor Pegawai</a>
@@ -63,25 +70,18 @@
             </section>
         </div>
     </div>
-    <div class="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
-        <div class="space-y-1">
-            <p class="text-sm text-[var(--ui-fg-muted)]">Tandai baris laporan yang ingin digabungkan dalam pratinjau.</p>
-            <p data-bulk-selection-status role="status" aria-live="polite" class="text-sm font-semibold text-[var(--ui-fg-muted)]">0 dari 20 paket dipilih. Pilih 1–20 paket.</p>
-        </div>
-        <form id="spj-bulk-preview-form" method="POST" action="{{ route('spj.preview-packages') }}" target="template-preview-frame" data-bulk-preview-form>
-            @csrf
-            <button type="submit" data-bulk-submit class="ui-btn ui-btn-primary min-h-10 px-4 disabled:cursor-not-allowed disabled:opacity-50">Bulk Preview</button>
-        </form>
-    </div>
     <div class="overflow-x-auto p-5"><table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500"><input type="checkbox" data-bulk-select-all aria-label="Pilih semua paket pada halaman ini" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">AKSI</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">
             @php
                 $isCancelled = false;
             @endphp
             @forelse($packages ?? [] as $packageIndex => $package)
-                @php
-                    $isCancelled = $package->report_status === 'CANCELLED';
-                    $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
-                @endphp
+                    @php
+                        $isCancelled = $package->report_status === 'CANCELLED';
+                        $packageUrl = route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]);
+                        $siplahResponse = data_get($package->transaction->siplah_metadata, 'siplahResponse', []);
+                        $vendorName = $package->transaction->vendor_name ?: data_get($siplahResponse, 'merchant');
+                        $recipientName = $package->transaction->receipt_recipient_name ?: $package->transaction->spj_recipient_name ?: $package->transaction->sourceValue('recipient_name');
+                    @endphp
                 <tr wire:key="spj-report-{{ $package->id }}" class="transition {{ $isCancelled ? 'bg-rose-50/70 text-slate-500' : 'hover:bg-indigo-50/40' }}">
                     <td class="px-4 py-3"><input type="checkbox" name="package_ids[]" value="{{ $package->id }}" form="spj-bulk-preview-form" data-bulk-package class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" aria-label="Pilih paket {{ $package->report_document_number }}"></td>
                     <td class="px-4 py-3 font-mono text-xs font-bold {{ $isCancelled ? 'text-rose-700 line-through' : 'text-indigo-700' }}">
@@ -97,13 +97,16 @@
                         <p class="font-semibold">{{ $package->transaction->sourceValue('no_bukti') }}</p>
                         <p class="text-xs text-slate-500">{{ $package->transaction->sourceCarbon()?->translatedFormat('d F Y') }}</p>
                     </td>
-                    <td class="px-4 py-3">{{ $package->transaction->receipt_recipient_name ?: $package->transaction->spj_recipient_name ?: '-' }}</td>
+                    <td class="px-4 py-3">
+                        <p class="font-semibold">{{ $vendorName ?: '-' }}</p>
+                        <p class="text-xs text-slate-500">{{ $recipientName ?: '-' }}</p>
+                    </td>
                     <td class="px-4 py-3 text-right">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
                     <td class="px-4 py-3 text-right {{ $isCancelled ? 'text-slate-400' : 'text-amber-700' }}">{{ $rupiah($package->transaction->sourceValue('tax_total')) }}</td>
                     <td class="px-4 py-3 text-right font-bold {{ $isCancelled ? 'text-slate-400' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->sourceValue('net_amount')) }}</td>
                     <td class="px-4 py-3 text-right">
                         <x-ui.action-menu label="Aksi" :drop-up="(($packages?->count() ?? 0) - $packageIndex) <= 3">
-                            <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
+                            <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" @if (! $isCancelled) data-template-download-pdf="{{ route('spj.preview-package-pdf', [$package->id, 'download' => 1]) }}" data-template-download-excel="{{ route('spj.preview-package-excel', $package->id) }}" @endif data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
                             @if (! $isCancelled)
                                 <form method="POST" action="{{ route('spj.download', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download PDF</button></form>
                                 <form method="POST" action="{{ route('spj.download-package-excel', $package->id) }}">@csrf<button type="submit" class="ui-action-menu-item w-full text-left">Download Excel</button></form>

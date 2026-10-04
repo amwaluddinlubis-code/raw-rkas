@@ -29,7 +29,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` run `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview setelah gate tersebut belum memiliki PHP/PHPUnit atau browser runtime verification; jangan menganggapnya tercakup run #46.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` run `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview terbaru sudah memiliki focused verification lokal; belum tercakup run #46 dan browser runtime tetap RVR.
 
 ## Dokumen aktif utama
 

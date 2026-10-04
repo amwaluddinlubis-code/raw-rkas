@@ -18,7 +18,6 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Drawing as SharedDrawing;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Html;
@@ -559,6 +558,45 @@ class SpjTemplateService
         return $this->spreadsheetPdfContents($this->packageSpreadsheet($templates, $package, $school));
     }
 
+    /**
+     * Render several packages through the same workbook/PDF pipeline as an
+     * individual package preview. Each package keeps its own filled sheets;
+     * only the final PDF contains more pages.
+     *
+     * @param  Collection<int, array{templates: Collection<int, DocumentTemplate>, package: SpjPackage}>  $packages
+     */
+    public function packagesPreviewPdfBytes(Collection $packages, School $school): string
+    {
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+
+        try {
+            $sheetNumber = 0;
+            foreach ($packages as $entry) {
+                $packageSpreadsheet = $this->packageSpreadsheet($entry['templates'], $entry['package'], $school);
+
+                foreach ($packageSpreadsheet->getAllSheets() as $sheet) {
+                    $sheetNumber++;
+                    $title = strtr((string) $sheet->getTitle(), [
+                        '\\' => '-',
+                        '/' => '-',
+                        '?' => '-',
+                        '*' => '-',
+                        '[' => '-',
+                        ']' => '-',
+                        ':' => '-',
+                    ]) ?: 'Dokumen';
+                    $sheet->setTitle(substr('SPJ-'.$sheetNumber.'-'.$title, 0, 31));
+                    $spreadsheet->addExternalSheet($sheet);
+                }
+            }
+
+            return $this->spreadsheetPdfContents($spreadsheet);
+        } finally {
+            $spreadsheet->disconnectWorksheets();
+        }
+    }
+
     /** @param Collection<int, DocumentTemplate> $templates */
     public function packagePreviewHtml(Collection $templates, SpjPackage $package, School $school): string
     {
@@ -830,21 +868,27 @@ class SpjTemplateService
     private function excelPrintAreaWidth(Worksheet $sheet): int
     {
         $printArea = (string) $sheet->getPageSetup()->getPrintArea();
-        preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/', $printArea, $matches);
+        preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/i', $printArea, $matches);
         if (! isset($matches[2])) {
             return self::DEFAULT_EXCEL_PRINT_WIDTH;
         }
 
+        $firstColumnIndex = Coordinate::columnIndexFromString(strtoupper($matches[1]));
         $lastColumn = $matches[2];
         $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
         $width = 0;
+        $defaultFont = $sheet->getParent()->getDefaultStyle()->getFont();
 
-        for ($column = 1; $column <= $lastColumnIndex; $column++) {
+        for ($column = $firstColumnIndex; $column <= $lastColumnIndex; $column++) {
             $letter = Coordinate::stringFromColumnIndex($column);
+            $dimension = $sheet->getColumnDimension($letter);
+            if (! $dimension->getVisible()) {
+                continue;
+            }
             $columnWidth = $sheet->getColumnDimension($letter)->getWidth();
             $width += SharedDrawing::cellDimensionToPixels(
                 $columnWidth > 0 ? $columnWidth : 8.43,
-                new Font(false),
+                $defaultFont,
             );
         }
 

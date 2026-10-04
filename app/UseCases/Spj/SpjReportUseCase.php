@@ -101,9 +101,9 @@ class SpjReportUseCase
      * Jalankan query laporan dari parameter eksplisit memakai implementasi
      * yang sama dengan jalur HTTP, untuk dipakai komponen Livewire.
      */
-    public function reportData(string $mode, ?int $periode, int $perPage = 15, int $pendingPerPage = 15): array
+    public function reportData(string $mode, ?int $periode, int $perPage = 15, int $pendingPerPage = 15, string $search = ''): array
     {
-        return $this->report(new Request(['mode' => $mode, 'periode' => $periode]), $perPage, $pendingPerPage);
+        return $this->report(new Request(['mode' => $mode, 'periode' => $periode, 'search' => $search]), $perPage, $pendingPerPage);
     }
 
     public function export(Request $request, string $format)
@@ -341,6 +341,19 @@ class SpjReportUseCase
         }
 
         ArkasMirrorResolver::joinKasUmum($query);
+
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
+            $like = '%'.$search.'%';
+            $query->where(function ($searchQuery) use ($like): void {
+                $searchQuery
+                    ->where('transactions.vendor_name', 'like', $like)
+                    ->orWhere('transactions.receipt_recipient_name', 'like', $like)
+                    ->orWhere('transactions.spj_recipient_name', 'like', $like)
+                    ->orWhere('transactions.payment_description', 'like', $like)
+                    ->orWhereRaw('mkas.sx_no_bukti like ?', [$like]);
+            });
+        }
 
         if ($mode === 'bulan' && $periode >= 1 && $periode <= 12) {
             ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) = ?", [$year->year, $periode]);

@@ -93,6 +93,45 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
         }
     }
 
+    /**
+     * @param  Collection<int, array{templates: Collection<int, DocumentTemplate>, package: SpjPackage}>  $packages
+     */
+    public function packagesPreviewPdfBytes(Collection $packages, School $school): string
+    {
+        $spreadsheet = new Spreadsheet;
+        $spreadsheet->removeSheetByIndex(0);
+
+        try {
+            $sheetNumber = 0;
+            foreach ($packages as $entry) {
+                [$packageSpreadsheet, $temporaryFiles] = $this->packageSpreadsheetForOutput($entry['templates'], $entry['package'], $school);
+
+                try {
+                    foreach ($packageSpreadsheet->getAllSheets() as $sheet) {
+                        $sheetNumber++;
+                        $title = strtr((string) $sheet->getTitle(), [
+                            '\\' => '-',
+                            '/' => '-',
+                            '?' => '-',
+                            '*' => '-',
+                            '[' => '-',
+                            ']' => '-',
+                            ':' => '-',
+                        ]) ?: 'Dokumen';
+                        $sheet->setTitle(substr('SPJ-'.$sheetNumber.'-'.$title, 0, 31));
+                        $spreadsheet->addExternalSheet($sheet);
+                    }
+                } finally {
+                    $this->removeTemporaryFiles($temporaryFiles);
+                }
+            }
+
+            return $this->spreadsheetPdfContents($spreadsheet, true);
+        } finally {
+            $spreadsheet->disconnectWorksheets();
+        }
+    }
+
     /** @param Collection<int, DocumentTemplate> $templates */
     public function downloadPackageExcel(Collection $templates, SpjPackage $package, School $school)
     {

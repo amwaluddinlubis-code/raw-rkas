@@ -69,6 +69,11 @@ class SpjDocumentUseCase
         return $this->assertBinaryOutput($response, 'xlsx', 'Paket SPJ Excel');
     }
 
+    public function previewPackageExcel(string $packageId)
+    {
+        return $this->downloadPackageExcel($packageId);
+    }
+
     public function previewPackage(string $packageId): View|RedirectResponse
     {
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
@@ -270,17 +275,21 @@ class SpjDocumentUseCase
         // Download/preview adalah operasi baca. Lifecycle Paket hanya boleh berubah
         // melalui workflow READY/NUMBERED/FINAL/CANCELLED yang eksplisit.
 
-        return $this->inlinePdfResponse($contents, 'PRATINJAU-PAKET-SPJ-'.$package->document_number.'.pdf');
+        return $this->inlinePdfResponse(
+            $contents,
+            'PRATINJAU-PAKET-SPJ-'.$package->document_number.'.pdf',
+            request()->boolean('download'),
+        );
     }
 
     /**
-     * Print-ready HTML preview for a selected set of report packages.
-     * Preview is read-only and each package is checked against the active
-     * school, fiscal year, and fund source before any workbook is rendered.
+     * Combined inline PDF preview for a selected set of report packages.
+     * It uses the same filled workbook/PDF pipeline as the individual preview;
+     * the only difference is that the selected packages become more sheets.
      *
      * @param  list<string>  $packageIds
      */
-    public function previewPackages(array $packageIds): View
+    public function previewPackages(array $packageIds): Response
     {
         abort_if($packageIds === [] || count($packageIds) > 20, 422, 'Pilih antara 1 sampai 20 paket laporan.');
 
@@ -295,6 +304,8 @@ class SpjDocumentUseCase
                 'transaction.travels',
                 'transaction.honors',
                 'transaction.serviceRecipients',
+                'transaction.payments',
+                'transaction.spjPackage',
             ])
             ->whereIn('id', $packageIds)
             ->get()
@@ -303,62 +314,35 @@ class SpjDocumentUseCase
         abort_unless($packagesById->count() === count(array_unique($packageIds)), 404, 'Satu atau beberapa paket laporan tidak ditemukan.');
 
         $school = $this->context->school();
-        $renderedPackages = collect($packageIds)->map(function (string $packageId) use ($packagesById, $school): array {
+        $renderPackages = collect($packageIds)->map(function (string $packageId) use ($packagesById): array {
             /** @var SpjPackage $package */
             $package = $packagesById->get($packageId);
             abort_unless($package && $this->context->matchesTransaction($package->transaction), 404, 'Paket laporan tidak tersedia pada konteks aktif.');
 
             $this->applyDocumentContext($package);
             $templates = $this->spreadsheetTemplatesForPackage($package);
-            $issues = $this->packageValidator->validate($package);
-            if ($templates->isEmpty()) {
-                $issues[] = [
-                    'label' => 'Template laporan',
-                    'message' => 'Belum ada template Excel aktif untuk paket ini.',
-                    'url' => '',
-                ];
-            }
+            abort_unless($templates->isNotEmpty(), 422, 'Belum ada template Excel aktif untuk salah satu paket yang dipilih.');
 
-            $html = '';
-            $stylesHtml = '';
-            if ($templates->isNotEmpty()) {
-                try {
-                    $html = app(SpjTemplateService::class)->packagePreviewHtml($templates, $package, $school);
-                    preg_match_all('/<style[^>]*>.*?<\/style>/is', $html, $styles);
-                    preg_match('/<body[^>]*>(.*?)<\/body>/is', $html, $body);
-                    $stylesHtml = implode('', $styles[0] ?? []);
-                    $html = $body[1] ?? '';
-                    if (trim($html) === '') {
-                        $issues[] = [
-                            'label' => 'Isi dokumen',
-                            'message' => 'Template tidak menghasilkan isi dokumen untuk paket ini.',
-                            'url' => '',
-                        ];
-                    }
-                } catch (Throwable $exception) {
-                    report($exception);
-                    $issues[] = [
-                        'label' => 'Pembuatan preview',
-                        'message' => 'Preview dokumen gagal dibuat. Periksa data dan template paket ini, lalu coba lagi.',
-                        'url' => '',
-                    ];
-                }
-            }
-
-            return [
-                'number' => (string) $package->report_document_number,
-                'ready' => $issues === [],
-                'issues' => $issues,
-                'styles' => $stylesHtml,
-                'html' => $html,
-            ];
+            return ['package' => $package, 'templates' => $templates];
         });
 
-        return view('spj-documents.bulk-preview', [
-            'packages' => $renderedPackages,
-            'readyCount' => $renderedPackages->where('ready', true)->count(),
-            'blockedCount' => $renderedPackages->where('ready', false)->count(),
-        ]);
+        $cacheKey = 'spj:preview-packages-pdf:'.hash('sha256', $renderPackages
+            ->map(fn (array $entry): string => $this->packagePreviewCacheKey($entry['package'], $entry['templates']))
+            ->implode('|'));
+
+        try {
+            $contents = Cache::remember(
+                $cacheKey,
+                now()->addMinutes(10),
+                fn (): string => app(SpjTemplateService::class)->packagesPreviewPdfBytes($renderPackages, $school),
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return response('Pratinjau PDF massal gagal dibuat: '.$exception->getMessage(), 500);
+        }
+
+        return $this->inlinePdfResponse($contents, 'PRATINJAU-MASSAL-PAKET-SPJ.pdf');
     }
 
     /** @return Collection<int, DocumentTemplate> */
@@ -471,11 +455,11 @@ class SpjDocumentUseCase
         return $receipt ? $receipt->documentScopeKey() : 'MAIN';
     }
 
-    private function inlinePdfResponse(string $contents, string $fileName): Response
+    private function inlinePdfResponse(string $contents, string $fileName, bool $download = false): Response
     {
         return response($contents, 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="'.$this->safeInlineName($fileName).'"',
+            'Content-Disposition' => ($download ? 'attachment' : 'inline').'; filename="'.$this->safeInlineName($fileName).'"',
             'Content-Length' => (string) strlen($contents),
             'Cache-Control' => 'private, no-store, max-age=0',
         ]);

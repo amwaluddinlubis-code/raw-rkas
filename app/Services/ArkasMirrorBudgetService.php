@@ -358,6 +358,13 @@ final class ArkasMirrorBudgetService
      * tampil beridentitas sama, proporsional pagu. Menjamin total tetap pas
      * (tidak ganda) dan view revisi terbaru tidak berubah (direct didahulukan).
      *
+     * Dua pelengkap lintas revisi agar setiap tab pengesahan menampilkan
+     * realisasi yang sama untuk kas tahun+sumber dana yang sama:
+     * - kas "yatim" (identitasnya tidak tampil pada revisi ini karena baris
+     *   diganti pada revisi lain) ikut dibagi proporsional pagu, bukan dibuang;
+     * - residual per bulan hanya dibagi ke baris yang memiliki bulan tersebut
+     *   (bobot pagu bulan itu), sehingga tidak bocor ke triwulan lain.
+     *
      * @param  Collection<int,array>  $rows
      * @return array{fallback:array<string,float>,fallbackMonth:array<string,array<int,float>>}
      */
@@ -398,19 +405,183 @@ final class ArkasMirrorBudgetService
             for ($month = 1; $month <= 12; $month++) {
                 $residualMonth[$month] = max(0.0, ($identityMonth[$identity][$month] ?? 0) - ($directMonth[$month] ?? 0));
             }
+            $monthPagu = $this->monthPaguByRow($group);
+            $monthEligible = $this->eligiblePaguByMonth($monthPagu);
+            $quarterEligible = $this->eligiblePaguByQuarter($monthPagu);
             foreach ($group as $row) {
                 $rid = (string) $row['source_rapbs_id'];
                 $weight = ((float) ($row['amount'] ?? 0)) / $paguTotal;
-                $fallback[$rid] = $residual * $weight;
+                $fallback[$rid] = ($fallback[$rid] ?? 0.0) + $residual * $weight;
                 foreach ($residualMonth as $month => $value) {
-                    if ($value > 0) {
-                        $fallbackMonth[$rid][$month] = $value * $weight;
+                    if ($value <= 0) {
+                        continue;
+                    }
+                    $share = $this->monthShare($rid, $month, $value, $monthPagu, $monthEligible, $quarterEligible, $weight);
+                    if ($share > 0) {
+                        $fallbackMonth[$rid][$month] = ($fallbackMonth[$rid][$month] ?? 0.0) + $share;
                     }
                 }
             }
         }
 
+        $this->distributeOrphanShares($rows, $byIdentity, $identityTotal, $identityMonth, $fallback, $fallbackMonth);
+
         return ['fallback' => $fallback, 'fallbackMonth' => $fallbackMonth];
+    }
+
+    /**
+     * Pagu tampil per baris per bulan kalender dari split periode baris.
+     *
+     * @param  array<int,array>  $group
+     * @return array<string,array<int,float>>
+     */
+    private function monthPaguByRow(array $group): array
+    {
+        $monthPagu = [];
+        foreach ($group as $row) {
+            $rid = (string) ($row['source_rapbs_id'] ?? '');
+            if ($rid === '') {
+                continue;
+            }
+            foreach ($row['periods'] ?? [] as $period) {
+                $month = (int) ($period['__MONTH_NUMBER'] ?? 0);
+                if ($month < 1 || $month > 12) {
+                    continue;
+                }
+                $pagu = (float) (ArkasMirrorResolver::field($period, ['JUMLAH']) ?? 0);
+                if ($pagu <= 0) {
+                    continue;
+                }
+                $monthPagu[$rid][$month] = ($monthPagu[$rid][$month] ?? 0.0) + $pagu;
+            }
+        }
+
+        return $monthPagu;
+    }
+
+    /**
+     * Total pagu baris yang memiliki tiap bulan (penyebut bobot bulan).
+     *
+     * @param  array<string,array<int,float>>  $monthPagu
+     * @return array<int,float>
+     */
+    private function eligiblePaguByMonth(array $monthPagu): array
+    {
+        $eligible = [];
+        foreach ($monthPagu as $months) {
+            foreach ($months as $month => $pagu) {
+                $eligible[$month] = ($eligible[$month] ?? 0.0) + $pagu;
+            }
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * Total pagu baris yang memiliki tiap triwulan (pelebaran bobot bulan).
+     *
+     * @param  array<string,array<int,float>>  $monthPagu
+     * @return array<int,float>
+     */
+    private function eligiblePaguByQuarter(array $monthPagu): array
+    {
+        $eligible = [];
+        foreach ($monthPagu as $months) {
+            foreach ($months as $month => $pagu) {
+                $quarter = (int) ceil($month / 3);
+                $eligible[$quarter] = ($eligible[$quarter] ?? 0.0) + $pagu;
+            }
+        }
+
+        return $eligible;
+    }
+
+    /**
+     * Bagi satu pool bulan ke baris: bulan yang sama dulu (bobot pagu bulan),
+     * melebar ke triwulan yang sama, terakhir bobot pagu tahun agar tidak hilang.
+     *
+     * @param  array<string,array<int,float>>  $monthPagu
+     * @param  array<int,float>  $monthEligible
+     * @param  array<int,float>  $quarterEligible
+     */
+    private function monthShare(string $rid, int $month, float $value, array $monthPagu, array $monthEligible, array $quarterEligible, float $yearWeight): float
+    {
+        $mine = $monthPagu[$rid][$month] ?? 0.0;
+        $eligible = $monthEligible[$month] ?? 0.0;
+        if ($eligible > 0) {
+            // Pool bulan habis dibagi ke baris yang memiliki bulan itu saja;
+            // baris tanpa bulan itu mendapat nol agar tidak ganda.
+            return $mine > 0 ? $value * $mine / $eligible : 0.0;
+        }
+        $quarter = (int) ceil($month / 3);
+        $quarterPagu = 0.0;
+        foreach ($monthPagu[$rid] ?? [] as $rowMonth => $pagu) {
+            if ((int) ceil($rowMonth / 3) === $quarter) {
+                $quarterPagu += $pagu;
+            }
+        }
+        $quarterTotal = $quarterEligible[$quarter] ?? 0.0;
+        if ($quarterTotal > 0) {
+            return $quarterPagu > 0 ? $value * $quarterPagu / $quarterTotal : 0.0;
+        }
+
+        return $value * $yearWeight;
+    }
+
+    /**
+     * Bagi kas "yatim" — identitas dalam scope tahun+sumber dana yang tidak
+     * tampil pada revisi ini — ke seluruh baris tampil proporsional pagu.
+     * Tanpa ini, tab revisi lama kehilangan realisasi baris yang diganti pada
+     * revisi baru sehingga total/tab antar pengesahan berbeda.
+     *
+     * @param  Collection<int,array>  $rows
+     * @param  array<string,array<int,array>>  $byIdentity
+     * @param  array<string,float>  $identityTotal
+     * @param  array<string,array<int,float>>  $identityMonth
+     * @param  array<string,float>  $fallback
+     * @param  array<string,array<int,float>>  $fallbackMonth
+     */
+    private function distributeOrphanShares(Collection $rows, array $byIdentity, array $identityTotal, array $identityMonth, array &$fallback, array &$fallbackMonth): void
+    {
+        $orphanTotal = 0.0;
+        $orphanMonth = [];
+        foreach ($identityTotal as $identity => $total) {
+            if (isset($byIdentity[(string) $identity])) {
+                continue;
+            }
+            $orphanTotal += (float) $total;
+            foreach ($identityMonth[$identity] ?? [] as $month => $amount) {
+                $month = (int) $month;
+                if ($month >= 1 && $month <= 12 && (float) $amount > 0) {
+                    $orphanMonth[$month] = ($orphanMonth[$month] ?? 0.0) + (float) $amount;
+                }
+            }
+        }
+        if ($orphanTotal <= 0 && $orphanMonth === []) {
+            return;
+        }
+        $viewRows = $rows->all();
+        $viewPagu = array_sum(array_map(fn (array $row): float => (float) ($row['amount'] ?? 0), $viewRows));
+        if ($viewPagu <= 0) {
+            return;
+        }
+        $monthPagu = $this->monthPaguByRow($viewRows);
+        $monthEligible = $this->eligiblePaguByMonth($monthPagu);
+        $quarterEligible = $this->eligiblePaguByQuarter($monthPagu);
+        foreach ($viewRows as $row) {
+            $rid = (string) ($row['source_rapbs_id'] ?? '');
+            if ($rid === '') {
+                continue;
+            }
+            $weight = ((float) ($row['amount'] ?? 0)) / $viewPagu;
+            $fallback[$rid] = ($fallback[$rid] ?? 0.0) + $orphanTotal * $weight;
+            foreach ($orphanMonth as $month => $value) {
+                $share = $this->monthShare($rid, $month, $value, $monthPagu, $monthEligible, $quarterEligible, $weight);
+                if ($share > 0) {
+                    $fallbackMonth[$rid][$month] = ($fallbackMonth[$rid][$month] ?? 0.0) + $share;
+                }
+            }
+        }
     }
 
     /** @return array<string, array{name:?string,month:?int,quarter:?int,semester:?int}> */
@@ -733,25 +904,24 @@ final class ArkasMirrorBudgetService
             return $direct;
         }
 
-        $month = $scope === 'month' ? $value : 0;
-        if ($month <= 0) {
-            $representative = $row['periods'][0] ?? null;
-            $month = (int) ($representative['__MONTH_NUMBER'] ?? 0);
-            if ($month <= 0 || count($periodIds) !== 1 && $scope !== 'month') {
-                // Kuartal/semester multi-bulan: jumlahkan fallback per bulan.
-                return collect($row['periods'])
-                    ->filter(function (array $period) use ($scope, $value): bool {
-                        $periodNumber = $scope === 'quarter' ? ($period['__QUARTER_NUMBER'] ?? null) : ($period['__SEMESTER_NUMBER'] ?? null);
-
-                        return (int) $periodNumber === $value;
-                    })
-                    ->map(fn (array $period): int => (int) ($period['__MONTH_NUMBER'] ?? 0))
-                    ->unique()
-                    ->sum(fn (int $monthNumber): float => (float) ($snapshot['realization_fallback_month'][$rapbsId][$monthNumber] ?? 0));
-            }
+        if ($scope === 'month') {
+            return (float) ($snapshot['realization_fallback_month'][$rapbsId][$value] ?? 0);
         }
 
-        return (float) ($snapshot['realization_fallback_month'][$rapbsId][$month] ?? 0);
+        // Kuartal/semester: jumlahkan fallback bulan-bulan baris ini yang
+        // berada dalam scope yang diminta. (Sebelumnya baris satu-periode
+        // memakai bulan perwakilan periods[0] yang bisa berada di luar scope,
+        // sehingga share bulan yang sama terhitung pada dua triwulan dan total
+        // antar tab pengesahan tidak konsisten.)
+        return collect($row['periods'])
+            ->filter(function (array $period) use ($scope, $value): bool {
+                $periodNumber = $scope === 'quarter' ? ($period['__QUARTER_NUMBER'] ?? null) : ($period['__SEMESTER_NUMBER'] ?? null);
+
+                return (int) $periodNumber === $value;
+            })
+            ->map(fn (array $period): int => (int) ($period['__MONTH_NUMBER'] ?? 0))
+            ->unique()
+            ->sum(fn (int $monthNumber): float => (float) ($snapshot['realization_fallback_month'][$rapbsId][$monthNumber] ?? 0));
     }
 
     /** @param Collection<int,array> $rows */

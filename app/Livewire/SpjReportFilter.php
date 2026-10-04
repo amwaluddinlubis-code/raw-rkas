@@ -21,17 +21,21 @@ class SpjReportFilter extends Component
     #[Url(except: 15)]
     public int|string $perPage = 15;
 
+    #[Url(except: '')]
+    public string $search = '';
+
     public function mount(): void
     {
         [$mode, $periode] = SpjReportUseCase::resolveModePeriode(request()->all());
         $this->mode = in_array($mode, $this->allowedModes(), true) ? $mode : 'semua';
         $this->periode = $periode;
         $this->perPage = $this->normalizePerPage(request('perPage', 15));
+        $this->search = trim((string) request('search', ''));
     }
 
     public function updating($property): void
     {
-        if (in_array($property, ['periode', 'perPage'], true)) {
+        if (in_array($property, ['periode', 'perPage', 'search'], true)) {
             $this->resetPage();
         }
     }
@@ -50,7 +54,7 @@ class SpjReportFilter extends Component
     public function render(): View
     {
         [$packages, $summary] = app(SpjReportUseCase::class)
-            ->reportData($this->mode, $this->periode, $this->resolvedPerPage(), 15);
+            ->reportData($this->mode, $this->periode, $this->resolvedPerPage(), 15, $this->search);
 
         return view('livewire.spj-report-filter', [
             'packages' => $packages,

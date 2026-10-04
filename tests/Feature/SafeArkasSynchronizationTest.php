@@ -224,6 +224,28 @@ class SafeArkasSynchronizationTest extends TestCase
         $this->assertSame([1, 2], Transaction::query()->orderBy('fund_source_id')->pluck('fund_source_id')->all());
     }
 
+    public function test_resynced_kas_ids_prune_stale_mirror_rows_within_synced_anggaran(): void
+    {
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        $year = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $service = new ArkasSynchronizationServiceV2(Mockery::mock(ArkasBridgeClient::class));
+        $method = new ReflectionMethod($service, 'saveBkuAndTransactions');
+
+        $old = array_replace($this->sourceRecord(500000), ['ID_KAS_UMUM' => 'KAS-OLD', 'ID_ANGGARAN' => 'ANG-2026']);
+        $otherYear = array_replace($this->sourceRecord(700000), ['ID_KAS_UMUM' => 'KAS-2025', 'ID_ANGGARAN' => 'ANG-2025']);
+        $method->invoke($service, $year, [$old, $otherYear], $this->createSyncRun($year));
+        $this->assertSame(2, DB::connection('school')->table('arkas_mirror_kas_umum')->count());
+
+        // ARKAS menerbitkan ulang ID kas saat pengesahan ulang: belanja yang
+        // sama datang dengan ID baru sehingga baris lama harus dibuang.
+        $new = array_replace($old, ['ID_KAS_UMUM' => 'KAS-NEW']);
+        $method->invoke($service, $year, [$new], $this->createSyncRun($year));
+
+        $remaining = DB::connection('school')->table('arkas_mirror_kas_umum')->pluck('source_key')->all();
+        sort($remaining);
+        $this->assertSame(['KAS-2025', 'KAS-NEW'], $remaining);
+    }
+
     private function createSyncRun(FiscalYear $year): int
     {
         return DB::connection('school')->table('sync_runs')->insertGetId([
