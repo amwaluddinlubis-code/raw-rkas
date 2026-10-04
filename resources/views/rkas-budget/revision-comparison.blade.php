@@ -7,6 +7,14 @@
                 <x-ui.icon name="arrow-left" size="sm" /> Kembali ke RKAS
             </a>
         </x-slot:actions>
+        @if ($comparison)
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 xl:grid-cols-4 sm:divide-x sm:divide-y-0">
+                <x-stat-item label="Pagu revisi awal" :value="'Rp '.number_format((float) $comparison['totals']['from'], 0, ',', '.')" icon="budget" />
+                <x-stat-item label="Pagu revisi tujuan" :value="'Rp '.number_format((float) $comparison['totals']['to'], 0, ',', '.')" icon="budget" value-class="text-[var(--theme-content-accent)]" />
+                <x-stat-item label="Selisih pagu" :value="'Rp '.number_format((float) $comparison['totals']['delta'], 0, ',', '.')" icon="balance" value-class="text-amber-700" />
+                <x-stat-item label="Perubahan pos" :value="'+'.$comparison['counts']['added'].' / −'.$comparison['counts']['removed'].' / ~'.$comparison['counts']['changed']" icon="report" />
+            </div>
+        @endif
     </x-page-header>
 
     <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm sm:p-5">
@@ -44,25 +52,6 @@
         <x-ui.empty-state title="Belum ada dua revisi untuk dibandingkan"
             description="Sinkronkan data ARKAS atau pilih konteks tahun dan sumber dana yang memiliki lebih dari satu revisi." icon="info" />
     @elseif ($comparison)
-        <section aria-label="Summary" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ([
-                ['label' => 'Pagu revisi awal', 'value' => $comparison['totals']['from']],
-                ['label' => 'Pagu revisi tujuan', 'value' => $comparison['totals']['to']],
-                ['label' => 'Selisih pagu', 'value' => $comparison['totals']['delta']],
-            ] as $summary)
-                <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                    <p class="text-xs font-semibold text-[var(--ui-fg-muted)]">{{ $summary['label'] }}</p>
-                    <p class="mt-1 text-lg font-bold tabular-nums text-[var(--ui-fg-strong)]">Rp {{ number_format($summary['value'], 0, ',', '.') }}</p>
-                </div>
-            @endforeach
-            <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                <p class="text-xs font-semibold text-[var(--ui-fg-muted)]">Perubahan pos</p>
-                <p class="mt-1 text-lg font-bold tabular-nums text-[var(--ui-fg-strong)]">
-                    +{{ $comparison['counts']['added'] }} / −{{ $comparison['counts']['removed'] }} / ~{{ $comparison['counts']['changed'] }}
-                </p>
-            </div>
-        </section>
-
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="border-b border-[var(--ui-line)] px-4 py-3">
                 <h2 class="font-bold text-[var(--ui-fg-strong)]">Rincian perubahan</h2>
