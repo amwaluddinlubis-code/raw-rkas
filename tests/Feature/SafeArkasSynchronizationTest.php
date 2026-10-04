@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\Transaction;
 use App\Services\ArkasBridgeClient;
+use App\Services\ArkasMirrorResolver;
 use App\Services\ArkasPipePayload;
 use App\Services\ArkasSynchronizationServiceV2;
 use Illuminate\Support\Facades\Artisan;
@@ -244,6 +245,61 @@ class SafeArkasSynchronizationTest extends TestCase
         $remaining = DB::connection('school')->table('arkas_mirror_kas_umum')->pluck('source_key')->all();
         sort($remaining);
         $this->assertSame(['KAS-2025', 'KAS-NEW'], $remaining);
+    }
+
+    public function test_soft_deleted_rkas_rows_are_excluded_from_normalized_tables_but_kept_in_mirror(): void
+    {
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        $year = FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+        $service = new ArkasSynchronizationServiceV2(Mockery::mock(ArkasBridgeClient::class));
+
+        $active = [
+            'ID_RAPBS' => 'RAPBS-ACT', 'ID_REF_SUMBER_DANA' => 1, 'ID_ANGGARAN' => 'ANG-2026',
+            'KODE_KEGIATAN' => '01', 'NAMA_KEGIATAN' => 'Kegiatan', 'KODE_REKENING' => '5.1.02.01',
+            'URAIAN' => 'Barang aktif', 'JUMLAH' => 100000, 'SOFT_DELETE' => 0,
+            'CREATE_DATE' => '2026-01-01 00:00:00', 'LAST_UPDATE' => '2026-01-02 00:00:00',
+        ];
+        $deleted = array_replace($active, ['ID_RAPBS' => 'RAPBS-DEL', 'URAIAN' => 'Barang hapus', 'SOFT_DELETE' => 1]);
+        (new ReflectionMethod($service, 'saveRkas'))->invoke($service, $year, [$active, $deleted]);
+
+        $this->assertSame(['RAPBS-ACT'], DB::connection('school')->table('arkas_rkas_items')->pluck('source_rapbs_id')->all());
+        $mirrorIds = DB::connection('school')->table('arkas_mirror_rapbs')->pluck('source_key')->all();
+        sort($mirrorIds);
+        $this->assertSame(['RAPBS-ACT', 'RAPBS-DEL'], $mirrorIds);
+
+        $periodActive = [
+            'source_rapbs_id' => 'RAPBS-ACT', 'source_period_id' => '81', 'volume' => 1, 'amount' => 50000,
+            'payload' => ['id_rapbs_periode' => 'PER-ACT', 'id_rapbs' => 'RAPBS-ACT', 'id_periode' => '81', 'soft_delete' => 0],
+        ];
+        $periodDeleted = array_replace($periodActive, ['payload' => ['id_rapbs_periode' => 'PER-DEL', 'id_rapbs' => 'RAPBS-DEL', 'id_periode' => '81', 'soft_delete' => 1]]);
+        (new ReflectionMethod($service, 'saveRkasPeriods'))->invoke($service, $year, [$periodActive, $periodDeleted]);
+
+        $this->assertSame(['PER-ACT'], DB::connection('school')->table('arkas_rkas_periods')->pluck('source_rapbs_period_id')->all());
+        $mirrorPeriods = DB::connection('school')->table('arkas_mirror_rapbs_periode')->pluck('source_key')->all();
+        sort($mirrorPeriods);
+        $this->assertSame(['PER-ACT', 'PER-DEL'], $mirrorPeriods);
+    }
+
+    public function test_nota_soft_delete_flag_is_not_treated_as_deletion(): void
+    {
+        FundSource::query()->create(['id' => 1, 'code' => 'BOSP', 'name' => 'BOSP']);
+        FiscalYear::query()->create(['year' => 2026, 'fund_source' => 'BOSP', 'fund_source_id' => 1]);
+
+        // Di ARKAS, kas_umum_nota yang hidup pun bertanda soft_delete = 1
+        // (status final/locked, bukan hapus) sehingga tidak boleh difilter.
+        DB::connection('school')->table('arkas_mirror_kas_umum_nota')->insert([
+            'source_key' => 'NOTA-1',
+            'payload' => json_encode(['id_kas_nota' => 'NOTA-1', 'no_bukti' => 'BPU01', 'total' => 2400000, 'soft_delete' => 1]),
+            'source_hash' => 'x',
+            'synced_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $nota = app(ArkasMirrorResolver::class)->kasNota('NOTA-1');
+
+        $this->assertIsArray($nota);
+        $this->assertSame(2400000, (int) ($nota['total'] ?? 0));
     }
 
     private function createSyncRun(FiscalYear $year): int

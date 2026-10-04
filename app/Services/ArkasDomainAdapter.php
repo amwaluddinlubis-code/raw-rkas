@@ -114,6 +114,9 @@ class ArkasDomainAdapter
             if ($key === null) {
                 continue;
             }
+            if ((int) ($this->get($record, $profile, 'soft_delete', ['SOFT_DELETE', 'soft_delete', 'IS_DELETED', 'is_deleted']) ?? 0) === 1) {
+                continue;
+            }
             $db->table('arkas_rkas_items')->updateOrInsert(['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_rapbs_id' => $key], [
                 'fund_source_id' => (int) ($this->get($record, $profile, 'fund_source', ['ID_REF_SUMBER_DANA', 'id_ref_sumber_dana']) ?: $year->fund_source_id),
                 'activity_code' => $this->get($record, $profile, 'code', ['KODE_KEGIATAN', 'kode_kegiatan']),
@@ -139,6 +142,9 @@ class ArkasDomainAdapter
             $rapbs = $this->get($record, $profile, 'source_rapbs', ['ID_RAPBS', 'id_rapbs']);
             $period = $this->get($record, $profile, 'period', ['ID_PERIODE', 'id_periode']);
             if ($rapbs === null || $period === null) {
+                continue;
+            }
+            if ((int) ($this->get($record, $profile, 'soft_delete', ['SOFT_DELETE', 'soft_delete', 'IS_DELETED', 'is_deleted']) ?? 0) === 1) {
                 continue;
             }
             $name = $this->get($record, $profile, 'name', ['NAMA_PERIODE', 'PERIODE', 'nama_periode', 'periode']) ?: (string) ($names[$period] ?? '');

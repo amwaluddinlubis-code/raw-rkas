@@ -276,7 +276,9 @@ class RkasBudgetFilter extends Component
             return array_map('count', $periods);
         }
 
-        return DB::connection('school')->table('arkas_rkas_periods')
+        $baseQuery = ArkasMirrorResolver::onlyActivePeriods(DB::connection('school')->table('arkas_rkas_periods'));
+
+        return $baseQuery
             ->where('fiscal_year_id', $fiscalYearId)
             ->where('fund_source_id', $fundSourceId)
             ->where(function ($query): void {

@@ -279,12 +279,17 @@ class ArkasSynchronizationServiceV2
 
     private function saveRkas(FiscalYear $year, array $records): void
     {
-        $ids = $this->ids($records, 'ID_RAPBS');
+        // Baris yang dihapus di ARKAS (soft_delete = 1) tidak lagi menjadi
+        // alokasi aktif: singkirkan dari tabel normalisasi. Mirror tetap
+        // menyimpan snapshot penuh sumber karena read-path memfilternya dan
+        // kas yang telanjur belanja masih diatribusikan via fallback.
+        $active = array_values(array_filter($records, fn (array $record): bool => ! self::isSoftDeleted($record)));
+        $ids = $this->ids($active, 'ID_RAPBS');
         $query = DB::connection('school')->table('arkas_rkas_items')
             ->where('fiscal_year_id', $year->id)->where('fund_source_id', $year->fund_source_id);
         $ids ? $query->whereNotIn('source_rapbs_id', $ids)->delete() : $query->delete();
 
-        foreach ($records as $record) {
+        foreach ($active as $record) {
             DB::connection('school')->table('arkas_rkas_items')->updateOrInsert(
                 ['fiscal_year_id' => $year->id, 'fund_source_id' => $year->fund_source_id, 'source_rapbs_id' => $record['ID_RAPBS']],
                 ['fund_source_id' => $record['ID_REF_SUMBER_DANA'] ?? $year->fund_source_id,
@@ -296,6 +301,8 @@ class ArkasSynchronizationServiceV2
                     'payload' => json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
                     'updated_at' => now(), 'created_at' => now()]
             );
+        }
+        foreach ($records as $record) {
             $this->mirrors()->upsertMirrorRow('school', 'arkas_mirror_rapbs', (string) $record['ID_RAPBS'], $record);
         }
     }
@@ -363,6 +370,14 @@ class ArkasSynchronizationServiceV2
         $periodNames = $db->table('arkas_periods')->pluck('name', 'source_period_id')->all();
         $now = now();
         foreach ($records as $record) {
+            $rawPayload = (array) ($record['payload'] ?? []);
+            $rapbsPeriodeId = (string) ($record['payload']['id_rapbs_periode'] ?? $record['payload']['ID_RAPBS_PERIODE'] ?? '');
+            if ($rapbsPeriodeId !== '') {
+                $this->mirrors()->upsertMirrorRow('school', 'arkas_mirror_rapbs_periode', $rapbsPeriodeId, $rawPayload);
+            }
+            if (self::isSoftDeleted($rawPayload)) {
+                continue;
+            }
             $periodId = (string) $record['source_period_id'];
             $periodName = (string) ($periodNames[$periodId] ?? '');
             [$month, $quarter, $semester] = $this->periodCoordinates($periodId, $periodName);
@@ -386,10 +401,6 @@ class ArkasSynchronizationServiceV2
                     'created_at' => $now,
                 ]
             );
-            $rapbsPeriodeId = (string) ($record['payload']['id_rapbs_periode'] ?? $record['payload']['ID_RAPBS_PERIODE'] ?? '');
-            if ($rapbsPeriodeId !== '') {
-                $this->mirrors()->upsertMirrorRow('school', 'arkas_mirror_rapbs_periode', $rapbsPeriodeId, (array) $record['payload']);
-            }
         }
     }
 
@@ -860,6 +871,18 @@ class ArkasSynchronizationServiceV2
     private function ids(array $records, string $field): array
     {
         return array_values(array_unique(array_filter(array_map(fn ($record) => (string) ($record[$field] ?? ''), $records))));
+    }
+
+    /**
+     * True bila baris sumber ditandai dihapus di ARKAS. Berlaku untuk domain
+     * anggaran/RKAS; flag serupa di domain nota bukan penanda hapus sehingga
+     * tidak boleh dipakai di sini.
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private static function isSoftDeleted(array $record): bool
+    {
+        return (int) (ArkasMirrorResolver::field($record, ['SOFT_DELETE', 'soft_delete', 'IS_DELETED', 'is_deleted']) ?? 0) === 1;
     }
 
     /**

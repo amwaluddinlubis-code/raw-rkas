@@ -258,10 +258,10 @@ class SpjPackageValidationService
             return null;
         }
 
-        $periodQuery = DB::connection('school')->table('arkas_rkas_periods')
+        $periodQuery = ArkasMirrorResolver::onlyActivePeriods(DB::connection('school')->table('arkas_rkas_periods')
             ->where('fiscal_year_id', $transaction->fiscal_year_id)
             ->whereIn('source_rapbs_id', $sourceRapbsIds)
-            ->whereNotNull('month_number');
+            ->whereNotNull('month_number'));
         $month = (clone $periodQuery)->where('amount', '>', 0)->min('month_number')
             ?: $periodQuery->min('month_number');
 

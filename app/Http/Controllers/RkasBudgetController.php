@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
 use App\Services\ArkasMirrorBudgetService;
+use App\Services\ArkasMirrorFreshnessService;
+use App\Services\ArkasMirrorResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -32,7 +34,7 @@ class RkasBudgetController extends Controller
         if ($this->hasUsableMirrorBudget($db, $yearId, $fundSourceId)) {
             return [
                 ...app(ArkasMirrorBudgetService::class)->render($request, $yearId, $fundSourceId),
-                'syncFreshness' => app(\App\Services\ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
+                'syncFreshness' => app(ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
             ];
         }
         $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
@@ -137,12 +139,12 @@ class RkasBudgetController extends Controller
             });
 
         if ($scope !== 'year') {
-            $periodIds = $db->table('arkas_rkas_periods')
+            $periodIds = ArkasMirrorResolver::onlyActivePeriods($db->table('arkas_rkas_periods')
                 ->select('source_rapbs_period_id')
                 ->where('fiscal_year_id', $yearId)
                 ->where('fund_source_id', $fundSourceId)
                 ->whereIn('month_number', $periodMonths)
-                ->whereNotNull('source_rapbs_period_id');
+                ->whereNotNull('source_rapbs_period_id'));
 
             $realization->where(function ($scoped) use ($periodIds, $periodMonths, $fiscalYearNumber): void {
                 $scoped->whereIn('bku.source_rapbs_period_id', $periodIds)
@@ -193,10 +195,10 @@ class RkasBudgetController extends Controller
             $builder->whereIn(DB::raw("json_extract(bku.payload, '$.ID_RAPBS')"), $filter);
         };
         $applyBkuHierarchy($realization);
-        $periods = $db->table('arkas_rkas_periods')
+        $periods = ArkasMirrorResolver::onlyActivePeriods($db->table('arkas_rkas_periods')
             ->selectRaw('source_rapbs_id, SUM(amount) as scoped_amount, SUM(volume) as scoped_volume')
             ->where('fiscal_year_id', $yearId)
-            ->where('fund_source_id', $fundSourceId);
+            ->where('fund_source_id', $fundSourceId));
         if ($scope === 'month') {
             $periods->where('month_number', $scopeValue);
         } elseif ($scope === 'quarter') {
@@ -382,7 +384,7 @@ class RkasBudgetController extends Controller
 
         return [
             ...compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'),
-            'syncFreshness' => app(\App\Services\ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
+            'syncFreshness' => app(ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
         ];
     }
 

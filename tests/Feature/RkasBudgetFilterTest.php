@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use ReflectionMethod;
 use Tests\TestCase;
 
 class RkasBudgetFilterTest extends TestCase
@@ -151,5 +152,40 @@ class RkasBudgetFilterTest extends TestCase
             ->assertOk()
             ->assertSee('05.02.03')
             ->assertDontSee('03.03.07');
+    }
+
+    public function test_legacy_period_counts_exclude_soft_deleted_rows(): void
+    {
+        DB::connection('school')->table('arkas_rkas_periods')->insert([
+            [
+                'fiscal_year_id' => 1,
+                'fund_source_id' => 1,
+                'source_rapbs_id' => 'RAPBS-1',
+                'source_period_id' => '81',
+                'month_number' => 1,
+                'quarter_number' => 1,
+                'semester_number' => 1,
+                'volume' => 1,
+                'amount' => 50000,
+                'payload' => json_encode(['id_rapbs_periode' => 'PER-1', 'soft_delete' => 0]),
+            ],
+            [
+                'fiscal_year_id' => 1,
+                'fund_source_id' => 1,
+                'source_rapbs_id' => 'RAPBS-DEL',
+                'source_period_id' => '81',
+                'month_number' => 1,
+                'quarter_number' => 1,
+                'semester_number' => 1,
+                'volume' => 1,
+                'amount' => 50000,
+                'payload' => json_encode(['id_rapbs_periode' => 'PER-DEL', 'soft_delete' => 1]),
+            ],
+        ]);
+
+        $component = Livewire::test(RkasBudgetFilter::class)->instance();
+        $counts = (new ReflectionMethod($component, 'periodCounts'))->invoke($component, 'month_number');
+
+        $this->assertEquals([1 => 1], $counts);
     }
 }

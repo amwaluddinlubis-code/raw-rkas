@@ -1095,3 +1095,32 @@ TW1-TW3 30,15jt/30,15jt; TW4 30,15jt/0.
 
 Evidence: `SafeArkasSynchronizationTest` 6/54 + `RkasRevisionModesTest`
 12/51 (gabungan 18/105), Pint passed, `git diff --check` bersih.
+
+## Audit soft-delete seluruh tabel sinkronisasi ARKAS 2026-10-04
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Audit memastikan baris yang dihapus di aplikasi ARKAS tidak dipakai lagi,
+dengan satu pengecualian semantik penting: `soft_delete = 1` pada
+`kas_umum_nota`/`*_pajak` muncul di seluruh 411+4 nota yang hidup
+(status final/locked, bukan hapus) sehingga **dilarang difilter**.
+`kas_umum` tidak membawa flag hapus. Bocor nyata ditemukan di jalur
+legacy: 14 periode soft-deleted di `arkas_rkas_periods` ikut dihitung
+`RkasBudgetController`/`RkasBudgetFilter`/validasi paket; write-path V2
+dan Generic Importer juga tidak memfilter.
+
+Perbaikan: filter soft-delete di write-path
+(`saveRkas`/`saveRkasPeriods`, `upsertRkas`/`upsertPeriods`; mirror tetap
+snapshot penuh) + helper kanonis
+`ArkasMirrorResolver::onlyActivePeriods` dipakai 4 titik legacy.
+Repair 10208183 (backup `spj-10208183-preperiodprune-20261004.sqlite`):
+14 baris basi dihapus dari `arkas_rkas_periods`; render mirror tidak
+berubah (ALL 120,6jt/90,45jt kedua tab). Semantik per domain dicatat di
+`SYNCHRONIZATION.md` §8.1.
+
+Evidence: `SafeArkasSynchronizationTest` 8 passed (termasuk 2 test baru:
+prune stale mirror + write-path soft-delete + guard nota),
+`RkasBudgetFilterTest` 6 passed (termasuk guard legacy
+`test_legacy_period_counts_exclude_soft_deleted_rows`), Pint passed,
+`git diff --check` bersih. Kedua guard write/legacy terbukti gagal tanpa
+fix.

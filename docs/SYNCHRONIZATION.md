@@ -305,6 +305,31 @@ Yang dilarang:
 
 ---
 
+## 8.1. Semantik flag hapus ARKAS per domain (2026-10-04)
+
+API/bridge mengembalikan semua baris termasuk yang dihapus; tidak ada
+filter upstream. Penanganan per domain:
+
+- **Anggaran/RKAS** (`anggaran`, `rapbs`, `rapbs_periode`): `soft_delete = 1`
+  berarti benar dihapus di aplikasi ARKAS. Write-path normalisasi
+  (`ArkasSynchronizationServiceV2::saveRkas/saveRkasPeriods`,
+  `ArkasDomainAdapter::upsertRkas/upsertPeriods`) mengecualikannya;
+  read-path mirror (`ArkasMirrorBudgetService`, 7 titik) dan legacy
+  (`RkasBudgetController`, `RkasBudgetFilter::periodCounts`,
+  `SpjPackageValidationService`, via
+  `ArkasMirrorResolver::onlyActivePeriods`) juga mengecualikannya.
+  Mirror tetap menyimpan snapshot penuh sumber (audit + atribusi kas
+  telanjur belanja via fallback identitas).
+- **Kas (`kas_umum`)**: payload tidak membawa flag hapus; tidak ada yang
+  perlu difilter. Baris basi akibat penerbitan ulang ID saat pengesahan
+  ulang ditangani prune (`pruneStaleKasMirror`, scope himpunan anggaran
+  fetch), bukan flag.
+- **Nota/pajak (`kas_umum_nota`, `kas_umum_nota_pajak`)**: `soft_delete = 1`
+  muncul di **seluruh** nota yang hidup (status final/locked, bukan hapus).
+  **Dilarang memfilter flag ini** — dikunci regression test.
+
+---
+
 ## 9. Reconciliation
 
 Reconciliation adalah boundary antara perubahan source dan pekerjaan operator yang sudah ada.

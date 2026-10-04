@@ -643,4 +643,17 @@ class ArkasMirrorResolver
 
         return null;
     }
+
+    /**
+     * Batasi query periode RKAS normalisasi pada baris yang tidak dihapus
+     * di ARKAS. Hanya untuk domain anggaran/RKAS — flag serupa di domain
+     * nota bukan penanda hapus dan tidak boleh memakai filter ini.
+     *
+     * @param  \Illuminate\Database\Query\Builder  $query
+     * @return \Illuminate\Database\Query\Builder
+     */
+    public static function onlyActivePeriods(object $query): object
+    {
+        return $query->whereRaw("cast(coalesce(json_extract(payload, '$.soft_delete'), json_extract(payload, '$.SOFT_DELETE'), '0') as integer) != 1");
+    }
 }
