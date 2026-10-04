@@ -1,5 +1,7 @@
 <x-layouts.tailwind-app>
     <div class="space-y-6" x-data="sinkronisasiArkas()" x-init="init()">
+        @php($mirrorCentral = collect($status)->where('connection', 'central'))
+        @php($mirrorSchool = collect($status)->where('connection', 'school'))
         <x-page-header
             title="Pusat Sinkronisasi ARKAS"
             subtitle="Dua lajur tetap: 13 tabel referensi mengalir ke database pusat, 17 tabel operasional mengalir ke database sekolah aktif. Tanpa mapping manual, overlay SPJ selalu dipertahankan."
@@ -23,8 +25,6 @@
             <x-ui.alert type="danger">{{ $errors->first() }}</x-ui.alert>
         @endif
 
-        @php($mirrorCentral = collect($status)->where('connection', 'central'))
-        @php($mirrorSchool = collect($status)->where('connection', 'school'))
         @php($activeMirrorTab = in_array(request('mirror_tab'), ['referensi', 'sekolah', 'kesehatan'], true) ? request('mirror_tab') : 'referensi')
 
                 <section aria-label="Lajur sinkronisasi" class="grid gap-4 lg:grid-cols-2">
