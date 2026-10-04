@@ -5,6 +5,12 @@
             subtitle="Dua lajur tetap: 13 tabel referensi mengalir ke database pusat, 17 tabel operasional mengalir ke database sekolah aktif. Tanpa mapping manual, overlay SPJ selalu dipertahankan."
             kicker="Data & Integrasi"
         >
+            <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 xl:grid-cols-4 sm:divide-x sm:divide-y-0">
+                <x-stat-item label="Total tabel" :value="number_format($mirrorCentral->count() + $mirrorSchool->count(), 0, ',', '.')" :hint="$mirrorCentral->count().' pusat · '.$mirrorSchool->count().' sekolah'" icon="database" />
+                <x-stat-item label="Baris referensi" :value="number_format($mirrorCentral->sum('rows'), 0, ',', '.')" hint="Database pusat" icon="report" value-class="text-[var(--theme-content-accent)]" />
+                <x-stat-item label="Baris operasional" :value="number_format($mirrorSchool->sum('rows'), 0, ',', '.')" hint="Sekolah aktif" icon="school" />
+                <x-stat-item label="Status lajur" :value="(string) (max((int) ($lastRefsRun?->progress ?? 0), (int) ($lastRun?->progress ?? 0))).'%'" :hint="$lastRun?->message ?: ($lastRefsRun?->message ?: 'Belum pernah berjalan')" icon="refresh" />
+            </div>
         </x-page-header>
 
         @if(session('success'))
@@ -21,30 +27,7 @@
         @php($mirrorSchool = collect($status)->where('connection', 'school'))
         @php($activeMirrorTab = in_array(request('mirror_tab'), ['referensi', 'sekolah'], true) ? request('mirror_tab') : 'referensi')
 
-        <section aria-label="Ringkasan cakupan" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Total tabel</p>
-                <p class="mt-1 text-2xl font-extrabold tabular-nums text-[var(--ui-fg-strong)]">{{ $mirrorCentral->count() + $mirrorSchool->count() }}</p>
-                <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $mirrorCentral->count() }} pusat · {{ $mirrorSchool->count() }} sekolah</p>
-            </div>
-            <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Baris referensi</p>
-                <p class="mt-1 text-2xl font-extrabold tabular-nums text-[var(--theme-content-accent)]">{{ number_format($mirrorCentral->sum('rows')) }}</p>
-                <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Database pusat</p>
-            </div>
-            <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Baris operasional</p>
-                <p class="mt-1 text-2xl font-extrabold tabular-nums text-[var(--ui-fg-strong)]">{{ number_format($mirrorSchool->sum('rows')) }}</p>
-                <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Sekolah aktif</p>
-            </div>
-            <div class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-4 py-3 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Status lajur</p>
-                <p class="mt-1 text-2xl font-extrabold tabular-nums text-[var(--ui-fg-strong)]" x-text="Math.max(refs.progress, school.progress) + '%'">0%</p>
-                <p class="mt-0.5 truncate text-xs text-[var(--ui-fg-muted)]" x-text="school.message || refs.message || 'Belum pernah berjalan'"></p>
-            </div>
-        </section>
-
-        <section aria-label="Lajur sinkronisasi" class="grid gap-4 lg:grid-cols-2">
+                <section aria-label="Lajur sinkronisasi" class="grid gap-4 lg:grid-cols-2">
             <article class="relative overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
                 <span aria-hidden="true" class="pointer-events-none absolute -right-2 -top-6 select-none text-[6rem] font-extrabold leading-none text-[var(--ui-surface-muted)]">01</span>
                 <div class="relative p-5">
