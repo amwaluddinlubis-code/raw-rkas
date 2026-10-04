@@ -55,21 +55,21 @@
                 <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Urut</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Nomor SPJ</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Bukti ARKAS</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Tanggal</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Urut</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Nomor SPJ</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Bukti ARKAS</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Tanggal</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($documents as $document)
                             <tr>
-                                <td class="px-4 py-3 font-mono font-bold">{{ $document->sequence_number ?? '—' }}</td>
-                                <td class="px-4 py-3 font-mono text-xs">{{ $document->document_number }}</td>
-                                <td class="px-4 py-3 font-semibold">{{ $document->package->transaction->sourceValue('no_bukti') }}</td>
-                                <td class="px-4 py-3">{{ $document->package->transaction->sourceCarbon()?->format('d-m-Y') }}</td>
-                                <td class="px-4 py-3"><x-ui.status-badge :status="$document->status" size="xs" /></td>
+                                <td class="px-4 py-2 font-mono font-bold">{{ $document->sequence_number ?? '—' }}</td>
+                                <td class="px-4 py-2 font-mono text-xs">{{ $document->document_number }}</td>
+                                <td class="px-4 py-2 font-semibold">{{ $document->package->transaction->sourceValue('no_bukti') }}</td>
+                                <td class="px-4 py-2">{{ $document->package->transaction->sourceCarbon()?->format('d-m-Y') }}</td>
+                                <td class="px-4 py-2"><x-ui.status-badge :status="$document->status" size="xs" /></td>
                             </tr>
                         @empty
                             <tr><td colspan="5" class="px-5 py-10 text-center text-[var(--ui-fg-muted)]">Belum ada nomor SPJ pada konteks aktif.</td></tr>

@@ -164,7 +164,7 @@
                                         <tbody class="divide-y divide-[var(--ui-line)]">
                                             <template x-for="placeholder in group.placeholders" x-bind:key="placeholder.key">
                                                 <tr>
-                                                    <td class="px-4 py-3 align-top">
+                                                    <td class="px-4 py-2 align-top">
                                                         <div class="flex flex-wrap items-center gap-2">
                                                             <code class="rounded bg-[var(--ui-surface-muted)] px-2 py-1 text-xs font-bold text-[var(--theme-content-accent)]" x-text="placeholder.marker"></code>
                                                             <span
@@ -185,7 +185,7 @@
                                                             >Salin</button>
                                                         </div>
                                                     </td>
-                                                    <td class="px-4 py-3 align-top">
+                                                    <td class="px-4 py-2 align-top">
                                                         <pre class="whitespace-pre-wrap break-words font-sans text-xs leading-5 text-[var(--ui-fg)]" x-text="placeholder.value"></pre>
                                                     </td>
                                                 </tr>

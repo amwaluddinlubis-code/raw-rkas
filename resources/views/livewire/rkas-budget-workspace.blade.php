@@ -278,23 +278,23 @@
                 data-pagination="none">
                 <thead style="background: var(--ui-surface-soft)">
                     <tr>
-                        <th class="px-3 py-2 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
+                        <th class="px-3 py-1.5 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
                             Kode Program</th>
-                        <th class="min-w-[260px] px-3 py-2 text-left text-xs font-bold uppercase"
+                        <th class="min-w-[260px] px-3 py-1.5 text-left text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Uraian</th>
-                        <th class="px-3 py-2 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
+                        <th class="px-3 py-1.5 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
                             Kode Rekening</th>
-                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                        <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Volume</th>
-                        <th class="px-3 py-2 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
+                        <th class="px-3 py-1.5 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
                             Satuan</th>
-                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                        <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Tarif Harga</th>
-                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                        <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Pagu</th>
-                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                        <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Realisasi</th>
-                        <th class="px-3 py-2 text-right text-xs font-bold uppercase"
+                        <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Selisih</th>
                     </tr>
                 </thead>
@@ -302,7 +302,7 @@
                     @forelse($hierarchyTree as $program)
                         <tr
                             style="background: color-mix(in srgb, var(--theme-accent-soft) 45%, var(--ui-surface-base))">
-                            <td colspan="6" class="px-3 py-1.5 text-xs">
+                            <td colspan="6" class="px-3 py-1 text-xs">
                                 <button type="button" class="inline-flex items-center gap-2 text-left font-bold"
                                     style="color: var(--ui-fg-strong)"
                                     x-on:click="open['p-{{ $program['code'] }}'] = ! open['p-{{ $program['code'] }}']">
@@ -317,13 +317,13 @@
                                     <span>· {{ $program['name'] }}</span>
                                 </button>
                             </td>
-                            <td class="whitespace-nowrap px-3 py-1.5 text-right text-xs font-bold"
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-bold"
                                 style="color: var(--theme-content-accent)">{{ $rupiah($program['amount']) }}
                             </td>
                             <td
-                                class="whitespace-nowrap px-3 py-1.5 text-right text-xs font-semibold text-emerald-700">
+                                class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold text-emerald-700">
                                 {{ $rupiah($program['realization']) }}</td>
-                            <td class="whitespace-nowrap px-3 py-1.5 text-right text-xs font-bold"
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-bold"
                                 style="color: var(--ui-fg-muted)">{{ $rupiah($program['remaining']) }}</td>
                         </tr>
                         @foreach ($program['subs'] as $sub)
@@ -416,7 +416,7 @@
                         @endforeach
                     @empty
                         <tr>
-                            <td colspan="9" class="px-5 py-14 text-center">
+                            <td colspan="9" class="px-5 py-6 text-center">
                                 <p class="text-sm font-semibold" style="color: var(--ui-fg-strong)">Belum ada
                                     RKAS.</p>
                                 <p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Jalankan

@@ -81,17 +81,17 @@
                 <table data-pagination="none" class="min-w-full text-sm">
                     <thead class="bg-[var(--ui-surface-soft)] text-xs uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         <tr>
-                            <th class="px-5 py-3 text-left">Field sumber berubah</th>
-                            <th class="px-5 py-3 text-left">Sebelum</th>
-                            <th class="px-5 py-3 text-left">Sesudah</th>
+                            <th class="px-5 py-2 text-left">Field sumber berubah</th>
+                            <th class="px-5 py-2 text-left">Sebelum</th>
+                            <th class="px-5 py-2 text-left">Sesudah</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($latest->changes as $change)
                             <tr class="border-t border-[var(--ui-line)]">
-                                <td class="px-5 py-3 font-semibold text-[var(--ui-fg-strong)]">{{ $change['label'] }}</td>
-                                <td class="px-5 py-3 text-[var(--ui-fg-muted)]">{{ $formatValue($change['before']) }}</td>
-                                <td class="px-5 py-3 text-[var(--ui-fg-strong)]">{{ $formatValue($change['after']) }}</td>
+                                <td class="px-5 py-2 font-semibold text-[var(--ui-fg-strong)]">{{ $change['label'] }}</td>
+                                <td class="px-5 py-2 text-[var(--ui-fg-muted)]">{{ $formatValue($change['before']) }}</td>
+                                <td class="px-5 py-2 text-[var(--ui-fg-strong)]">{{ $formatValue($change['after']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

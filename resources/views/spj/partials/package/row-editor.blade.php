@@ -81,12 +81,12 @@
         <table data-pagination="none" data-spj-local-pagination="true" class="min-w-full border-collapse text-xs">
             <thead class="bg-[var(--ui-surface-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                 <tr>
-                    <th class="w-10 whitespace-nowrap px-1.5 py-1.5 text-center">No</th>
+                    <th class="w-10 whitespace-nowrap px-1.5 py-1 text-center">No</th>
                     @foreach($fields as $key => $field)
-                        <th class="whitespace-nowrap px-1.5 py-1.5 text-left">{{ $field['label'] }}</th>
+                        <th class="whitespace-nowrap px-1.5 py-1 text-left">{{ $field['label'] }}</th>
                     @endforeach
-                    <th class="w-20 whitespace-nowrap px-1.5 py-1.5 text-center">Penerima Utama</th>
-                    <th class="w-14 whitespace-nowrap px-1.5 py-1.5 text-center">Aksi</th>
+                    <th class="w-20 whitespace-nowrap px-1.5 py-1 text-center">Penerima Utama</th>
+                    <th class="w-14 whitespace-nowrap px-1.5 py-1 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[var(--ui-line)]">
@@ -130,7 +130,7 @@
                                         rows="1"
                                         :name="'{{ $prefix }}[' + index + '][{{ $key }}]'"
                                         x-model="row.{{ $key }}"
-                                        class="h-8 min-h-8 w-full resize-y rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
+                                        class="h-8 min-h-8 w-full resize-y rounded border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-2 py-1 text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
                                     ></textarea>
                                 @else
                                     <input

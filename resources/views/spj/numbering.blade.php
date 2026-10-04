@@ -82,26 +82,26 @@
                 <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti / Tanggal</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Status Paket</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nomor SPJ</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Aksi</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti / Tanggal</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Status Paket</th>
+                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nomor SPJ</th>
+                            <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th>
+                            <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($pagedPackages as $package)
                             <tr class="hover:bg-[var(--ui-table-row-hover)]">
-                                <td class="px-4 py-3"><p class="font-mono font-bold text-[var(--theme-content-accent)]">{{ $package->transaction->sourceValue('no_bukti') }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $package->transaction->sourceCarbon()?->translatedFormat('d F Y') }}</p></td>
-                                <td class="max-w-md px-4 py-3"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $package->transaction->payment_description ?: $package->transaction->sourceValue('description') ?: 'Uraian belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $package->transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}</p></td>
-                                <td class="px-4 py-3"><x-ui.status-badge :status="$package->status" /></td>
-                                <td class="px-4 py-3"><p class="font-mono text-xs font-bold {{ $package->document_number ? 'text-emerald-700' : 'text-[var(--ui-fg-muted)]' }}">{{ $package->document_number ?: 'Belum diberi nomor' }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
-                                <td class="px-4 py-3 text-right"><a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="text-xs font-bold text-[var(--theme-content-accent)] hover:underline">Lihat paket →</a></td>
+                                <td class="px-4 py-2"><p class="font-mono font-bold text-[var(--theme-content-accent)]">{{ $package->transaction->sourceValue('no_bukti') }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $package->transaction->sourceCarbon()?->translatedFormat('d F Y') }}</p></td>
+                                <td class="max-w-md px-4 py-2"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $package->transaction->payment_description ?: $package->transaction->sourceValue('description') ?: 'Uraian belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $package->transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}</p></td>
+                                <td class="px-4 py-2"><x-ui.status-badge :status="$package->status" /></td>
+                                <td class="px-4 py-2"><p class="font-mono text-xs font-bold {{ $package->document_number ? 'text-emerald-700' : 'text-[var(--ui-fg-muted)]' }}">{{ $package->document_number ?: 'Belum diberi nomor' }}</p></td>
+                                <td class="whitespace-nowrap px-4 py-2 text-right font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
+                                <td class="px-4 py-2 text-right"><a href="{{ route('spj.index', ['tab' => 'paket', 'package_id' => $package->id]) }}" class="text-xs font-bold text-[var(--theme-content-accent)] hover:underline">Lihat paket →</a></td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-5 py-12 text-center"><p class="font-semibold text-[var(--ui-fg)]">Belum ada paket yang siap diberi nomor pada triwulan ini.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Lengkapi transaksi, buat paket SPJ, lalu tandai paket sebagai siap diproses.</p></td></tr>
+                            <tr><td colspan="6" class="px-5 py-6 text-center"><p class="font-semibold text-[var(--ui-fg)]">Belum ada paket yang siap diberi nomor pada triwulan ini.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Lengkapi transaksi, buat paket SPJ, lalu tandai paket sebagai siap diproses.</p></td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -146,23 +146,23 @@
                                 <table class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
                                     <thead class="sticky top-0 bg-[var(--ui-surface-soft)]">
                                         <tr>
-                                            <th class="w-10 px-2 py-2"><span class="sr-only">Rincian isian</span></th>
-                                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti</th>
-                                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian / Penerima</th>
-                                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kategori / Bayar</th>
-                                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Status</th>
-                                            <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th>
+                                            <th class="w-10 px-2 py-1.5"><span class="sr-only">Rincian isian</span></th>
+                                            <th class="px-4 py-1.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti</th>
+                                            <th class="px-4 py-1.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian / Penerima</th>
+                                            <th class="px-4 py-1.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Kategori / Bayar</th>
+                                            <th class="px-4 py-1.5 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Status</th>
+                                            <th class="px-4 py-1.5 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th>
                                         </tr>
                                     </thead>
                                     @forelse($previewPackages as $index => $package)
                                         <tbody x-show="Math.floor({{ $index }} / 5) + 1 === reviewPage" class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                                             <tr class="border-t border-[var(--ui-line)]">
-                                                <td class="px-2 py-2 text-center"><button type="button" @click="toggleReview({{ $package->id }})" :aria-expanded="expandedReviews.includes({{ $package->id }}).toString()" :title="expandedReviews.includes({{ $package->id }}) ? 'Sembunyikan isian' : 'Lihat semua isian'" class="inline-flex h-7 w-7 items-center justify-center rounded border border-[var(--ui-line)] text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)]"><span x-text="expandedReviews.includes({{ $package->id }}) ? '▾' : '▸'"></span></button></td>
-                                                <td class="whitespace-nowrap px-4 py-2"><p class="font-mono text-xs font-bold text-[var(--theme-content-accent)]">{{ $package->transaction->sourceValue('no_bukti') }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->sourceCarbon()?->translatedFormat('d M Y') }}</p></td>
-                                                <td class="min-w-56 px-4 py-2"><p class="text-xs font-semibold leading-5 text-[var(--ui-fg-strong)]">{{ $package->transaction->payment_description ?: $package->transaction->sourceValue('description') ?: 'Uraian belum tersedia' }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->effective_receipt_recipient_name ?: 'Penerima belum diisi' }}</p></td>
-                                                <td class="whitespace-nowrap px-4 py-2 text-xs text-[var(--ui-fg)]">{{ $package->transaction->spj_category ? $spjTypeLabel($package->transaction->spj_category) : '—' }} · {{ $package->transaction->payment_method ?: '—' }}</td>
-                                                <td class="px-4 py-2"><x-ui.status-badge :status="$package->status" size="xs" /></td>
-                                                <td class="whitespace-nowrap px-4 py-2 text-right text-xs font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
+                                                <td class="px-2 py-1.5 text-center"><button type="button" @click="toggleReview({{ $package->id }})" :aria-expanded="expandedReviews.includes({{ $package->id }}).toString()" :title="expandedReviews.includes({{ $package->id }}) ? 'Sembunyikan isian' : 'Lihat semua isian'" class="inline-flex h-7 w-7 items-center justify-center rounded border border-[var(--ui-line)] text-[var(--ui-fg-muted)] hover:bg-[var(--ui-surface-soft)]"><span x-text="expandedReviews.includes({{ $package->id }}) ? '▾' : '▸'"></span></button></td>
+                                                <td class="whitespace-nowrap px-4 py-1.5"><p class="font-mono text-xs font-bold text-[var(--theme-content-accent)]">{{ $package->transaction->sourceValue('no_bukti') }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->sourceCarbon()?->translatedFormat('d M Y') }}</p></td>
+                                                <td class="min-w-56 px-4 py-1.5"><p class="text-xs font-semibold leading-5 text-[var(--ui-fg-strong)]">{{ $package->transaction->payment_description ?: $package->transaction->sourceValue('description') ?: 'Uraian belum tersedia' }}</p><p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">{{ $package->transaction->effective_receipt_recipient_name ?: 'Penerima belum diisi' }}</p></td>
+                                                <td class="whitespace-nowrap px-4 py-1.5 text-xs text-[var(--ui-fg)]">{{ $package->transaction->spj_category ? $spjTypeLabel($package->transaction->spj_category) : '—' }} · {{ $package->transaction->payment_method ?: '—' }}</td>
+                                                <td class="px-4 py-1.5"><x-ui.status-badge :status="$package->status" size="xs" /></td>
+                                                <td class="whitespace-nowrap px-4 py-1.5 text-right text-xs font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
                                             </tr>
                                             <tr x-show="expandedReviews.includes({{ $package->id }})" class="bg-[var(--ui-surface-soft)]">
                                                 <td></td>
@@ -170,7 +170,7 @@
                                             </tr>
                                         </tbody>
                                         @empty
-                                            <tbody><tr><td colspan="6" class="px-5 py-8 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada paket pada triwulan ini.</td></tr></tbody>
+                                            <tbody><tr><td colspan="6" class="px-5 py-4 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada paket pada triwulan ini.</td></tr></tbody>
                                         @endforelse
                                 </table>
                             </div>
@@ -199,10 +199,10 @@
         <x-section-card title="Riwayat penomoran" description="Lihat hasil proses penomoran sebelumnya, termasuk jumlah nomor yang dibuat dan dokumen yang dilewati.">
             <div class="overflow-x-auto rounded-xl border border-[var(--ui-line)]">
                 <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
-                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Waktu</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Triwulan</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Nomor dibuat</th><th class="px-4 py-3 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Dilewati</th><th class="px-4 py-3 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Catatan</th></tr></thead>
+                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Waktu</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Triwulan</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th><th class="px-4 py-2 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Nomor dibuat</th><th class="px-4 py-2 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Dilewati</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Catatan</th></tr></thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($recentRuns as $run)
-                            <tr><td class="px-4 py-3 text-[var(--ui-fg)]">{{ $run->started_at?->translatedFormat('d M Y H:i') ?: '—' }}</td><td class="px-4 py-3 font-semibold">Triwulan {{ $run->quarter }}</td><td class="px-4 py-3"><x-ui.status-badge :status="$run->status" size="xs" /></td><td class="px-4 py-3 text-right font-bold text-emerald-700">{{ $run->numbered_count ?? 0 }}</td><td class="px-4 py-3 text-right font-semibold text-[var(--ui-fg)]">{{ $run->skipped_count ?? 0 }}</td><td class="max-w-sm px-4 py-3 text-xs text-[var(--ui-fg-muted)]">{{ $run->error_message ?: 'Proses selesai tanpa kendala.' }}</td></tr>
+                            <tr><td class="px-4 py-2 text-[var(--ui-fg)]">{{ $run->started_at?->translatedFormat('d M Y H:i') ?: '—' }}</td><td class="px-4 py-2 font-semibold">Triwulan {{ $run->quarter }}</td><td class="px-4 py-2"><x-ui.status-badge :status="$run->status" size="xs" /></td><td class="px-4 py-2 text-right font-bold text-emerald-700">{{ $run->numbered_count ?? 0 }}</td><td class="px-4 py-2 text-right font-semibold text-[var(--ui-fg)]">{{ $run->skipped_count ?? 0 }}</td><td class="max-w-sm px-4 py-2 text-xs text-[var(--ui-fg-muted)]">{{ $run->error_message ?: 'Proses selesai tanpa kendala.' }}</td></tr>
                         @empty
                             <tr><td colspan="6" class="px-5 py-10 text-center text-[var(--ui-fg-muted)]">Belum ada riwayat penomoran untuk triwulan.</td></tr>
                         @endforelse

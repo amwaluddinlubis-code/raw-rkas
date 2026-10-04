@@ -104,22 +104,22 @@
             </colgroup>
             <thead class="bg-[var(--ui-surface-soft)]">
                 <tr>
-                    <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                    <th class="px-5 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         Bukti /
                         Tanggal</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         Status</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         Uraian /
                         Penerima</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         Kategori /
                         Rincian</th>
                     <th
-                        class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                        class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         Nilai</th>
                     <th
-                        class="transaction-action-column px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                        class="transaction-action-column px-5 py-2 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         Aksi
                     </th>
                 </tr>
@@ -128,13 +128,13 @@
                 @forelse($transactions ?? [] as $transaction)
                     <tr wire:key="spj-preparation-{{ $transaction->id }}"
                         class="transition hover:bg-[var(--ui-table-row-hover)]">
-                        <td class="px-5 py-4">
+                        <td class="px-5 py-2.5">
                             <p class="font-mono font-bold text-[var(--theme-content-accent)]">
                                 {{ $transaction->sourceValue('no_bukti') }}</p>
                             <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">
                                 {{ $transaction->sourceCarbon()?->translatedFormat('d F Y') }}</p>
                         </td>
-                        <td class="px-4 py-4">
+                        <td class="px-4 py-2.5">
                             @if ($transaction->spjPackage)
                                 <x-ui.status-badge :status="$transaction->spjPackage->document_number ? 'NUMBERED' : 'DRAFT'" :label="$transaction->spjPackage->document_number ? 'Bernomor' : 'Draft paket'" />
                                 <p class="mt-1 font-mono text-xs text-[var(--ui-fg-muted)]">
@@ -142,22 +142,22 @@
                             @else<x-ui.status-badge status="BELUM_LENGKAP" label="Belum disiapkan" />
                             @endif
                         </td>
-                        <td class="max-w-sm px-4 py-4">
+                        <td class="max-w-sm px-4 py-2.5">
                             <p class="truncate font-semibold text-[var(--ui-fg-strong)]">
                                 {{ $transaction->payment_description ?: $transaction->sourceValue('description') ?: 'Tanpa uraian' }}
                             </p>
                             <p class="mt-1 truncate text-xs text-[var(--ui-fg-muted)]">
                                 {{ $transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}</p>
                         </td>
-                        <td class="px-4 py-4">
+                        <td class="px-4 py-2.5">
                             <p class="text-xs font-bold text-[var(--theme-content-accent)]">
                                 {{ $spjTypeLabel($transaction->spj_category) }}</p>
                             <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }} rincian
                             </p>
                         </td>
-                        <td class="whitespace-nowrap px-4 py-4 text-right font-semibold text-[var(--ui-fg-strong)]">
+                        <td class="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-[var(--ui-fg-strong)]">
                             {{ $rupiah($transaction->sourceValue('gross_amount')) }}</td>
-                        <td class="transaction-action-column px-5 py-4">
+                        <td class="transaction-action-column px-5 py-2.5">
                             @if ($transaction->spjPackage || $transaction->items_count)
                                 <div class="transaction-action-cell flex items-center justify-center"
                                     aria-label="Tindakan persiapan {{ $transaction->sourceValue('no_bukti') }}">
@@ -176,7 +176,7 @@
                         </td>
                     </tr>
                 @empty<tr>
-                        <td colspan="6" class="px-5 py-14 text-center">
+                        <td colspan="6" class="px-5 py-6 text-center">
                             <p class="font-semibold text-[var(--ui-fg-strong)]">Belum ada transaksi tersinkron.</p>
                             <p class="mt-1 text-base text-[var(--ui-fg-muted)]">Jalankan Sinkron Semua ARKAS terlebih
                                 dahulu.</p>

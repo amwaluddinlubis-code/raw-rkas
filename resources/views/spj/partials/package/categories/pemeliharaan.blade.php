@@ -95,14 +95,14 @@
         <table data-pagination="none" data-spj-local-pagination="true" class="min-w-full border-collapse text-xs">
             <thead class="bg-[var(--ui-surface-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                 <tr>
-                    <th class="w-10 px-1.5 py-1.5 text-center">No</th>
-                    <th class="min-w-[10rem] px-1.5 py-1.5 text-left">Pekerja</th>
-                    <th class="min-w-[12rem] px-1.5 py-1.5 text-left">Uraian Tugas</th>
-                    <th class="w-20 px-1.5 py-1.5 text-right">Hari</th>
-                    <th class="w-32 px-1.5 py-1.5 text-right">Tarif/Hari</th>
-                    <th class="w-32 px-1.5 py-1.5 text-right">Jumlah</th>
-                    <th class="w-20 px-1.5 py-1.5 text-center">Penerima Utama</th>
-                    <th class="w-14 px-1.5 py-1.5 text-center">Aksi</th>
+                    <th class="w-10 px-1.5 py-1 text-center">No</th>
+                    <th class="min-w-[10rem] px-1.5 py-1 text-left">Pekerja</th>
+                    <th class="min-w-[12rem] px-1.5 py-1 text-left">Uraian Tugas</th>
+                    <th class="w-20 px-1.5 py-1 text-right">Hari</th>
+                    <th class="w-32 px-1.5 py-1 text-right">Tarif/Hari</th>
+                    <th class="w-32 px-1.5 py-1 text-right">Jumlah</th>
+                    <th class="w-20 px-1.5 py-1 text-center">Penerima Utama</th>
+                    <th class="w-14 px-1.5 py-1 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[var(--ui-line)]">
@@ -123,7 +123,7 @@
                 </template>
             </tbody>
             <tfoot class="bg-[var(--ui-surface-soft)]">
-                <tr><td colspan="5" class="px-2 py-1.5 text-right text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Total</td><td class="px-2 py-1.5 text-right font-mono text-xs font-bold text-[var(--ui-fg-strong)]" x-text="accounting(total())"></td><td colspan="2"></td></tr>
+                <tr><td colspan="5" class="px-2 py-1 text-right text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Total</td><td class="px-2 py-1 text-right font-mono text-xs font-bold text-[var(--ui-fg-strong)]" x-text="accounting(total())"></td><td colspan="2"></td></tr>
             </tfoot>
         </table>
     </div>

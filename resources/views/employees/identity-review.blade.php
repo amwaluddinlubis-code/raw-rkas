@@ -9,7 +9,7 @@
                     <h2 class="text-sm font-bold text-[var(--ui-fg-strong)]">"{{ $group['key'] }}" — {{ count($group['members']) }} entri</h2>
                     <div class="mt-3 overflow-x-auto">
                         <table class="min-w-full text-xs">
-                            <thead><tr class="text-[var(--ui-fg-muted)]"><th class="px-2 py-1.5 text-left">Nama</th><th class="px-2 py-1.5 text-left">Sumber</th><th class="px-2 py-1.5 text-left">NUPTK</th><th class="px-2 py-1.5 text-left">NIP</th><th class="px-2 py-1.5 text-left">NIK</th><th class="px-2 py-1.5 text-left">Dapodik ID</th><th class="px-2 py-1.5 text-left">Operator</th></tr></thead>
+                            <thead><tr class="text-[var(--ui-fg-muted)]"><th class="px-2 py-1 text-left">Nama</th><th class="px-2 py-1 text-left">Sumber</th><th class="px-2 py-1 text-left">NUPTK</th><th class="px-2 py-1 text-left">NIP</th><th class="px-2 py-1 text-left">NIK</th><th class="px-2 py-1 text-left">Dapodik ID</th><th class="px-2 py-1 text-left">Operator</th></tr></thead>
                             <tbody>
                                 @foreach ($group['members'] as $m)
                                     <tr class="border-t border-[var(--ui-line)]">

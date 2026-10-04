@@ -70,7 +70,7 @@
             </section>
         </div>
     </div>
-    <div class="overflow-x-auto p-5"><table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-3 text-left text-xs font-bold text-slate-500"><input type="checkbox" data-bulk-select-all aria-label="Pilih semua paket pada halaman ini" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-3 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-3 text-right text-xs font-bold text-slate-500">AKSI</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">
+    <div class="overflow-x-auto p-5"><table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base"><thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-2 text-left text-xs font-bold text-slate-500"><input type="checkbox" data-bulk-select-all aria-label="Pilih semua paket pada halaman ini" class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"></th><th class="px-4 py-2 text-left text-xs font-bold text-slate-500">NOMOR SPJ</th><th class="px-4 py-2 text-left text-xs font-bold text-slate-500">STATUS</th><th class="px-4 py-2 text-left text-xs font-bold text-slate-500">BUKTI / TANGGAL</th><th class="px-4 py-2 text-left text-xs font-bold text-slate-500">PENERIMA</th><th class="px-4 py-2 text-right text-xs font-bold text-slate-500">BRUTO</th><th class="px-4 py-2 text-right text-xs font-bold text-slate-500">PAJAK</th><th class="px-4 py-2 text-right text-xs font-bold text-slate-500">DIBAYARKAN</th><th class="px-4 py-2 text-right text-xs font-bold text-slate-500">AKSI</th></tr></thead><tbody class="divide-y divide-[var(--ui-line)]">
             @php
                 $isCancelled = false;
             @endphp
@@ -83,28 +83,28 @@
                         $recipientName = $package->transaction->receipt_recipient_name ?: $package->transaction->spj_recipient_name ?: $package->transaction->sourceValue('recipient_name');
                     @endphp
                 <tr wire:key="spj-report-{{ $package->id }}" class="transition {{ $isCancelled ? 'bg-rose-50/70 text-slate-500' : 'hover:bg-indigo-50/40' }}">
-                    <td class="px-4 py-3"><input type="checkbox" name="package_ids[]" value="{{ $package->id }}" form="spj-bulk-preview-form" data-bulk-package class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" aria-label="Pilih paket {{ $package->report_document_number }}"></td>
-                    <td class="px-4 py-3 font-mono text-xs font-bold {{ $isCancelled ? 'text-rose-700 line-through' : 'text-indigo-700' }}">
+                    <td class="px-4 py-2"><input type="checkbox" name="package_ids[]" value="{{ $package->id }}" form="spj-bulk-preview-form" data-bulk-package class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" aria-label="Pilih paket {{ $package->report_document_number }}"></td>
+                    <td class="px-4 py-2 font-mono text-xs font-bold {{ $isCancelled ? 'text-rose-700 line-through' : 'text-indigo-700' }}">
                         <a href="{{ $packageUrl }}" class="hover:underline">{{ $package->report_document_number }}</a>
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-2">
                         <span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $isCancelled ? 'border border-rose-200 bg-rose-100 text-rose-800' : 'border border-emerald-200 bg-emerald-100 text-emerald-800' }}">{{ $isCancelled ? 'Dibatalkan' : 'Sukses' }}</span>
                         @if ($isCancelled && $package->report_cancellation_reason)
                             <p class="mt-1 max-w-48 text-xs text-rose-700">{{ $package->report_cancellation_reason }}</p>
                         @endif
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-2">
                         <p class="font-semibold">{{ $package->transaction->sourceValue('no_bukti') }}</p>
                         <p class="text-xs text-slate-500">{{ $package->transaction->sourceCarbon()?->translatedFormat('d F Y') }}</p>
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-2">
                         <p class="font-semibold">{{ $vendorName ?: '-' }}</p>
                         <p class="text-xs text-slate-500">{{ $recipientName ?: '-' }}</p>
                     </td>
-                    <td class="px-4 py-3 text-right">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
-                    <td class="px-4 py-3 text-right {{ $isCancelled ? 'text-slate-400' : 'text-amber-700' }}">{{ $rupiah($package->transaction->sourceValue('tax_total')) }}</td>
-                    <td class="px-4 py-3 text-right font-bold {{ $isCancelled ? 'text-slate-400' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->sourceValue('net_amount')) }}</td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-4 py-2 text-right">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
+                    <td class="px-4 py-2 text-right {{ $isCancelled ? 'text-slate-400' : 'text-amber-700' }}">{{ $rupiah($package->transaction->sourceValue('tax_total')) }}</td>
+                    <td class="px-4 py-2 text-right font-bold {{ $isCancelled ? 'text-slate-400' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->sourceValue('net_amount')) }}</td>
+                    <td class="px-4 py-2 text-right">
                         <x-ui.action-menu label="Aksi" :drop-up="(($packages?->count() ?? 0) - $packageIndex) <= 3">
                             <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" @if (! $isCancelled) data-template-download-pdf="{{ route('spj.preview-package-pdf', [$package->id, 'download' => 1]) }}" data-template-download-excel="{{ route('spj.preview-package-excel', $package->id) }}" @endif data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>
                             @if (! $isCancelled)
@@ -116,7 +116,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="9" class="px-5 py-14 text-center text-slate-500">Belum ada riwayat paket SPJ untuk filter ini.</td></tr>
+                <tr><td colspan="9" class="px-5 py-6 text-center text-slate-500">Belum ada riwayat paket SPJ untuk filter ini.</td></tr>
             @endforelse
         </tbody></table></div>
     @if($packages->hasPages())

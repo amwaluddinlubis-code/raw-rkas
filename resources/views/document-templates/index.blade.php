@@ -318,11 +318,11 @@
                 <table class="min-w-full text-sm" data-pagination="server">
                     <thead class="bg-[var(--ui-surface-muted)]">
                         <tr class="text-left text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
-                            <th class="px-4 py-3">Template</th>
-                            <th class="px-4 py-3">Format</th>
-                            <th class="px-4 py-3">Digunakan untuk</th>
-                            <th class="px-4 py-3 text-center">Status</th>
-                            <th class="px-4 py-3 text-right">Tindakan</th>
+                            <th class="px-4 py-2">Template</th>
+                            <th class="px-4 py-2">Format</th>
+                            <th class="px-4 py-2">Digunakan untuk</th>
+                            <th class="px-4 py-2 text-center">Status</th>
+                            <th class="px-4 py-2 text-right">Tindakan</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--ui-line)]">
@@ -344,7 +344,7 @@
                             @endphp
                             <tr
                                 class="odd:bg-[var(--ui-surface-base)] even:bg-[var(--ui-surface-soft)] hover:bg-[var(--ui-table-row-hover)]">
-                                <td class="px-4 py-3 align-top">
+                                <td class="px-4 py-2 align-top">
                                     <p class="font-semibold text-[var(--ui-fg-strong)]">{{ $template->name }}</p>
                                     <div class="mt-1 flex flex-wrap items-center gap-2">
                                         <span
@@ -366,11 +366,11 @@
                                             pada registry canonical.</p>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 align-top">
+                                <td class="px-4 py-2 align-top">
                                     <span
                                         class="rounded bg-[var(--ui-surface-muted)] px-2 py-1 text-[11px] font-bold uppercase text-[var(--ui-fg)]">{{ $template->format }}</span>
                                 </td>
-                                <td class="min-w-[320px] px-4 py-3 align-top">
+                                <td class="min-w-[320px] px-4 py-2 align-top">
                                     <form id="mapping-{{ $template->id }}" method="POST"
                                         action="{{ route('document-templates.mapping.update', $template->id) }}">
                                         @csrf
@@ -406,7 +406,7 @@
                                             digunakan untuk semua kategori SPJ.</p>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-center align-top">
+                                <td class="px-4 py-2 text-center align-top">
                                     <input form="mapping-{{ $template->id }}" type="hidden" name="is_active"
                                         value="0">
                                     <label
@@ -416,7 +416,7 @@
                                         {{ $template->is_active ? 'Aktif' : 'Tidak aktif' }}
                                     </label>
                                 </td>
-                                <td class="px-4 py-3 text-right align-top">
+                                <td class="px-4 py-2 text-right align-top">
                                     <div class="flex flex-wrap justify-end gap-2">
                                         <x-ui.button variant="secondary" :href="route('document-templates.download', $template->id)">Download
                                             Template</x-ui.button>
@@ -434,7 +434,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-12 text-center text-[var(--ui-fg-muted)]">Tidak ada
+                                <td colspan="5" class="px-5 py-6 text-center text-[var(--ui-fg-muted)]">Tidak ada
                                     template yang sesuai dengan filter saat ini.</td>
                             </tr>
                         @endforelse

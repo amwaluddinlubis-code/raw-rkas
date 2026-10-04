@@ -205,14 +205,14 @@
                 </colgroup>
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr class="border-b border-[var(--ui-line)]">
-                        <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">ID
+                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">ID
                             / Status</th>
-                        <th class="px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
+                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
                             Uraian / Referensi</th>
-                        <th class="px-4 py-3 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
+                        <th class="px-4 py-2 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
                             Nilai</th>
                         <th
-                            class="transaction-action-column px-4 py-3 text-center text-[13px] font-bold uppercase tracking-wide">
+                            class="transaction-action-column px-4 py-2 text-center text-[13px] font-bold uppercase tracking-wide">
                             Aksi</th>
                     </tr>
                 </thead>
@@ -222,7 +222,7 @@
                             @php($workStatus = $this->workStatusFor($transaction))
                             <tr class="transition hover:bg-indigo-50/40"
                                 wire:key="transaction-row-{{ $transaction->id }}">
-                                <td class="px-4 py-3 align-middle">
+                                <td class="px-4 py-2 align-middle">
                                     <div class="flex min-w-0 items-center gap-2">
                                         <span
                                             class="shrink-0 font-mono text-[13px] font-bold text-slate-500">#{{ $transaction->id }}</span>
@@ -236,7 +236,7 @@
                                         {{ $transaction->sourceCarbon()?->format('d/m/Y') ?? '—' }}{{ $this->paymentMethodFor($transaction) === 'siplah' ? ' · SiPLah' : '' }}
                                     </p>
                                 </td>
-                                <td class="min-w-0 px-4 py-3 align-middle">
+                                <td class="min-w-0 px-4 py-2 align-middle">
                                     <p class="truncate text-sm font-semibold" style="color: var(--ui-fg)"
                                         title="{{ $transaction->sourceValue('description') }}">
                                         {{ $transaction->sourceValue('description') ?: 'Tanpa uraian ARKAS' }}</p>
@@ -252,7 +252,7 @@
                                         {{ $transaction->effective_receipt_recipient_name ?: $transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}{{ $transaction->requires_reconciliation ? ' · Rekonsiliasi' : '' }}
                                     </p>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-3 text-right align-middle">
+                                <td class="whitespace-nowrap px-4 py-2 text-right align-middle">
                                     <p class="text-sm font-semibold" style="color: var(--ui-fg)"><span
                                             class="font-medium" style="color: var(--ui-fg-muted)">Total
                                             Transaksi:</span> {{ $rupiah($transaction->sourceValue('gross_amount')) }}
@@ -261,7 +261,7 @@
                                             class="font-medium">Pajak:</span>
                                         {{ $rupiah($transaction->sourceValue('tax_total')) }}</p>
                                 </td>
-                                <td class="transaction-action-column px-3 py-3 align-middle">
+                                <td class="transaction-action-column px-3 py-2 align-middle">
                                     <div class="transaction-action-cell flex items-center justify-center"
                                         aria-label="Aksi transaksi {{ $transaction->sourceValue('no_bukti') }}">
                                         <button type="button" data-transaction-action-trigger
@@ -279,7 +279,7 @@
                         @endforeach
                     @else
                         <tr>
-                            <td colspan="4" class="px-5 py-12 text-center">
+                            <td colspan="4" class="px-5 py-6 text-center">
                                 <x-ui-icon name="inbox" class="mx-auto h-7 w-7"
                                     style="color: var(--ui-fg-muted)" />
                                 <p class="mt-2 text-sm font-semibold" style="color: var(--ui-fg)">Transaksi belum

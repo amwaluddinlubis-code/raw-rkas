@@ -177,14 +177,14 @@
         <table data-pagination="none" data-spj-local-pagination="true" class="min-w-full border-collapse text-xs">
             <thead class="bg-[var(--ui-surface-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                 <tr>
-                    <th class="w-20 px-1.5 py-1.5 text-center">Urut</th>
-                    <th class="min-w-[12rem] px-1.5 py-1.5 text-left">Nama Peserta</th>
-                    <th class="min-w-[10rem] px-1.5 py-1.5 text-left">Jabatan / Instansi</th>
-                    <th class="w-28 px-1.5 py-1.5 text-left">NIP</th>
-                    <th class="w-28 px-1.5 py-1.5 text-left">NUPTK</th>
-                    <th class="w-20 px-1.5 py-1.5 text-right">Porsi</th>
-                    <th class="w-20 px-1.5 py-1.5 text-center">Penerima Konsumsi</th>
-                    <th class="w-28 px-1.5 py-1.5 text-center">Aksi</th>
+                    <th class="w-20 px-1.5 py-1 text-center">Urut</th>
+                    <th class="min-w-[12rem] px-1.5 py-1 text-left">Nama Peserta</th>
+                    <th class="min-w-[10rem] px-1.5 py-1 text-left">Jabatan / Instansi</th>
+                    <th class="w-28 px-1.5 py-1 text-left">NIP</th>
+                    <th class="w-28 px-1.5 py-1 text-left">NUPTK</th>
+                    <th class="w-20 px-1.5 py-1 text-right">Porsi</th>
+                    <th class="w-20 px-1.5 py-1 text-center">Penerima Konsumsi</th>
+                    <th class="w-28 px-1.5 py-1 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[var(--ui-line)]">

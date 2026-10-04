@@ -14,7 +14,7 @@
     </section>
     <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm overflow-x-auto">
         <table class="min-w-full text-xs">
-            <thead><tr class="text-[var(--ui-fg-muted)]"><th class="px-2 py-1.5 text-left">Kegiatan</th><th class="px-2 py-1.5 text-right">Pagu saat ini</th><th class="px-2 py-1.5 text-right">Pagu usulan</th></tr></thead>
+            <thead><tr class="text-[var(--ui-fg-muted)]"><th class="px-2 py-1 text-left">Kegiatan</th><th class="px-2 py-1 text-right">Pagu saat ini</th><th class="px-2 py-1 text-right">Pagu usulan</th></tr></thead>
             <tbody>
                 @foreach ($simulasi['activities'] as $index => $activity)
                     <tr class="border-t border-[var(--ui-line)]">

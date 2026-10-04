@@ -48,7 +48,7 @@
             <thead class="bg-[var(--ui-surface-soft)]">
                 <tr>
                     @foreach($columns as $column)
-                        <th class="px-4 py-3 {{ $column['headerClass'] ?? 'text-left' }} text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                        <th class="px-4 py-2 {{ $column['headerClass'] ?? 'text-left' }} text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             {{ $column['label'] }}
                         </th>
                     @endforeach
@@ -58,7 +58,7 @@
                 @forelse($data as $item)
                     <tr class="transition hover:bg-[var(--ui-table-row-hover)]">
                         @foreach($columns as $column)
-                            <td class="px-4 py-4 {{ $column['class'] ?? '' }}">
+                            <td class="px-4 py-2.5 {{ $column['class'] ?? '' }}">
                                 @if(isset($column['format']) && $column['format'] === 'currency')
                                     <span class="whitespace-nowrap font-semibold text-[var(--ui-fg)]">{{ $rupiah($column['value']($item)) }}</span>
                                 @elseif(isset($column['format']) && $column['format'] === 'boolean')
@@ -75,7 +75,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ count($columns) }}" class="px-5 py-14 text-center">
+                        <td colspan="{{ count($columns) }}" class="px-5 py-6 text-center">
                             <p class="font-semibold text-[var(--ui-fg-strong)]">{{ $emptyMessage }}</p>
                             @if($emptyAction)
                                 <p class="mt-1 text-base text-[var(--ui-fg-muted)]">{{ $emptyAction }}</p>
