@@ -60,6 +60,10 @@
                 class="ui-btn ui-btn-secondary ml-auto !min-h-9 px-3 py-1.5 text-sm">
                 <x-ui.icon name="report" size="sm" /> Bandingkan revisi
             </a>
+            <a href="{{ route('rkas-budget.simulate') }}"
+                class="ui-btn ui-btn-secondary !min-h-9 px-3 py-1.5 text-sm">
+                <x-ui.icon name="edit" size="sm" /> Simulasi pagu
+            </a>
         </section>
     @endif
 

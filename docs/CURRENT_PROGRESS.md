@@ -5,6 +5,23 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Simulasi what-if pagu RKAS (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+Halaman baru `/penganggaran-rkas/simulasi` menampilkan simulator pagu per
+kegiatan: operator mengubah total pagu usulan per kegiatan, sistem
+memproyeksikan distribusi triwulan menggunakan proporsi split periode
+yang ada saat ini (TW1–TW4 saat ini vs usulan vs selisih). Komposisi
+tidak menulis staging/mirror — hanya aid operator sebelum mengajukan
+revisi di ARKAS. Tombol "Simulasi pagu" tersedia di bar tab revisi
+halaman Penganggaran RKAS.
+
+Evidence: `tests/Unit/RkasPaguSimulationTest.php` 2 passed / 8
+assertions; `RkasBudgetUiTest` + `RkasRevisionModesTest` 18/103 hijau;
+route terdaftar `rkas-budget.simulate`; `view:cache`/`view:clear`
+bersih; Pint passed; `git diff --check` bersih.
+
 ## Import diff preview nominal (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.
