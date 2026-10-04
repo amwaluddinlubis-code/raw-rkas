@@ -63,7 +63,7 @@
                         <tr>
                             <th class="w-14 px-5 py-3 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">No</th>
                             <th class="min-w-[320px] px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Uraian Barang/Jasa untuk SPJ</th>
-                            <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Rekening</th>
+                            <th class="min-w-[180px] px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Rekening</th>
                             <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Volume</th>
                             <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Satuan</th>
                             <th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Harga Satuan</th>
@@ -81,8 +81,8 @@
                                     </div>
                                 </td>
                                 <td class="max-w-xl px-4 py-2">
-                                    <p class="mb-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->is_siplah ? 'ARKAS: '.$item->sourceValue('description') : 'Asli: '.$item->sourceValue('description') }} <span class="rounded bg-[var(--ui-surface-soft)] px-1 py-0.5 font-mono text-[10px]">ID {{ $item->source_item_id ?: '—' }}</span>
-                                        <button type="button" title="Salin uraian sumber ke kolom koreksi" @click="$wire.set('itemDescriptions.{{ $item->id }}', @js($item->item_description ?: $item->sourceValue('description') ?: ''))" class="rounded border border-[var(--ui-line)] px-1 py-0.5 text-[10px] leading-none hover:bg-[var(--ui-surface-soft)]">Samakan</button>
+                                    <p class="mb-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->is_siplah ? 'ARKAS: '.$item->sourceValue('description') : 'Asli: '.$item->sourceValue('description') }}
+                                        <button type="button" title="Salin uraian sumber ke kolom koreksi" @click="$wire.set('itemDescriptions.{{ $item->id }}', @js($item->item_description ?: $item->sourceValue('description') ?: ''))" class="rounded border border-[var(--ui-line)] px-1 py-0.5 text-[10px] leading-none hover:bg-[var(--ui-surface-soft)]"><x-ui.icon name="refresh" size="xs" /></button>
                                     </p>
                                     <input type="hidden" name="items[{{ $index }}][id]" value="{{ $item->id }}">
                                     <div class="flex items-start gap-2">
@@ -93,7 +93,10 @@
                                             class="ui-input w-full px-2 py-1.5 text-sm leading-5" placeholder="{{ $transaction->is_siplah ? 'Nama barang dari SiPLah' : 'Contoh: Buku tulis' }}">
                                     </div>
                                 </td>
-                                <td class="px-4 py-2 font-mono text-xs text-[var(--theme-content-accent)]">{{ $item->sourceValue('account_code') ?: $transaction->sourceValue('account_code') ?: '—' }}</td>
+                                <td class="min-w-[180px] px-4 py-2 font-mono text-xs text-[var(--theme-content-accent)]">
+                                    {{ $item->sourceValue('account_code') ?: $transaction->sourceValue('account_code') ?: '—' }}
+                                    <div class="mt-0.5 font-mono text-[10px] text-[var(--ui-fg-muted)]">ID {{ $item->source_item_id ?: '—' }}</div>
+                                </td>
                                 <td class="px-4 py-2 text-right font-medium text-[var(--ui-fg)]">{{ rtrim(rtrim(number_format((float) $item->sourceValue('quantity'), 2, ',', '.'), '0'), ',') }}</td>
                                 <td class="px-4 py-2 text-[var(--ui-fg)]">{{ $item->sourceValue('unit') ?: '—' }}</td>
                                 <td class="whitespace-nowrap px-4 py-2 text-right text-[var(--ui-fg)]">{{ $rupiah($item->sourceValue('unit_price')) }}</td>
