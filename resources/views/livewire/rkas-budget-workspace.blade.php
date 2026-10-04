@@ -73,6 +73,8 @@
 
     @include('rkas-budget.partials.filter')
 
+    <div wire:loading class="text-xs text-[var(--ui-fg-muted)]">Filter diperbarui…</div>
+
     @php($reportRevisi = request()->query('revisi'))
     @php($reportQuery = $reportRevisi !== null && $reportRevisi !== '' ? ['revisi' => $reportRevisi] : [])
     <x-section-card title="Unduh Laporan RKAS"
@@ -273,7 +275,22 @@
             </a>
         </x-slot:actions>
 
-        <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)">
+        @php($allKeys = [])
+        @foreach ($hierarchyTree as $p)
+            @php($allKeys[] = 'p-' . $p['code'])
+            @foreach ($p['subs'] as $s)
+                @php($allKeys[] = 's-' . $s['code'])
+                @foreach ($s['activities'] as $a)
+                    @php($allKeys[] = 'k-' . $a['code'])
+                @endforeach
+            @endforeach
+        @endforeach
+        <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)" wire:loading.class="opacity-60" x-data="{ open: {}, allKeys: @js($allKeys), toggleAll(v) { const o = {}; this.allKeys.forEach(k => o[k] = v); this.open = o; } }">
+            <div class="mb-2 flex items-center justify-end gap-2 text-xs">
+                <button type="button" class="rounded border px-2 py-1" style="border-color: var(--ui-line)" @click="toggleAll(true)">Buka semua</button>
+                <button type="button" class="rounded border px-2 py-1" style="border-color: var(--ui-line)" @click="toggleAll(false)">Tutup semua</button>
+            </div>
+            <div wire:loading class="px-4 py-2 text-xs text-[var(--ui-fg-muted)]">Memuat data RKAS…</div>
             <table class="min-w-[1100px] w-full divide-y text-sm" style="border-color: var(--ui-line)"
                 data-pagination="none">
                 <thead style="background: var(--ui-surface-soft)">
@@ -298,7 +315,7 @@
                             style="color: var(--ui-fg-muted)">Selisih</th>
                     </tr>
                 </thead>
-                <tbody x-data="{ open: {} }" class="divide-y" style="border-color: var(--ui-line)">
+                <tbody class="divide-y" style="border-color: var(--ui-line)">
                     @forelse($hierarchyTree as $program)
                         <tr
                             style="background: color-mix(in srgb, var(--theme-accent-soft) 45%, var(--ui-surface-base))">
