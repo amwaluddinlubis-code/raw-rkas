@@ -71,6 +71,32 @@
                         @endforelse
                     </x-ui.select>
                 </x-ui.field>
+                @if ($isActivityTab)
+                    <x-ui.field label="Program" class="min-w-[10rem]">
+                        <x-ui.select name="program" onchange="this.form.submit()">
+                            <option value="">Semua Program</option>
+                            @foreach ($programOptions as $p)
+                                <option value="{{ $p['kode'] }}" @selected($program === $p['kode'])>{{ $p['kode'] }} - {{ $p['nama'] }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                    <x-ui.field label="Sub Program" class="min-w-[10rem]">
+                        <x-ui.select name="sub" onchange="this.form.submit()" :disabled="!$program">
+                            <option value="">Semua Sub Program</option>
+                            @foreach ($subOptions as $s)
+                                <option value="{{ $s['kode'] }}" @selected($sub === $s['kode'])>{{ $s['kode'] }} - {{ $s['nama'] }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                    <x-ui.field label="Kegiatan" class="min-w-[10rem]">
+                        <x-ui.select name="kegiatan" onchange="this.form.submit()" :disabled="!$sub">
+                            <option value="">Semua Kegiatan</option>
+                            @foreach ($kegiatanOptions as $k)
+                                <option value="{{ $k['kode'] }}" @selected($kegiatanFilter === $k['kode'])>{{ $k['kode'] }} - {{ $k['nama'] }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </x-ui.field>
+                @endif
                 <x-ui.field label="{{ $isActivityTab ? 'Cari program / subprogram / kegiatan' : ($isPriceTab ? 'Cari barang / rekening' : 'Cari kode / nama rekening') }}" class="flex-1">
                     <x-ui.input type="search" name="q" value="{{ $search }}" placeholder="{{ $isActivityTab ? 'cth: 01.05, kerangka acuan…' : ($isPriceTab ? 'cth: kertas, 5.1.02…' : 'cth: 5.2.2, honor…') }}" />
                 </x-ui.field>

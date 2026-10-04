@@ -78,7 +78,7 @@ class ReferenceLookupService
         return array_values($years);
     }
 
-    public function paginateActivities(?string $year, string $search = '', int $perPage = 15): LengthAwarePaginator
+    public function paginateActivities(?string $year, string $search = '', int $perPage = 15, string $programFilter = '', string $subFilter = '', string $kegiatanFilter = ''): LengthAwarePaginator
     {
         try {
             $programs = [];
@@ -113,6 +113,16 @@ class ReferenceLookupService
                 if ($program === null || $sub === null) {
                     continue;
                 }
+                if ($programFilter !== '' && (string) ($program['id_kode'] ?? '') !== $programFilter) {
+                    continue;
+                }
+                if ($subFilter !== '' && (string) ($sub['id_kode'] ?? '') !== $subFilter) {
+                    continue;
+                }
+                if ($kegiatanFilter !== '' && (string) ($p['id_kode'] ?? '') !== $kegiatanFilter) {
+                    continue;
+                }
+
                 $dedupKey = ($program['id_kode'] ?? '').'|'.($sub['id_kode'] ?? '').'|'.($p['id_kode'] ?? '');
                 if (isset($seen[$dedupKey])) {
                     continue;
@@ -144,9 +154,45 @@ class ReferenceLookupService
         }
     }
 
-    /**
-     * @return LengthAwarePaginator<int, array<string, mixed>>
-     */
+    /** @return array{0:array<int,array{kode:string,nama:string}>,1:array<int,array{kode:string,nama:string}>,2:array<int,array{kode:string,nama:string}>} */
+    public function activityOptions(?string $year, string $programFilter = '', string $subFilter = ''): array
+    {
+        try {
+            $programs = [];
+            $subs = [];
+            $kegiatans = [];
+            foreach (DB::table('arkas_mirror_ref_kode')->cursor(['payload']) as $row) {
+                $p = json_decode((string) ($row->payload ?? ''), true);
+                if (! is_array($p)) {
+                    continue;
+                }
+                if ($year !== null && $year !== '' && (string) ($p['tahun'] ?? '') !== $year) {
+                    continue;
+                }
+                $level = (string) ($p['id_level_kode'] ?? '');
+                if ($level === '1') {
+                    $programs[(string) $p['id_kode']] = ['kode' => (string) $p['id_kode'], 'nama' => (string) ($p['uraian_kode'] ?? '')];
+                } elseif ($level === '2' && ($programFilter === '' || $this->codeStartsWith((string) ($p['id_kode'] ?? ''), $programFilter))) {
+                    $subs[(string) $p['id_kode']] = ['kode' => (string) $p['id_kode'], 'nama' => (string) ($p['uraian_kode'] ?? '')];
+                } elseif ($level === '3' && ($programFilter === '' || $this->codeStartsWith((string) ($p['id_kode'] ?? ''), $programFilter)) && ($subFilter === '' || $this->codeStartsWith((string) ($p['id_kode'] ?? ''), $subFilter))) {
+                    $kegiatans[(string) $p['id_kode']] = ['kode' => (string) $p['id_kode'], 'nama' => (string) ($p['uraian_kode'] ?? '')];
+                }
+            }
+            uksort($programs, fn ($a, $b) => strnatcmp($a, $b));
+            uksort($subs, fn ($a, $b) => strnatcmp($a, $b));
+            uksort($kegiatans, fn ($a, $b) => strnatcmp($a, $b));
+
+            return [array_values($programs), array_values($subs), array_values($kegiatans)];
+        } catch (\Throwable) {
+            return [[], [], []];
+        }
+    }
+
+    private function codeStartsWith(string $code, string $prefix): bool
+    {
+        return $prefix === '' || $code === $prefix || str_starts_with($code, rtrim($prefix, '.').'.');
+    }
+
     public function paginateAccounts(?string $year, string $search = '', int $perPage = 15): LengthAwarePaginator
     {
         $query = DB::table('arkas_mirror_ref_rekening')

@@ -15,6 +15,9 @@ class ReferenceController extends Controller
             'tahun' => ['nullable', 'string', 'max:4'],
             'q' => ['nullable', 'string', 'max:100'],
             'perPage' => ['nullable', 'in:15,25,50,100'],
+            'program' => ['nullable', 'string', 'max:32'],
+            'sub' => ['nullable', 'string', 'max:64'],
+            'kegiatan' => ['nullable', 'string', 'max:64'],
         ]);
 
         $tab = $data['tab'] ?? ReferenceLookupService::TAB_ACCOUNTS;
@@ -30,11 +33,19 @@ class ReferenceController extends Controller
             $year = $years[0];
         }
 
+        $program = trim((string) ($data['program'] ?? ''));
+        $sub = trim((string) ($data['sub'] ?? ''));
+        $kegiatanFilter = trim((string) ($data['kegiatan'] ?? ''));
+
         $rows = match ($tab) {
             ReferenceLookupService::TAB_PRICES => $references->paginatePriceReferences($year, $search, $perPage),
-            ReferenceLookupService::TAB_ACTIVITIES => $references->paginateActivities($year, $search, $perPage),
+            ReferenceLookupService::TAB_ACTIVITIES => $references->paginateActivities($year, $search, $perPage, $program, $sub, $kegiatanFilter),
             default => $references->paginateAccounts($year, $search, $perPage),
         };
+
+        [$programOptions, $subOptions, $kegiatanOptions] = $tab === ReferenceLookupService::TAB_ACTIVITIES
+            ? $references->activityOptions($year, $program, $sub)
+            : [[], [], []];
 
         return view('references.index', [
             'tab' => $tab,
@@ -43,6 +54,12 @@ class ReferenceController extends Controller
             'search' => $search,
             'perPage' => $perPage,
             'rows' => $rows,
+            'program' => $program,
+            'sub' => $sub,
+            'kegiatanFilter' => $kegiatanFilter,
+            'programOptions' => $programOptions,
+            'subOptions' => $subOptions,
+            'kegiatanOptions' => $kegiatanOptions,
         ]);
     }
 }
