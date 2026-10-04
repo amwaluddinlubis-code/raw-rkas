@@ -85,9 +85,15 @@
                             ::class="groups.finance ? 'rotate-180' : ''" /></button>
                     <div id="nav-finance" x-show="(!collapsed || open) && groups.finance" x-collapse
                         class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                        <a class="app-nav {{ request()->routeIs('rkas-budget.*') ? 'app-nav-active' : '' }}"
+                        <a class="app-nav {{ request()->routeIs('rkas-budget.index', 'rkas-budget.revisions.*', 'rkas-reports.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('rkas-budget.index') }}"><x-ui.icon name="budget" /><span
                                 class="nav-label">Penganggaran RKAS</span></a>
+                        <a class="app-nav {{ request()->routeIs('rkas-budget.simulate') ? 'app-nav-active' : '' }}"
+                            href="{{ route('rkas-budget.simulate') }}"><x-ui.icon name="edit" /><span
+                                class="nav-label">Simulasi Pagu</span></a>
+                        <a class="app-nav {{ request()->routeIs('rkas-budget.audit') ? 'app-nav-active' : '' }}"
+                            href="{{ route('rkas-budget.audit') }}"><x-ui.icon name="document" /><span
+                                class="nav-label">Audit Mirror</span></a>
                         <a class="app-nav {{ request()->routeIs('rkas-planning.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('rkas-planning.index') }}"><x-ui.icon name="report" /><span
                                 class="nav-label">Saran Perencanaan</span></a>
@@ -110,9 +116,12 @@
                             ::class="groups.reference ? 'rotate-180' : ''" /></button>
                     <div id="nav-reference" x-show="(!collapsed || open) && groups.reference" x-collapse
                         class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                        <a class="app-nav {{ request()->routeIs('employees.*') ? 'app-nav-active' : '' }}"
+                        <a class="app-nav {{ request()->routeIs('employees.*') && !request()->routeIs('employees.identity-review') ? 'app-nav-active' : '' }}"
                             href="{{ route('employees.index') }}"><x-ui.icon name="employee" /><span
                                 class="nav-label">Pegawai</span></a>
+                        <a class="app-nav {{ request()->routeIs('employees.identity-review') ? 'app-nav-active' : '' }}"
+                            href="{{ route('employees.identity-review') }}"><x-ui.icon name="eye" /><span
+                                class="nav-label">Tinjau Identitas</span></a>
                         <a class="app-nav {{ request()->routeIs('students.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('students.index') }}"><x-ui.icon name="employee" /><span
                                 class="nav-label">Siswa</span></a>
@@ -187,6 +196,16 @@
                             <a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('arkas.settings') }}"><x-ui.icon name="settings" /><span
                                     class="nav-label">Integrasi ARKAS</span></a>
+                        @endif
+                        @if (auth()->user()->isAdministrator())
+                            <a class="app-nav {{ request()->routeIs('arkas.importer*') ? 'app-nav-active' : '' }}"
+                                href="{{ route('arkas.importer') }}"><x-ui.icon name="download" /><span
+                                    class="nav-label">Importer ARKAS</span></a>
+                        @endif
+                        @if (auth()->user()->isAdministrator())
+                            <a class="app-nav {{ request()->routeIs('arkas.import-monitor*') ? 'app-nav-active' : '' }}"
+                                href="{{ route('arkas.import-monitor') }}"><x-ui.icon name="refresh" /><span
+                                    class="nav-label">Monitor Importer</span></a>
                         @endif
                         @if (auth()->user()->isAdministrator())
                             <a class="app-nav {{ request()->routeIs('arkas.mirror*') ? 'app-nav-active' : '' }}"

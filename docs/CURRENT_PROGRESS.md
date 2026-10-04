@@ -5,6 +5,21 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Sidebar: link fitur baru + state aktif (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+Sidebar `tailwind-app` sekarang menautkan halaman fitur baru: Simulasi
+Pagu dan Audit Mirror pada kelompok Keuangan, Tinjau Identitas pada
+kelompok Referensi, serta Importer ARKAS dan Monitor Importer pada
+kelompok Data & Integrasi (administrator). State aktif Penganggaran
+RKAS disempitkan ke `rkas-budget.index` (+ revisi/laporan) supaya
+Simulasi Pagu / Audit Mirror dapat memiliki state aktifnya sendiri;
+Tinjau Identitas tidak lagi menyalakan state Pegawai.
+
+Evidence: `php artisan view:cache` + `view:clear` berhasil,
+`php artisan route:list` valid, `git diff --check` bersih.
+
 ## Monitor kesehatan importer lintas sekolah + audit mirror (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.
