@@ -18,8 +18,6 @@
         </div>
     </x-page-header>
 
-    <p class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-2.5 text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">{{ $isFiltered ? 'Subtotal Periode Terpilih' : 'Total Tahunan ' . $year->year }}</p>
-
     <section class="ui-filter-panel">
 
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--ui-line)] px-5 py-3">
