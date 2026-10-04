@@ -5,6 +5,26 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Monitor kesehatan importer lintas sekolah + audit mirror (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused)**.
+
+- Halaman admin `/pengaturan/arkas/import-monitor` mengagregasi run
+  importer terakhir per sekolah/tabel/tahun anggaran: status, baris
+  ditulis/dihapus, umurnya, dan jumlah tabel stagnan (>7 hari), gagal,
+  dan belum pernah sinkron. Read-only, membuka tiap database tenant
+  hanya untuk membaca `arkas_import_runs` dan mengembalikan konteks.
+- Halaman `/penganggaran-rkas/audit-mirror` merangkum jejak mirror:
+  baris ditambah/dihapus/berubah antar dua pengesahan terakhir, jumlah
+  periode soft-deleted, dan kandidat kas yatim. Landing kerja KPA.
+
+Evidence: `tests/Feature/ArkasImportMonitorAndAuditTest.php` 2 passed
+(router render untuk kedua halaman); runtime real 10208183: 41 baris
+importer (2 stagnan, 0 gagal, 0 belum), audit pagu 2026: 2 baris
+ditambah (+8,5jt), 4 dihapus (−2,275jt), 18 berubah (Δ−6,225jt), 414
+periode soft-deleted, 248 kandidat kas yatim; Pint passed;
+`view:cache`/`view:clear` bersih; `git diff --check` bersih.
+
 ## Tinjau identitas pegawai lintas feed (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused)**.

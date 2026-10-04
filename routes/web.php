@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ArkasImporterController;
+use App\Http\Controllers\ArkasImportMonitorController;
+use App\Http\Controllers\ArkasMirrorAuditController;
 use App\Http\Controllers\ArkasMirrorController;
 use App\Http\Controllers\ArkasSourceController;
 use App\Http\Controllers\ArkasSyncController;
@@ -81,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/arkas', [ArkasSourceController::class, 'index'])->name('arkas.settings');
         Route::post('/pengaturan/arkas', [ArkasSourceController::class, 'store'])->name('arkas.settings.store');
         Route::get('/pengaturan/arkas/mirror', [ArkasMirrorController::class, 'index'])->middleware('active-school')->name('arkas.mirror');
+        Route::get('/pengaturan/arkas/import-monitor', ArkasImportMonitorController::class)->middleware('administrator')->name('arkas.import-monitor');
         Route::get('/pengaturan/arkas/mirror/status', [ArkasMirrorController::class, 'status'])->middleware('active-school')->name('arkas.mirror.status');
         Route::post('/pengaturan/arkas/mirror/sync-refs', [ArkasMirrorController::class, 'syncRefs'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.sync-refs');
         Route::post('/pengaturan/arkas/mirror/sync-school', [ArkasMirrorController::class, 'syncSchool'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.sync-school');
@@ -215,6 +218,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
         Route::get('/penganggaran-rkas/perbandingan-revisi', RkasRevisionComparisonController::class)->name('rkas-budget.revisions.compare');
+        Route::get('/penganggaran-rkas/audit-mirror', ArkasMirrorAuditController::class)->name('rkas-budget.audit');
         Route::view('/penganggaran-rkas/simulasi', 'rkas-budget.simulate')->name('rkas-budget.simulate');
         Route::get('/penganggaran-rkas/saran', RkasPlanningSuggestionController::class)->name('rkas-planning.index');
         Route::get('/penganggaran-rkas/saran/unduh/{modul}', [RkasPlanningSuggestionController::class, 'export'])->name('rkas-planning.export');

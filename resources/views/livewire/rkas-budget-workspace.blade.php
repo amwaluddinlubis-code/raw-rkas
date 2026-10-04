@@ -64,6 +64,10 @@
                 class="ui-btn ui-btn-secondary !min-h-9 px-3 py-1.5 text-sm">
                 <x-ui.icon name="edit" size="sm" /> Simulasi pagu
             </a>
+            <a href="{{ route('rkas-budget.audit') }}"
+                class="ui-btn ui-btn-secondary !min-h-9 px-3 py-1.5 text-sm">
+                <x-ui.icon name="document" size="sm" /> Audit mirror
+            </a>
         </section>
     @endif
 
