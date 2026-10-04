@@ -38,7 +38,7 @@
 
         @include('synced-data.partials.navigation')
 
-        <style>nav[aria-label="Navigasi kelompok data"] { display: none; }</style>
+
         <livewire:synced-data-navigation :tables="$tables" :counts="$counts" :type="$type" />
 
         @if($type === 'overview')

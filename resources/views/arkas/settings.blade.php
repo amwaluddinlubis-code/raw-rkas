@@ -50,16 +50,16 @@
             </x-ui.form-section>
 
             <aside class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-sm lg:sticky lg:top-24">
-                <h2 class="font-bold text-slate-800">Status Sinkronisasi</h2>
-                <p class="mt-1 text-sm text-slate-500">Ringkasan konfigurasi sekolah yang sedang dipilih.</p>
+                <h2 class="font-bold text-[var(--ui-fg-strong)]">Status Sinkronisasi</h2>
+                <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Ringkasan konfigurasi sekolah yang sedang dipilih.</p>
                 @if($selectedSource)
                     <dl class="mt-5 space-y-4 text-sm">
-                        <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sekolah</dt><dd class="mt-1 font-semibold text-slate-800">{{ $selectedSource->school?->name }}</dd></div>
-                        <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sinkronisasi terakhir</dt><dd class="mt-1 text-slate-700">{{ $selectedSource->last_synced_at?->translatedFormat('d F Y H:i') ?: 'Belum pernah disinkronkan' }}</dd></div>
-                        <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Identitas database</dt><dd class="mt-1 break-all font-mono text-xs text-slate-600">{{ $selectedSource->last_identity ?: 'Belum tersedia' }}</dd></div>
+                        <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sekolah</dt><dd class="mt-1 font-semibold text-[var(--ui-fg-strong)]">{{ $selectedSource->school?->name }}</dd></div>
+                        <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Sinkronisasi terakhir</dt><dd class="mt-1 text-[var(--ui-fg)]">{{ $selectedSource->last_synced_at?->translatedFormat('d F Y H:i') ?: 'Belum pernah disinkronkan' }}</dd></div>
+                        <div class="rounded-xl bg-[var(--ui-surface-soft)] p-4"><dt class="text-xs font-bold uppercase tracking-wide text-slate-400">Identitas database</dt><dd class="mt-1 break-all font-mono text-xs text-[var(--ui-fg)]">{{ $selectedSource->last_identity ?: 'Belum tersedia' }}</dd></div>
                     </dl>
                 @else
-                    <p class="mt-4 text-sm text-slate-500">Pilih sekolah untuk melihat dan mengatur sumber ARKAS.</p>
+                    <p class="mt-4 text-sm text-[var(--ui-fg-muted)]">Pilih sekolah untuk melihat dan mengatur sumber ARKAS.</p>
                 @endif
                 <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
                     <p class="font-bold">Urutan aman</p>

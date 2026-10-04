@@ -11,7 +11,7 @@
                 @endif
             </x-slot:actions>
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-                <x-stat-item label="Total User" :value="number_format($users->count(), 0, ',', '.')" hint="Akun yang dapat ditinjau" value-class="text-slate-800" icon="users" icon-class="text-slate-700" />
+                <x-stat-item label="Total User" :value="number_format($users->count(), 0, ',', '.')" hint="Akun yang dapat ditinjau" value-class="text-[var(--ui-fg-strong)]" icon="users" icon-class="text-[var(--ui-fg)]" />
                 <x-stat-item label="User Non-Admin" :value="number_format($users->reject(fn($user) => $user->isAdministrator())->count(), 0, ',', '.')" hint="Kandidat mode uji" value-class="text-indigo-700" icon="user" icon-class="text-indigo-700" />
                 <x-stat-item label="Mode Uji" :value="session('impersonator_user_id') ? 'Aktif' : 'Tidak aktif'" :hint="session('impersonator_user_id') ? 'Sedang impersonate user' : 'Masih sebagai administrator'" :value-class="session('impersonator_user_id') ? 'text-amber-700' : 'text-emerald-700'" icon="eye" :icon-class="session('impersonator_user_id') ? 'text-amber-700' : 'text-emerald-700'" />
             </div>
@@ -28,16 +28,16 @@
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
-            <div class="border-b border-[var(--ui-line)] px-5 py-4"><h2 class="font-bold text-slate-800">Daftar User</h2><p class="mt-1 text-sm text-slate-500">Pilih user operator yang ingin diuji.</p></div>
+            <div class="border-b border-[var(--ui-line)] px-5 py-4"><h2 class="font-bold text-[var(--ui-fg-strong)]">Daftar User</h2><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Pilih user operator yang ingin diuji.</p></div>
             <div class="overflow-x-auto">
                 <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
-                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">User</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Role</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Sekolah</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th></tr></thead>
+                    <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">User</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Role</th><th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Sekolah</th><th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Aksi</th></tr></thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($users as $user)
                             <tr class="hover:bg-indigo-50/40">
-                                <td class="px-5 py-4"><p class="font-bold text-slate-800">{{ $user->name }}</p><p class="mt-0.5 text-xs text-slate-500">{{ $user->email }}</p></td>
-                                <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $user->isAdministrator() ? 'bg-indigo-50 text-indigo-700' : 'bg-[var(--ui-surface-muted)] text-slate-700' }}">{{ $user->role }}</span></td>
-                                <td class="px-4 py-4"><p class="font-semibold text-slate-700">{{ $user->school?->name ?: 'Belum terhubung sekolah' }}</p>@if($user->school?->npsn)<p class="mt-0.5 text-xs text-slate-500">NPSN {{ $user->school->npsn }}</p>@endif</td>
+                                <td class="px-5 py-4"><p class="font-bold text-[var(--ui-fg-strong)]">{{ $user->name }}</p><p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">{{ $user->email }}</p></td>
+                                <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-bold {{ $user->isAdministrator() ? 'bg-indigo-50 text-indigo-700' : 'bg-[var(--ui-surface-muted)] text-[var(--ui-fg)]' }}">{{ $user->role }}</span></td>
+                                <td class="px-4 py-4"><p class="font-semibold text-[var(--ui-fg)]">{{ $user->school?->name ?: 'Belum terhubung sekolah' }}</p>@if($user->school?->npsn)<p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">NPSN {{ $user->school->npsn }}</p>@endif</td>
                                 <td class="px-5 py-4 text-right">
                                     @if($user->is(auth()->user()))
                                         <span class="text-xs font-semibold text-slate-400">Akun aktif</span>
@@ -49,7 +49,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-5 py-12 text-center text-slate-500">Belum ada user.</td></tr>
+                            <tr><td colspan="4" class="px-5 py-12 text-center text-[var(--ui-fg-muted)]">Belum ada user.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

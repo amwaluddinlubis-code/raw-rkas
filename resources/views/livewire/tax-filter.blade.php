@@ -8,7 +8,7 @@
         kicker="Hasil Sinkronisasi ARKAS">
         <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
             <x-stat-item label="Transaksi Pajak" :value="number_format($display->count, 0, ',', '.')"
-                hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Tahun ' . $year->year }}" value-class="text-slate-800" icon="report" icon-class="text-slate-700" />
+                hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Tahun ' . $year->year }}" value-class="text-[var(--ui-fg-strong)]" icon="report" icon-class="text-[var(--ui-fg)]" />
             <x-stat-item label="PPN" :value="$rupiah($display->ppn)"
                 hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Total PPN tahunan' }}" value-class="text-indigo-700" icon="tax" icon-class="text-indigo-700" />
             <x-stat-item label="PPh" :value="$rupiah($display->pph21 + $display->pph22 + $display->pph23 + $display->pph4)"
@@ -124,25 +124,25 @@
             <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti /
+                        <th class="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti /
                             Tanggal</th>
-                        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                        <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             Penerima</th>
-                        <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
+                        <th class="px-4 py-3 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             Siplah</th>
-                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPN
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">PPN
                         </th>
-                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh 21
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">PPh 21
                         </th>
-                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">PPh
                             22
                         </th>
-                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">PPh
                             23
                         </th>
-                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">PPh 4
+                        <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">PPh 4
                             / SSPD</th>
-                        <th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Total
+                        <th class="px-5 py-3 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Total
                         </th>
                     </tr>
                 </thead>
@@ -152,13 +152,13 @@
                             <td class="px-5 py-4"><a href="{{ route('transactions.show', $transaction) }}"
                                     class="font-mono font-bold text-indigo-700 hover:text-indigo-900 hover:underline"
                                     title="Lihat detail transaksi">{{ $transaction->sourceValue('no_bukti') }}</a>
-                                <p class="mt-1 text-xs text-slate-500">
+                                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">
                                     {{ $transaction->sourceCarbon()?->translatedFormat('d F Y') ?? '-' }}</p>
                             </td>
                             <td class="max-w-xs px-4 py-4">
-                                <p class="truncate font-semibold text-slate-800">
+                                <p class="truncate font-semibold text-[var(--ui-fg-strong)]">
                                     {{ $transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}</p>
-                                <p class="mt-1 truncate text-xs text-slate-500">
+                                <p class="mt-1 truncate text-xs text-[var(--ui-fg-muted)]">
                                     {{ $transaction->sourceValue('description') ?: 'Tanpa uraian' }}</p>
                             </td>
                             <td class="whitespace-nowrap px-4 py-4 text-center">

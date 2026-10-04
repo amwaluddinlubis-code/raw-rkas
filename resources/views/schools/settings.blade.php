@@ -6,10 +6,7 @@
         @if(session('success'))<x-ui.alert variant="success">{{ session('success') }}</x-ui.alert>@endif
         @if(session('error'))<x-ui.alert variant="danger">{{ session('error') }}</x-ui.alert>@endif
         @if($errors->any())<x-ui.alert variant="danger">{{ $errors->first() }}</x-ui.alert>@endif
-        <style>
-            @media (min-width: 1024px) { form[action*="pengaturan/sekolah/profil"] { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem } form[action*="pengaturan/sekolah/profil"] > div:last-child { grid-column:1/-1 } }
-            form[action*="pengaturan/sekolah/profil"] .ui-form-section-header, form[action*="pengaturan/sekolah/profil"] .ui-form-section-body { padding:.8rem 1rem }
-        </style>
+
         <section class="space-y-6">
             @if($activeSchool)
                 <form method="POST" action="{{ route('schools.profile.update') }}" enctype="multipart/form-data" class="space-y-6">@csrf @method('PUT')
