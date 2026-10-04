@@ -184,7 +184,6 @@ class WebRouteSmokeTest extends TestCase
             '/spj/laporan/jasa/pilih',
             '/spj/laporan/honor/xlsx',
             '/spj/laporan/jasa/xlsx',
-            '/spj/unduh/xlsx',
             '/laporan-audit',
             '/laporan-audit/unduh/pdf',
             '/laporan-audit/unduh/xlsx',

@@ -1323,3 +1323,55 @@ Evidence: `ArkasMirrorHealthUiTest` (route + middleware + primitive
 kanonis), `php artisan view:cache` sukses, 26 test / 135 assertions
 pada suite terdampak hijau, Pint + `git diff --check` bersih. Visual
 browser aktual tetap RVR.
+## Hapus endpoint rekap umum spj.export (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+`GET /spj/unduh/{format}` (`spj.export` → `SpjController@export` →
+`SpjReportUseCase::export`) tidak tertaut di view/service mana pun —
+halaman susun honor/jasa memakai `spj.honor-payments.export` /
+`spj.service-recipients.export`. Dihapus: route, controller method,
+`SpjReportUseCase::export` + helper khusus `addRealizationSheet`
+(`report()`/`reportData()` tetap dipakai tab Laporan/Monitoring),
+entri smoke test, dan baris `API.md` (header count 27→26).
+
+Evidence: `WebRouteSmokeTest` 6 passed, `SpjReportLayoutTest` +
+`SpjSupplementaryTemplateContractTest` 25 passed / 245 assertions,
+Pint passed, `route:list` tak lagi memuat `/spj/unduh`, `git diff --check`
+bersih.
+
+## Navigasi Prev/Next di semua tab internal Paket SPJ (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Workspace paket (`spj?tab=paket`) kini menampilkan tombol `← Prev` /
+`Next →` antar paket (tenant sama) di tab Rincian, Rincian Pajak, dan
+Penomoran via partial baru `spj/partials/package/package-navigation`
+— sebelumnya hanya ada di Isian Manual. Link navigasi mempertahankan
+`package_tab` aktif (termasuk dua link Isian Manual yang sebelumnya
+me-reset ke Rincian); kontrak GUI §10 (tenant scope, disabled state
+bila tetangga tidak ada) tidak berubah.
+
+Evidence: `SpjPackageNavigationButtonsTest` 3 passed / 16 assertions,
+`SpjMainTabsRenderingTest` 8 passed, `SpjPackageNavigationContextTest`
+1 passed, Pint passed, `view:cache` sukses, `git diff --check` bersih.
+Run gabungan dua suite sekaligus sempat flaky (`disk I/O error` SQLite
+Windows); hijau saat dijalankan per-file.
+
+## Explorer Tabel Database Aktif dipisah pusat vs sekolah (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Halaman `/pengaturan/database-aktif` kini membedakan sumber Explorer via
+toggle `Sekolah Aktif` vs `Database Pusat` (`DatabaseTableExplorer::$scope`,
+`$schoolCount`/`$centralCount`). `SchoolDatabaseManager::listTables /
+tableSchema / tableData` menerima koneksi eksplisit `school|central`
+(`resolveExplorerConnection`, koneksi arbitrer ditolak); daftar pusat
+menyembunyikan `CENTRAL_DENIED_TABLES` (`users`, `sessions`,
+`password_reset_tokens`, `cache*`, `jobs*`, `failed_jobs`), endpoint
+`table-summary` mendukung `?scope=central` dengan deny-list yang sama.
+Masking kolom sensitif tetap via `spj.database_manager_sensitive_columns`.
+
+Evidence: `DatabaseTableExplorerScopeTest` 4 passed / 18 assertions,
+Pint passed, `view:cache` sukses, `git diff --check` bersih.
+

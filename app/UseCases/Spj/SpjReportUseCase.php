@@ -106,41 +106,6 @@ class SpjReportUseCase
         return $this->report(new Request(['mode' => $mode, 'periode' => $periode, 'search' => $search]), $perPage, $pendingPerPage);
     }
 
-    public function export(Request $request, string $format)
-    {
-        [$packages, $summary] = $this->report($request);
-        if ($format === 'pdf') {
-            $pdf = Pdf::loadView('spj-reports.pdf', compact('packages', 'summary'))->setPaper('a4', 'landscape');
-            app(DocumentStoragePathService::class)->archiveReportPdf($pdf->output(), 'REKAP-SPJ-'.$summary['year'].'.pdf', (int) $summary['year']);
-
-            return $pdf->stream('REKAP-SPJ-'.$summary['year'].'.pdf');
-        }
-        abort_unless($format === 'xlsx', 404);
-
-        $book = new Spreadsheet;
-        $sheet = $book->getActiveSheet()->setTitle('Rekap SPJ');
-        $sheet->fromArray(['No', 'Nomor SPJ', 'No Bukti', 'Tanggal', 'Penerima', 'Kegiatan', 'Rekening', 'Bruto', 'Pajak', 'Dibayarkan', 'Status'], null, 'A1');
-        foreach ($packages as $index => $package) {
-            $t = $package->transaction;
-            $sheet->fromArray([[$index + 1, $package->document_number, $t->sourceValue('no_bukti'), (($d = $t->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null), ($t->receipt_recipient_name ?: $t->spj_recipient_name ?: '-'), $t->sourceValue('activity_name'), $t->sourceValue('account_name'), (float) $t->sourceValue('gross_amount'), (float) $t->sourceValue('tax_total'), (float) $t->sourceValue('net_amount'), $package->status]], null, 'A'.($index + 2));
-        }
-        foreach (['H', 'I', 'J'] as $column) {
-            $sheet->getStyle($column.'2:'.$column.($packages->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
-        }
-        foreach (range('A', 'K') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
-        $this->addRealizationSheet($book, 'Per Kegiatan', $summary['activities'], 'activity_code', 'activity_name');
-        $this->addRealizationSheet($book, 'Per Rekening', $summary['accounts'], 'account_code', 'account_name');
-        $path = storage_path('app/generated-documents/rekap-spj-'.uniqid().'.xlsx');
-        if (! is_dir(dirname($path))) {
-            mkdir(dirname($path), 0775, true);
-        }
-        (new Xlsx($book))->save($path);
-
-        return app(DocumentStoragePathService::class)->downloadReportFile($path, 'REKAP-SPJ-'.$summary['year'].'.xlsx', (int) $summary['year']);
-    }
-
     public function exportHonorPayments(Request $request, string $format)
     {
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
@@ -370,18 +335,5 @@ class SpjReportUseCase
         }
 
         return $query;
-    }
-
-    private function addRealizationSheet(Spreadsheet $book, string $title, $rows, string $code, string $name): void
-    {
-        $sheet = $book->createSheet()->setTitle($title);
-        $sheet->fromArray(['No', 'Kode', 'Nama', 'Realisasi'], null, 'A1');
-        foreach ($rows as $index => $row) {
-            $sheet->fromArray([[$index + 1, $row->{$code}, $row->{$name}, (float) $row->realization]], null, 'A'.($index + 2));
-        }
-        $sheet->getStyle('D2:D'.($rows->count() + 1))->getNumberFormat()->setFormatCode('#,##0');
-        foreach (range('A', 'D') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
     }
 }

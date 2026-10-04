@@ -190,11 +190,6 @@ class SpjController extends Controller
         return $useCase->previewTemplatePdf($packageId, $templateId);
     }
 
-    public function export(Request $request, string $format, SpjReportUseCase $useCase)
-    {
-        return $useCase->export($request, $format);
-    }
-
     public function exportHonorPayments(Request $request, string $format, SpjReportUseCase $useCase)
     {
         return $useCase->exportHonorPayments($request, $format);

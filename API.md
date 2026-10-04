@@ -43,7 +43,7 @@ ADMINISTRATOR lifecycle/maintenance/sensitive action.
 | GET\|HEAD | `/transaksi/{transactionId}/siapkan-spj` | transactions.prepare-spj | `SpjPreparationController` | auth, active-school, active-year, spj-active-context, operator-or-administrator |
 | PUT | `/transaksi/{transactionId}/uraian-spj` | transactions.spj-descriptions.update | `TransactionController@updateSpjDescriptions` | auth, active-school, active-year, spj-active-context, operator-or-administrator |
 
-## `/spj` (27, termasuk `/spj` root)
+## `/spj` (26, termasuk `/spj` root)
 
 | Method | URI | Name | Action | Middleware |
 |---|---|---|---|---|
@@ -73,7 +73,6 @@ ADMINISTRATOR lifecycle/maintenance/sensitive action.
 | POST | `/spj/transaksi/{transactionId}/penerimaan` | spj.receipts.store | `SpjController@storeGoodsReceipt` | auth, active-school, active-year, spj-active-context, operator-or-administrator |
 | POST | `/spj/triwulan/{periodId}/buka` | spj.quarter-reopen | `SpjController@reopenQuarter` | auth, active-school, active-year, spj-active-context, administrator |
 | POST | `/spj/tutup-triwulan` | spj.quarter-close | `SpjController@closeQuarter` | auth, active-school, active-year, spj-active-context, administrator |
-| GET\|HEAD | `/spj/unduh/{format}` | spj.export | `SpjController@export` | auth, active-school, active-year, spj-active-context |
 
 Catatan: `spj.unlock` sengaja dinonaktifkan di UseCase (selalu error, mengarahkan ke Koreksi Penomoran).
 
