@@ -24,6 +24,8 @@ class ReferenceLookupService
 
     public const TAB_PRICES = 'harga';
 
+    public const TAB_ACTIVITIES = 'kegiatan';
+
     /**
      * @return array<int, string>
      */
@@ -56,9 +58,90 @@ class ReferenceLookupService
             }
         }
 
+        // Fallback ke hierarki kegiatan saat dua tabel referensi pusat belum
+        // dipakai atau belum tersinkron.
+        try {
+            if (Schema::hasTable('activity_hierarchy_references')) {
+                foreach (DB::table('fiscal_years')->get(['id', 'year']) as $fy) {
+                    $has = DB::table('activity_hierarchy_references')->where('fiscal_year_id', $fy->id)->exists();
+                    if ($has) {
+                        $years[(string) $fy->year] = (string) $fy->year;
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            // abaikan
+        }
+
         rsort($years);
 
         return array_values($years);
+    }
+
+    public function paginateActivities(?string $year, string $search = '', int $perPage = 15): LengthAwarePaginator
+    {
+        try {
+            $programs = [];
+            $subs = [];
+            foreach (DB::table('arkas_mirror_ref_kode')->cursor(['payload']) as $row) {
+                $p = json_decode((string) ($row->payload ?? ''), true);
+                if (! is_array($p)) {
+                    continue;
+                }
+                $level = (string) ($p['id_level_kode'] ?? '');
+                if ($level === '1') {
+                    $programs[(string) ($p['id_ref_kode'] ?? '')] = $p;
+                } elseif ($level === '2') {
+                    $subs[(string) ($p['id_ref_kode'] ?? '')] = $p;
+                }
+            }
+
+            $rows = [];
+            $search = trim($search);
+            $like = $search !== '' ? mb_strtolower($search) : null;
+            $seen = [];
+            foreach (DB::table('arkas_mirror_ref_kode')->cursor(['payload']) as $row) {
+                $p = json_decode((string) ($row->payload ?? ''), true);
+                if (! is_array($p) || (string) ($p['id_level_kode'] ?? '') !== '3') {
+                    continue;
+                }
+                if ($year !== null && $year !== '' && (string) ($p['tahun'] ?? '') !== $year) {
+                    continue;
+                }
+                $sub = $subs[(string) ($p['parent_kode'] ?? '')] ?? null;
+                $program = $sub !== null ? ($programs[(string) ($sub['parent_kode'] ?? '')] ?? null) : null;
+                if ($program === null || $sub === null) {
+                    continue;
+                }
+                $dedupKey = ($program['id_kode'] ?? '').'|'.($sub['id_kode'] ?? '').'|'.($p['id_kode'] ?? '');
+                if (isset($seen[$dedupKey])) {
+                    continue;
+                }
+                $seen[$dedupKey] = true;
+                if ($like !== null) {
+                    $hay = mb_strtolower(($program['id_kode'] ?? '').' '.($program['uraian_kode'] ?? '').' '.($sub['id_kode'] ?? '').' '.($sub['uraian_kode'] ?? '').' '.($p['id_kode'] ?? '').' '.($p['uraian_kode'] ?? ''));
+                    if (! str_contains($hay, $like)) {
+                        continue;
+                    }
+                }
+                $rows[] = (object) [
+                    'program_code' => (string) ($program['id_kode'] ?? ''),
+                    'program_name' => (string) ($program['uraian_kode'] ?? ''),
+                    'sub_program_code' => (string) ($sub['id_kode'] ?? ''),
+                    'sub_program_name' => (string) ($sub['uraian_kode'] ?? ''),
+                    'activity_code' => (string) ($p['id_kode'] ?? ''),
+                    'activity_name' => (string) ($p['uraian_kode'] ?? ''),
+                ];
+            }
+            usort($rows, fn ($a, $b) => [$a->program_code, $a->sub_program_code, $a->activity_code] <=> [$b->program_code, $b->sub_program_code, $b->activity_code]);
+
+            $page = max(1, (int) request()->query('page', 1));
+            $slice = array_slice($rows, ($page - 1) * $perPage, $perPage);
+
+            return new ConcretePaginator($slice, count($rows), $perPage, $page, ['path' => request()->url(), 'query' => request()->query()]);
+        } catch (\Throwable) {
+            return new ConcretePaginator([], 0, $perPage, 1, ['path' => request()->url(), 'query' => request()->query()]);
+        }
     }
 
     /**

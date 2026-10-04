@@ -1,6 +1,7 @@
 <x-layouts.tailwind-app title="Referensi">
     @php
         $isPriceTab = $tab === 'harga';
+        $isActivityTab = $tab === 'kegiatan';
         $baseParams = ['tahun' => $year, 'q' => $search ?: null, 'perPage' => $perPage];
     @endphp
 
@@ -12,7 +13,7 @@
             icon="database"
         >
             <x-slot:actions>
-                <span class="ui-btn ui-btn-secondary px-3 py-2 text-base">{{ number_format($rows->total(), 0, ',', '.') }} baris</span>
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2 text-base font-bold tabular-nums text-[var(--ui-fg-strong)]" aria-label="Total {{ number_format($rows->total(), 0, ',', '.') }} baris">{{ number_format($rows->total(), 0, ',', '.') }} baris</span>
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
@@ -26,7 +27,7 @@
                 </div>
                 <div class="px-5 py-3.5">
                     <p class="text-xs font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]">Mode tampilan</p>
-                    <p class="mt-1 text-lg font-bold text-emerald-700">Baca-saja</p>
+                    <p class="mt-1 text-lg font-bold text-[var(--theme-content-accent)]">Baca-saja</p>
                 </div>
             </div>
         </x-page-header>
@@ -34,20 +35,23 @@
         <section class="rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm sm:px-5" aria-label="Navigasi referensi">
             <nav class="ui-tabs-list" aria-label="Tab referensi">
                 <a href="{{ route('references.index', array_filter(['tab' => 'rekening'] + $baseParams)) }}"
-                    aria-current="{{ ! $isPriceTab ? 'page' : 'false' }}"
-                    class="ui-tab {{ ! $isPriceTab ? 'ui-tab-active' : '' }}"><span class="ui-tab-icon"><x-ui.icon name="budget" size="sm" /></span><span>Rekening</span></a>
+                    aria-current="{{ ! $isPriceTab && ! $isActivityTab ? 'page' : 'false' }}"
+                    class="ui-tab {{ ! $isPriceTab && ! $isActivityTab ? 'ui-tab-active' : '' }}"><span class="ui-tab-icon"><x-ui.icon name="budget" size="sm" /></span><span>Rekening</span></a>
                 <a href="{{ route('references.index', array_filter(['tab' => 'harga'] + $baseParams)) }}"
                     aria-current="{{ $isPriceTab ? 'page' : 'false' }}"
                     class="ui-tab {{ $isPriceTab ? 'ui-tab-active' : '' }}"><span class="ui-tab-icon"><x-ui.icon name="balance" size="sm" /></span><span>Acuan Harga</span></a>
+                <a href="{{ route('references.index', array_filter(['tab' => 'kegiatan'] + $baseParams)) }}"
+                    aria-current="{{ $isActivityTab ? 'page' : 'false' }}"
+                    class="ui-tab {{ $isActivityTab ? 'ui-tab-active' : '' }}"><span class="ui-tab-icon"><x-ui.icon name="work" size="sm" /></span><span>Program &amp; Kegiatan</span></a>
             </nav>
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow">
             <x-ui.toolbar class="border-b border-[var(--ui-line)] px-5 py-3 sm:px-6">
                 <div>
-                    <h2 class="text-lg font-bold text-[var(--ui-fg-strong)]">{{ $isPriceTab ? 'Acuan Harga' : 'Rekening' }}</h2>
+                    <h2 class="text-lg font-bold text-[var(--ui-fg-strong)]">{{ $isActivityTab ? 'Program & Kegiatan' : ($isPriceTab ? 'Acuan Harga' : 'Rekening') }}</h2>
                     <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">
-                        {{ $isPriceTab ? 'Harga acuan barang per satuan dari referensi ARKAS.' : 'Daftar rekening belanja beserta penanda pajaknya.' }}
+                        {{ $isActivityTab ? 'Daftar program, subprogram, dan kegiatan dari hierarki ARKAS.' : ($isPriceTab ? 'Harga acuan barang per satuan dari referensi ARKAS.' : 'Daftar rekening belanja beserta penanda pajaknya.') }}
                     </p>
                 </div>
                 <x-slot:actions>
@@ -67,25 +71,55 @@
                         @endforelse
                     </x-ui.select>
                 </x-ui.field>
-                <x-ui.field label="{{ $isPriceTab ? 'Cari barang / rekening' : 'Cari kode / nama rekening' }}" class="flex-1">
-                    <x-ui.input type="search" name="q" value="{{ $search }}" placeholder="{{ $isPriceTab ? 'cth: kertas, 5.1.02…' : 'cth: 5.2.2, honor…' }}" />
+                <x-ui.field label="{{ $isActivityTab ? 'Cari program / subprogram / kegiatan' : ($isPriceTab ? 'Cari barang / rekening' : 'Cari kode / nama rekening') }}" class="flex-1">
+                    <x-ui.input type="search" name="q" value="{{ $search }}" placeholder="{{ $isActivityTab ? 'cth: 01.05, kerangka acuan…' : ($isPriceTab ? 'cth: kertas, 5.1.02…' : 'cth: 5.2.2, honor…') }}" />
                 </x-ui.field>
                 <div class="flex gap-2">
                     <x-ui.button type="submit" variant="primary">Cari</x-ui.button>
                     <x-ui.button variant="secondary" :href="route('references.index', ['tab' => $tab, 'tahun' => $year, 'perPage' => $perPage])">Atur ulang</x-ui.button>
                 </div>
             </form>
+            @if($search !== '')
+                <p class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-2 text-sm text-[var(--ui-fg-muted)] sm:px-6" role="status">
+                    Hasil untuk <span class="font-semibold text-[var(--ui-fg-strong)]">&ldquo;{{ $search }}&rdquo;</span>
+                    — <span class="font-semibold tabular-nums text-[var(--ui-fg-strong)]">{{ number_format($rows->total(), 0, ',', '.') }}</span> baris
+                    (tahun {{ $year ?? '—' }})
+                </p>
+            @endif
 
             @if($rows->isEmpty())
                 <x-ui.empty-state
                     title="Tidak ada data referensi"
                     description="Mirror referensi belum disinkronkan untuk tahun ini atau pencarian tidak cocok. Jalankan Sinkronisasi Referensi lalu coba lagi."
                 />
-            @elseif(! $isPriceTab)
+            @elseif($isActivityTab)
                 <x-ui.table min-width="960px" pagination="server">
+                    <caption class="sr-only">Program dan kegiatan ARKAS tahun {{ $year ?? '—' }}</caption>
                     <thead>
                         <tr>
-                            <th class="sticky left-0 z-10 w-14 bg-[var(--ui-surface-soft)] text-center">No</th>
+                            <th class="sticky left-0 z-10 w-14 bg-[var(--ui-component-surface-soft)] text-center">No</th>
+                            <th>Program</th>
+                            <th>Subprogram</th>
+                            <th>Kegiatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($rows as $row)
+                            <tr>
+                                <td class="text-center font-mono text-xs">{{ ($rows->currentPage() - 1) * $rows->perPage() + $loop->iteration }}</td>
+                                <td class="text-sm"><span class="font-mono text-xs">{{ $row->program_code }}</span> · {{ $row->program_name }}</td>
+                                <td class="text-sm"><span class="font-mono text-xs">{{ $row->sub_program_code }}</span> · {{ $row->sub_program_name }}</td>
+                                <td class="text-sm"><span class="font-mono text-xs">{{ $row->activity_code }}</span> · {{ $row->activity_name }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </x-ui.table>
+            @elseif(! $isPriceTab)
+                <x-ui.table min-width="960px" pagination="server">
+                    <caption class="sr-only">Rekening belanja ARKAS tahun {{ $year ?? '—' }}</caption>
+                    <thead>
+                        <tr>
+                            <th class="sticky left-0 z-10 w-14 bg-[var(--ui-component-surface-soft)] text-center">No</th>
                             <th class="whitespace-nowrap">Kode rekening</th>
                             <th>Nama rekening</th>
                             <th class="text-center">PPN</th>
@@ -117,9 +151,10 @@
                 </x-ui.table>
             @else
                 <x-ui.table min-width="960px" pagination="server">
+                    <caption class="sr-only">Acuan harga barang ARKAS tahun {{ $year ?? '—' }}</caption>
                     <thead>
                         <tr>
-                            <th class="sticky left-0 z-10 w-14 bg-[var(--ui-surface-soft)] text-center">No</th>
+                            <th class="sticky left-0 z-10 w-14 bg-[var(--ui-component-surface-soft)] text-center">No</th>
                             <th>Nama barang</th>
                             <th class="whitespace-nowrap">Kode rekening</th>
                             <th>Satuan</th>

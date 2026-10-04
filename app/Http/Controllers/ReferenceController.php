@@ -11,7 +11,7 @@ class ReferenceController extends Controller
     public function index(Request $request, ReferenceLookupService $references): View
     {
         $data = $request->validate([
-            'tab' => ['nullable', 'string', 'in:rekening,harga'],
+            'tab' => ['nullable', 'string', 'in:rekening,harga,kegiatan'],
             'tahun' => ['nullable', 'string', 'max:4'],
             'q' => ['nullable', 'string', 'max:100'],
             'perPage' => ['nullable', 'in:15,25,50,100'],
@@ -30,9 +30,11 @@ class ReferenceController extends Controller
             $year = $years[0];
         }
 
-        $rows = $tab === ReferenceLookupService::TAB_PRICES
-            ? $references->paginatePriceReferences($year, $search, $perPage)
-            : $references->paginateAccounts($year, $search, $perPage);
+        $rows = match ($tab) {
+            ReferenceLookupService::TAB_PRICES => $references->paginatePriceReferences($year, $search, $perPage),
+            ReferenceLookupService::TAB_ACTIVITIES => $references->paginateActivities($year, $search, $perPage),
+            default => $references->paginateAccounts($year, $search, $perPage),
+        };
 
         return view('references.index', [
             'tab' => $tab,
