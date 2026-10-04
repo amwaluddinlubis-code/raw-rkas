@@ -1209,3 +1209,24 @@ tersinkron.
 
 Evidence: `ArkasMirrorHealthTest` 2 passed / 16 assertions, Pint passed,
 `git diff --check` bersih.
+
+## GUI kesehatan mirror kas di Pusat Sinkronisasi ARKAS 2026-10-04
+
+Status: **FUNCTIONAL PASS (focused, static + view:cache) / BROWSER RVR**.
+
+`arkas:mirror-health` kini tampil sebagai section "Kesehatan Mirror Kas"
+di `/pengaturan/arkas/mirror` (sekolah aktif): badge Sehat/Bermasalah,
+tabel per (tahun, dana) mirror vs BKU + baris basi, dan tombol repair
+(hanya bila ada yang basi) dengan `data-confirm` + backup otomatis.
+Aksi `ArkasMirrorController::repairHealth` via route POST
+`arkas.mirror.health-repair` (administrator + active-school +
+throttle:3,1, validasi `confirm_sync`). Logic backup dipindah ke
+`ArkasMirrorHealthService::backupActiveDatabase` agar dipakai command
+dan controller. Mengikuti pola halaman: `x-page-header`,
+`x-ui.table`/`x-ui.button`/`x-ui.alert`, token `--ui-*`, tanpa card
+raksasa baru.
+
+Evidence: `ArkasMirrorHealthUiTest` (route + middleware + primitive
+kanonis), `php artisan view:cache` sukses, 26 test / 135 assertions
+pada suite terdampak hijau, Pint + `git diff --check` bersih. Visual
+browser aktual tetap RVR.

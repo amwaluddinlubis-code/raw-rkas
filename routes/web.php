@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/pengaturan/arkas/mirror/status', [ArkasMirrorController::class, 'status'])->middleware('active-school')->name('arkas.mirror.status');
         Route::post('/pengaturan/arkas/mirror/sync-refs', [ArkasMirrorController::class, 'syncRefs'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.sync-refs');
         Route::post('/pengaturan/arkas/mirror/sync-school', [ArkasMirrorController::class, 'syncSchool'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.sync-school');
+        Route::post('/pengaturan/arkas/mirror/health-repair', [ArkasMirrorController::class, 'repairHealth'])->middleware(['active-school', 'throttle:3,1'])->name('arkas.mirror.health-repair');
         Route::get('/pengaturan/arkas/importer', ArkasImporterController::class)->name('arkas.importer');
         Route::post('/pengaturan/arkas/importer/mapping', [ArkasImporterController::class, 'store'])->name('arkas.importer.mapping.store');
         Route::post('/pengaturan/arkas/importer/{profileId}/preview', [ArkasImporterController::class, 'preview'])->name('arkas.importer.preview');
@@ -212,6 +213,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/penganggaran-rkas', RkasBudgetController::class)->name('rkas-budget.index');
         Route::get('/penganggaran-rkas/perbandingan-revisi', RkasRevisionComparisonController::class)->name('rkas-budget.revisions.compare');
+        Route::view('/penganggaran-rkas/simulasi', 'rkas-budget.simulate')->name('rkas-budget.simulate');
         Route::get('/penganggaran-rkas/saran', RkasPlanningSuggestionController::class)->name('rkas-planning.index');
         Route::get('/penganggaran-rkas/saran/unduh/{modul}', [RkasPlanningSuggestionController::class, 'export'])->name('rkas-planning.export');
         Route::get('/penganggaran-rkas/laporan/{scope}/preview', [RkasReportController::class, 'preview'])->name('rkas-reports.preview');

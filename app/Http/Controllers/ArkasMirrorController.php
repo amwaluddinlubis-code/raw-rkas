@@ -6,6 +6,7 @@ use App\Jobs\SynchronizeArkasMirror;
 use App\Models\BackgroundOperation;
 use App\Models\School;
 use App\Services\ArkasFixedMirrorService;
+use App\Services\ArkasMirrorHealthService;
 use App\Services\SchoolDatabaseManager;
 use App\UseCases\Spj\SynchronizeArkasMirrorUseCase;
 use Illuminate\Http\JsonResponse;
@@ -17,12 +18,18 @@ use Illuminate\View\View;
 
 class ArkasMirrorController extends Controller
 {
-    public function index(SchoolDatabaseManager $databases): View
+    public function index(SchoolDatabaseManager $databases, ArkasMirrorHealthService $health): View
     {
         $status = [];
+        $mirrorHealth = null;
 
         if (session('active_school_id') && ($school = School::find(session('active_school_id')))) {
             $databases->activate($school);
+            try {
+                $mirrorHealth = $health->check();
+            } catch (\Throwable) {
+                $mirrorHealth = null;
+            }
         }
 
         foreach (ArkasFixedMirrorService::registry() as $entry) {
@@ -50,7 +57,25 @@ class ArkasMirrorController extends Controller
             ->latest('id')
             ->first();
 
-        return view('arkas.mirror', compact('status', 'lastRun', 'lastRefsRun'));
+        return view('arkas.mirror', compact('status', 'lastRun', 'lastRefsRun', 'mirrorHealth'));
+    }
+
+    public function repairHealth(Request $request, SchoolDatabaseManager $databases, ArkasMirrorHealthService $health): RedirectResponse
+    {
+        $request->validate(['confirm_sync' => ['accepted']]);
+
+        $school = School::findOrFail(session('active_school_id'));
+        $databases->activate($school);
+
+        $backup = $health->backupActiveDatabase($school->npsn);
+        if ($backup === null) {
+            return back()->with('error', 'Backup database gagal — repair kesehatan mirror dibatalkan.');
+        }
+
+        $deleted = $health->repair();
+        $count = array_sum(array_map(fn (array $scope): int => (int) ($scope['deleted_n'] ?? 0), $deleted));
+
+        return back()->with('success', 'Kesehatan mirror diperbaiki: '.$count.' baris basi dihapus. Backup: '.$backup.'.');
     }
 
     public function status(): JsonResponse

@@ -114,6 +114,74 @@
 
         <p class="text-xs leading-5 text-[var(--ui-fg-muted)]">Diperbarui otomatis tiap 2 detik selama proses berjalan. Sekolah pertama jalankan kedua lajur; sekolah berikutnya cukup Sinkronisasi Sekolah Aktif.</p>
 
+        @if($mirrorHealth !== null)
+            @php($healthStale = collect($mirrorHealth['scopes'] ?? [])->sum('stale_n'))
+            <section aria-label="Kesehatan mirror kas" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
+                <div class="p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-[var(--theme-content-accent)]" style="background: color-mix(in srgb, var(--theme-accent) 12%, transparent);">
+                                <x-ui.icon name="audit" size="md" />
+                            </span>
+                            <div>
+                                <h2 class="font-bold text-[var(--ui-fg-strong)]">Kesehatan Mirror Kas</h2>
+                                <p class="text-xs text-[var(--ui-fg-muted)]">Mirror kas_umum vs BKU per tahun anggaran dan sumber dana · sekolah aktif</p>
+                            </div>
+                        </div>
+                        @if($mirrorHealth['ok'])
+                            <span class="inline-flex shrink-0 items-center rounded-full border border-emerald-300 bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800">Sehat</span>
+                        @else
+                            <span class="inline-flex shrink-0 items-center rounded-full border border-rose-300 bg-rose-100 px-2.5 py-1 text-[11px] font-bold text-rose-800">Bermasalah</span>
+                        @endif
+                    </div>
+                    <div class="mt-4">
+                        <x-ui.table pagination="auto" compact>
+                            <thead>
+                                <tr>
+                                    <th>Tahun</th>
+                                    <th>Dana</th>
+                                    <th class="text-right">Mirror (baris)</th>
+                                    <th class="text-right">Mirror (Rp)</th>
+                                    <th class="text-right">BKU (baris)</th>
+                                    <th class="text-right">BKU (Rp)</th>
+                                    <th class="text-right">Basi (baris)</th>
+                                    <th class="text-right">Basi (Rp)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($mirrorHealth['scopes'] ?? [] as $scope)
+                                    <tr>
+                                        <td class="tabular-nums">{{ $scope['year'] }}</td>
+                                        <td class="tabular-nums">{{ $scope['fund'] }}</td>
+                                        <td class="text-right tabular-nums">{{ number_format($scope['mirror_n']) }}</td>
+                                        <td class="text-right tabular-nums">{{ number_format($scope['mirror_sum'], 0, ',', '.') }}</td>
+                                        <td class="text-right tabular-nums">{{ number_format($scope['bku_n']) }}</td>
+                                        <td class="text-right tabular-nums">{{ number_format($scope['bku_sum'], 0, ',', '.') }}</td>
+                                        <td class="text-right font-semibold tabular-nums">{{ number_format($scope['stale_n']) }}</td>
+                                        <td class="text-right font-semibold tabular-nums">{{ number_format($scope['stale_sum'], 0, ',', '.') }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="text-center text-[var(--ui-fg-muted)]">Belum ada kas terscope pada sekolah aktif.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </x-ui.table>
+                    </div>
+                    @if(($mirrorHealth['unscoped_n'] ?? 0) > 0)
+                        <p class="mt-2 text-xs text-[var(--ui-fg-muted)]">{{ number_format($mirrorHealth['unscoped_n']) }} baris tanpa tahun/dana teridentifikasi — dilaporkan saja, tidak tersentuh repair.</p>
+                    @endif
+                    @if($healthStale > 0)
+                        <form method="POST" action="{{ route('arkas.mirror.health-repair') }}" data-confirm="Hapus {{ number_format($healthStale) }} baris mirror kas basi pada sekolah aktif? Database dibackup otomatis terlebih dahulu." class="mt-3">
+                            @csrf
+                            <input type="hidden" name="confirm_sync" value="1">
+                            <x-ui.button type="submit" variant="danger" class="w-full" icon="trash">Bersihkan {{ number_format($healthStale) }} baris basi</x-ui.button>
+                        </form>
+                    @endif
+                </div>
+            </section>
+        @endif
+
         <section
             id="mirror-tables"
             class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow"
