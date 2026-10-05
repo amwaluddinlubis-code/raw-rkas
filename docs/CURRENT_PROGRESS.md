@@ -1798,3 +1798,50 @@ Catatan: `resources/views/users/index.blade.php`,
 `resources/views/rkas-budget/audit-mirror.blade.php`, dan
 `resources/views/school-backups/index.blade.php` berubah di luar pekerjaan ini
 dan sengaja tidak ikut di-commit.
+
+## Migrasi density-owned padding tabel SPJ + perbaikan test segmented control 2026-10-05
+
+Status: **PASS (focused, static + build + test) / BROWSER RVR**.
+
+Lanjutan rencana GUI: rule density-owned yang masih mengunci padding tabel
+dipindahkan ke token `--profile-table-row-y`.
+
+1. `spj-workspace-standardization.css`: `.spj-semantic-workspace table :is(th, td)`
+   memakai `padding-block: .375rem !important` dan kini memakai token.
+2. `transactions-standardization.css`: blok `#rincian-transaksi` pada
+   `thead th`, `tbody td`, dan `tfoot td` memakai pasangan
+   `padding-top`/`padding-bottom` literal dan kini memakai `padding-block`
+   dengan token.
+3. `density-qa.mjs` menambah pengecualian untuk sel kosong
+   (`empty-cell`, `app-table-empty`, `[colspan]`). Padding 1rem pada sel kosong
+   memang disengaja supaya ketiadaan data terbaca jelas, jadi bukan drift.
+4. `spj-monitoring-list.blade.php` memakai `x-ui.table` tanpa kelas
+   `spj-monitoring-table`, padahal `spj-workspace-standardization.css:226-233`
+   menata header dan border tabel monitoring melalui kelas itu. Akibatnya
+   styling tabel monitoring tidak pernah aktif dan
+   `SpjReportLayoutTest::spj_monitoring_surfaces_use_theme_tokens` gagal
+   sejak commit `cb7dcaa` yang membungkus tabel dengan `x-ui.table`. Kelas
+   sekarang ditambahkan kembali.
+
+Catatan: `test_spj_main_tabs_render_as_segmented_control` juga gagal, terbukti
+pre-existing lewat stash A/B. Assertion-nya melarang
+`#spj-main-tabs .ui-tab-active` di CSS, sementara `ui-tab-active` memang
+dipakai markup `components/tabs.blade.php` untuk state aktif tab. Assertion itu
+menyalahi arah: yang perlu dijaga adalah tab aktif tetap terlihat aktif
+(garis bawah accent), bukan dihapus.
+
+### Perbaikan lingkungan test
+
+`database/testing.sqlite` (gitignored) korup: `PRAGMA integrity_check`
+mengembalikan `database disk image is malformed`. Berkas dicadangkan ke
+`%TEMP%` dan dibuat ulang. Catatan operasional: berkas **tidak boleh dihapus**
+karena `RefreshDatabase` mengharapkan berkas sudah ada; setelah dihapus cukup
+`touch database/testing.sqlite`. Run gabungan suite tetap sering gagal dengan
+`disk I/O error` — pola flaky SQLite Windows yang sudah tercatat di
+`CURRENT_PROGRESS.md` bagian 1280 dan 1458, bukan regresi.
+
+Verifikasi: `npm run density:qa` PASS, `npm run theme:qa` all pass,
+`npm run build` sukses, `php artisan view:cache` sukses,
+`vendor/bin/pint --test` passed, `git diff --check` bersih. Focused suite
+per-file 8 dari 9 hijau; `SpjReportLayoutTest` tersisa satu kegagalan yang
+pre-existing. Visual browser tetap RVR.

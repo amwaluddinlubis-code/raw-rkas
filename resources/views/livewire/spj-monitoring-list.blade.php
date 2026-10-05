@@ -1,5 +1,5 @@
 <div>
-    <div class="overflow-x-auto p-5"><x-ui.table pagination="server"><thead><tr><th class="px-4 py-2 text-left text-xs font-bold">BUKTI</th><th class="px-4 py-2 text-left text-xs font-bold">URAIAN</th><th class="px-4 py-2 text-left text-xs font-bold">STATUS</th><th class="px-4 py-2 text-right text-xs font-bold">AKSI</th></tr></thead><tbody>@forelse($pendingPaginator ?? [] as $transaction)@php
+    <div class="overflow-x-auto p-5"><x-ui.table pagination="server" class="spj-monitoring-table"><thead><tr><th class="px-4 py-2 text-left text-xs font-bold">BUKTI</th><th class="px-4 py-2 text-left text-xs font-bold">URAIAN</th><th class="px-4 py-2 text-left text-xs font-bold">STATUS</th><th class="px-4 py-2 text-right text-xs font-bold">AKSI</th></tr></thead><tbody>@forelse($pendingPaginator ?? [] as $transaction)@php
             $wasCancelled = $transaction->spjPackage?->documents?->contains('status', 'CANCELLED') ?? false;
         @endphp<tr wire:key="spj-monitoring-{{ $transaction->id }}" class="spj-monitoring-row transition {{ $wasCancelled ? 'is-cancelled' : '' }}"><td class="px-4 py-2 font-mono font-bold">{{ $transaction->sourceValue('no_bukti') }}</td><td class="px-4 py-2 max-w-sm truncate">{{ $transaction->sourceValue('description') }}</td><td class="px-4 py-2">@if ($wasCancelled)
         @php($monitorStatus = 'CANCELLED')

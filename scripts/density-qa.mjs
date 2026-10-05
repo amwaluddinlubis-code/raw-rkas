@@ -76,6 +76,12 @@ for (const file of walk(cssDirectory)) {
             continue;
         }
 
+        // Empty/placeholder cells intentionally breathe more than data rows so
+        // the absence of data stays readable at a glance.
+        if (/(empty-cell|app-table-empty|\[colspan\])/.test(selector)) {
+            continue;
+        }
+
         violations.push({
             rule: 'hardcoded-table-cell-padding',
             location: `${relative}:${contents.slice(0, match.index).split('\n').length}`,

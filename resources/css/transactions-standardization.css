@@ -333,16 +333,14 @@ main:has(#modul-buat-spj) #rincian-transaksi table {
 }
 
 main:has(#modul-buat-spj) #rincian-transaksi thead th {
-    padding-top: .5rem !important;
-    padding-bottom: .5rem !important;
+    padding-block: var(--profile-table-row-y) !important;
     font-size: .6875rem !important;
     line-height: .95rem !important;
     white-space: nowrap;
 }
 
 main:has(#modul-buat-spj) #rincian-transaksi tbody td {
-    padding-top: .45rem !important;
-    padding-bottom: .45rem !important;
+    padding-block: var(--profile-table-row-y) !important;
     vertical-align: middle;
 }
 
@@ -392,8 +390,7 @@ main:has(#modul-buat-spj) #rincian-transaksi .ui-input::placeholder {
 }
 
 main:has(#modul-buat-spj) #rincian-transaksi tfoot td {
-    padding-top: .6rem !important;
-    padding-bottom: .6rem !important;
+    padding-block: var(--profile-table-row-y) !important;
     font-size: .8125rem !important;
 }
 
