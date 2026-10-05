@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\BackgroundOperation;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -116,7 +115,7 @@ final class ArkasMirrorFreshnessService
     }
 
     /** @param array<string,array<string,mixed>> $lanes
-     *  @param array<int,string> $missing
+     * @param  array<int,string>  $missing
      */
     private function overallLevel(array $lanes, array $missing): string
     {

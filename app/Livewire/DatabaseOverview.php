@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DatabaseOverview extends Component
@@ -36,7 +37,7 @@ class DatabaseOverview extends Component
         $this->integrityRoute = route('database-manager.integrity', $activeStatus['school']->id);
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.database-overview');
     }

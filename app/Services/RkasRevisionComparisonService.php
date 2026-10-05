@@ -78,7 +78,7 @@ final class RkasRevisionComparisonService
     }
 
     /** @param array<int,array<string,mixed>> $rows
-     *  @return array<string,array<string,mixed>>
+     * @return array<string,array<string,mixed>>
      */
     private function groupRows(array $rows): array
     {
@@ -115,7 +115,7 @@ final class RkasRevisionComparisonService
     }
 
     /** @param array<string,mixed> $old
-     *  @param array<string,mixed> $new
+     * @param  array<string,mixed>  $new
      */
     private function changed(array $old, array $new): bool
     {
@@ -128,8 +128,8 @@ final class RkasRevisionComparisonService
     }
 
     /** @param array<int,array{amount:float,volume:float}> $old
-     *  @param array<int,array{amount:float,volume:float}> $new
-     *  @return array<int,array{month:int,from:float,to:float,delta:float,volume_from:float,volume_to:float,volume_delta:float}>
+     * @param  array<int,array{amount:float,volume:float}>  $new
+     * @return array<int,array{month:int,from:float,to:float,delta:float,volume_from:float,volume_to:float,volume_delta:float}>
      */
     private function periodDeltas(array $old, array $new): array
     {

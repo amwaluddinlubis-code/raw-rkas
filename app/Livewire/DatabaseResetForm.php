@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use App\Models\School;
 use App\Services\SchoolDatabaseResetService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -43,7 +44,7 @@ class DatabaseResetForm extends Component
         $this->confirmation = '';
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.database-reset-form');
     }

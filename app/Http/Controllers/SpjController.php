@@ -135,17 +135,17 @@ class SpjController extends Controller
         }
     }
 
-    public function download(string $packageId, SpjDocumentUseCase $useCase)
+    public function download(string $packageId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->download($packageId);
     }
 
-    public function downloadPackageExcel(string $packageId, SpjDocumentUseCase $useCase)
+    public function downloadPackageExcel(string $packageId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->downloadPackageExcel($packageId);
     }
 
-    public function previewPackageExcel(string $packageId, SpjDocumentUseCase $useCase)
+    public function previewPackageExcel(string $packageId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->previewPackageExcel($packageId);
     }
@@ -155,7 +155,7 @@ class SpjController extends Controller
         return $useCase->previewPackage($packageId);
     }
 
-    public function previewPackagePdf(string $packageId, SpjDocumentUseCase $useCase)
+    public function previewPackagePdf(string $packageId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->previewPackagePdf($packageId);
     }
@@ -170,12 +170,12 @@ class SpjController extends Controller
         return $useCase->previewPackages(array_values($validated['package_ids']));
     }
 
-    public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    public function downloadTemplate(string $packageId, string $templateId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->downloadTemplate($packageId, $templateId);
     }
 
-    public function downloadTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    public function downloadTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->downloadTemplatePdf($packageId, $templateId);
     }
@@ -185,17 +185,17 @@ class SpjController extends Controller
         return $useCase->previewTemplate($packageId, $templateId);
     }
 
-    public function previewTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase)
+    public function previewTemplatePdf(string $packageId, string $templateId, SpjDocumentUseCase $useCase): Response|RedirectResponse
     {
         return $useCase->previewTemplatePdf($packageId, $templateId);
     }
 
-    public function exportHonorPayments(Request $request, string $format, SpjReportUseCase $useCase)
+    public function exportHonorPayments(Request $request, string $format, SpjReportUseCase $useCase): Response
     {
         return $useCase->exportHonorPayments($request, $format);
     }
 
-    public function exportServiceRecipients(Request $request, string $format, SpjReportUseCase $useCase)
+    public function exportServiceRecipients(Request $request, string $format, SpjReportUseCase $useCase): Response
     {
         return $useCase->exportServiceRecipients($request, $format);
     }
@@ -212,12 +212,12 @@ class SpjController extends Controller
         return $useCase->composeServiceRecipients($request);
     }
 
-    public function selectHonorPayments(Request $request, SpjReportUseCase $useCase)
+    public function selectHonorPayments(Request $request, SpjReportUseCase $useCase): View
     {
         return $useCase->selectHonorPayments($request);
     }
 
-    public function composeHonorPayments(Request $request, SpjReportUseCase $useCase)
+    public function composeHonorPayments(Request $request, SpjReportUseCase $useCase): View
     {
         $this->hydrateReportSelection($request, self::HONOR_REPORT_SELECTION_SESSION_KEY);
 

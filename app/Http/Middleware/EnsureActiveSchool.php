@@ -6,10 +6,11 @@ use App\Models\School;
 use App\Services\SchoolDatabaseManager;
 use Closure;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class EnsureActiveSchool
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $school = School::find(session('active_school_id'));
         $allowed = $school && ($request->user()->isAdministrator() || $request->user()->school_id === $school->id);

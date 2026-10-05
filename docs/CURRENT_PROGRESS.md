@@ -1484,3 +1484,86 @@ Evidence: `ArkasMirrorHealthUiTest` (route + middleware + primitive
 kanonis), `php artisan view:cache` sukses, 26 test / 135 assertions
 pada suite terdampak hijau, Pint + `git diff --check` bersih. Visual
 browser aktual tetap RVR.
+
+## Kepatuhan aturan coding TALL/Laravel 13 (audit + perbaikan bertahap) 2026-10-05
+
+Status: **PASS (focused verification) / BROWSER RVR**.
+
+Audit kepatuhan terhadap `AGENTS.md` + `.ai/rules/index.md` +
+`docs/CSS_USAGE_GUIDE.md` menemukan dan memperbaiki pelanggaran berikut.
+
+### Diperbaiki
+
+1. **Pint gate**: `RkasRevisionComparisonController`,
+   `ArkasMirrorFreshnessService`, `RkasRevisionComparisonService`,
+   `TransactionItemOrderingTest` kini style-clean. `vendor/bin/pint --test`
+   sekarang `passed` untuk seluruh repo.
+2. **Merge conflict yang sudah ada sebelumnya** di
+   `app/Services/RkasReportExcelService.php` (sisa `stash@{0} autostash`
+   pop gagal) di-resolve dengan instruksi user explicit: sisi
+   "Updated upstream" dipertahankan, yaitu private `setCellValue()` yang
+   memakai `setCellValueExplicit(..., DataType::TYPE_STRING)` untuk nilai
+   string. Sisi "Stashed changes" kosong sehingga tidak ada kode hilang.
+   Konsekuensi: kolom angka/karakter pada XLSX RKAS tidak lagi dikonversi
+   Excel menjadi formula/tanggal. File ini sempat memblokir Pint dan
+   `git diff --check` di seluruh repo.
+3. **Fixture test usang**: `TransactionsTableLivewireTest::prepareSchoolConnection`
+   tidak membuat kolom `sort_order` pada `transaction_items`, padahal
+   `Transaction::items()` mengurutkan `COALESCE(NULLIF(sort_order, 0), id)`
+   sejak commit `058d771`. Tiga test gagal `no such column: sort_order`
+   sebelum perbaikan ini; semuanya hijau sesudahnya.
+4. **Livewire 2 computed property → `#[Computed]`** (Livewire 3):
+   `TransactionsTable::filteredStats/statuses/transactions` dan
+   `ReconciliationList::summary/transactions`. `RkasBudgetSimulator::simulation`
+   sudah menjadi pola kanon. Tidak ada lagi `get*Property()` di `app/Livewire`.
+5. **`protected $casts` → method `casts()`** pada
+   `app/Models/ArkasRkasItem.php`, mengikutikonvensi 40+ model lain.
+6. **Return type eksplisit**: `SpjController` (13 method download/preview/export),
+   `SpjReportUseCase::exportHonorPayments`, `ExtendedSpjReportUseCase::exportServiceRecipients`
+   (+ override `exportHonorPayments` yang wajib sinkron agar covariant),
+   middleware `EnsureActiveFiscalYear`/`EnsureActiveSchool`/`EnsureAdministrator`,
+   `DocumentTemplateController::downloadStored/downloadMaster/sample`,
+   `SchoolConfigurationController::letterhead`,
+   `EmployeeController::honorsFor`, dan
+   `ArkasMirrorBudgetService::hierarchyOptions`.
+7. **`render(): View`** pada 9 komponen Livewire Database*/Rkas
+   (`DatabaseDiagnostics`, `DatabaseMaintenance`, `DatabaseManagerAlerts`,
+   `DatabaseManagerTabs`, `DatabaseOverview`, `DatabaseResetForm`,
+   `DatabaseSchoolList`, `DatabaseStatusSummary`, `RkasBudgetSimulator`).
+8. **Hard-coded color → semantic token** pada 5 view Livewire area
+   authenticated: `rkas-planning-suggestion-tables` (21 hit),
+   `spj-report-filter` (17), `tax-filter` (15), `transactions-table` (7),
+   `reconciliation-list` (6). `text-slate-*`/`text-indigo-*`/`bg-indigo-50*`/
+   `hover:bg-slate-*`/`border-slate-300` diganti `--ui-fg*`, `--ui-surface-*`,
+   `--ui-line*`, `--theme-content-accent`, `--theme-action-*`. Sesuai
+   `CSS_USAGE_GUIDE.md` §15 dan §17. Hierarchy teks dijaga agar tidak
+   mendatar: strong→`--ui-fg-strong`, normal→`--ui-fg`, muted→`--ui-fg-muted`.
+
+### Tetap dikerjakan terpisah (di luar scope audit ini)
+
+- 32 view lain masih punya hit hard-coded color (`users/index`,
+  `impersonation/index`, `school-backups/index`, `arkas/settings`,
+  `employees/form`, `spj/*`, `spj-documents/template-preview`, dst).
+  Semuanya masih ditoleransi `view-theme-hardening.css`, tetapi
+  bertentangan dengan §15 dan tidak boleh ditambahkan pada kode baru.
+- 116 `<input>`/`<select>`/`<textarea>` mentah vs primitive
+  `x-ui.input/select/textarea` yang sudah lengkap. Contoh paling menonjol:
+  `resources/views/transactions/partials/detail/source-reconciliation.blade.php:113-173`.
+
+### Evidence
+
+`vendor/bin/pint --test --format agent` → `passed` (seluruh repo, sebelumnya
+gagal). `git diff --check` bersih. `npm run build` sukses,
+`npm run theme:qa` "All representative theme checks passed",
+`php artisan view:cache` sukses. Focused suite hijau: 33 test/130 assertions
+(Rkas report + item ordering + transactions table + reconciliation +
+workflow filter), 24 test/213 assertions (GUI readiness + authorization +
+middleware), 27 test/244 assertions (termasuk SpjReportLayoutTest).
+Dua kegagalan `SpjReportLayoutTest::spj_monitoring_surfaces_use_theme_tokens`
+dan `RkasBudgetUiTest::test_rkas_workspace_exposes_revision_comparison_freshness_and_report_package`
+sudah dibuktikan pre-existing lewat stash A/B: tetap FAIL pada working tree
+tanpa perubahan batch ini. Visual browser tetap RVR.
+
+Perubahan ini tidak mengubah business rule, tenant boundary, lifecycle
+numbering, maupun kontrak sync; semua verifikasi difokuskan pada
+signature/style/markup.

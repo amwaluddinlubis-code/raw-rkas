@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\FiscalYear;
 use App\Services\ArkasMirrorBudgetService;
 use App\Services\RkasPaguSimulationService;
+use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -49,7 +50,7 @@ class RkasBudgetSimulator extends Component
         return app(RkasPaguSimulationService::class)->simulate($snapshot['rows'], $overrides);
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.rkas-budget-simulator', ['simulasi' => $this->simulation])
             ->layout('components.layouts.tailwind-app');

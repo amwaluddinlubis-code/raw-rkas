@@ -924,8 +924,11 @@ final class ArkasMirrorBudgetService
             ->sum(fn (int $monthNumber): float => (float) ($snapshot['realization_fallback_month'][$rapbsId][$monthNumber] ?? 0));
     }
 
-    /** @param Collection<int,array> $rows */
-    public function hierarchyOptions($rows, array $names)
+    /**
+     * @param  Collection<int,array>  $rows
+     * @param  array<string,string>  $names
+     */
+    public function hierarchyOptions(Collection $rows, array $names): Collection
     {
         return $rows->map(function (array $row) use ($names): array {
             $code = trim($row['activity_code'], '.');

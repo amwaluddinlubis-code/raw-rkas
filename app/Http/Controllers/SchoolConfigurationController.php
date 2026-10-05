@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class SchoolConfigurationController extends Controller
 {
@@ -159,7 +160,7 @@ class SchoolConfigurationController extends Controller
     }
 
     /** Menampilkan kop sekolah aktif dari disk privat melalui route terautentikasi. */
-    public function letterhead()
+    public function letterhead(): Response
     {
         $school = School::query()->findOrFail(session('active_school_id'));
         abort_if(blank($school->letterhead_path), 404);

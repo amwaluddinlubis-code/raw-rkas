@@ -5,10 +5,11 @@ namespace App\Http\Middleware;
 use App\Models\FiscalYear;
 use Closure;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class EnsureActiveFiscalYear
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
         $year = FiscalYear::find(session('active_fiscal_year_id'));
         $allowed = $year

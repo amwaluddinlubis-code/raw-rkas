@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DatabaseManagerAlerts extends Component
@@ -29,7 +30,7 @@ class DatabaseManagerAlerts extends Component
         }
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.database-manager-alerts');
     }

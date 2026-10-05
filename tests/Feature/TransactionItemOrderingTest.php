@@ -13,7 +13,8 @@ class TransactionItemOrderingTest extends TestCase
         $this->assertStringContainsString("wire:click=\"moveItem({{ \$item->id }}, 'up')\"", $blade);
         $this->assertStringContainsString("wire:click=\"moveItem({{ \$item->id }}, 'down')\"", $blade);
         $this->assertStringContainsString('ID {{ $item->source_item_id', $blade);
-        $this->assertStringContainsString('name="refresh"', $blade); $this->assertStringContainsString('min-w-[180px]', $blade);
+        $this->assertStringContainsString('name="refresh"', $blade);
+        $this->assertStringContainsString('min-w-[180px]', $blade);
     }
 
     public function test_workspace_persists_item_order_and_audits(): void

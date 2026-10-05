@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\Response;
 
 class SpjReportUseCase
 {
@@ -106,7 +107,7 @@ class SpjReportUseCase
         return $this->report(new Request(['mode' => $mode, 'periode' => $periode, 'search' => $search]), $perPage, $pendingPerPage);
     }
 
-    public function exportHonorPayments(Request $request, string $format)
+    public function exportHonorPayments(Request $request, string $format): Response
     {
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
         $year = FiscalYear::query()->findOrFail($this->context->fiscalYearId());

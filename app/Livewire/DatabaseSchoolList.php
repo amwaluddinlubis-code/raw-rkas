@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\School;
 use App\Services\OperationalAuditService;
 use App\Services\SchoolDatabaseManager;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DatabaseSchoolList extends Component
@@ -43,7 +44,7 @@ class DatabaseSchoolList extends Component
         }
     }
 
-    public function render()
+    public function render(): View
     {
         $needle = strtolower(trim($this->search));
 

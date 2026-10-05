@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Services\SchoolDatabaseManager;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DatabaseStatusSummary extends Component
@@ -49,7 +50,7 @@ class DatabaseStatusSummary extends Component
         }
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.database-status-summary');
     }

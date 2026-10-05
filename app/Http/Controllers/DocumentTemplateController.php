@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class DocumentTemplateController extends Controller
@@ -197,7 +198,7 @@ class DocumentTemplateController extends Controller
     }
 
     /** Mengunduh file template terpilih tanpa menjalankan renderer SPJ. */
-    public function downloadStored(string $templateId)
+    public function downloadStored(string $templateId): Response
     {
         $download = $this->library->storedDownload($templateId);
         if ($download['status'] === 'missing') {
@@ -227,7 +228,7 @@ class DocumentTemplateController extends Controller
     }
 
     /** Menyusun master XLSX terbaru dari setiap template canonical XLSX yang aktif. */
-    public function downloadMaster()
+    public function downloadMaster(): Response|RedirectResponse
     {
         try {
             $artifact = $this->masterExports->generate();
@@ -251,7 +252,7 @@ class DocumentTemplateController extends Controller
         return back()->with('success', 'Template berhasil dihapus.');
     }
 
-    public function sample(string $format)
+    public function sample(string $format): Response
     {
         abort_unless(in_array($format, ['docx', 'xlsx'], true), 404);
         $sample = $this->samples->generate($format);

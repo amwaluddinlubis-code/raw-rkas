@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DatabaseManagerTabs extends Component
@@ -28,7 +29,7 @@ class DatabaseManagerTabs extends Component
         $this->dispatch('database-tab-changed', tab: $tab);
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.database-manager-tabs');
     }

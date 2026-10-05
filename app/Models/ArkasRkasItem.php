@@ -12,6 +12,8 @@ class ArkasRkasItem extends Model
 
     protected $guarded = [];
 
-    protected $casts =
-        ['payload' => 'array', 'amount' => 'decimal:2'];
+    protected function casts(): array
+    {
+        return ['payload' => 'array', 'amount' => 'decimal:2'];
+    }
 }

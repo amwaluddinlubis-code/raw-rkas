@@ -11,6 +11,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -98,7 +99,8 @@ class TransactionsTable extends Component
         $this->resetPage();
     }
 
-    public function getFilteredStatsProperty(): object
+    #[Computed]
+    public function filteredStats(): object
     {
         $rows = (clone $this->filteredQuery())->select('transactions.*')->get();
         Transaction::preloadMirrorSource($rows);
@@ -111,12 +113,14 @@ class TransactionsTable extends Component
         ];
     }
 
-    public function getStatusesProperty(): Collection
+    #[Computed]
+    public function statuses(): Collection
     {
         return $this->workflowFilters()->labels();
     }
 
-    public function getTransactionsProperty(): LengthAwarePaginator
+    #[Computed]
+    public function transactions(): LengthAwarePaginator
     {
         $query = $this->filteredQuery()
             ->with(['spjPackage:id,transaction_id,document_number,status,finalized_at', 'items:id,transaction_id,source_item_id'])

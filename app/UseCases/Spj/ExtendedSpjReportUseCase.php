@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\Response;
 
 class ExtendedSpjReportUseCase extends SpjReportUseCase
 {
@@ -88,7 +89,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         ]);
     }
 
-    public function exportHonorPayments(Request $request, string $format)
+    public function exportHonorPayments(Request $request, string $format): Response
     {
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
 
@@ -183,7 +184,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         return app(DocumentStoragePathService::class)->downloadReportFile($path, 'DAFTAR-PENERIMAAN-HONOR-'.$year->year.'.xlsx', (int) $year->year);
     }
 
-    public function exportServiceRecipients(Request $request, string $format)
+    public function exportServiceRecipients(Request $request, string $format): Response
     {
         abort_unless(in_array($format, ['pdf', 'xlsx'], true), 404);
 

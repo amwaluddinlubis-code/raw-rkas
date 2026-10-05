@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -113,7 +114,8 @@ class EmployeeController extends Controller
         $employee->save();
     }
 
-    private function honorsFor(array $employees)
+    /** @param  array<int,mixed>  $employees */
+    private function honorsFor(array $employees): Collection
     {
         $nips = collect($employees)->pluck('nip')->filter()->unique()->values();
         $niks = collect($employees)->pluck('nik')->filter()->unique()->values();

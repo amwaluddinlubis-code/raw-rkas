@@ -25,10 +25,10 @@
         </x-slot:actions>
 
         <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
-            <x-stat-item label="Transaksi" :value="number_format($filteredStats->count, 0, ',', '.')" hint="Hasil filter aktif" value-class="text-slate-800"
-                icon="transaction" icon-class="text-slate-800" />
+            <x-stat-item label="Transaksi" :value="number_format($filteredStats->count, 0, ',', '.')" hint="Hasil filter aktif" value-class="text-[var(--ui-fg-strong)]"
+                icon="transaction" icon-class="text-[var(--ui-fg-strong)]" />
             <x-stat-item label="Nilai Bruto" :value="$rupiah($filteredStats->gross)" hint="Total nilai hasil filter"
-                value-class="text-indigo-700" icon="budget" icon-class="text-indigo-700" />
+                value-class="text-[var(--theme-content-accent)]" icon="budget" icon-class="text-[var(--theme-content-accent)]" />
             <x-stat-item label="Pajak" :value="$rupiah($filteredStats->tax)" hint="Total pajak hasil filter" value-class="text-amber-600"
                 icon="tax" icon-class="text-amber-600" />
             <x-stat-item label="Dibayarkan" :value="$rupiah($filteredStats->net)" hint="Nilai bersih hasil filter"
@@ -140,7 +140,7 @@
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex min-w-0 items-center gap-2">
                                 <span
-                                    class="font-mono text-[13px] font-bold text-slate-500">#{{ $transaction->id }}</span>
+                                    class="font-mono text-[13px] font-bold text-[var(--ui-fg-muted)]">#{{ $transaction->id }}</span>
                                 <x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']" size="xs" />
                             </div>
                             <span class="text-[13px]"
@@ -205,11 +205,11 @@
                 </colgroup>
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr class="border-b border-[var(--ui-line)]">
-                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">ID
+                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">ID
                             / Status</th>
-                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-slate-500">
+                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             Uraian / Referensi</th>
-                        <th class="px-4 py-2 text-right text-[13px] font-bold uppercase tracking-wide text-slate-500">
+                        <th class="px-4 py-2 text-right text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             Nilai</th>
                         <th
                             class="transaction-action-column px-4 py-2 text-center text-[13px] font-bold uppercase tracking-wide">
@@ -220,12 +220,12 @@
                     @if ($transactions->count() > 0)
                         @foreach ($transactions as $transaction)
                             @php($workStatus = $this->workStatusFor($transaction))
-                            <tr class="transition hover:bg-indigo-50/40"
+                            <tr class="transition hover:bg-[var(--ui-surface-soft)]"
                                 wire:key="transaction-row-{{ $transaction->id }}">
                                 <td class="px-4 py-2 align-middle">
                                     <div class="flex min-w-0 items-center gap-2">
                                         <span
-                                            class="shrink-0 font-mono text-[13px] font-bold text-slate-500">#{{ $transaction->id }}</span>
+                                            class="shrink-0 font-mono text-[13px] font-bold text-[var(--ui-fg-muted)]">#{{ $transaction->id }}</span>
                                         <div class="min-w-0"><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']"
                                                 size="xs" /></div>
                                     </div>

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\School;
 use App\Services\OperationalAuditService;
 use App\Services\SchoolDatabaseManager;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class DatabaseMaintenance extends Component
@@ -44,7 +45,7 @@ class DatabaseMaintenance extends Component
         }
     }
 
-    public function render()
+    public function render(): View
     {
         return view('livewire.database-maintenance');
     }

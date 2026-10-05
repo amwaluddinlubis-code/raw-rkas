@@ -7,6 +7,7 @@ use App\Services\ArkasMirrorBudgetService;
 use App\Services\RkasRevisionComparisonService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class RkasRevisionComparisonController extends Controller
 {
@@ -59,7 +60,7 @@ final class RkasRevisionComparisonController extends Controller
             'selectedFrom' => $fromId,
             'selectedTo' => $toId,
             'year' => $year,
-            'fundName' => (string) (\Illuminate\Support\Facades\DB::connection('school')->table('fund_sources')->where('id', $fundSourceId)->value('name') ?? ''),
+            'fundName' => (string) (DB::connection('school')->table('fund_sources')->where('id', $fundSourceId)->value('name') ?? ''),
         ]);
     }
 }

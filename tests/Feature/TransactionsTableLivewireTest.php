@@ -218,6 +218,7 @@ class TransactionsTableLivewireTest extends TestCase
             $table->text('description')->nullable();
             $table->text('item_description')->nullable();
             $table->decimal('amount', 18, 2)->default(0);
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
         });
 

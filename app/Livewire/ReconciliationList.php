@@ -7,6 +7,7 @@ use App\Services\ArkasMirrorResolver;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -52,7 +53,8 @@ class ReconciliationList extends Component
     }
 
     /** @return array{total:int,changed:int,missing:int,with_package:int} */
-    public function getSummaryProperty(): array
+    #[Computed]
+    public function summary(): array
     {
         $baseQuery = $this->baseQuery();
 
@@ -64,7 +66,8 @@ class ReconciliationList extends Component
         ];
     }
 
-    public function getTransactionsProperty(): LengthAwarePaginator
+    #[Computed]
+    public function transactions(): LengthAwarePaginator
     {
         $query = $this->filteredQuery()
             ->with(['spjPackage:id,transaction_id,document_number,status'])
