@@ -1,6 +1,6 @@
 # Rencana Migrasi Livewire (TALL) — Status, Audit Boundary, dan Urutan
 
-Terakhir disinkronkan terhadap source repository: **2026-09-25**. Riwayat migrasi awal berasal dari branch `gui-standardization`; branch audit aktif adalah `hardening/raw-rkas-audit`.
+Terakhir disinkronkan terhadap source repository: **2026-10-05**. Riwayat migrasi awal berasal dari branch `gui-standardization`; branch audit `hardening/raw-rkas-audit` sudah digabung ke `main` dan tidak lagi menjadi branch kerja aktif.
 
 Dokumen ini adalah sumber teknis untuk status migrasi Livewire/TALL. Status release keseluruhan berada di `CURRENT_PROGRESS.md`; prioritas berada di `DEVELOPMENT_ROADMAP.md`; evidence gate berada di `P0_VERIFICATION_KIT.md`.
 
@@ -211,7 +211,7 @@ Jika operator/runtime flow sudah stabil dan manfaatnya jelas, urutan kandidat re
 
 Tetap OUT OF SCOPE tanpa instruksi/kebutuhan khusus:
 
-- ARKAS importer stateful;
+- ~~ARKAS importer stateful~~ — subsystem Generic Importer sudah dihapus 2026-10-04, jadi tidak lagi relevan sebagai target migrasi; `ArkasStagingService` yang tersisa dipanggil dari service canonical, bukan dari component;
 - workspace detail Paket SPJ mutation-heavy;
 - protected `resources/views/students/index.blade.php`;
 - Dashboard sebagai target migrasi filter tanpa kebutuhan nyata;

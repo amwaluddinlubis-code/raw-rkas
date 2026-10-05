@@ -420,6 +420,13 @@ final class SpjPeriodicReportPrintService
             ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
             ->values();
 
+        // Baris backfill MIG-* (spj:backfill-mirror-from-local) yang sudah
+        // dilengkapi baris PAJAK kanonis sync susulan dibuang di sini agar
+        // tidak tampil sebagai baris kembar beruraian kosong; shortfall
+        // murni (tanpa padanan kanonis) tetap dihitung sebagai Terima.
+        // Cerminan dedup bayangan ArkasMirrorResolver::transactionSource.
+        $records = $this->bkuDedupBackfillTax($records);
+
         $firstMonth = min($months);
         $openingBank = 0.0;
         $openingCash = 0.0;
@@ -427,7 +434,9 @@ final class SpjPeriodicReportPrintService
             if ((int) substr((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), 5, 2) !== $firstMonth) {
                 continue;
             }
-            match ($payload['REK_BKU'] ?? '') {
+            // Varian "Sisa" ARKAS (mis. "Saldo Awal Bank Sisa") diperlakukan
+            // sama dengan bentuk dasarnya agar tidak hilang dari saldo.
+            match ($this->bkuBaseRek((string) ($payload['REK_BKU'] ?? ''))) {
                 'Saldo Awal Bank' => $openingBank += (float) ($payload['JUMLAH'] ?? 0),
                 'Saldo Awal Tunai' => $openingCash += (float) ($payload['JUMLAH'] ?? 0),
                 default => null,
@@ -455,10 +464,11 @@ final class SpjPeriodicReportPrintService
             }
         }
 
+        $openingReks = $cashOnly ? ['Saldo Awal Tunai'] : ['Saldo Awal Bank', 'Saldo Awal Tunai'];
         $openingLines = [];
         foreach ($records as $payload) {
             if ((int) substr((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), 5, 2) === $firstMonth
-                && in_array($payload['REK_BKU'] ?? '', $cashOnly ? ['Saldo Awal Tunai'] : ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
+                && in_array($this->bkuBaseRek((string) ($payload['REK_BKU'] ?? '')), $openingReks, true)) {
                 $openingLines[] = $payload;
             }
         }
@@ -482,11 +492,12 @@ final class SpjPeriodicReportPrintService
         $lineOrder = 0;
         foreach ($records as $payload) {
             $rek = (string) ($payload['REK_BKU'] ?? '');
-            if (in_array($rek, ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
+            $baseRek = $this->bkuBaseRek($rek);
+            if (in_array($baseRek, ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
                 continue;
             }
             // Buku Pembantu Kas hanya mencatat sisi tunai.
-            if ($cashOnly && ! in_array($rek, ['Pergeseran Tunai', 'Kas Keluar', 'Pajak Belanja Terima', 'Pajak Belanja Setor'], true)) {
+            if ($cashOnly && ! in_array($baseRek, ['Pergeseran Tunai', 'Kas Keluar', 'Pajak Belanja Terima', 'Pajak Belanja Setor'], true)) {
                 continue;
             }
 
@@ -494,9 +505,9 @@ final class SpjPeriodicReportPrintService
             $incoming = 0.0;
             $outgoing = 0.0;
 
-            match ($rek) {
-                'Terima Dana BOS', 'Pajak Belanja Terima', 'Pergeseran Tunai' => [$incoming, $bank, $cash] = $this->bkuReceive($amount, $rek, $bank, $cash),
-                'Kas Keluar', 'Kas Keluar Non Tunai', 'Pajak Belanja Setor', 'Tarik Tunai' => [$outgoing, $bank, $cash] = $this->bkuSpend($amount, $rek, $bank, $cash),
+            match ($baseRek) {
+                'Terima Dana BOS', 'Pajak Belanja Terima', 'Pergeseran Tunai', 'Bunga Bank' => [$incoming, $bank, $cash] = $this->bkuReceive($amount, $baseRek, $bank, $cash),
+                'Kas Keluar', 'Kas Keluar Non Tunai', 'Pajak Belanja Setor', 'Tarik Tunai', 'Pajak Bunga' => [$outgoing, $bank, $cash] = $this->bkuSpend($amount, $baseRek, $bank, $cash),
                 default => null,
             };
 
@@ -507,12 +518,14 @@ final class SpjPeriodicReportPrintService
             $lines[] = [
                 'order' => $lineOrder++,
                 'rek' => $rek,
+                'backfill' => $this->bkuIsBackfill($payload),
                 'date' => $this->bkuDate($payload),
                 'activity' => $this->bkuActivityCode($payload, $records, $kegiatanCache, $rkasMap, $chainMaps),
                 'account' => (string) ($payload['KODE_REKENING'] ?? '') ?: '-',
                 'evidence' => (string) ($payload['NO_BUKTI'] ?? ''),
                 'parentEvidence' => $evidenceByKas[$parentKey] ?? '',
-                'mirror' => (string) ($payload['URAIAN'] ?? ''),
+                'mirror' => $this->bkuMirrorUraian($payload),
+                'mirrorUraian' => $this->bkuSourceUraian($payload),
                 'description' => $this->bkuDescription($payload, $operatorMaps),
                 'payment' => $this->bkuPaymentLine($payload, $operatorMaps),
                 'item' => $this->bkuItemLine($payload, $operatorMaps),
@@ -545,7 +558,8 @@ final class SpjPeriodicReportPrintService
     /** @return array{0:float,1:float,2:float} */
     private function bkuReceive(float $amount, string $rek, float $bank, float $cash): array
     {
-        if ($rek === 'Terima Dana BOS') {
+        // Bunga bank masuk ke sisi bank seperti Terima Dana BOS.
+        if ($rek === 'Terima Dana BOS' || $rek === 'Bunga Bank') {
             $bank += $amount;
         } else {
             $cash += $amount;
@@ -557,9 +571,10 @@ final class SpjPeriodicReportPrintService
     /** @return array{0:float,1:float,2:float} */
     private function bkuSpend(float $amount, string $rek, float $bank, float $cash): array
     {
+        // Pajak bunga dipotong dari sisi bank.
         if ($rek === 'Kas Keluar Non Tunai') {
             $bank -= $amount;
-        } elseif ($rek === 'Tarik Tunai') {
+        } elseif ($rek === 'Tarik Tunai' || $rek === 'Pajak Bunga') {
             $bank -= $amount;
         } else {
             $cash -= $amount;
@@ -850,14 +865,21 @@ final class SpjPeriodicReportPrintService
      */
     private function bkuGroupedRows(array $lines): array
     {
+        // Baris backfill (shortfall murni) menempel pada grup bukti miliknya
+        // sendiri bila tautan induknya tidak ada di mirror.
+        $taxGroupOf = fn (array $line): string => $line['parentEvidence'] !== ''
+            ? $line['parentEvidence']
+            : (($line['backfill'] ?? false) ? (string) ($line['evidence'] ?? '') : '');
+
         $itemGroups = [];
         $taxGroups = [];
         foreach ($lines as $line) {
-            if (in_array($line['rek'], ['Kas Keluar', 'Kas Keluar Non Tunai'], true) && $line['evidence'] !== '') {
+            // Varian "Sisa" memakai bentuk dasarnya agar ikut kelompok bukti.
+            if (in_array($this->bkuBaseRek((string) ($line['rek'] ?? '')), ['Kas Keluar', 'Kas Keluar Non Tunai'], true) && $line['evidence'] !== '') {
                 $itemGroups[$line['evidence']][] = $line;
-            } elseif (str_starts_with($line['rek'], 'Pajak Belanja ') && $line['parentEvidence'] !== '') {
+            } elseif (str_starts_with($line['rek'], 'Pajak Belanja ') && $taxGroupOf($line) !== '') {
                 $slot = str_starts_with($line['rek'], 'Pajak Belanja Terima') ? 'terima' : 'setor';
-                $taxGroups[$line['parentEvidence']][$slot][] = $line;
+                $taxGroups[$taxGroupOf($line)][$slot][] = $line;
             }
         }
 
@@ -865,7 +887,7 @@ final class SpjPeriodicReportPrintService
         $emitted = [];
         foreach ($lines as $line) {
             $bukti = $line['evidence'];
-            $isItem = in_array($line['rek'], ['Kas Keluar', 'Kas Keluar Non Tunai'], true) && $bukti !== '';
+            $isItem = in_array($this->bkuBaseRek((string) ($line['rek'] ?? '')), ['Kas Keluar', 'Kas Keluar Non Tunai'], true) && $bukti !== '';
             $isTax = str_starts_with($line['rek'], 'Pajak Belanja ');
 
             if ($isItem) {
@@ -882,7 +904,7 @@ final class SpjPeriodicReportPrintService
                 continue;
             }
 
-            if ($isTax && isset($itemGroups[$line['parentEvidence']])) {
+            if ($isTax && $taxGroupOf($line) !== '' && isset($itemGroups[$taxGroupOf($line)])) {
                 continue;
             }
 
@@ -909,13 +931,44 @@ final class SpjPeriodicReportPrintService
                 $chronologicalLast = $member;
             }
         }
+        // Induk memakai uraian non-kosong pertama segrup (bukan baris
+        // pertama buta): payment operator dulu, lalu uraian sumber
+        // (URAIAN/URAIAN_PAJAK), terakhir label REK. Mencegah parent
+        // kosong atau generik saat baris pertama grup kebetulan
+        // beruraian kosong.
+        $parentLabel = '-';
+        foreach ($all as $member) {
+            if ((string) ($member['payment'] ?? '') !== '') {
+                $parentLabel = (string) $member['payment'];
+
+                break;
+            }
+        }
+        if ($parentLabel === '-') {
+            foreach ($all as $member) {
+                if ((string) ($member['mirrorUraian'] ?? '') !== '') {
+                    $parentLabel = (string) $member['mirrorUraian'];
+
+                    break;
+                }
+            }
+        }
+        if ($parentLabel === '-') {
+            foreach ($all as $member) {
+                if ((string) ($member['mirror'] ?? '') !== '') {
+                    $parentLabel = (string) $member['mirror'];
+
+                    break;
+                }
+            }
+        }
         $rows[] = [
             'row_class' => 'bku-parent',
             'date' => $first['date'],
             'activity' => $first['activity'],
             'account' => $first['account'],
             'evidence' => $bukti,
-            'description' => '<div><strong>'.e($first['payment'] !== '' ? $first['payment'] : $first['mirror']).'</strong></div>',
+            'description' => '<div><strong>'.e($parentLabel).'</strong></div>',
             'incoming' => array_sum(array_column($items, 'incoming')),
             'outgoing' => array_sum(array_column($items, 'outgoing')),
             'balance' => $chronologicalLast['balance'],
@@ -923,7 +976,10 @@ final class SpjPeriodicReportPrintService
 
         $child = function (array $line, bool $withAmount) use ($bukti): array {
             $nominal = $line['incoming'] != 0.0 ? $line['incoming'] : $line['outgoing'];
-            $label = $line['item'] !== '' ? $line['item'] : $line['mirror'];
+            $label = $line['item'] !== '' ? $line['item'] : ((string) ($line['mirror'] ?? '') !== '' ? (string) $line['mirror'] : (string) ($line['rek'] ?? '-'));
+            if ($label === '') {
+                $label = '-';
+            }
 
             return [
                 'date' => $line['date'],
@@ -966,7 +1022,8 @@ final class SpjPeriodicReportPrintService
     /**
      * Sel uraian bertingkat (HTML aman): baris pertama uraian pembayaran
      * operator (abu-abu), baris kedua deskripsi isian operator; fallback
-     * ke uraian mirror bila keduanya kosong.
+     * ke uraian mirror (URAIAN, lalu URAIAN_PAJAK, lalu REK_BKU) bila
+     * keduanya kosong agar sel tidak pernah kosong.
      *
      * @param  array<string,mixed>  $payload
      * @param  array{items:array<string,array{item:string,payment:string}>,transactions:array<string,string>}  $maps
@@ -975,14 +1032,192 @@ final class SpjPeriodicReportPrintService
     {
         $payment = $this->bkuPaymentLine($payload, $maps);
         $operator = $this->bkuItemLine($payload, $maps);
+        $mirror = $this->bkuMirrorUraian($payload);
 
         $html = '';
         if ($payment !== '') {
             $html .= '<div class="bku-sub">'.e($payment).'</div>';
         }
-        $html .= '<div>'.e($operator !== '' ? $operator : (string) ($payload['URAIAN'] ?? '')).'</div>';
+        $html .= '<div>'.e($operator !== '' ? $operator : ($mirror !== '' ? $mirror : '-')).'</div>';
 
         return $html;
+    }
+
+    /**
+     * Bentuk dasar REK_BKU tanpa sufiks " Sisa" ARKAS (mis.
+     * "Kas Keluar Sisa" → "Kas Keluar") agar varian sisa diperlakukan
+     * sama dengan bentuk dasarnya pada pengelompokan dan hitung saldo.
+     */
+    private function bkuBaseRek(string $rek): string
+    {
+        $normalized = trim($rek);
+
+        if (str_ends_with($normalized, ' Sisa')) {
+            return trim(substr($normalized, 0, -5));
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Uraian sumber baris mirror: URAIAN dulu, lalu URAIAN_PAJAK (baris
+     * pajak ARKAS menyimpan keterangannya di sana), lalu REK_BKU.
+     *
+     * @param  array<string,mixed>  $payload
+     */
+    private function bkuMirrorUraian(array $payload): string
+    {
+        $uraian = $this->bkuSourceUraian($payload);
+        if ($uraian !== '') {
+            return $uraian;
+        }
+
+        return trim((string) ($payload['REK_BKU'] ?? ''));
+    }
+
+    /**
+     * Uraian sumber murni (tanpa fallback REK): URAIAN lalu URAIAN_PAJAK.
+     *
+     * @param  array<string,mixed>  $payload
+     */
+    private function bkuSourceUraian(array $payload): string
+    {
+        foreach (['URAIAN', 'URAIAN_PAJAK'] as $key) {
+            $value = trim((string) ($payload[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Baris backfill lokal dikenali dari prefix ID kanonisnya (sama dengan
+     * ArkasMirrorResolver::isBackfillRow).
+     *
+     * @param  array<string,mixed>  $payload
+     */
+    private function bkuIsBackfill(array $payload): bool
+    {
+        return str_starts_with(strtoupper(trim((string) ($payload['ID_KAS_UMUM'] ?? ''))), 'MIG-');
+    }
+
+    /**
+     * Keranjang jenis pajak satu baris (sama dengan klasifikasi
+     * ArkasMirrorResolver::taxBucket).
+     *
+     * @param  array<string,mixed>  $payload
+     */
+    private function bkuTaxBucket(array $payload): string
+    {
+        if ((int) ($payload['IS_PPN'] ?? 0) === 1) {
+            return 'ppn';
+        }
+        if ((int) ($payload['IS_PPH21'] ?? 0) === 1) {
+            return 'pph21';
+        }
+        if ((int) ($payload['IS_PPH22'] ?? 0) === 1) {
+            return 'pph22';
+        }
+        if ((int) ($payload['IS_PPH23'] ?? 0) === 1) {
+            return 'pph23';
+        }
+        if ((int) ($payload['IS_PPH4'] ?? 0) === 1) {
+            return 'pph4';
+        }
+        if ((int) ($payload['IS_SSPD'] ?? 0) === 1) {
+            return 'sspd';
+        }
+
+        return '__unknown';
+    }
+
+    private function bkuTaxBucketLabel(string $bucket): string
+    {
+        return match ($bucket) {
+            'ppn' => 'PPN',
+            'pph21' => 'PPh 21',
+            'pph22' => 'PPh 22',
+            'pph23' => 'PPh 23',
+            'pph4' => 'PPh 4(2)',
+            'sspd' => 'SSPD',
+            default => 'Pajak',
+        };
+    }
+
+    /**
+     * Buang baris PAJAK backfill MIG-* yang sudah dilengkapi baris PAJAK
+     * kanonis (kunci: bukti + keranjang + nominal sama persis) agar tidak
+     * tampil ganda/blank; shortfall murni ditulis ulang sebagai Terima
+     * agar tetap terhitung seperti agregat resolver.
+     *
+     * @param  Collection<int,array<string,mixed>>  $records
+     * @return Collection<int,array<string,mixed>>
+     */
+    private function bkuDedupBackfillTax(Collection $records): Collection
+    {
+        $evidenceByKas = [];
+        foreach ($records as $payload) {
+            $kasKey = (string) ($payload['ID_KAS_UMUM'] ?? '');
+            if ($kasKey !== '' && (string) ($payload['NO_BUKTI'] ?? '') !== '') {
+                $evidenceByKas[$kasKey] = (string) $payload['NO_BUKTI'];
+            }
+        }
+
+        $amountKey = fn (array $payload): string => number_format((float) ($payload['JUMLAH'] ?? 0), 2, '.', '');
+
+        $canonicalKeys = [];
+        foreach ($records as $payload) {
+            if ($this->bkuIsBackfill($payload)) {
+                continue;
+            }
+            if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'PAJAK') {
+                continue;
+            }
+            $baseRek = $this->bkuBaseRek((string) ($payload['REK_BKU'] ?? ''));
+            if (! str_starts_with($baseRek, 'Pajak Belanja ')) {
+                continue;
+            }
+            $slot = str_starts_with($baseRek, 'Pajak Belanja Terima') ? 'terima' : 'setor';
+            $parentKey = (string) ($payload['PARENT_ID_KAS_UMUM'] ?? '');
+            $group = $evidenceByKas[$parentKey] ?? (string) ($payload['NO_BUKTI'] ?? '');
+            if ($group === '') {
+                continue;
+            }
+            $canonicalKeys[$group.'|'.$slot.'|'.$this->bkuTaxBucket($payload).'|'.$amountKey($payload)] = true;
+        }
+
+        return $records->filter(function (array $payload) use ($canonicalKeys, $amountKey): bool {
+            if (! $this->bkuIsBackfill($payload)) {
+                return true;
+            }
+            if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'PAJAK') {
+                return true;
+            }
+            $group = (string) ($payload['NO_BUKTI'] ?? '');
+            if ($group === '') {
+                return true;
+            }
+            $bucket = $this->bkuTaxBucket($payload);
+
+            return ! isset($canonicalKeys[$group.'|terima|'.$bucket.'|'.$amountKey($payload)]);
+        })->values()->map(function (array $payload): array {
+            // Shortfall murni: baris MIG-T-* hanya membawa ID + JUMLAH +
+            // flag; lengkapi tampilan Terima agar terhitung dan terbaca.
+            // Label "(data lokal)" menandai angka yang hanya ada di
+            // database lokal (tanpa padanan baris PAJAK ARKAS).
+            if ($this->bkuIsBackfill($payload)
+                && strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) === 'PAJAK'
+                && trim((string) ($payload['REK_BKU'] ?? '')) === '') {
+                $payload['REK_BKU'] = 'Pajak Belanja Terima';
+                if (trim((string) ($payload['URAIAN'] ?? '')) === '' && trim((string) ($payload['URAIAN_PAJAK'] ?? '')) === '') {
+                    $payload['URAIAN'] = 'Terima '.$this->bkuTaxBucketLabel($this->bkuTaxBucket($payload)).' (data lokal)';
+                }
+            }
+
+            return $payload;
+        });
     }
 
     /**

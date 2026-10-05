@@ -1,7 +1,13 @@
 # Modul Laporan Periode
 
+Terakhir diperbarui: **2026-10-05** (`raw-rkas`, branch `main`)
+
 Dokumen ini adalah panduan fitur laporan periode (`/laporan-periode`): generator
 internal APP-SPJ untuk cetak browser dan PDF, terpisah dari template Paket SPJ.
+
+Status: **ACTIVE FEATURE GUIDE / PRINT, PDF, DAN EXCEL SOURCE IMPLEMENTED /
+VISUAL RUNTIME RVR**. Kontrak teknis modul (registry, scope, boundary data)
+berada di `SPJ_PERIODIC_REPORTING.md`.
 
 ## BPK Dinas (REKAP REALISASI PENGGUNAAN DANA BOS model Dinas)
 
@@ -79,6 +85,28 @@ Implementasi: `SpjPeriodicReportPrintService::bkuLedgerRows(..., $cashOnly)`
 + cabang `cash_ledger` di `document.blade.php`.
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
+## Dedup bayangan backfill pajak + fallback uraian BKU
+
+`spj:backfill-mirror-from-local` menulis baris `MIG-T-*` (tanpa
+`REK_BKU`/uraian) untuk shortfall pajak. Setelah sinkronisasi
+susulan membawa baris PAJAK kanonis yang sama (bukti + jenis +
+nominal sama), baris bayangan itu tampil sebagai baris kembar
+beruraian kosong dengan nominal `0/0` (kasus nyata 10208183 TW1
+2026: `BPU07`–`BPU22`). `bkuDedupBackfillTax()` membuang bayangan
+yang sudah dilengkapi baris kanonis (kunci sama seperti dedup
+`ArkasMirrorResolver::transactionSource`); shortfall murni ditulis
+ulang sebagai `Terima … (data lokal)` agar tetap terhitung dan
+terbaca asalnya.
+
+Pelengkap: `REK_BKU` varian `Sisa` dinormalisasi ke bentuk dasarnya
+(`bkuBaseRek`) untuk grup/hitung; `Bunga Bank` dihitung sebagai
+penerimaan sisi bank dan `Pajak Bunga` sebagai pengeluaran sisi bank
+(sebelumnya keduanya `0/0` walau mirror membawa nominal); uraian
+memakai `URAIAN`, fallback `URAIAN_PAJAK`, lalu `REK_BKU`; parent grup
+memakai payment/uraian non-kosong pertama segrup (bukan baris pertama
+buta) sehingga tidak ada lagi sel uraian kosong berupa
+`<strong></strong>`.
+
 ## Rekapitulasi Pengeluaran Dana BOS (model ARKAS resmi)
 
 Presentasi `rekap_bosp` (`rekapitulasi_pengeluaran_dana_bos`, semua scope
@@ -117,3 +145,17 @@ belanja modal; belanja lainnya dipetakan ke kategori operasional yang tersedia.
 Hasil dapat dibuka melalui cetak browser atau PDF dari halaman Laporan Periode.
 Format ini adalah laporan internal APP-SPJ yang perlu dicocokkan dengan bukti
 fisik dan format resmi instansi sebelum ditandatangani.
+
+## Status verifikasi (2026-10-05)
+
+Perubahan pada `SpjPeriodicReportPrintService` (dedup bayangan backfill pajak,
+normalisasi `REK_BKU` varian `Sisa`, perhitungan bunga/pajak sisi bank, dan
+fallback uraian BKU) sudah tercakup regression:
+
+```text
+BkuOfficialLedgerTest              : 12 passed / 124 assertions
+filter PeriodicReport              : 13 passed / 148 assertions
+```
+
+Artinya kontrak **source/data** terverifikasi; tampilan cetaknya tetap **RVR**
+karena belum dibuka di browser/PDF viewer aktual.

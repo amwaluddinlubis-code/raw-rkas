@@ -1,9 +1,10 @@
 # SPJ BOSP — Pola Lampiran Bukti Dukung Operasional (Referensi Poster 10 Pola)
 
-Terakhir diperbarui: **2026-09-23**
+Terakhir diperbarui: **2026-10-05**
 
-Status: **ACTIVE REFERENCE / FASE 1 IMPLEMENTED** — checklist manual tersedia di
-halaman checklist paket; tetap tidak memblokir penomoran.
+Status: **ACTIVE REFERENCE / FASE 1 IMPLEMENTED + AMBANG DETEKSI NON-BLOCKING** —
+checklist manual tersedia di halaman checklist paket; deteksi ambang sudah
+otomatis tetapi tetap tidak memblokir penomoran.
 
 ## Status implementasi (fase 1 — 2026-09-23)
 
@@ -16,8 +17,19 @@ halaman checklist paket; tetap tidak memblokir penomoran.
   (`SPJ_PACKAGE / CHECKLIST_EKSTERNAL`). Tidak menyentuh validator
   penomoran, lifecycle, sync, maupun registry.
 - Item GENERATED (Kwitansi A2) hanya informatif mengikuti status A2.
-- RVR / belum: aturan ambang otomatis (materai >Rp5 Jt, PPN >Rp2 Jt,
-  PPh23 2% + pajak restoran 10%), cetak checklist pendamping.
+- Deteksi ambang otomatis (koreksi 2026-10-05): ketiga ambang poster **sudah
+  diimplementasikan** sebagai hint non-blocking di `SpjOperatorHintService` dan
+  dirender pada `spj.checklist` — materai (`gross > Rp5 Jt`), PPN
+  (`gross > Rp2 Jt` pada kategori BARANG / JASA_LAINNYA / PEMELIHARAAN tanpa
+  PPN tercatat), serta pajak konsumsi (KONSUMSI tanpa PPh 23). Regresinya ada
+  di `SpjOperatorHelperTest`. Semua ambang dibaca dari mirror lewat
+  `Transaction::sourceValue()`.
+- Hint lain yang sudah ada di halaman yang sama: pencocokan BKU–Kwitansi,
+  saran kategori dari rekening, peringatan invoice/nominal duplikat,
+  kelengkapan dokumen eksternal SiPlah, dan catatan operator.
+- RVR / belum: menjadikan ambang tersebut **gate pemblokir**, serta cetak
+  checklist pendamping. Semua deteksi sekarang informatif dan tidak
+  menghentikan numbering.
 
 ## Pemetaan ke kategori canonical (acuan implementasi, bukan kategori baru)
 
@@ -144,7 +156,11 @@ Dokumen eksternal di bawah ini: checklist manual operator (sebagian tidak dapat 
 
 ## Belum dikerjakan (fase berikutnya)
 
-- Aturan ambang otomatis: materai >Rp5 Jt, PPN >Rp2 Jt, PPh23 2% + pajak
-  restoran 10% belum menjadi validasi otomatis.
-- Cetak checklist pendamping (`SPJ_CHECKLIST`) belum memuat pola eksternal.
+- **Menjadikan ambang sebagai gate.** Deteksi materai/PPN/PPh23 sudah berjalan
+  (`SpjOperatorHintService`) tetapi masih non-blocking: paket dengan ambang
+  terlampaui tetap bisa masuk penomoran. Menahannya memerlukan keputusan
+  produk apakah hint ini wajib Dicegah atau cukup informatif.
+- **Cetak checklist pendamping** (`SPJ_CHECKLIST`) belum memuat pola eksternal;
+  placeholder-nya masih hanya nomor/tanggal/sumber dana dan field opsional
+  (`SpjDocumentTypeRegistry`).
 - Perubahan apa pun mengikuti kontrak numbering/sync/tenant yang aktif.

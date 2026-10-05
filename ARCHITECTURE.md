@@ -64,7 +64,8 @@ ARKAS database
 
 Entry: `POST /sinkronisasi/arkas` → `ArkasSyncController` → job `SynchronizeArkas`
 → `ArkasCanonicalSyncService::synchronize` (lock `arkas-canonical-sync:{school}:{year}`).
-Jalur terpisah dan profile-driven: Generic Importer (`/pengaturan/arkas/importer/*`, lihat `docs/ARKAS_IMPORTER.md`).
+Generic Importer yang profile-driven sudah dihapus (2026-10-04); hanya pipeline
+canonical sync di atas yang hidup. Lihat `docs/SYNCHRONIZATION.md` §2.2.
 
 ### 2. Lifecycle Paket SPJ
 

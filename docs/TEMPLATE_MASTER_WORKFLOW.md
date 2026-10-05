@@ -1,6 +1,6 @@
 # Master Template Dokumen — Workflow Canonical
 
-Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`).
+Terakhir disinkronkan terhadap source aktif: **2026-10-05** (`raw-rkas`, branch `main`; branch audit `hardening/raw-rkas-audit` sudah digabung).
 
 Dokumen ini menjelaskan lifecycle **Import Paket Template**, **update satu template**, **download template individu**, **preview HTML/PDF dari Excel**, **Cek Placeholder**, **Unduh Master Template Terbaru**, dan pipeline render runtime yang menjaga fidelity workbook. Kontrak placeholder tetap berada di `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`; status release/gate tetap berada di `CURRENT_PROGRESS.md`.
 

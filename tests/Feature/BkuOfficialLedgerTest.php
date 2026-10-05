@@ -271,6 +271,8 @@ class BkuOfficialLedgerTest extends TestCase
         $response->assertSee('Buku Pembantu Kas Ditutup', false);
         $response->assertSee('Saldo Kas Tunai', false);
         $response->assertSee('Menyetujui', false);
+        $response->assertDontSee('Mengetahui,', false);
+        $this->assertSame(1, substr_count((string) $response->getContent(), '<table class="signature-table'));
     }
 
     public function test_bku_print_route_renders_official_layout(): void
@@ -287,6 +289,115 @@ class BkuOfficialLedgerTest extends TestCase
         $response->assertSee('Buku Kas Umum Ditutup', false);
         $response->assertSee('Terdiri Dari', false);
         $response->assertSee('Menyetujui', false);
+        // Blok generik "Mengetahui" tidak boleh ikut tampil (tanda tangan ganda).
+        $response->assertDontSee('Mengetahui,', false);
+        $response->assertDontSee('Bendahara BOSP', false);
+        $this->assertSame(1, substr_count((string) $response->getContent(), '<table class="signature-table'));
+    }
+
+    public function test_bku_sisa_belanja_groups_and_counts_like_base_form(): void
+    {
+        $base = ['TANGGAL_TRANSAKSI' => '2026-05-12', 'KODE_REKENING' => '5.1.02.01.01.0052', 'NO_BUKTI' => 'BPUSISA1'];
+        // Baris pertama grup sengaja beruraian kosong (kasus baris duplikat
+        // pasca-sinkronisasi): parent tetap wajib menampilkan uraian
+        // non-kosong pertama, bukan sel kosong.
+        $this->seedMirrorRow('SISA-1', $base + ['KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar Sisa', 'URAIAN' => '', 'JUMLAH' => 500000, 'ID_KAS_UMUM' => 'SISA-1']);
+        $this->seedMirrorRow('SISA-2', $base + ['KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'URAIAN' => 'Belanja Sisa Real', 'JUMLAH' => 300000, 'ID_KAS_UMUM' => 'SISA-2']);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 5);
+        $rows = $payload['rows'];
+
+        $parents = collect($rows)->filter(fn ($row): bool => ($row['evidence'] ?? '') === 'BPUSISA1' && ($row['row_class'] ?? '') === 'bku-parent')->values();
+        $this->assertCount(1, $parents, 'Varian Sisa wajib menyatu dalam satu grup bukti.');
+        $this->assertSame(800000.0, $parents->first()['outgoing']);
+        $this->assertStringContainsString('Belanja Sisa Real', strip_tags((string) $parents->first()['description']));
+        $this->assertDoesNotMatchRegularExpression('/<strong>\s*<\/strong>/', (string) $parents->first()['description']);
+    }
+
+    public function test_bku_tax_row_falls_back_to_uraian_pajak(): void
+    {
+        $base = ['TANGGAL_TRANSAKSI' => '2026-05-13', 'KODE_REKENING' => '5.1.02.02.01.0013'];
+        $this->seedMirrorRow('BELANJA-PJK', $base + ['KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'URAIAN' => 'Belanja Kena Pajak', 'JUMLAH' => 1000000, 'NO_BUKTI' => 'BPUPJK1', 'ID_KAS_UMUM' => 'BELANJA-PJK']);
+        // Baris pajak ARKAS menyimpan keterangan di URAIAN_PAJAK dengan
+        // URAIAN kosong — sebelumnya tampil sebagai baris tanpa uraian.
+        $this->seedMirrorRow('PAJAK-PJK', $base + ['KATEGORI_BKU' => 'PAJAK', 'REK_BKU' => 'Pajak Belanja Terima', 'URAIAN' => '', 'URAIAN_PAJAK' => 'Terima PPN Brosur', 'JUMLAH' => 110000, 'ID_KAS_UMUM' => 'PAJAK-PJK', 'PARENT_ID_KAS_UMUM' => 'BELANJA-PJK']);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 5);
+        $descriptions = collect($payload['rows'])->pluck('description')->map(fn ($value): string => strip_tags((string) $value))->all();
+
+        $this->assertTrue(collect($descriptions)->contains(fn (string $text): bool => str_contains($text, 'Terima PPN Brosur')));
+    }
+
+    public function test_bku_backfill_tax_shadow_is_deduped_against_canonical(): void
+    {
+        $base = ['TANGGAL_TRANSAKSI' => '2026-05-14', 'KODE_REKENING' => '5.1.02.01.01.0024', 'NO_BUKTI' => 'BPUSHD1'];
+        $this->seedMirrorRow('BELANJA-SHD', $base + ['KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'URAIAN' => 'Belanja Asli', 'JUMLAH' => 1000000, 'ID_KAS_UMUM' => 'BELANJA-SHD']);
+        $this->seedMirrorRow('PBT-SHD', $base + ['KATEGORI_BKU' => 'PAJAK', 'REK_BKU' => 'Pajak Belanja Terima', 'URAIAN' => 'Terima PPN', 'JUMLAH' => 110000, 'ID_KAS_UMUM' => 'PBT-SHD', 'PARENT_ID_KAS_UMUM' => 'BELANJA-SHD', 'IS_PPN' => 1]);
+        // Bayangan backfill (spj:backfill-mirror-from-local): tanpa REK dan
+        // uraian, nominal sama persis dengan baris kanonis — sebelumnya
+        // tampil sebagai baris kembar beruraian kosong.
+        $this->seedMirrorRow('MIG-T-99-ppn', $base + ['KATEGORI_BKU' => 'PAJAK', 'JUMLAH' => 110000, 'ID_KAS_UMUM' => 'MIG-T-99-ppn', 'PARENT_ID_KAS_UMUM' => 'SOME-TXN', 'IS_PPN' => 1]);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 5);
+        $rows = collect($payload['rows']);
+
+        $group = $rows->filter(fn ($row): bool => ($row['evidence'] ?? '') === 'BPUSHD1')->values();
+        // Induk + rincian belanja + terima (tanpa baris bayangan).
+        $this->assertCount(3, $group);
+        $terima = $group->filter(fn ($row): bool => str_contains(strip_tags((string) ($row['description'] ?? '')), 'Terima PPN'))->values();
+        $this->assertCount(1, $terima);
+        $this->assertSame(110000.0, $terima->first()['incoming']);
+        foreach ($group as $row) {
+            $this->assertNotSame('', trim(strip_tags((string) ($row['description'] ?? ''))), 'Tidak boleh ada uraian kosong pada grup bukti.');
+        }
+
+        $jumlah = $payload['rows'][array_key_last($payload['rows'])];
+        $this->assertSame(110000.0, $jumlah['incoming'], 'Bayangan tidak boleh terhitung ganda.');
+    }
+
+    public function test_bku_backfill_tax_shortfall_is_counted_as_terima(): void
+    {
+        $base = ['TANGGAL_TRANSAKSI' => '2026-05-15', 'KODE_REKENING' => '5.1.02.01.01.0024', 'NO_BUKTI' => 'BPUMRN1'];
+        $this->seedMirrorRow('BELANJA-MRN', $base + ['KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'URAIAN' => 'Belanja Murni', 'JUMLAH' => 500000, 'ID_KAS_UMUM' => 'BELANJA-MRN']);
+        // Shortfall murni: tanpa padanan kanonis, tetap tercatat Terima.
+        $this->seedMirrorRow('MIG-T-98-ppn', $base + ['KATEGORI_BKU' => 'PAJAK', 'JUMLAH' => 55000, 'ID_KAS_UMUM' => 'MIG-T-98-ppn', 'PARENT_ID_KAS_UMUM' => 'TXN-98', 'IS_PPN' => 1]);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 5);
+        $rows = collect($payload['rows']);
+
+        $group = $rows->filter(fn ($row): bool => ($row['evidence'] ?? '') === 'BPUMRN1')->values();
+        $this->assertCount(3, $group);
+        $terima = $group->filter(fn ($row): bool => str_contains(strip_tags((string) ($row['description'] ?? '')), 'Terima PPN'))->values();
+        $this->assertCount(1, $terima);
+        $this->assertSame(55000.0, $terima->first()['incoming']);
+        $this->assertStringContainsString('(data lokal)', strip_tags((string) ($terima->first()['description'] ?? '')));
+
+        $jumlah = $payload['rows'][array_key_last($payload['rows'])];
+        $this->assertSame(55000.0, $jumlah['incoming']);
+    }
+
+    public function test_bku_bank_interest_and_tax_are_counted_on_bank_side(): void
+    {
+        $base = ['TANGGAL_TRANSAKSI' => '2026-05-16', 'KODE_REKENING' => ''];
+        $this->seedMirrorRow('BUNGA-1', $base + ['KATEGORI_BKU' => 'BUNGA_BANK', 'REK_BKU' => 'Bunga Bank', 'URAIAN' => 'Bunga Bank', 'JUMLAH' => 50000, 'ID_KAS_UMUM' => 'BUNGA-1']);
+        $this->seedMirrorRow('PBUNGA-1', $base + ['KATEGORI_BKU' => 'PAJAK_BANK', 'REK_BKU' => 'Pajak Bunga', 'URAIAN' => 'Pajak Bunga', 'JUMLAH' => 10000, 'ID_KAS_UMUM' => 'PBUNGA-1']);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 5);
+        $rows = collect($payload['rows']);
+
+        $this->assertCount(3, $rows);
+        $bunga = $rows->firstWhere(fn ($row): bool => str_contains(strip_tags((string) ($row['description'] ?? '')), 'Bunga Bank'));
+        $this->assertNotNull($bunga);
+        $this->assertSame(50000.0, $bunga['incoming']);
+        $pajak = $rows->firstWhere(fn ($row): bool => str_contains(strip_tags((string) ($row['description'] ?? '')), 'Pajak Bunga'));
+        $this->assertNotNull($pajak);
+        $this->assertSame(10000.0, $pajak['outgoing']);
+
+        $jumlah = $payload['rows'][array_key_last($payload['rows'])];
+        $this->assertSame(50000.0, $jumlah['incoming']);
+        $this->assertSame(10000.0, $jumlah['outgoing']);
+        $this->assertSame(40000.0, $jumlah['balance']);
+        $this->assertSame(40000.0, $payload['bkuClosing']['bank']);
     }
 
     public function test_bku_table_layout_is_fixed_with_wrapping_description_only(): void

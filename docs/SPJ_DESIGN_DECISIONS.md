@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Keputusan Desain & Aturan Bisnis
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-10-05**
 
 Dokumen ini adalah sumber **keputusan bisnis/domain permanen** untuk branch aktif `main` di repository mirror `raw-rkas`.
 
@@ -126,13 +126,20 @@ item_description
 Ownership item:
 
 ```text
-description       readonly source
-item_description  editable operator
-quantity          readonly source
-unit              readonly source
-unit_price        readonly source
-amount            readonly source
+item_description  editable operator (satu-satunya kolom lokal yang tersisa)
 ```
+
+> **Bentuk penyimpanan (2026-10-05).** Lima kolom lokal `transaction_items`
+> yang dulu tercantum di sini — `description`, `quantity`, `unit`,
+> `unit_price`, `amount` — **sudah di-drop** oleh migrasi school
+> `2026_09_19_000004_drop_duplicate_source_columns`. Semuanya kini hanya
+> dapat dibaca sebagai nilai mirror melalui
+> `$item->sourceValue('quantity'|'unit'|'unit_price'|'amount'|'description')`
+> (lihat `TransactionItem::withMirrorSource()` dan pemakai pada
+> `SpjPackageValidationService` serta
+> `DocumentTemplatePlaceholderInspectorService`). Jadi ownership "readonly
+> source" tetap berlaku secara kontraktual, tetapi tidak lagi sebagai kolom
+> tabel yang bisa diedit.
 
 `item_description` harus benar-benar tersimpan sebelum Paket dapat dibuat/dibuka melalui gateway canonical.
 
@@ -158,6 +165,17 @@ Untuk `FINAL`, koreksi yang memengaruhi artifact final harus melalui lifecycle k
 ### 4.3 Paket SPJ
 
 Paket SPJ adalah workspace mutation dokumen pertanggungjawaban.
+
+> **Letak penyimpanan (2026-10-05).** Daftar berikut adalah *ownership
+> workspace*, bukan klaim nama kolom tabel `spj_packages`. Field operator
+> seperti `spj_category`, `payment_description`, `payment_method`,
+> `payment_reference`, `receipt_recipient_name`, dan metadata SiPLah/invoice
+> disimpan pada `transactions` (overlay), bukan pada baris `spj_packages`.
+> Yang benar-benar berada di `spj_packages` hanyalah lifecycle/numbering:
+> `transaction_id`, `document_number`, `quarter_code`, `semester_code`,
+> `phase_code`, `status`, `is_late_entry`, `numbered_at`, `generated_at`,
+> `snapshot`, `finalized_at/by`, `cancelled_at/by/reason`,
+> `unlocked_at/by/reason` (lihat `SpjPackage::$fillable`).
 
 Ownership Paket mencakup:
 
@@ -209,6 +227,16 @@ NUMBERED
 ## 5. Pajak adalah source transaction
 
 Field pajak canonical berasal dari source transaksi: PPN, PPh 21/22/23/4(2), SSPD/Pajak Daerah, `tax_total`, dan `net_amount`.
+
+> **Bentuk penyimpanan (2026-10-05).** Kolom lokal `transactions.gross_amount`,
+> `transactions.tax_total`, dan `transactions.net_amount` **sudah di-drop**
+> (migrasi school `2026_09_19_000004_drop_duplicate_source_columns`). Nilai
+> canonical kini dihitung dari mirror ARKAS dan dibaca lewat
+> `Transaction::sourceValue('gross_amount'|'tax_total'|'net_amount')`
+> (`app/Models/Transaction.php:351`), dengan
+> `ArkasMirrorResolver` sebagai sumber agregatnya. Istilah "field source"
+> pada dokumen ini berarti nilai mirror tersebut, bukan kolom tabel
+> `transactions`.
 
 Paket SPJ tidak boleh menghitung ulang lalu menulis ulang nilai source tersebut. Distribusi pajak per penerima boleh menjadi derived/operator detail selama tidak mengubah nilai source transaction.
 
@@ -284,7 +312,7 @@ bap_date <= bast_date
 
 ## 9. Konsumsi dan participant roster
 
-Auto-fill peserta KONSUMSI/SPPD memakai master Pegawai menyatu:
+Auto-fill peserta memakai master Pegawai menyatu:
 
 ```text
 Auto-fill peserta = master Pegawai menyatu (ARKAS + Dapodik + Manual)
@@ -292,6 +320,18 @@ Participant manual = allowed
 ```
 
 Roster menyatu adalah kontrak aktif; koreksi operator canonical via `operator_locked`.
+
+> **Scope kategori (2026-10-05).** Auto-fill roster **saat ini terpasang hanya
+> untuk `KONSUMSI`**, bukan KONSUMSI sekaligus SPPD.
+> `SpjWorkspaceUseCase` memuat roster pada kondisi
+> `spj_category === 'KONSUMSI'` saja, dan variabel tersebut hanya dikonsumsi
+> view kategori `konsumsi.blade.php` (tombol "Ambil Pegawai" + `fillRoster()`).
+> SPPD memakai `spj_travels` (pelaksana) dengan input teks biasa lewat
+> `row-editor`, tanpa roster. Memperluas auto-fill ke SPPD akan menjadi fitur
+> baru, bukan perilaku yang sudah berjalan. Klaim "KONSUMSI/SPPD" yang sama
+> juga muncul di `ARCHITECTURE_COMPLETE.md`, `SYNCHRONIZATION.md`,
+> `USER_SCENARIOS.md`, dan `docs/README.md`; semuanya sudah dikoreksi ke
+> scope `KONSUMSI` pada 2026-10-05.
 
 ---
 
@@ -379,6 +419,25 @@ NUMBERED
 FINAL
 CANCELLED
 ```
+
+> **Nilai legacy yang masih terbaca di source (2026-10-05).** Daftar lima
+> nilai di atas adalah lifecycle canonical, tetapi source masih menyisakan
+> dua nilai historis:
+>
+> ```text
+> DICETAK  -> masih di whitelist SpjNumberingOrderService
+>             (bersamaan dengan DRAFT/READY/NUMBERED/CANCELLED)
+> BERNOMOR  -> masih dibaca sebagai alias NUMBERED di
+>             TransactionsTable dan dirender sebagai badge status
+> ```
+>
+> `DICETAK` dinormalisasi ke `NUMBERED` hanya oleh migrasi
+> `2026_09_08_090000_normalize_legacy_spj_runtime_state` dan hanya bila
+> `document_number` serta `numbered_at` sudah terisi. Selain itu
+> `spj_packages.status` adalah `string(30) default 'DRAFT'` **tanpa** enum
+> constraint di level database, sehingga daftar lima nilai di atas adalah
+> konvensi aplikasi, bukan jaminan skema. Keduanya tidak boleh dibaca
+> sebagai status operator yang sah.
 
 Prinsip:
 
@@ -486,7 +545,23 @@ Jika tidak ada nomor aktif valid yang tersisa, sequence menjadi `0`.
 
 Rollback numbering dapat menghapus/reset history numbering domain yang membuat nomor dianggap terpakai, tetapi operational audit tindakan rollback tetap dipertahankan.
 
-Audit minimal menyimpan actor, tenant context, quarter bila relevant, nomor awal/akhir rollback, sequence sebelum/sesudah, alasan, dan timestamp.
+> **Kapasitas audit aktual (2026-10-05).** `operational_audit_logs` **tidak
+> punya kolom `fund_source_id` maupun kolom sekolah**; yang tersimpan hanya
+> `fiscal_year_id`, `entity_type`, `entity_id`, `action`, `description`,
+> `user_id`, dan timestamp (lihat migrasi tenant
+> `2026_09_01_000000_create_complete_spj_tenant_tables` dan
+> `OperationalAuditService::record()`). Konsekuensinya klaim "fund source"
+> atau "sequence sebelum/sesudah" pada audit **tidak** terpenuhi di source:
+>
+> ```text
+> tersimpan : actor, waktu, fiscal year, entity, action, deskripsi
+> tidak ada : fund source, tenant sekolah eksplisit, sequence sebelum/sesudah
+> ```
+>
+> Nomor awal/akhir rollback dan alasan tersimpan di dalam teks `description`
+> (contoh: "Rollback nomor SPJ {awal}-{akhir}. Alasan: ..."). Bila fund source
+> wajib direkam, itu memerlukan kolom baru plus migrasi baru — bukan
+> perubahan dokumentasi.
 
 Detail lengkap ada pada `NUMBERING_CORRECTION_AND_ROLLBACK.md`.
 

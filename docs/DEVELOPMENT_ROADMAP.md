@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-09-29**
+Terakhir diperbarui: **2026-10-05**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah CI #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah workflow run #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -16,7 +16,7 @@ Jangan menambah smoke/regression hanya untuk memperbesar coverage setelah contra
 
 Scope fitur mencakup diff dua snapshot RKAS dalam konteks aktif, umur operasi
 mirror serta jumlah baris tabel penting, dan ZIP multi-scope PDF/XLSX dengan
-manifest. Full regression gate sudah hijau pada CI #46: SPJ Critical 339,
+manifest. Full regression gate sudah hijau pada workflow run #46: SPJ Critical 339,
 Full Unit 79, dan Full Feature 642 test PASS. Visual browser/operator tetap
 RVR. Detail alur operator berada di `USER_SCENARIOS.md`.
 
@@ -26,11 +26,26 @@ RVR. Detail alur operator berada di `USER_SCENARIOS.md`.
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: RUN #46 GREEN / Bulk Preview focused verification complete / full CI and browser verification pending.**
+**Status: WORKFLOW RUN #46 GREEN / Bulk Preview focused verification complete / full CI and browser verification pending.**
 
-CI #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Gate tersebut mendahului perubahan Bulk Preview; focused source verification terbaru tercatat di `CURRENT_PROGRESS.md`. Browser/operator runtime tetap RVR.
+> **Cara membaca identifier gate.** Dua scheme berbeda dipakai di dokumen ini
+> dan `CURRENT_PROGRESS.md`, dan keduanya pernah ditulis "CI #" sehingga mudah
+> tertukar:
+>
+> ```text
+> workflow run #NN   -> nomor run workflow "SPJ Critical Verification"
+>                      (mis. #46 dengan run ID 36515608353)
+> PR #NNN            -> nomor pull request (mis. #478-#480, #483-#486)
+> ```
+>
+> Gate kanonik saat ini adalah **workflow run #46** pada `e4ba5cf`. PR #486
+> adalah gate dependency-platform PHP 8.3 yang lebih lama dan bersifat
+> historis; keduanya hijau, tetapi run #46 yang mendahului perubahan Bulk
+> Preview dan sekarang digantikan oleh focused verification lokal.
 
-Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair #483–#486 menghasilkan canonical green gate baru pada PHP 8.3.
+Workflow run #46 pada `e4ba5cf` menyelesaikan gate penuh setelah regression revision-comparison RKAS pada run #42–#45 ditutup. Pint, frontend build, Blade compile, checklist lint, SPJ Critical (339 / 2.605 assertions), Full Unit (79 / 281 assertions), serta Full Feature (642 / 4.417 assertions) semuanya PASS. Gate tersebut mendahului perubahan Bulk Preview; focused source verification terbaru tercatat di `CURRENT_PROGRESS.md`. Browser/operator runtime tetap RVR.
+
+Phase 1 mengaudit seluruh 25 component `app/Livewire/`. Phase 2 menutup mutation authorization boundary. Integration repair PR #478–#480 mengembalikan functional baseline ke hijau, kemudian Laravel 13/TALL migration dan dependency-platform repair PR #483–#486 menghasilkan green gate baru pada PHP 8.3.
 
 Phase 2 commits:
 
@@ -83,17 +98,17 @@ Checklist P0-00:
 - [x] `composer.lock` kompatibel dengan PHP 8.3;
 - [x] Composer validate + locked platform check PASS;
 - [x] deterministic `composer install` PASS;
-- [x] Repository Pint PASS pada gate #486;
+- [x] Repository Pint PASS pada gate PR #486;
 - [x] SPJ Critical PASS;
 - [x] Full Unit PASS;
 - [x] Full Feature PASS;
 - [x] promote green code gate baru.
 
-Evidence CI #486:
+Evidence dependency-platform PR #486 (historis):
 
 ```text
 HEAD                  : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
-RUN                   : #486 / 34853857969 / SUCCESS
+RUN                   : 34853857969 / SUCCESS
 COMPOSER VALIDATE     : PASS
 LOCKED PLATFORM CHECK : PASS / PHP 8.3
 COMPOSER INSTALL      : PASS
@@ -105,7 +120,19 @@ FULL UNIT             : PASS
 FULL FEATURE          : PASS
 ```
 
-Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Run #46 (`36515608353`, code head `e4ba5cf`) adalah latest verified source gate sebelum Bulk Preview; source verification setelah perubahan itu pending. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
+> **Catatan verifikasi 2026-10-05.** Commit `ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4`
+> tidak dapat ditemukan pada repository mirror `raw-rkas` ini
+> (`git cat-file -t` → unknown revision), begitu juga `a4dd3954`, `7b5615c4`,
+> `d3c786d8`, `5fa98ed`, `3c7be408`, `701c7364`, `b61cdc62`, dan `887d0219` yang
+> dikutip pada blok evidence ini dan pada `CURRENT_PROGRESS.md`. Hash tersebut
+> dipertahankan sebagai jejak historis, tetapi **belum terverifikasi** terhadap
+> mirror ini; hanya `e4ba5cf`, `1705f5d`, `14cf825`, `a22f7d5`, `b07d764`,
+> `47368a2`, `217a69f`, `49cd5ae`, `9540937`, `058d771`, `ea8c507`, `ac75b5b`,
+> `ffa049a4`, dan `24a19333` yang terkonfirmasi ada. Sebelum mengutip gate
+> berhash yang tidak ada di mirror ini sebagai evidence aktif, verifikasi dulu
+> terhadap repository canonical.
+
+Kontrak dependency/platform dan Livewire authorization P0-00 tetap selesai secara desain/regression historis. Workflow run #46 (`36515608353`, code head `e4ba5cf`) adalah latest verified source gate sebelum Bulk Preview; source verification setelah perubahan itu pending. Browser/runtime tetap RVR karena deterministic CI tidak menggantikan operator/browser evidence.
 
 Panduan detail: `LIVEWIRE_MIGRATION_PLAN.md` dan `P0_VERIFICATION_KIT.md`.
 
@@ -244,11 +271,16 @@ Phase 2 Livewire menjaga boundary ini. Tidak ada test tambahan aktif tanpa bug/b
 
 ---
 
-## P0-08 — Generic ARKAS Importer
+## P0-08 — Generic ARKAS Importer (dihapus 2026-10-04)
 
-**Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
+**Status: SUBSYSTEM REMOVED / TIDAK LAGI PRIORITAS.**
 
-Importer mapping → preview → sync tidak menjadi target migrasi Livewire opportunistic. Kerjakan hanya issue nyata pada operator flow.
+Modul Generic Importer (`arkas.importer*`, `arkas.import-monitor`, GenericImportService,
+DomainAdapter, monitor, config, explorer, dan testnya) sudah dihapus karena tidak
+ada modul lain yang memakainya. Yang tersisa hanyalah `ArkasStagingService` +
+`ArkasImportRowSynchronizer` sebagai infra pipeline canonical sync. Jangan
+menambah work item P0-08 baru; issue sync yang nyata ditangani melalui
+`SYNCHRONIZATION.md` dan `ArkasMirrorIntegrityService` / `arkas:mirror-health`.
 
 ---
 
@@ -359,7 +391,7 @@ Kandidat Livewire read-only setelah operator/runtime priorities:
 2. Template Dokumen filter katalog — upload/update tetap canonical flow;
 3. Laporan Audit pagination.
 
-Tetap ditunda tanpa kebutuhan/operator evidence khusus: ARKAS importer stateful, workspace detail Paket mutation-heavy, Dashboard filter migration, dan protected Siswa.
+Tetap ditunda tanpa kebutuhan/operator evidence khusus: workspace detail Paket mutation-heavy, Dashboard filter migration, dan protected Siswa. Kandidat "ARKAS importer stateful" tidak lagi berlaku karena subsystem tersebut sudah dihapus.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Status: **LEGACY/ADDITIONAL TODO — RVR — NON-BLOCKER untuk target release desktop/laptop saat ini**
 
-Terakhir diperbarui: **2026-09-12**
+Terakhir diperbarui: **2026-10-05**
 
 Dokumen ini adalah checklist tambahan untuk visual regression mobile. Checklist canonical penutupan GUI-AUDIT-13 berada di `GUI_RUNTIME_QA.md`; bila ada perbedaan viewport atau status, `GUI_RUNTIME_QA.md` dan `CURRENT_PROGRESS.md` yang berlaku.
 
@@ -34,7 +34,7 @@ Viewport berikut boleh dipakai sebagai regression tambahan/legacy compatibility 
 
 - Dashboard `/`
 - Transactions `/transaksi`
-- Transaction Detail `/transaksi/{id}`
+- Transaction Detail `/transaksi/{transactionId}`
 - SPJ Workspace `/spj`
 - SPJ Paket `/spj?tab=paket&package_id=...`
 - SPJ Numbering `/spj/penomoran`
@@ -80,7 +80,7 @@ Bila memungkinkan tambahkan Slate Minimal dan Indigo Executive.
 - panel ARKAS/BKU vs SPJ tetap jelas;
 - uraian item compact tidak memotong informasi penting;
 - form kategori `KONSUMSI` usable;
-- tombol auto-fill peserta dan `+ Peserta manual` tidak overlap;
+- tombol `Ambil Pegawai` (auto-fill roster) dan `＋ Peserta` tidak overlap;
 - daftar participant dapat discroll bila perlu;
 - validation tanggal pengadaan tetap terlihat;
 - dark form control readable.

@@ -342,7 +342,10 @@
             </td>
         </tr>
     </table>
-    @else
+    {{-- Blok generik hanya bila belum ada blok khusus (BKU/pajak, rekap,
+        atau BPK Dinas yang membawa bloknya sendiri) agar tanda tangan
+        tidak tampil ganda. --}}
+    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk)
     <table class="signature-table">
         <tr>
             <td>

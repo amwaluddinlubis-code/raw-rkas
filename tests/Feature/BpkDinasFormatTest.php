@@ -123,5 +123,7 @@ class BpkDinasFormatTest extends TestCase
         $response->assertSee('KIB B (PERALATAN DAN MESIN)', false);
         $response->assertSee('Dibuat Oleh', false);
         $response->assertSee('pengembalian sisa uang', false);
+        // Partial BPK membawa bloknya sendiri; blok generik tidak boleh ganda.
+        $this->assertSame(1, substr_count((string) $response->getContent(), '<table class="signature-table'));
     }
 }

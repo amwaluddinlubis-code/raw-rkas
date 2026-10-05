@@ -1,6 +1,6 @@
 # Kamus Penggunaan CSS Aplikasi SPJ
 
-Terakhir diverifikasi: **2026-09-11**
+Terakhir diverifikasi: **2026-10-05**
 
 Dokumen ini adalah contract praktis CSS branch aktif `main` di repository mirror `raw-rkas`. Gunakan bersama `GUI_STANDARDIZATION.md`.
 
@@ -35,6 +35,7 @@ Bagian akhir `theme-system.css` saat ini:
 ...
 theme-accessibility.css
 arkas-theme-profiles.css
+apple-theme-profiles.css
 sidebar-toggle-fix.css
 dark-form-controls.css
 spj-package-theme-fix.css
@@ -43,10 +44,14 @@ view-theme-hardening.css
 semantic-status-colors.css
 minimum-font-size.css
 auth-login-standardization.css
+public-context-standardization.css
 top-progress.css
+header-button-unification.css
 ```
 
 Urutan ini disengaja. `view-theme-hardening.css` adalah safety layer global terakhir untuk **warna non-semantik** pada authenticated application views. `semantic-status-colors.css` adalah satu-satunya exception setelahnya dan hanya mengembalikan identitas warna status workflow canonical agar `READY`, `NUMBERED`, `PRINTED`, dan status sejenis tetap mudah dibedakan. Keduanya tidak mengubah business rule atau markup domain.
+
+Lapisan paling akhir dalam cascade adalah **`header-button-unification.css`**. Berkas tersebut memuat keputusan desain 2026-09-27 yang menyamakan permukaan header terang dan tombol primary accent-wash lintas profil tema, jadi **tidak boleh** dikembalikan ke varian gelap/solid per tema tanpa keputusan desain baru. Sumber kebenaran urutan cascade adalah `resources/css/theme-system.css`; jangan menebak dari daftar di dokumen ini.
 
 Authenticated shell menandai `<main>` dengan `data-page` dan `data-route`. Gunakan marker ini untuk pengecualian layout yang benar-benar page-specific. Kontrak shell seperti topbar, sidebar, typography, control, dan responsive chrome harus memakai selector parent global (`main[data-page]` atau `.app-*`), bukan `:has()` berbasis href/action.
 
@@ -101,6 +106,16 @@ var(--theme-action-fg)
 var(--theme-action-hover-bg)
 var(--theme-action-hover-fg)
 ```
+
+> **Status definisi hover token (2026-10-05).** `--theme-action-hover-bg` dan
+> `--theme-action-hover-fg` **tidak punya definisi global** di `:root` maupun di
+> `theme-accessibility.css`; keduanya hanya dideklarasikan pada profil
+> `arkas-theme-profiles.css` dan `apple-theme-profiles.css`. Karena itu semua
+> consumer saat ini menulis fallback, misalnya
+> `var(--theme-action-hover-bg, var(--theme-accent-strong))`. Untuk 25+ profil
+> tema non-ARKAS/non-Apple, kedua token itu undefined saat runtime — jangan
+> keduanya diperlakukan sebagai token canonical tanpa menambahkan definisi
+> global lebih dulu.
 
 ### Radius, shadow, density
 
@@ -356,30 +371,75 @@ Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 
 ## 13. File CSS dan tanggung jawab
 
+Tabel ini adalah daftar **lengkap**. Daftar ini pernah tidak lengkap (13 file
+cascade tidak tercatat), sehingga tetap cocokkan dengan source sebelum
+mengandalkannya:
+
+```bash
+# sumber kebenaran urutan cascade
+Get-Content resources/css/theme-system.css
+Get-Content resources/css/app.css
+```
+
+### Entry dan base
+
 | File | Tanggung jawab |
 |---|---|
 | `app.css` | Entry point CSS aplikasi |
 | `app-base.css` | Base/framework |
 | `human-ui.css` | Shared/legacy UI |
 | `forms-standardization.css` | Fallback form legacy |
+| `table-standardization.css` | Permukaan tabel canonical (material/square), termasuk token `--ui-table-row-hover` |
+| `ui-generalization.css` | Generalisasi `ui-*` (termasuk komponen paginasi) |
+
+### Theme system
+
+| File | Tanggung jawab |
+|---|---|
 | `theme-system.css` | Urutan canonical cascade |
-| `theme-profiles.css` | Density/radius/shadow profile |
+| `theme-profiles.css` | Density/radius/shadow profile — **pemilik sah** token `--profile-section-gap`, `--profile-control-height`, `--profile-table-row-y`, `--profile-form-*` |
 | `theme-profile-components.css` | Mapping profile → components |
+| `theme-soft-surfaces.css` | Permukaan soft |
+| `theme-accessibility.css` | Focus/contrast/accessibility |
+| `comfortable-text.css` | Skala teks `--text-comfort-*` |
+| `full-dark.css` | Baseline dark appearance |
+| `dark-theme-refinement.css` | Refinement dark |
+| `dark-form-controls.css` | Dark control safety |
+| `arkas-theme-profiles.css` | Profil tema ARKAS |
+| `apple-theme-profiles.css` | Profil tema Apple |
+| `sidebar-toggle-fix.css` | Fix toggle sidebar |
+| `minimum-font-size.css` | Baseline ukuran font minimum |
+
+### Feature area
+
+| File | Tanggung jawab |
+|---|---|
 | `token-native-components.css` | Contract `ui-*`/component tokens |
 | `layout-token-native.css` | Layout token-native |
 | `page-header-unified.css` | Page Header |
 | `transactions-standardization.css` | Daftar/detail transaksi |
+| `transaction-list-actions.css` | Aksi pada daftar transaksi |
+| `transaction-detail-normalization.css` | Normalisasi detail transaksi |
+| `audit-report-standardization.css` | Laporan audit |
+| `dashboard-standardization.css` | Dashboard |
 | `spj-workspace-standardization.css` | SPJ workspace base |
 | `rkas-hierarchy-tree.css` | Tree hierarki RKAS: sticky header, affordance level, penanda kelebihan belanja |
-| `dark-form-controls.css` | Dark control safety |
+| `settings-database-standardization.css` | Pengaturan + Database Manager |
+| `database-header-generalization.css` | Header Database Manager |
+| `document-settings-standardization.css` | Pengaturan template/penomoran dokumen |
+
+### Lapisan akhir (compatibility + hardening)
+
+| File | Tanggung jawab |
+|---|---|
 | `spj-package-theme-fix.css` | Paket/Isian Manual/theme compatibility, compact template list, numbering hover |
 | `spj-package-document-placement.css` | Pemisahan panel Rincian Transaksi vs Dokumen Template setelah DOM placement |
 | `view-theme-hardening.css` | Global bridge untuk hard-coded neutral/accent background, font, border, gradient, hover/focus/ring pada authenticated views |
 | `semantic-status-colors.css` | Exception semantic sesudah hardening untuk mempertahankan perbedaan workflow status canonical |
-| `minimum-font-size.css` | Baseline ukuran font minimum |
 | `auth-login-standardization.css` | Scoped halaman login (kartu selalu putih, kontrol terang) |
+| `public-context-standardization.css` | Scoped halaman publik/auth/setup |
 | `top-progress.css` | Bilah progres atas mengikuti aksen tema |
-| `theme-accessibility.css` | Focus/contrast/accessibility |
+| `header-button-unification.css` | **Lapisan paling akhir cascade.** Menyamakan header terang + tombol primary accent-wash lintas tema (keputusan desain 2026-09-27) |
 
 JavaScript placement terkait:
 

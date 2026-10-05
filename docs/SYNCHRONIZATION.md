@@ -1,6 +1,6 @@
 # Sinkronisasi Data — ARKAS/BKU, Dapodik, Reconciliation, dan Identity
 
-Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch `main`).
+Terakhir disinkronkan terhadap source aktif: **2026-10-05** (`raw-rkas`, branch `main`).
 
 Status dokumen: **ACTIVE TECHNICAL GUIDE**.
 
@@ -10,8 +10,11 @@ Dokumen ini bukan sumber status release. Gunakan:
 
 - `CURRENT_PROGRESS.md` untuk status/evidence terbaru;
 - `DEVELOPMENT_ROADMAP.md` untuk prioritas pekerjaan;
-- `SPJ_DESIGN_DECISIONS.md` untuk kontrak domain permanen;
-- `ARKAS_IMPORTER.md` untuk Generic ARKAS Importer yang bersifat profile-driven.
+- `SPJ_DESIGN_DECISIONS.md` untuk kontrak domain permanen.
+
+Dokumen ini adalah rujukan tunggal untuk pipeline sinkronisasi. Generic ARKAS
+Importer yang pernah punya dokumen sendiri (`ARKAS_IMPORTER.md`) sudah dihapus
+bersama subsystem-nya pada 2026-10-04; lihat §2.2 dan §18.
 
 ---
 
@@ -520,7 +523,7 @@ Roster peserta KONSUMSI dan SPPD memakai master Pegawai menyatu (keputusan aktif
 Kontrak tetap:
 
 ```text
-Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
+Auto-fill KONSUMSI = master Pegawai menyatu (ARKAS + Dapodik + Manual)
 Participant manual = diperbolehkan
 ```
 
@@ -675,7 +678,6 @@ Gunakan `P0_VERIFICATION_KIT.md` untuk release verification flow.
 docs/CURRENT_PROGRESS.md
 docs/SPJ_DESIGN_DECISIONS.md
 docs/ARCHITECTURE_COMPLETE.md
-docs/ARKAS_IMPORTER.md
 docs/USER_SCENARIOS.md
 docs/P0_VERIFICATION_KIT.md
 docs/P0_01_SOURCE_AUDIT.md

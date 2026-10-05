@@ -1,6 +1,6 @@
 # Arsitektur SPJ BOSP Web
 
-Terakhir diverifikasi: **2026-09-14** terhadap kontrak/domain source aktif dan dokumentasi status canonical sebelum repository mirror memakai branch `main`.
+Terakhir diverifikasi: **2026-10-05** terhadap kontrak/domain source aktif pada repository mirror branch `main`.
 
 Dokumen ini menjelaskan arsitektur aktif branch `main` di repository mirror `raw-rkas`. Untuk status release dan blocker gunakan `CURRENT_PROGRESS.md`; untuk evidence functional gate gunakan `P0_VERIFICATION_KIT.md` §1; untuk prioritas gunakan `DEVELOPMENT_ROADMAP.md`; untuk keputusan bisnis permanen gunakan `SPJ_DESIGN_DECISIONS.md`.
 
@@ -29,12 +29,11 @@ Stack utama: PHP 8.3+, Laravel 13, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite
 
 ### Database utama
 
-Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, metadata global,
-serta preset mapping importer ARKAS yang berlaku lintas sekolah.
+Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, dan metadata global.
 
 ### Database tenant/sekolah
 
-Menyimpan fiscal year, fund source, source RKAS/BKU, transaksi, item, detail kategori SPJ, Paket, nomor dokumen, audit, importer staging/profile/run, employee, serta data kerja sekolah. Profile importer adalah konfigurasi runtime sekolah; preset mapping reusable dimiliki database utama agar sekolah baru menerima konfigurasi aplikasi terbaru.
+Menyimpan fiscal year, fund source, source RKAS/BKU, transaksi, item, detail kategori SPJ, Paket, nomor dokumen, audit, employee, serta data kerja sekolah. Tabel staging importer (`arkas_import_profiles`, `arkas_import_runs`, `arkas_import_rows`) masih ada sebagai infra pipeline canonical sync, bukan sebagai workspace operator.
 
 Boundary operasi tenant:
 
@@ -198,39 +197,26 @@ Kontrak:
 - perubahan source dapat menghasilkan reconciliation;
 - queue/background flow wajib mengaktifkan tenant yang benar.
 
-### Generic ARKAS Importer
+### Generic ARKAS Importer (dihapus 2026-10-04)
 
-Pipeline utama:
+Subsystem importer yang profile-driven sudah tidak ada. Route `arkas.importer*`,
+`arkas.import-monitor`, `ArkasImporterController`, `ArkasGenericImportService`,
+`ArkasDomainAdapter`, monitor, dan testnya telah dihapus karena tidak ada modul
+lain yang memakainya. Halaman `/pengaturan/arkas/import-monitor` juga tidak
+lagi ada; jejak historis lives di `CURRENT_PROGRESS.md`.
+
+Yang **tetap hidup** dan bukan bagian subsystem tersebut:
 
 ```text
-ArkasImporterController
-→ ArkasDatabaseExplorer / Bridge
-→ ArkasImportProfile
-→ ArkasStagingService
-→ ArkasReconciliationService
-→ ArkasGenericImportService
-→ ArkasDomainAdapter
-→ target domain / snapshot
+ArkasCanonicalSyncService → ArkasStagingService → ArkasImportRowSynchronizer
+                         → ArkasImportProfile / ArkasImportRun (staging)
 ```
 
-Status saat ini: **FUNCTIONAL HARDENING PASS / READY FOR OPERATOR DATA TEST**.
-
-Sudah diregresikan:
-
-- shared deterministic source key;
-- tenant boundary;
-- Upsert / Incremental / Full Refresh;
-- reconciliation preview read-only;
-- source-empty semantics;
-- schema drift blocking;
-- background tenant activation;
-- shared resource lock;
-- created-at preservation;
-- semantic metrics.
-
-Sisa aktif importer adalah operator-data verification dan scale/performance, terutama Bridge-side delta fetch dan pagination/evaluation di atas row limit `100000`.
-
-Pernyataan lama bahwa importer belum operator-ready karena resolver source key/tenant route gap sudah superseded.
+`ArkasStagingService` adalah infra pipeline canonical sync. Mode sync
+Upsert/Incremental/Full Refresh milik importer yang sudah dihapus tidak lagi
+berlaku; see `SYNCHRONIZATION.md` §2.2 dan §18. Audit mirror yang sebelumnya
+berada di halaman monitor kini hidup di `/penganggaran-rkas/audit-mirror` dan
+`php artisan arkas:mirror-health`.
 
 ## 9. Employee identity
 
@@ -251,7 +237,7 @@ Regression membuktikan:
 Kontrak UI tetap:
 
 ```text
-Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
+Auto-fill KONSUMSI = master Pegawai menyatu (ARKAS + Dapodik + Manual)
 Participant manual      = allowed
 ```
 
@@ -507,7 +493,7 @@ Area yang belum final:
 6. operational audit trail E2E;
 7. employee identity/participant real-data UX verification;
 8. official-template visual/runtime verification;
-9. importer operator-data/scale/performance verification;
+9.~~importer operator-data/scale/performance verification~~ — sudah tidak berlaku, subsystem Generic Importer dihapus 2026-10-04; digestinya pindah ke canonical sync/mirror health.
 10. authenticated page-render/browser performance profiling + P2 GUI/style/report cleanup.
 
 Mobile/tablet runtime minimum usability tetap RVR/non-blocker untuk target operator desktop/laptop saat ini; status canonical mengikuti `CURRENT_PROGRESS.md` dan `GUI_RUNTIME_QA.md`.
@@ -520,14 +506,24 @@ docs/CURRENT_PROGRESS.md
 docs/P0_VERIFICATION_KIT.md
 docs/DEVELOPMENT_ROADMAP.md
 docs/SPJ_DESIGN_DECISIONS.md
+docs/ARCHITECTURE_COMPLETE.md
+docs/SYNCHRONIZATION.md
 docs/NUMBERING_CORRECTION_AND_ROLLBACK.md
 docs/USER_SCENARIOS.md
 docs/GUI_STANDARDIZATION.md
 docs/GUI_RUNTIME_QA.md
 docs/CSS_USAGE_GUIDE.md
-docs/ARKAS_IMPORTER.md
+docs/UI_ICON_MIGRATION.md
+docs/LIVEWIRE_MIGRATION_PLAN.md
 docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md
+docs/TEMPLATE_MASTER_WORKFLOW.md
+docs/PERIODIC_REPORT_MODULE.md
+docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md
 docs/P0_01_SOURCE_AUDIT.md
 docs/SIPLAH_MVP_PLAN.md
 docs/MOBILE_VISUAL_QA_TODO.md
 ```
+
+`docs/ARKAS_IMPORTER.md` pernah menjadi acuan Generic Importer, tetapi sudah
+dihapus bersama subsystem-nya pada 2026-10-04; jangan menambahkannya kembali
+ke daftar ini. Rujukan aktif untuk pipeline sync ada di `SYNCHRONIZATION.md`.

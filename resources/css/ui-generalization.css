@@ -529,6 +529,11 @@
     gap: .35rem;
 }
 
+.ui-tab,
+.ui-tab-active {
+    border-radius: 0 !important;
+}
+
 .ui-tab {
     position: relative;
     display: inline-flex;
@@ -603,7 +608,8 @@
 
 .ui-tab-active {
     color: var(--theme-content-accent, var(--ui-accent-strong));
-    background: color-mix(in srgb, var(--theme-accent-soft) 22%, transparent);
+    border-radius: 0 !important;
+    background: transparent !important;
 }
 
 .ui-tab-active .ui-tab-icon {

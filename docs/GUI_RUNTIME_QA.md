@@ -1,15 +1,18 @@
 # GUI Runtime QA — Desktop, Laptop, Mobile, dan Tablet
 
-Terakhir diperbarui: **2026-09-29**
+Terakhir diperbarui: **2026-10-05**
 
 Dokumen ini adalah checklist runtime untuk menutup **GUI-AUDIT-12** dan **GUI-AUDIT-13**. Source-level regression dan CI tidak boleh dipakai sebagai pengganti verifikasi visual/runtime di browser.
 
 ## Status saat ini
 
 ```text
-GUI-AUDIT-12 source readiness : PASS
+GUI-AUDIT-12 source readiness : PASS pada gate run #46 / e4ba5cf;
+                                HEAD sekarang sudah beberapa commit
+                                setelah gate itu sehingga perlu
+                                focused re-verification
 GUI-AUDIT-12 browser runtime  : RVR
-GUI-AUDIT-13 source readiness : PASS
+GUI-AUDIT-13 source readiness : PASS pada gate run #46 / e4ba5cf (sama)
 GUI-AUDIT-13 mobile/tablet     : RVR
 ```
 
@@ -100,13 +103,21 @@ Mobile/tablet masih non-blocker untuk target release desktop/laptop saat ini, te
 ### Core operator
 
 ```text
-/dashboard
+/                                     (dashboard; route name `dashboard`)
 /transaksi atau route daftar transaksi aktif
-Detail Transaksi
+/transaksi/{transactionId}
 /spj?tab=paket
 /spj/penomoran
 /spj/penomoran/koreksi
 /penganggaran-rkas (scope tahun + triwulan/semester, filter lanjutan, tabel rincian)
+/penganggaran-rkas/saran
+/penganggaran-rkas/simulasi
+/penganggaran-rkas/perbandingan-revisi
+/pajak
+/rekonsiliasi
+/spj/rekap-triwulan
+/laporan-periode (+ /laporan-periode/{scope}/{report}/{cetak|excel|pdf})
+/referensi
 ```
 
 Khusus Paket SPJ:
@@ -122,11 +133,12 @@ Khusus Paket SPJ:
 ### Master dan sinkronisasi
 
 ```text
-Master Siswa index/form/show
-Master Pegawai index/form/show
-Data Hasil Sinkron
-Integrasi Dapodik
-ARKAS Importer / settings terkait
+Master Siswa index/form/show (/siswa)
+Master Pegawai index/form/show (/pegawai)
+Tinjau Identitas Pegawai (/pegawai/tinjau-identitas) — read-only
+Data Hasil Sinkron (/data-sinkron)
+Integrasi Dapodik (/pengaturan/dapodik)
+Sinkronisasi ARKAS (`Pengaturan → Sinkronisasi Data ARKAS`) / Audit Mirror RKAS
 ```
 
 Verifikasi khusus:
@@ -134,7 +146,9 @@ Verifikasi khusus:
 - table/card responsive fallback Siswa dan Pegawai;
 - masking identitas tetap benar;
 - filter/per-page tidak pecah pada width kecil;
-- tabel Data Hasil Sinkron tidak mendorong seluruh viewport secara horizontal.
+- tabel Data Hasil Sinkron tidak mendorong seluruh viewport secara horizontal;
+- `/pegawai/tinjau-identitas` menampilkan grup nama ternormalisasi sama tanpa
+  menulis ke `employees`, dan tetap read-only di viewport sempit.
 
 ### Admin/settings
 

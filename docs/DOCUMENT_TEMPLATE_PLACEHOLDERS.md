@@ -1,6 +1,6 @@
 # Penanda Template Dokumen SPJ
 
-Terakhir disinkronkan terhadap source aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`). Referensi implementasi utama tetap `app/Services/SpjTemplateService.php`, `app/Services/ArkasActivityHierarchyResolver.php`, dan `bridge/src/ARKASBridge/Program.cs`.
+Terakhir disinkronkan terhadap source aktif: **2026-10-05** (`raw-rkas`, branch `main`; branch audit `hardening/raw-rkas-audit` sudah digabung). Referensi implementasi utama tetap `app/Services/SpjTemplateService.php`, `app/Services/ArkasActivityHierarchyResolver.php`, dan `bridge/src/ARKASBridge/Program.cs`.
 
 Dokumen ini adalah referensi placeholder canonical untuk template dokumen SPJ Word (`.docx`) dan Excel (`.xlsx`). Format placeholder memakai kurung kurawal ganda, misalnya:
 

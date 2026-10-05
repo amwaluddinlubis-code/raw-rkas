@@ -1,6 +1,6 @@
 # Documentation Maintenance Policy
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-10-05**
 
 Status: **ACTIVE / REQUIRED FOR ALL CONTRIBUTORS AND AI AGENTS**
 
@@ -51,9 +51,23 @@ Gunakan urutan berikut ketika terjadi konflik:
 | Sync ARKAS/BKU/Dapodik/reconciliation | `docs/SYNCHRONIZATION.md` |
 | Numbering/cancel/rollback | `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` |
 | Template/generator/placeholder | `docs/DOCUMENT_TEMPLATE_PLACEHOLDERS.md` dan guide terkait |
-| GUI/layout/component/theme | `docs/GUI_STANDARDIZATION.md`, `docs/CSS_USAGE_GUIDE.md`, `docs/UI_ICON_MIGRATION.md` bila relevan |
+| GUI/layout/component/theme | `docs/GUI_STANDARDIZATION.md`, `docs/CSS_USAGE_GUIDE.md`, `docs/UI_ICON_MIGRATION.md`, dan `docs/GUI_RUNTIME_QA.md` bila relevan |
+| Route/endpoint/middleware | `API.md` (root, daftar route terverifikasi) |
 | Dokumen baru/status dokumen berubah | `docs/README.md` |
 | Aturan kerja contributor/AI agent berubah | `AGENTS.md`, `.ai/rules/index.md`, dan entrypoint agent terkait |
+
+`docs/GUI_RUNTIME_QA.md` wajib ikut diperiksa pada setiap perubahan GUI karena
+file itu adalah checklist penutupan runtime yang diwajibkan
+`GUI_STANDARDIZATION.md`; perubahan GUI yang tidak sentuh checklist tersebut
+belum boleh dinyatakan selesai. `API.md` diperiksa pada setiap penambahan,
+penghapusan, atau perubahan nama/middleware route.
+
+Dokumen lain yang aktif di indeks `docs/README.md` tetapi tidak cocok dengan
+baris matriks di atas dan tetap harus diperiksa berdasarkan dampak:
+`docs/PERIODIC_REPORT_MODULE.md`, `docs/SPJ_PERIODIC_REPORTING.md`,
+`docs/TEMPLATE_MASTER_WORKFLOW.md`, `docs/LIVEWIRE_MIGRATION_PLAN.md`,
+`docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md`, `docs/MOBILE_VISUAL_QA_TODO.md`,
+`docs/P0_VERIFICATION_KIT.md`, dan `docs/P0_01_SOURCE_AUDIT.md`.
 
 Tidak semua file harus diubah pada setiap pekerjaan; semuanya **harus diperiksa berdasarkan dampak**.
 

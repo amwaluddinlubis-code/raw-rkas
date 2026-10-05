@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Panduan Standardisasi GUI
 
-Terakhir diverifikasi: **2026-09-29** (source review; browser runtime remains RVR)
+Terakhir diverifikasi: **2026-10-05** (source review; browser runtime remains RVR)
 
 Dokumen ini adalah acuan visual dan UX untuk branch aktif `main` di repository mirror `raw-rkas`.
 
@@ -399,24 +399,45 @@ Desktop adalah workspace utama, tetapi mobile/tablet harus usable. QA runtime re
 
 ## 20.1 Pilot density workspace SPJ
 
-Workspace `/spj` menggunakan pilot density scoped pada `.spj-semantic-workspace`:
+Workspace `/spj` tidak mendeklarasikan ulang token density milik global.
+`spj-workspace-standardization.css` **sengaja** tidak menetapkan
+`--profile-section-gap`, `--profile-control-height`, maupun
+`--profile-table-row-y`; ketiga token itu dimiliki sah oleh
+`theme-profiles.css`. Yang di-scope pada `.spj-semantic-workspace` hanyalah
+geometri workspace:
 
 ```text
-control height desktop : 40px
-control/touch <=1023px : 44px
-section gap            : 16px
-content padding        : 20px
-panel radius           : 12px
-table row vertical     : 10px
+content padding        : 20px   (--profile-content-padding)
+panel radius           : 12px   (--profile-card-radius)
+control height         : mengikuti density tema aktif
+                        (--profile-control-height; default 2.75rem)
+section gap            : mengikuti density tema aktif
+                        (--profile-section-gap)
+table row vertical     : mengikuti density tema aktif
+                        (--profile-table-row-y; default .875rem)
+touch floor <=1023px   : max(--profile-control-height, 2.75rem)
+                        hanya pada [data-package-tab]
 page title             : 24px
 field label            : 13px
 helper minimum         : 12px
 package tab text       : 14px
 ```
 
-Nilai ini bertujuan membuat workspace operator nyaman pada zoom browser 100% tanpa mengecilkan teks tabel di bawah baseline aksesibilitas. Primary table text tetap 14px, sedangkan header/secondary table text tetap minimal 13px sesuai `minimum-font-size.css`.
+> **Koreksi terhadap versi dokumen sebelumnya (2026-10-05).** Versi lama
+> mencantumkan `control height desktop: 40px`, `touch 44px` workspace-wide, dan
+> `table row vertical: 10px`. Ketiganya **tidak sesuai source**: tidak ada nilai
+> 40px untuk `--profile-control-height` di mana pun (nilai global `2.5rem` di
+> `human-ui.css` hanya berlaku pada `main button`/`.ui-btn`, bukan kontrol
+> form), lantai 44px hanya di-scope ke `[data-package-tab]`, dan 10px hanyalah
+> nilai profil `compact` — bukan nilai pilot. Percobaan sebelumnya untuk
+> mengunci 40px justru mengunci bug density yang kemudian dihapus; regression
+> yang mengunci nilai salah itu sudah diganti menjadi
+> `test_spj_workspace_does_not_pin_density_owned_tokens`.
 
-Pilot juga menormalkan variasi profile agar theme tidak membatalkan density yang sedang diuji: profile header `bold` tidak boleh memaksa `min-height` besar di `/spj`, padding tambahan summary dari personality/profile dinetralkan di scope pilot, dan summary workspace memakai marker `.spj-work-summary` agar padding compact benar-benar diterapkan. Pada viewport di bawah desktop, control dan package tab mempertahankan minimum 44px untuk touch target.
+Nilai di atas bertujuan membuat workspace operator nyaman pada zoom browser 100% tanpa mengecilkan teks tabel di bawah baseline aksesibilitas. Primary table text tetap 14px, sedangkan header/secondary table text tetap minimal 13px sesuai `minimum-font-size.css`.
+
+Pilot juga menormalkan variasi profile agar theme tidak membatalkan density yang sedang diuji: profile header `bold` tidak boleh memaksa `min-height` besar di `/spj`, padding tambahan summary dari personality/profile dinetralkan di scope pilot, dan summary workspace memakai marker `.spj-work-summary` agar padding compact benar-benar diterapkan. Pada viewport di bawah desktop, package tab mempertahankan minimum 44px untuk touch target. Lantai sentuh ini sengaja hanya dipasang pada `[data-package-tab]`, bukan mengunci `--profile-control-height` — mengunci token density di file ini akan membuat tema aktif tidak pernah bisa
+memilih density-nya sendiri.
 
 Pada desktop menengah, topbar `/spj` menggunakan mode satu baris dengan kontrol sekolah/tahun/tema/profil yang dipadatkan. Evidence browser terakhir pada viewport `1101x889` menunjukkan tinggi topbar `72px`, tidak ada horizontal overflow, dan tabel tetap berada dalam container scroll horizontal. Ini adalah evidence scoped untuk pilot; viewport resmi lainnya tetap mengikuti checklist runtime.
 

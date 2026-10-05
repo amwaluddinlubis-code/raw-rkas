@@ -7,7 +7,7 @@
             kicker="Keamanan Data Operasional"
         >
             <x-slot:actions>
-                <form method="POST" action="{{ route('school-backups.store') }}">@csrf<button class="rounded-lg bg-[var(--ui-surface-base)] px-4 py-2.5 text-sm font-bold text-indigo-800 shadow hover:bg-indigo-50">Buat Backup Sekarang</button></form>
+                <form method="POST" action="{{ route('school-backups.store') }}">@csrf<x-ui.button type="submit" icon="archive">Buat Backup Sekarang</x-ui.button></form>
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">

@@ -1,9 +1,348 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-05** (cleanup view orphan importer + dokumentasi stale; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
+>
+> **Cara membaca identifier gate.** Dokumentasi ini memakai dua scheme yang
+> berbeda dan keduanya pernah ditulis "CI #", sehingga mudah tertukar:
+> `run #NN` = nomor run workflow "SPJ Critical Verification" (mis. run #46,
+> run ID `36515608353`), sedangkan `PR #NNN` = nomor pull request (mis.
+> #478–#480, #483–#486). Gate kanonik saat ini adalah **run #46** pada
+> `e4ba5cf`; PR #486 adalah gate dependency-platform PHP 8.3 yang lebih
+> lama dan bersifat historis.
+>
+> **Catatan verifikasi hash (2026-10-05).** Sejumlah commit yang dikutip pada
+> blok evidence historis di bawah tidak ada pada repository mirror ini
+> (`git cat-file -t` → unknown revision): `ba8fa0b`, `a4dd3954`, `7b5615c4`,
+> `d3c786d8`, `5fa98ed`, `3c7be408`, `701c7364`, `b61cdc62`, `887d0219`.
+> Hash tersebut **dipertahankan sebagai jejak historis** dan tidak
+> diverifikasi ulang, tetapi tidak boleh diutip sebagai evidence aktif tanpa
+> konfirmasi terhadap repository canonical. Hash yang terkonfirmasi ada antara
+> lain `e4ba5cf`, `1705f5d`, `14cf825`, `a22f7d5`, `b07d764`, `9540937`,
+> `058d771`, `ea8c507`, `ac75b5b`, `ffa049a4`, `24a19333`.
+
+## Cleanup dokumentasi usang + view orphan importer (2026-10-05)
+
+Status: **FUNCTIONAL PASS (focused, docs + view cleanup) / BROWSER RVR**.
+
+Audit dokumentasi terhadap source menemukan tiga kelas staleness yang ditutup
+dalam satu batch. Tidak ada business rule, lifecycle, numbering, tenant
+boundary, sync contract, atau kontrak GUI yang diubah.
+
+### 1. Generic ARKAS Importer yang sudah dihapus masih didokumentasikan aktif
+
+`route:list` tidak lagi memuat `arkas.importer*` maupun
+`arkas.import-monitor` (subsystem dihapus 2026-10-04 pada bagian "Hapus
+subsystem importer mapping ARKAS" di dokumen ini). Namun 12 file dokumentasi
+masih menganggapnya hidup:
+
+- `ARCHITECTURE_COMPLETE.md` §8 masih memuat pipeline
+  `ArkasImporterController → ... → ArkasDomainAdapter` dan mengklaim status
+  **READY FOR OPERATOR DATA TEST**; §2 masih menyebut "preset mapping importer
+  yang berlaku lintas sekolah"; §21 masih menaruh importer pada daftar area RVR;
+  §22 menautkan `docs/ARKAS_IMPORTER.md` yang sudah dihapus;
+- `DEVELOPMENT_ROADMAP.md` dan `CURRENT_PROGRESS.md` P0-08 masih terbuka;
+- `P0_VERIFICATION_KIT.md` §3 masih menyebut "ARKAS importer" sebagai coverage
+  SPJ Critical yang aktif;
+- `GUI_RUNTIME_QA.md` checklist dan `LIVEWIRE_MIGRATION_PLAN.md` §8 masih
+  menominasikan importer sebagai target migrasi;
+- `USER_SCENARIOS.md` §3 masih mendokumentasikan "Mode Sederhana"/"Mode
+  Lanjutan" + mapping manual yang tidak ada lagi;
+- `README.md`, `ARCHITECTURE.md` (root), dan `API.md` (root) menautkan
+  `ARKAS_IMPORTER.md` / route `arkas.importer*` yang sudah tidak ada.
+
+Semua ditulis ulang sebagai penanda penghapusan dengan rujukan ke `SYNCHRONIZATION.md`
+§2.2/§18. Yang **tetap hidup** dan kini dijelaskan eksplisit:
+`ArkasStagingService` + `ArkasImportRowSynchronizer` + `ArkasImportProfile`/`Run`
+dipakai `ArkasCanonicalSyncService:17` sebagai infra pipeline canonical sync,
+bukan sebagai workspace operator. Daftar dokumen acuan `ARCHITECTURE_COMPLETE.md`
+§22 juga dilengkapi dengan dokumen aktif yang sebelumnya hilang
+(`SYNCHRONIZATION.md`, `UI_ICON_MIGRATION.md`, `LIVEWIRE_MIGRATION_PLAN.md`,
+`TEMPLATE_MASTER_WORKFLOW.md`, `PERIODIC_REPORT_MODULE.md`,
+`SPJ_SUPPORTING_DOCUMENT_PATTERNS.md`).
+
+`API.md` kehilangan 4 route `arkas.importer*`, diganti baris `arkas.mirror.*`
+(`mirror`, `mirror/status`, `mirror/sync-refs`, `mirror/sync-school`,
+`mirror/health-repair`) yang terverifikasi pada `route:list`.
+
+### 2. Identifier gate ambigu (`run #NN` vs `PR #NNN`)
+
+Dokumentasi mencampur dua scheme dan keduanya ditulis "CI #", sehingga `#46`
+(run workflow) dan `#486` (nomor PR) terbaca sebagai objek yang sama though
+keduanya hijau. Pemisahan scheme kini dijelaskan di header
+`CURRENT_PROGRESS.md`, `DEVELOPMENT_ROADMAP.md` §P0-00,
+`P0_VERIFICATION_KIT.md` §1, dan `docs/README.md`. Gate kanonik ditegaskan
+sebagai **run #46** pada `e4ba5cf`.
+
+Satu aturan actionable ikut dikoreksi: `CURRENT_PROGRESS.md` §"Aturan evidence"
+menyebut `ba8fa0b...` sebagai gate acuan, padahal itu head PR #486 yang
+historis; diganti `e4ba5cf...` (run #46).
+
+Branch mati `hardening/raw-rkas-audit` (sudah digabung via PR #1) dihapus dari
+header `LIVEWIRE_MIGRATION_PLAN.md`, `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`,
+`TEMPLATE_MASTER_WORKFLOW.md`, dan `UI_ICON_MIGRATION.md`.
+
+### 3. Hash commit yang tidak ada di mirror ini
+
+`git cat-file -t` membuktikan 9 hash yang dikutip pada blok evidence historis
+tidak ada pada repository mirror `raw-rkas`: `ba8fa0b`, `a4dd3954`, `7b5615c4`,
+`d3c786d8`, `5fa98ed`, `3c7be408`, `701c7364`, `b61cdc62`, `887d0219`. Sesuai
+keputusan pengguna, hash tersebut **dipertahankan sebagai jejak historis**
+(tidak dihapus) dan diberi catatan eksplisit di `CURRENT_PROGRESS.md` serta
+`P0_VERIFICATION_KIT.md` bahwa blok itu belum terverifikasi terhadap mirror dan
+tidak boleh dinaikkan menjadi evidence aktif tanpa konfirmasi ke repository
+canonical. Hash yang terkonfirmasi ada antara lain `e4ba5cf`, `1705f5d`,
+`14cf825`, `a22f7d5`, `b07d764`, `9540937`, `058d771`, `ea8c507`, `ac75b5b`,
+`ffa049a4`, `24a19333`.
+
+### 4. Klaim slot Laporan Periode salah hitung
+
+`docs/README.md` mengklaim "empat kelompok/**39 slot** laporan periode".
+Pengukuran terhadap `app/Services/SpjPeriodicReportRegistry::packages()` pada
+HEAD ini — dan pada `e4ba5cf` juga, sehingga klaim itu tidak pernah benar —
+menghasilkan **46 slot** (11 bulanan + 12 triwulan + 13 semester + 10 tahunan)
+dari **22 report key** berbeda. Angka pada indeks diperbaiki menjadi "46 slot
+(22 report key)". `SPJ_PERIODIC_REPORTING.md`, yang sebelumnya tidak terindeks
+di `docs/README.md`, kini ditambahkan sebagai kontrak teknis modul tersebut.
+
+### 5. Audit isi dokumentasi lama terhadap source — 16 defect
+
+Sepuluh dokumen yang bertanggal 2026-09-11 s.d. 2026-09-29 diaudit claim per
+claim terhadap source. Enam benar-benar bersih; empat memuat klaim yang
+bertentangan dengan kode.
+
+#### 5.1 `SPJ_DESIGN_DECISIONS.md` / `NUMBERING_CORRECTION_AND_ROLLBACK.md`
+
+- **Kolom yang sudah di-drop masih didokumentasikan sebagai kolom.**
+  `transactions.gross_amount`, `tax_total`, `net_amount` serta
+  `transaction_items.{description,quantity,unit,unit_price,amount}` di-drop oleh
+  migrasi school `2026_09_19_000004_drop_duplicate_source_columns`. Nilai
+  canonical kini dibaca dari mirror lewat `Transaction::sourceValue()` /
+  `TransactionItem::sourceValue()`. §5 dan §4.1 diberi catatan bentuk
+  penyimpanan; blok "Ownership item" disederhanakan.
+- **Roster KONSUMSI/SPPD.** Auto-fill roster hanya terpasang untuk `KONSUMSI`
+  (`SpjWorkspaceUseCase` memuatnya pada kondisi `spj_category === 'KONSUMSI'`,
+  dikonsumsi hanya `konsumsi.blade.php`). SPPD memakai `spj_travels` tanpa
+  roster. Klaim "KONSUMSI/SPPD" yang sama ada di 4 dokumen lain
+  (`ARCHITECTURE_COMPLETE.md`, `SYNCHRONIZATION.md`, `USER_SCENARIOS.md`,
+  `docs/README.md`) — semuanya dikoreksi ke scope `KONSUMSI`.
+- **Kapasitas `operational_audit_logs`.** Tabel itu **tidak punya**
+  `fund_source_id` maupun kolom sekolah; `OperationalAuditService::record()`
+  hanya menulis `fiscal_year_id`, `entity_type`, `entity_id`, `action`,
+  `description`, `user_id`, timestamp. Klaim "fund source" dan "sequence
+  sebelum/sesudah" pada §17.6 dan §9 dikoreksi menjadi kapasitas aktual.
+- **Rollback belum registry-driven.** `SpjNumberingRollbackUseCase` memakai
+  daftar kolom hardcoded, bukan `number_target` dari registry; registry-driven
+  cleanup baru ada pada jalur cancel individual. Dicatat tanpa mengubah aturan.
+- **Nilai status legacy.** `DICETAK` masih di-whitelist
+  `SpjNumberingOrderService`, `BERNOMOR` masih dibaca sebagai alias NUMBERED di
+  `TransactionsTable`, dan `spj_packages.status` adalah `string(30)` tanpa enum
+  constraint. Ditambahkan catatan pada §16.
+- **Letak penyimpanan field Paket.** Field operator (`spj_category`,
+  `payment_*`, `receipt_recipient_name`, metadata SiPLah) berada di
+  `transactions`, bukan di `spj_packages`; §4.3 diberi catatan agar tidak dibaca
+  sebagai klaim nama kolom.
+
+Registry numbering sendiri **terverifikasi akurat** — 7 kode bernomor, seluruh
+`event_date_rule`, `number_target`, `applicable_categories`, dan `scope_rule`
+cocok dengan source, termasuk aturan `TAHAP:n`.
+
+#### 5.2 `CSS_USAGE_GUIDE.md`
+
+- **Cascade tail tidak lengkap.** `theme-system.css` mengimpor 39 file;
+  tabel §13 hanya mencantumkan 22. Tiga file yang tidak tercatat adalah
+  `apple-theme-profiles.css`, `public-context-standardization.css`, dan
+  `header-button-unification.css` — yang terakhir justru **lapisan paling
+  akhir** dan diandalkan `GUI_STANDARDIZATION.md` §93, sehingga kedua dokumen
+  sebelumnya saling bertentangan. Tabel §13 ditulis ulang menjadi daftar
+  lengkap bergrp (entry/base, theme system, feature area, lapisan akhir).
+- **`--theme-action-hover-bg`/`-fg` bukan token canonical.** Keduanya tidak
+  punya definisi global di `:root` maupun `theme-accessibility.css`; hanya
+  `arkas-theme-profiles.css` dan `apple-theme-profiles.css` yang
+  mendeklarasikannya. Semua consumer menulis fallback. Dicatat eksplisit.
+
+#### 5.3 `GUI_STANDARDIZATION.md` §20.1 — pilot density salah
+
+Dokumen mencantumkan `control height desktop: 40px`, `touch 44px`
+workspace-wide, dan `table row vertical: 10px`. Ketiganya tidak sesuai source:
+
+```text
+40px  : tidak ada di mana pun untuk --profile-control-height; nilai global
+        2.5rem di human-ui.css hanya untuk main button/.ui-btn, bukan kontrol
+        form. spj-workspace-standardization.css sogar memuat komentar bahwa
+        file itu SENGAJA tidak mendeklarasikan token density.
+44px  : hanya di-scope ke [data-package-tab] pada max-width 1023px
+10px  : bukan nilai pilot, melainkan nilai profil `compact`;
+        default --profile-table-row-y adalah .875rem
+```
+
+Tabel diganti memakai token density, dengan catatan bahwa regression lama
+justru mengunci nilai 40px yang kemudian dihapus sebagai bug. Regression
+penggantinya sudah ada: `test_spj_workspace_does_not_pin_density_owned_tokens`.
+
+#### 5.4 `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` — ambang SUDAH diimplementasi
+
+Dokumen menyatakan ambang materai/PPN/PPh23 "belum menjadi validasi otomatis".
+Namun: ketiganya sudah dideteksi di `SpjOperatorHintService` (materai
+`gross > Rp5 Jt`; PPN `gross > Rp2 Jt` tanpa PPN pada BARANG/JASA_LAINNYA/
+PEMELIHARAAN; pajak konsumsi KONSUMSI tanpa PPh 23), dirender di
+`spj.checklist`, dan tercakup `SpjOperatorHelperTest`. Yang belum ada adalah
+menjadikan ambang itu **gate pemblokir**. Dokumentasi (dan entri yang sama di
+dokumen ini) dikoreksi: "deteksi otomatis non-blocking, gate masih usulan".
+
+#### 5.5 Route dan parameter yang salah
+
+- `GUI_RUNTIME_QA.md` menulis `/dashboard` yang **tidak ada**; dashboard adalah
+  `GET /`. Ditambahkan juga route yang belum tercakup: `/pajak`,
+  `/rekonsiliasi`, `/referensi`, `/laporan-periode`, `/spj/rekap-triwulan`,
+  `/penganggaran-rkas/{saran,simulasi,perbandingan-revisi}`, dan
+  `/pegawai/tinjau-identitas`.
+- Status "GUI-AUDIT-12/13 source readiness: PASS" kini disebut sebagai PASS
+  **pada gate run #46 / `e4ba5cf`** — HEAD sudah beberapa commit setelah gate itu.
+- `MOBILE_VISUAL_QA_TODO.md`: parameter route `/transaksi/{id}` → `{transactionId}`;
+  tombol `+ Peserta manual` → label aktual `Ambil Pegawai` + `＋ Peserta`.
+- `DOCUMENTATION_MAINTENANCE.md` §3: baris GUI tidak memuat `GUI_RUNTIME_QA.md`
+  padahal file itu checklist penutupan yang diwajibkan `GUI_STANDARDIZATION.md`;
+  ditambahkan, plus baris route untuk `API.md`, dan daftar dokumen aktif lain
+  yang selama ini tidak ada di matriks.
+
+#### 5.6 Dokumen yang terverifikasi bersih
+
+`SIPLAH_MVP_PLAN.md` (seluruh klaim class/column/route/policy cocok dengan
+source), `UI_ICON_MIGRATION.md` (18 nama icon, urutan import, dedup contract),
+dan `P0_01_SOURCE_AUDIT.md` (signature `spj:audit-quarter`, jaminan read-only
+`PRAGMA query_only`, kedua regression test). Klaim `SPJ_DESIGN_DECISIONS.md` §10
+tentang identity pegawai juga seluruhnya cocok dengan `EmployeeIdentityService`.
+
+### 6. Teks korup dan view orphan
+
+Tujuh baris di dokumen ini mengandung karakter CJK yang tersisip di tengah
+kalimat Indonesia sehingga menjadi tidak terbaca. Contohnya judul butir
+"Tiga... clean up" pada bagian cleanup RKAS, frasa "efforts sebelumnya ...
+select" pada perbaikan lebar blok unduh, "dan ... oleh test RkasReportTest"
+pada payload freshness, "hanya ... token density" pada catatan koreksi
+analisis, "rencana GUI ..." pada guardrail density, "Ketigabelas ..." pada
+paragraf density, serta satu kata async berbahasa asing pada kalimat
+"Script ini juga menangkap regresi". Karakter tersebut dihapus dan
+kalimatnya dipulihkan ke bahasa Indonesia sesuai konteks sekitarnya, tanpa
+mengubah makna teknis yang dilaporkan.
+
+`resources/views/arkas/partials/importer-flash-messages.blade.php` dihapus:
+sisa partial Generic Importer yang tidak lagi dirender view mana pun
+(`mirror.blade.php` dan `settings.blade.php` tidak punya `@include`
+sama sekali) dan masih memakai palet hard-coded `rose-300/50` +
+`emerald-300/50` yang bertentangan dengan `CSS_USAGE_GUIDE.md` §15. Folder
+`resources/views/arkas/partials/` ikut terhapus karena menjadi kosong.
+
+### 7. Regenerasi `API.md`
+
+Status: **FUNCTIONAL PASS (regenerasi dari route:list aktual)**.
+
+`API.md` sebelumnya bertanggal 2026-09-25, tidak lengkap, dan memuat 4 route
+`arkas.importer*` yang sudah dihapus. Sekarang dokumen ini **dihasilkan langsung**
+dari `php artisan route:list --except-vendor --json`:
+
+```text
+route terdaftar        : 154
+route aplikasi         : 150   (4 route boost/up/storage Closure dikecualikan)
+baris tabel            : 150   (verifikasi balik URI per route: 0 hilang)
+route infra eksplisit  : 4     (/up, /_boost/browser-logs, /storage/{path} x2)
+```
+
+Struktur baru: tabel alias middleware dengan class asalnya, catatan grup `web`
+yang dihilangkan, remark route tanpa middleware (`/setup`,
+`GET /asisten/status/{token}`), lalu 150 route dikelompokkan per area operator
+(auth/publik, dashboard & laporan, transaksi, SPJ, pajak & rekonsiliasi,
+anggaran RKAS, siswa & pegawai, sinkronisasi data, pengaturan, dashboard root).
+
+Tabel middleware dibaca dari middleware aktual tiap route, bukan dari
+asumsi per prefix, sehingga `administrator` yang menempel pada
+`/pengaturan/template-dokumen` dan `dapodik` kini tercatat benar. Klaim "jumlah
+route" sengaja tidak dijadikan kontrak di dalam dokumen.
+
+### 8. Documentation Impact Review — perubahan Laporan Periode yang belum tercatat
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Perubahan berikut sudah ada di working tree tetapi belum punya entri status:
+
+```text
+app/Services/SpjPeriodicReportPrintService.php   +273 / -19
+tests/Feature/BkuOfficialLedgerTest.php           +111
+docs/PERIODIC_REPORT_MODULE.md                    +22
+```
+
+Isi perubahan: dedup baris pajak bayangan `MIG-T-*` hasil
+`spj:backfill-mirror-from-local` terhadap baris PAJAK kanonis (kunci sama
+dengan dedup `ArkasMirrorResolver::transactionSource`), shortfall murni ditulis
+ulang sebagai "Terima … (data lokal)"; normalisasi `REK_BKU` varian `Sisa`
+lewat `bkuBaseRek()`; `Bunga Bank` dihitung sebagai penerimaan sisi bank dan
+`Pajak Bunga` sebagai pengeluaran sisi bank (sebelumnya `0/0` walau mirror
+membawa nominal); fallback uraian `URAIAN` → `URAIAN_PAJAK` → `REK_BKU`; dan
+parent grup memakai payment/uraian non-kosong pertama.
+
+Verifikasi yang benar-benar dijalankan pada batch ini:
+
+```text
+BkuOfficialLedgerTest         : 12 passed / 124 assertions
+php artisan test --filter=PeriodicReport : 13 passed / 148 assertions
+```
+
+Impact review terhadap matriks `DOCUMENTATION_MAINTENANCE.md` §3:
+
+- Status/evidence → entri ini (selesai).
+- Template/generator/placeholder → `PERIODIC_REPORT_MODULE.md` sudah punya
+  bagian "Dedup bayangan backfill pajak + fallback uraian BKU" dari perubahan
+  tersebut; ditambah tanggal header dan blok "Status verifikasi" yang menyebut
+  hasil test di atas (selesai).
+- Kontrak teknis modul → `SPJ_PERIODIC_REPORTING.md` dilengkapi route Excel
+  yang sebelumnya tidak tercatat dan rujukan test `BkuOfficialLedgerTest`
+  (selesai).
+- Route → `API.md` sudah memuat `/laporan-periode/{scope}/{report}/excel`
+  (selesai lewat regenerasi).
+- Tidak menyentuh business rule, tenant boundary, numbering, atau lifecycle;
+  nilai selalu dibaca dari mirror dengan `sourceValue()` seperti lapisan lain.
+  Tampilan cetak/PDF tetap **RVR** — belum dibuka di browser/PDF viewer.
+
+### Evidence keseluruhan
+
+Dokumentasi + view orphan + regenerasi `API.md`:
+
+```text
+git diff --check                 : BERSIH
+php artisan view:clear + cache   : sukses
+route:list                       : tidak ada arkas.importer*/import-monitor
+grep karakter CJK (docs/ + root) : bersih
+grep ARKAS_IMPORTER.md           : 0 tautan aktif tersisa
+verifikasi balik API.md per URI  : 150/150 route tercakup
+```
+
+Perubahan source yang sudah ada di working tree (Lapangan Periode + tab datar +
+`users/index.blade.php`) diverifikasi ulang pada batch commit:
+
+```text
+SPJ Critical suite      : 328 passed / 2.454 assertions
+GuiAudit09To13 readiness: 13 passed / 114 assertions
+SpjReportLayoutTest     : 15 passed / 199 assertions
+WebRouteSmokeTest       : 6 passed / 8 assertions
+Bku/Bpk/PeriodicReport  : 19 passed / 196 assertions
+Repository Pint         : passed
+npm run theme:qa        : All representative theme checks passed
+npm run density:qa      : All density ownership checks passed
+npm run build           : sukses
+php artisan view:cache  : sukses
+```
+
+`DatabaseTableSummaryTest` gagal 3 test dengan `database is locked`, dan
+kegagalan itu terbukti **pre-existing** melalui stash A/B: gagal identik pada
+working tree bersih tanpa perubahan batch ini. Termasuk pola flaky SQLite
+Windows yang sudah tercatat di dokumen ini.
+
+Bagian dokumentasi tidak menghasilkan functional gate baru. Semua status
+visual/browser tetap **RVR** — tidak ada halaman yang dibuka di browser atau PDF
+viewer pada batch ini.
 
 ## Batch UI/UX workspace Paket SPJ (2026-10-04)
 
@@ -790,7 +1129,7 @@ Perbaikan dilakukan tanpa menaikkan minimum PHP project dan tanpa mengubah busin
 2. CI repair #485 me-resolve dependency Symfony pada PHP 8.3, memverifikasi `composer install`, build, Blade, SPJ Critical, Unit, dan Feature, lalu hanya setelah seluruh gate PASS menyimpan `composer.lock` hasil repair.
 3. Workflow kemudian dikembalikan ke mode read-only/deterministik: tidak ada `composer update` di gate normal.
 4. Gate normal menambahkan `composer validate --strict` dan `composer check-platform-reqs --lock` sebelum `composer install` agar drift platform lock terdeteksi lebih awal.
-5. CI #486 pada `ba8fa0b...` membuktikan gate normal tersebut SUCCESS.
+5. PR #486 pada `ba8fa0b...` membuktikan gate normal tersebut SUCCESS.
 
 Commit terkait:
 
@@ -826,7 +1165,7 @@ CI #479 membuktikan dua failure tersebut selesai: SPJ Critical dan Unit PASS. Fu
 test: align description UI contract with service delegation
 ```
 
-CI #480 adalah historical green baseline sebelum Laravel 13/TALL migration. Ia telah disupersede sebagai current canonical code gate oleh CI #486.
+CI #480 adalah historical green baseline sebelum Laravel 13/TALL migration. Ia telah disupersede sebagai current canonical code gate oleh PR #486, lalu oleh workflow run #46.
 
 ### Laravel 13 upgrade — local verification 2026-09-14
 
@@ -844,7 +1183,7 @@ pint --dirty : passed
 git diff --check: OK
 ```
 
-Selisih +1 test vs gate #480 berasal dari commit `5fa98ed` (satu head di depan gate), bukan dari upgrade framework. Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau authorization contract yang diubah. Remote deterministic compatibility Laravel 13/TALL pada PHP 8.3 sekarang dibuktikan oleh CI #486.
+Selisih +1 test vs gate #480 berasal dari commit `5fa98ed` (satu head di depan gate), bukan dari upgrade framework. Tidak ada business rule, lifecycle, numbering, sync, tenant ownership, atau authorization contract yang diubah. Remote deterministic compatibility Laravel 13/TALL pada PHP 8.3 sekarang dibuktikan oleh PR #486.
 
 ### TALL migration — Filament + Sail removal 2026-09-14
 
@@ -852,7 +1191,7 @@ Audit membuktikan seluruh surface Filament adalah dead code: `RkasTable` orphan 
 
 Dihapus: `filament/*` + `laravel/sail` dari `composer.json` (termasuk script `filament:upgrade`), 2 komponen + 3 view orphan, directive `@filamentStyles/@filamentScripts`, 5 CSS `@import` Filament, selector `.fi-*` basi, dan aset `public/js/filament`. Tidak ada paket baru — stack aplikasi memakai Laravel + Livewire + Alpine + Tailwind; workspace RKAS kini dimount melalui `RkasBudgetWorkspace` dengan controller sebagai adapter data read-only.
 
-Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 assertions, Unit 60/206, Feature 412/2980 (identik dengan baseline L13), `npm run build` PASS (CSS 932KB → 425KB), `view:cache` PASS, `pint --dirty` passed. Remote deterministic gate pasca-removal sekarang PASS pada CI #486.
+Verifikasi lokal pasca-removal (PHP 8.4.0): SPJ Critical 288 PASS / 2244 assertions, Unit 60/206, Feature 412/2980 (identik dengan baseline L13), `npm run build` PASS (CSS 932KB → 425KB), `view:cache` PASS, `pint --dirty` passed. Remote deterministic gate pasca-removal sekarang PASS pada PR #486.
 
 ---
 
@@ -910,7 +1249,7 @@ Boundary yang sudah ditutup:
 - `SchoolSelector::selectSchool` mempertahankan guard admin/own-school;
 - `YearSelector::selectYear` tetap accepted context mutation.
 
-`LivewireMutationAuthorizationTest` berada di SPJ Critical dan tetap tercakup oleh current green SPJ Critical gate #486. Rule arsitektur tetap: mutation Livewire sensitif harus authorize pada request action/policy/persistent mechanism yang benar-benar berlaku, bukan hanya mengandalkan route GET halaman awal.
+`LivewireMutationAuthorizationTest` berada di SPJ Critical dan tetap tercakup oleh green SPJ Critical gate PR #486 serta run #46. Rule arsitektur tetap: mutation Livewire sensitif harus authorize pada request action/policy/persistent mechanism yang benar-benar berlaku, bukan hanya mengandalkan route GET halaman awal.
 
 Status area yang dimigrasikan:
 
@@ -1014,7 +1353,7 @@ Source of truth:
 app/Services/SpjNumberingDocumentRegistry.php
 ```
 
-Gate #486 mempertahankan regression suite yang mencakup first numbering, cancel/reserved sequence, tail rollback, quarter dependency, fund-source scope, NUMBERED description carve-out, FINAL lock, dan registry-based consumers.
+Gate PR #486 dan run #46 mempertahankan regression suite yang mencakup first numbering, cancel/reserved sequence, tail rollback, quarter dependency, fund-source scope, NUMBERED description carve-out, FINAL lock, dan registry-based consumers.
 
 `SpjDocumentTypeRegistry` tetap registry template/placeholder/output dan bukan source sequence numbering.
 
@@ -1026,7 +1365,7 @@ Gate #486 mempertahankan regression suite yang mencakup first numbering, cancel/
 HTTP/ROUTE AUTH BASELINE       : PASS
 LIVEWIRE MUTATION BOUNDARY     : HARDENED
 NEGATIVE ROLE REGRESSION       : PASS di current SPJ Critical gate
-LAST VERIFIED CODE GATE        : GREEN / CI #46; predates Bulk Preview source change
+LAST VERIFIED CODE GATE        : GREEN / workflow run #46; predates Bulk Preview source change
 RUNTIME/BROWSER VERIFICATION   : RVR
 ```
 
@@ -1086,25 +1425,37 @@ Livewire Phase 2 hanya menambah role enforcement dan tidak memindahkan scope log
 
 ---
 
-## P0-08 — Generic ARKAS Importer
+## P0-08 — Generic ARKAS Importer (dihapus 2026-10-04)
 
-**Status: FUNCTIONAL HARDENING PASS / OPERATOR DATA TEST ACTIVE.**
+**Status: SUBSYSTEM REMOVED.**
 
-Importer stateful tidak menjadi target migrasi Livewire opportunistic.
+Modul Generic Importer sudah tidak ada; yang tersisa `ArkasStagingService`
++ `ArkasImportRowSynchronizer` sebagai infra pipeline canonical sync. Work item
+P0-08 ditutup dan tidak lagi jadi prioritas. Rujukan: bagian "Hapus subsystem
+importer mapping ARKAS 2026-10-04" di dokumen ini, `SYNCHRONIZATION.md`
+§2.2/§18, dan `ARCHITECTURE_COMPLETE.md` §8.
 
 ---
 
 ## Referensi pola bukti dukung operasional (poster 10 pola) — 2026-09-23
 
-Status: **ACTIVE REFERENCE / RVR** — belum implementasi, tanpa perubahan source.
+Status: **FASE 1 IMPLEMENTED / AMBANG DETEKSI NON-BLOCKING / RVR visual**.
+
+> **Koreksi status 2026-10-05.** Entri ini sebelumnya menyatakan "belum
+> implementasi, tanpa perubahan source" dan "aturan ambang belum menjadi
+> validasi otomatis". Keduanya sudah usang: checklist eksternal beserta
+> centang per item sudah hidup di halaman `spj.checklist` dengan guard
+> OPERATOR/ADMIN + DRAFT/READY + tenant boundary + audit, dan ketiga ambang
+> poster (materai >Rp5 Jt, PPN >Rp2 Jt, PPh23 2% + pajak restoran 10%) sudah
+> dideteksi otomatis oleh `SpjOperatorHintService`. Yang belum ada adalah
+> menjadikan ambang itu **gate pemblokir**, dan cetak checklist pendamping.
+> Deteksi sekarang informatif dan tidak menghentikan numbering.
 
 Poster “Lampiran Bukti Dukung SPJ” ditranskripsikan ke `docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md`
 (10 pola: KKG, Rapat K3S, Honor GTT/PTT, Perjalanan Dinas, Belanja SiPlah,
-Makan Minum/Rapat, Honor Narasumber, Pengadaan/Penggandaan, Ekstrakurikuler,
+Makan Minum/Rapat, Honor Narsumber, Pengadaan/Penggandaan, Ekstrakurikuler,
 Jasa Tukang dll + catatan materai >Rp5 Jt dan kecocokan Nomor/Nilai BKU-Kwitansi).
 Pemetaan ke 6 kategori canonical + channel SiPlah ada di dokumen tersebut.
-Aturan ambang (materai, PPN >Rp2 Jt, PPh23 2% + pajak restoran 10%) belum menjadi
-validasi otomatis. Implementasi checklist `SOURCE_EXTERNAL` masih usulan.
 
 ---
 
@@ -1140,7 +1491,7 @@ Code/dependency integration gate **bukan lagi blocker**. Blocker/verifikasi ters
 2. Jangan memakai deterministic fixture sebagai bukti real-data verified.
 3. Jangan memakai screenshot/UI appearance sebagai pengganti backend regression.
 4. Jangan menyatakan CI baru untuk commit docs-only.
-5. Setiap source/runtime change setelah gate `ba8fa0b...` membutuhkan gate hijau baru sebelum menjadi canonical functional HEAD.
+5. Setiap source/runtime change setelah gate `e4ba5cf...` (workflow run #46) membutuhkan gate hijau baru sebelum menjadi canonical functional HEAD.
 6. Mutation Livewire sensitif harus mempunyai authorization boundary pada action request.
 7. GUI source PASS tidak sama dengan browser visual PASS.
 8. Bila business rule berubah, sinkronkan `SPJ_DESIGN_DECISIONS.md` dan feature guide terkait.
@@ -1598,7 +1949,7 @@ expanded) menemukan lima isu yang diperbaiki di
 4. **Aksesibilitas tree.** `aria-expanded` ditambahkan pada ketiga level
    toggle (sebelumnya nol) dengan binding ke state Alpine, plus
    `aria-controls` ke `rkas-tree-body`.
-5. **Tiga自己不 clean up.** Tombol scroll-to-top global di `app.js` masih
+5. **Tiga hal yang belum clean up.** Tombol scroll-to-top global di `app.js` masih
    memakai palette Tailwind hard-coded (`border-slate-200 bg-white/95
    dark:bg-slate-900/90`) sehingga tetap putih di theme ARKAS Dark; kini
    memakai `ui-btn ui-btn-secondary`. "Buka semua / Tutup semua" memakai
@@ -1648,8 +1999,8 @@ Dua perbaikan terpisah pada halaman `/penganggaran/rkas`.
 1. **Baris "Triwulan per Bulan" dan "Bulanan" melebar melewati card.** Select periode
    memakai kelas `ui-select` yang didefinisikan `width: 100%` pada
    `token-native-components.css:110`. Aturan itu unlayered sehingga menang atas
-   utility Tailwind yang ber-layer, jadi efforts sebelumnya给 select `w-[9.5rem]`
-   tidak berlaku dan select tetap memakan seluruh sisa ruang, mendorong trio
+   utility Tailwind yang ber-layer, jadi efforts sebelumnya memberikan select
+   `w-[9.5rem]` tidak berlaku dan select tetap memakan seluruh sisa ruang, mendorong trio
    tombol keluar tepi kanan card. Setiap baris kini memakai grid eksplisit
    `grid-cols-[minmax(0,1fr)_auto]` pada mobile dan
    `md:grid-cols-[minmax(0,1fr)_9.5rem_auto]` pada desktop: label fleksibel,
@@ -1664,7 +2015,7 @@ Dua perbaikan terpisah pada halaman `/penganggaran/rkas`.
    user, payload usang dibuang beserta import
    `ArkasMirrorFreshnessService` dan `ArkasMirrorIntegrityService` dari
    controller. Kedua service tidak dihapus karena masih dipakai banner dashboard
-   dan，覆盖 oleh test RkasReportTest serta ArkasMirrorIntegrityTest.
+   dan masih tercakup oleh test RkasReportTest serta ArkasMirrorIntegrityTest.
    Assertion stale `Kesegaran data ARKAS` pada
    `RkasBudgetUiTest::test_rkas_workspace_exposes_revision_comparison_freshness_and_report_package`
    ikut dibuang dan method di-rename menjadi
@@ -1749,7 +2100,7 @@ disentuh. Yang layak dimigrasi ke token hanya override density-owned pada
 `view-theme-hardening.css` (~1240 baris) adalah kandidat milestone tersendiri
 untuk pola yang sama pada warna.
 
-Perubahan ini hanya调整 token density dan tidak menyentuh perhitungan
+Perubahan ini hanya menyesuaikan token density dan tidak menyentuh perhitungan
 anggaran, form, kontrak SPJ, maupun perilaku numerasi. Penampilan aktual
 setiap tema pada /spj tetap perlu browser check; status visual tetap RVR.
 
@@ -1757,7 +2108,7 @@ setiap tema pada /spj tetap perlu browser check; status visual tetap RVR.
 
 Status: **PASS (static + build) / BROWSER RVR**.
 
-Tahap 2 dari rencana GUI的一名wako. `scripts/density-qa.mjs` ditambahkan
+Tahap 2 dari rencana keseragaman GUI density. `scripts/density-qa.mjs` ditambahkan
 sebagai gerbang yang gagal bila kepemilikan token density bocor lagi:
 
 1. Token `--profile-section-gap`, `--profile-control-height`, dan
@@ -1773,13 +2124,13 @@ sembilan hardcoded table cell padding di `app-base.css` (`.audit-table`,
 `.table`, dan varian mobile) serta `settings-database-standardization.css`
 (`.db-data-table`, `.db-table-sidebar-list`), dan satu density assignment
 di `spj-workspace-standardization.css` — `--profile-control-height` pada media
-query mobile. Ketigabelas分组: lima blok padding tabel kini memakai
+query mobile. Ketigabelas pembagiannya: lima blok padding tabel kini memakai
 `padding-block: var(--profile-table-row-y)` dengan `padding-inline` terpisah
 supaya lebar kolom tetap stabil, dan assignment token mobile dihapus karena
 lantai touch-target sudah terpenuhi lewat `min-height` pada
 `[data-package-tab]`.
 
-Script ini juga menangkap regresi yang sebelumnya tidak terlihat:委员会 file
+Script ini juga menangkap regresi yang sebelumnya tidak terlihat: file
 `token-native-components.css` memang **konsumen** token yang benar dan
 tidak boleh ikut dianggap pelanggaran, sedangkan `theme-profiles.css` adalah
 pemilik sah.

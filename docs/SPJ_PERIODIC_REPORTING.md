@@ -1,6 +1,6 @@
 # SPJ Periodic Reporting
 
-Terakhir diverifikasi terhadap source: **2026-09-25**
+Terakhir diverifikasi terhadap source: **2026-10-05** (`raw-rkas`, branch `main`)
 
 Status: **REGISTRY + DATA ENGINE + INTERNAL PRINT/PDF IMPLEMENTED / VISUAL RUNTIME RVR**
 
@@ -16,6 +16,11 @@ Dokumen ini adalah kontrak teknis modul **Laporan Pertanggungjawaban Periodik** 
 6. Template/formula resmi tetap tidak didefinisikan di registry. Namun lapisan presentasi internal untuk browser print/PDF sudah diimplementasikan melalui `SpjPeriodicReportPrintService`, `PeriodicReportController`, dan view `periodic-reports/*` tanpa mengubah kontrak registry.
 
 ## Paket laporan
+
+Daftar di bawah adalah cerminan langsung dari
+`SpjPeriodicReportRegistry::packages()`: **46 slot** (bulanan 11 + triwulan 12 +
+semester 13 + tahunan 10) dari **22 report key** berbeda. Bila daftar ini
+berbeda dengan registry, registry yang benar.
 
 ### Bulanan
 
@@ -116,8 +121,13 @@ Source aktif sudah menyediakan:
 - `GET /laporan-periode` sebagai pusat laporan;
 - `GET /laporan-periode/{scope}/{report}/cetak` untuk browser print;
 - `GET /laporan-periode/{scope}/{report}/pdf` untuk PDF;
+- `GET /laporan-periode/{scope}/{report}/excel` untuk export Excel;
 - `SpjPeriodicReportPrintService` untuk presentasi/row/column data;
-- regression `SpjPeriodicReportPrintableTest` dan registry/module UI tests.
+- regression `SpjPeriodicReportPrintableTest`, `BkuOfficialLedgerTest`, dan
+  registry/module UI tests.
+
+Daftar lengkap route modul ini beserta middleware-nya berada di `API.md` root
+(bagian "Dashboard, Referensi, dan Laporan").
 
 Implementasi internal ini **bukan klaim bahwa seluruh formulir resmi sudah mempunyai visual fidelity final**. Template/formula resmi, print fidelity, dan pemeriksaan browser/PDF aktual tetap mengikuti status RVR di `CURRENT_PROGRESS.md`.
 

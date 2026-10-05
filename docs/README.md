@@ -1,10 +1,10 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-09-29**
+Terakhir diperbarui: **2026-10-05**
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
-Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada CI #46; visual browser/operator tetap RVR. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
+Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada workflow run #46; visual browser/operator tetap RVR. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
 
 ## Urutan sumber kebenaran
 
@@ -29,7 +29,11 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` run `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview terbaru sudah memiliki focused verification lokal; belum tercakup run #46 dan browser runtime tetap RVR.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` **run** `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview terbaru sudah memiliki focused verification lokal; belum tercakup run #46 dan browser runtime tetap RVR.
+
+> Catatan pembacaan identifier: `run #NN` adalah nomor run workflow,
+> sedangkan `PR #NNN` adalah nomor pull request. Keduanya pernah ditulis "CI #"
+> dan tidak boleh dicampur — gate kanonik aktif adalah run #46.
 
 ## Dokumen aktif utama
 
@@ -40,12 +44,13 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository me
 | `DOCUMENTATION_MAINTENANCE.md` | **ACTIVE / REQUIRED** — Definition of Done dokumentasi, impact matrix, evidence rules, dan aturan wajib contributor/AI. |
 | `SPJ_DESIGN_DECISIONS.md` | **ACTIVE CONTRACT** — aturan bisnis/domain permanen. |
 | `ARCHITECTURE_COMPLETE.md` | **ACTIVE ARCHITECTURE** — layer aplikasi, ownership, tenant boundary, dan registry architecture. |
-| `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, dan safe-sync semantics. |
+| `SYNCHRONIZATION.md` | **ACTIVE TECHNICAL GUIDE** — canonical sync ARKAS/BKU, Dapodik, reconciliation, employee identity, dan safe-sync semantics. Generic ARKAS Importer dihapus 2026-10-04; batas itu ditandai di `SYNCHRONIZATION.md` §2.2/§18. |
 | `NUMBERING_CORRECTION_AND_ROLLBACK.md` | **ACTIVE / IMPLEMENTED BASELINE** — numbering, cancel, rollback, correction, dan registry contract. |
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` | **ACTIVE REFERENCE / FASE 1 IMPLEMENTED** — 10 pola bukti dukung + mapping kategori/channel; checklist manual per paket sudah tersedia dan sengaja non-blocking. Aturan otomatis/threshold lanjutan masih RVR. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
-| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat kelompok/39 slot laporan periode, generator internal, browser print, PDF, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
+| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat scope periode dengan 46 slot (22 report key) pada `SpjPeriodicReportRegistry`, generator internal, browser print, PDF, Excel, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
+| `SPJ_PERIODIC_REPORTING.md` | **ACTIVE TECHNICAL CONTRACT** — prinsip, registry, scope, dan boundary data modul Laporan Periode; berpasangan dengan feature guide di atas. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
 | `UI_ICON_MIGRATION.md` | **ACTIVE MIGRATION GUIDE** — icon canonical + compatibility bridge. |
@@ -53,7 +58,7 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository me
 
 Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.md` dan melakukan **Documentation Impact Review** sebelum menyatakan pekerjaan selesai.
 
-## Importer, generator, dan verification
+## Sinkronisasi, generator, dan verification
 
 | Dokumen | Peran / status |
 |---|---|
@@ -61,6 +66,7 @@ Semua contributor dan AI/coding agent wajib membaca `DOCUMENTATION_MAINTENANCE.m
 | `TEMPLATE_MASTER_WORKFLOW.md` | **ACTIVE** — lifecycle import paket, update individual template, single-sheet download, dan master recomposition. |
 | `P0_VERIFICATION_KIT.md` | **ACTIVE EVIDENCE KIT** — command release-safety, historical green baseline, dan status gate HEAD terbaru. |
 | `P0_01_SOURCE_AUDIT.md` | **ACTIVE REAL-DATA GUIDE** — six-category source/real-data audit guidance. |
+| `IMPLEMENTATION_VERIFICATION_2026-09-15.md` | **HISTORICAL SNAPSHOT / NON-CANONICAL** — evidence generator dokumen 2026-09-15 pada branch `gui-standardization`. Jangan dipakai sebagai status HEAD; rujuk `CURRENT_PROGRESS.md` dan `P0_VERIFICATION_KIT.md`. |
 
 Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk numbering/koreksi setelah NUMBERED, baca `NUMBERING_CORRECTION_AND_ROLLBACK.md`. Untuk penutupan GUI, baca `GUI_STANDARDIZATION.md` lalu `GUI_RUNTIME_QA.md`.
 
@@ -87,7 +93,7 @@ Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk number
 - Detail Transaksi hanya menulis `item_description`; correction `item_description` dan `payment_description` pada NUMBERED mengikuti contract aktif; FINAL tetap terkunci.
 - Kategori canonical: `BARANG`, `KONSUMSI`, `PEMELIHARAAN`, `JASA_LAINNYA`, `SPPD`, `HONOR_PEGAWAI`.
 - SiPlah adalah channel, bukan kategori.
-- Master Pegawai menyatu (ARKAS + Dapodik + Manual); auto-fill KONSUMSI/SPPD memakai roster menyatu.
+- Master Pegawai menyatu (ARKAS + Dapodik + Manual); auto-fill peserta memakai roster menyatu. Saat ini auto-fill terpasang untuk kategori `KONSUMSI` saja — SPPD memakai `spj_travels` dan belum punya auto-fill roster (`SPJ_DESIGN_DECISIONS.md` §9).
 - Icon canonical dimiliki `<x-ui.icon>`; compatibility adapter lama tidak boleh menjadi registry kedua.
 - Source-level responsive regression bukan bukti browser visual PASS.
 - Livewire mutation wajib mempertahankan authorization dan tenant boundary; route GET middleware saja bukan bukti action Livewire independently authorized.

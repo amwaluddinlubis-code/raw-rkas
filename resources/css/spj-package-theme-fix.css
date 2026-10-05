@@ -77,21 +77,7 @@
 }
 
 /* Package inner tabs carry data-variant white backgrounds in the Blade markup. */
-.spj-semantic-workspace [data-package-tab] {
-    color: var(--spj-text-muted) !important;
-}
-
-.spj-semantic-workspace [data-package-tab]:hover {
-    background-color: var(--spj-surface-soft) !important;
-    color: var(--spj-text-strong) !important;
-}
-
-.spj-semantic-workspace [data-package-tab][data-active="true"] {
-    border-color: var(--spj-border) !important;
-    background-color: var(--spj-surface) !important;
-    color: var(--theme-content-accent) !important;
-    box-shadow: var(--profile-card-shadow) !important;
-}
+/* Package tabs use the canonical .ui-tab system; no local overrides. */
 
 /* Text hierarchy: legacy slate text in package detail must follow the selected
    theme foreground instead of assuming a light background. */

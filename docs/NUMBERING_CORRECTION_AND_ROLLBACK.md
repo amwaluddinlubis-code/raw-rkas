@@ -1,6 +1,6 @@
 # Koreksi & Rollback Penomoran SPJ
 
-Terakhir diperbarui: **2026-09-12**
+Terakhir diperbarui: **2026-10-05**
 
 Status: **IMPLEMENTED / FUNCTIONAL PASS / REAL-DATA CORE MUTATION QA PASS**
 
@@ -291,7 +291,18 @@ Untuk Paket terdampak:
 
 - `spj_documents` non-CANCELLED hasil numbering yang di-rollback dilepas;
 - history individual `CANCELLED` dipertahankan;
-- nomor turunan hasil numbering dibersihkan menggunakan target relation/field registry yang applicable;
+- nomor turunan hasil numbering dibersihkan pada kolom target yang applicable;
+
+> **Catatan implementasi (2026-10-05).** Pembersihan nomor turunan pada
+> jalur **rollback** saat ini memakai daftar kolom hardcoded di
+> `SpjNumberingRollbackUseCase` (nomor pesanan/BAP/BAST pada goods,
+> SPK/RAB pada work order, surat tugas pada travel), **bukan** membaca
+> `number_target` dari `SpjNumberingDocumentRegistry`. Registry-driven
+> cleanup baru ada pada jalur **cancel individual**
+> (`SpjDocumentLifecycleService`). Jadi aturan §2 "consumer tidak boleh
+> re-hardcode" belum terpenuhi sepenuhnya pada jalur rollback. Catatan ini
+> bukan untuk membolehkan hardcode, melainkan merekam kondisi source
+> apa adanya agar tidak dianggap sebagai kontrak yang sudah terpenuhi.
 - Paket kembali ke `DRAFT`;
 - current document number, numbered/finalization/snapshot state yang terkait numbering aktif dibersihkan;
 - sequence dibangun ulang dari nomor yang masih sah;
@@ -310,10 +321,18 @@ Operational audit **tidak dihapus** dan minimal harus menjelaskan:
 ```text
 actor
 waktu
-fiscal year + fund source
+fiscal year
 sequence/quarter yang di-rollback
 alasan
 ```
+
+> **Kapasitas audit aktual (2026-10-05).** `fund source` **tidak** terekam.
+> Tabel `operational_audit_logs` tidak punya kolom `fund_source_id` maupun
+> kolom sekolah; `OperationalAuditService::record()` hanya menulis
+> `fiscal_year_id`, `entity_type`, `entity_id`, `action`, `description`,
+> `user_id`, dan timestamp. Nomor awal/akhir serta alasan tersimpan di dalam
+> teks `description`, bukan di kolom terpisah. Menambahkan fund source ke
+> audit memerlukan kolom dan migrasi baru.
 
 Individual `CANCELLED` berbeda: history nomor dan sequence-nya permanen.
 

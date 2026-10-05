@@ -24,7 +24,6 @@ main[data-page="spj"] section:has(> #spj-main-tabs) {
 
 /* Navigasi tab utama memakai standar tab datar dengan indikator tema di bawah. */
 main[data-page="spj"] #spj-main-tabs {
-    border-bottom: 1px solid var(--spj-border);
     background: var(--spj-surface);
     padding: .35rem 1.25rem 0;
 }
@@ -59,7 +58,6 @@ main[data-page="spj"] #spj-main-tabs .ui-tab {
 main[data-page="spj"] #spj-main-tabs .ui-tab-active {
     background: transparent;
     color: var(--theme-content-accent, var(--ui-accent)) !important;
-    border-bottom: 2px solid var(--theme-content-accent, var(--ui-accent)) !important;
     padding-bottom: .1rem !important;
 }
 

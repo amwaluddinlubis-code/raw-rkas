@@ -1,8 +1,27 @@
 # P0 Verification Kit
 
-Terakhir diperbarui: **2026-09-29**
+Terakhir diperbarui: **2026-10-05**
 
 Dokumen ini mendefinisikan alat verifikasi release-safety yang dipakai berulang. Status release authoritative berada di `CURRENT_PROGRESS.md`.
+
+> **Cara membaca identifier gate.** Dua scheme dipakai bercampur dalam
+> dokumentasi project dan tetap perlu dibedakan eksplisit:
+>
+> ```text
+> run #NN    -> nomor run workflow "SPJ Critical Verification"
+>               (mis. run #46 = run ID 36515608353)
+> PR #NNN    -> nomor pull request (mis. #478-#480, #483-#486)
+> ```
+>
+> `#46` dan `#486` **bukan** objek yang sama: yang pertama nomor run, yang kedua
+> nomor PR. Gate kanonik aktif adalah **run #46**.
+>
+> **Catatan verifikasi hash.** Commit `ba8fa0b` dan `a4dd3954`, `7b5615c4`,
+> `d3c786d8`, `5fa98ed`, `3c7be408`, `701c7364`, `b61cdc62`, `887d0219` tidak
+> ditemukan pada repository mirror ini (`git cat-file -t` → unknown revision).
+> Blok evidence yang mengutip hash tersebut bersifat historis dan belum
+> diverifikasi terhadap mirror; jangan menaikkannya menjadi evidence aktif
+> tanpa konfirmasi ke repository canonical.
 
 ## 1. Functional gate aktif
 
@@ -13,7 +32,7 @@ Latest verified source gate pada branch aktif:
 ```text
 active branch      : main
 source commit      : e4ba5cf869f554cee9f0b9d230e437f1aee676ae
-CI run             : 36515608353 (#46)
+workflow run       : #46 / run ID 36515608353
 workflow           : SPJ Critical Verification
 result             : SUCCESS
 artifact guard     : PASS
@@ -32,14 +51,14 @@ Run #46 membuktikan current full regression gate setelah regression revision-com
 Latest historical completed green source gate:
 
 ```text
-commit        : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4
-CI run        : 34853857969 (#486)
+commit        : ba8fa0b2ea307406a7c7be2cb3dc6fa6e7bce7c4  (TIDAK terverifikasi di mirror ini)
+workflow run  : run ID 34853857969 / PR #486
 workflow      : SPJ Critical Verification
 result        : SUCCESS
 runtime floor : PHP 8.3
 ```
 
-Blocking workflow #486:
+Blocking workflow pada PR #486:
 
 ```text
 composer validate --strict             -> PASS
@@ -53,9 +72,9 @@ Full Unit PHPUnit                       -> PASS
 Full Feature PHPUnit                    -> PASS
 ```
 
-Gate #486 tidak menjalankan `composer update`. Dependency installation berasal dari `composer.lock` yang sudah disimpan dan diverifikasi terhadap minimum PHP project.
+Gate PR #486 tidak menjalankan `composer update`. Dependency installation berasal dari `composer.lock` yang sudah disimpan dan diverifikasi terhadap minimum PHP project.
 
-### P0 dependency-platform repair #483 → #486
+### P0 dependency-platform repair PR #483 → PR #486
 
 CI #483 pada `a4dd3954...` gagal di `composer install` sebelum frontend/test dijalankan. Log menunjukkan lock file mengandung beberapa Symfony 8.x yang membutuhkan PHP `>=8.4`, sedangkan workflow canonical menggunakan PHP 8.3 dan root requirement project adalah PHP `^8.3`.
 
@@ -65,7 +84,7 @@ Repair dilakukan dengan prinsip minimum-runtime compatibility:
 2. Run repair #485 me-resolve Symfony dependency pada PHP 8.3 dan baru menyimpan `composer.lock` setelah dependency install, frontend build, Blade compile, SPJ Critical, Unit, dan Feature semuanya PASS.
 3. Workflow kemudian dikembalikan ke permission `contents: read` dan mode `composer install` normal.
 4. `composer validate --strict` serta `composer check-platform-reqs --lock` ditambahkan sebagai blocking guard sebelum install.
-5. CI #486 membuktikan committed lock kompatibel PHP 8.3 dan seluruh blocking gate selesai SUCCESS.
+5. PR #486 membuktikan committed lock kompatibel PHP 8.3 dan seluruh blocking gate selesai SUCCESS.
 
 Commit repair utama:
 
@@ -111,11 +130,11 @@ CI #479 kemudian membuktikan SPJ Critical dan Unit sudah hijau, lalu membuka sat
 test: align description UI contract with service delegation
 ```
 
-CI #480 menjadi historical green baseline sebelum Laravel 13/TALL migration. Tidak ada lifecycle, numbering, safe-sync, tenant ownership, atau authorization rule yang diubah untuk membuat gate tersebut hijau. Current canonical gate sekarang #486.
+CI #480 menjadi historical green baseline sebelum Laravel 13/TALL migration. Tidak ada lifecycle, numbering, safe-sync, tenant ownership, atau authorization rule yang diubah untuk membuat gate tersebut hijau. Current canonical gate adalah run #46 (lihat §1).
 
-### Coverage penting historical gate #486
+### Coverage penting historical gate PR #486
 
-Historical green SPJ Critical/Unit/Feature gate #486 mencakup functional regression untuk:
+Historical green SPJ Critical/Unit/Feature gate PR #486 mencakup functional regression untuk:
 
 - six-category SPJ lifecycle;
 - NUMBERED/FINAL description correction contract;
@@ -125,7 +144,7 @@ Historical green SPJ Critical/Unit/Feature gate #486 mencakup functional regress
 - authorization + tenant boundary;
 - Livewire mutation authorization Phase 2;
 - database maintenance/reset hardening;
-- Generic ARKAS Importer;
+- Generic ARKAS Importer — **historis**: subsystem ini masih hidup saat gate PR #486 dijalankan, tetapi sudah dihapus pada 2026-10-04 sehingga tidak lagi tercakup source gate mana pun;
 - template upload/download/placeholder/master lifecycle;
 - true single-sheet individual XLSX download;
 - canonical worksheet HTML preview;
@@ -177,7 +196,7 @@ php artisan spj:verify --skip-tests
 php artisan test --testsuite="SPJ Critical" --compact
 ```
 
-Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, Livewire mutation authorization, maintenance, ARKAS importer, template upload/download, placeholder inspector, master template lifecycle, SiPlah, employee identity, quarter audit, ownership/workspace migration, reconciliation, dan generated-document validation.
+Suite ini menjaga release-safety lintas fitur, termasuk six-category lifecycle, numbering, preview/download side-effect, safe sync, authorization/tenant boundary, Livewire mutation authorization, maintenance, ARKAS sync/mirror, template upload/download, placeholder inspector, master template lifecycle, SiPlah, employee identity, quarter audit, ownership/workspace migration, reconciliation, dan generated-document validation. (Generic ARKAS Importer tidak lagi tercakup — subsystem dihapus 2026-10-04.)
 
 Nama/jumlah test dapat berubah. Jangan membawa angka test/assertion dari gate lama ke gate baru tanpa evidence log run yang bersangkutan.
 

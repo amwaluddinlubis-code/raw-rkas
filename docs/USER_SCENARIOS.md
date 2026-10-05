@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Skenario Pengguna & Alur Kerja
 
-Terakhir diperbarui: **2026-09-25**
+Terakhir diperbarui: **2026-10-05**
 
 Dokumen ini menjelaskan alur aplikasi dari perspektif pengguna, terutama operator sekolah. Dokumen ini bukan sumber status release. Gunakan:
 
@@ -85,20 +85,23 @@ Kontrak penting:
 
 ### Sinkronisasi referensi ARKAS
 
-Pengaturan importer adalah alur administrator, bukan alur upload Excel operator. Administrator memastikan konteks sekolah, tahun anggaran, dan sumber dana aktif sebelum membuka **Pengaturan → Sinkronisasi Data ARKAS**.
+Sinkronisasi referensi ARKAS adalah alur administrator, bukan alur upload Excel operator. Administrator memastikan konteks sekolah, tahun anggaran, dan sumber dana aktif sebelum membuka **Pengaturan → Sinkronisasi Data ARKAS**.
 
-Untuk melengkapi nama Program, Subprogram, dan Kegiatan:
+Alur yang tersedia saat ini:
 
 ```text
 Pilih tabel ref_kode
-→ Mode Sederhana
 → Simpan Preset Otomatis
-→ Preview perubahan
 → Sinkronkan
 → Sinkronisasi ARKAS/BKU bila nama transaksi lama perlu diperbarui
 ```
 
-Mode Lanjutan hanya digunakan bila preset tidak cocok atau tabel custom memerlukan mapping manual. Importer membaca database ARKAS melalui Bridge, bukan file template Excel. Preview bersifat read-only; sinkronisasi dibatasi pada konteks sekolah+tahun+sumber dana aktif dan tidak boleh mengarang referensi yang tidak tersedia di sumber.
+Sinkronisasi membaca database ARKAS melalui Bridge, bukan file template Excel, dan dibatasi pada konteks sekolah+tahun+sumber dana aktif tanpa mengarang referensi yang tidak tersedia di sumber.
+
+> **Catatan 2026-10-05.** Alur ini sebelumnya mendokumentasikan "Mode Sederhana" /
+> "Mode Lanjutan" beserta mapping manual. Generic Importer yang menyediakan
+> kedua mode tersebut sudah dihapus, sehingga yang hidup hanya "Sinkronisasi
+> Referensi" dan "Sinkronisasi Sekolah". Lihat `SYNCHRONIZATION.md` §2.2.
 
 ### Referensi rekening dan acuan harga
 
@@ -382,7 +385,7 @@ Operator mengisi data acara dan participant roster sesuai kebutuhan dokumen.
 Kontrak auto-fill:
 
 ```text
-Auto-fill KONSUMSI/SPPD = master Pegawai menyatu (ARKAS + Dapodik + Manual)
+Auto-fill KONSUMSI = master Pegawai menyatu (ARKAS + Dapodik + Manual)
 Participant manual = allowed
 ```
 

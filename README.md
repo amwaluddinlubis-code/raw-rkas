@@ -180,12 +180,11 @@ Login
 ## Dokumentasi utama
 
 - `ARCHITECTURE.md` — struktur folder, alur data, ERD (root)
-- `API.md` — daftar route aktif + middleware + controller (root, digenerate dari `route:list`)
+- `API.md` — daftar route aktif + middleware (root, hasil regenerasi dari `php artisan route:list --except-vendor --json` pada 2026-10-05; mencakup 150 route aplikasi)
 - `docs/README.md` — indeks dokumentasi dan source-of-truth
 - `docs/SPJ_DESIGN_DECISIONS.md` — aturan bisnis/domain permanen
 - `docs/ARCHITECTURE_COMPLETE.md` — arsitektur dan boundary tenant (detail)
 - `docs/NUMBERING_CORRECTION_AND_ROLLBACK.md` — kontrak numbering/registry/cancel/rollback
-- `docs/ARKAS_IMPORTER.md` — pipeline Generic ARKAS Importer
-- `docs/SYNCHRONIZATION.md` — sinkronisasi, reconciliation, identity
+- `docs/SYNCHRONIZATION.md` — sinkronisasi, reconciliation, identity, dan pipeline canonical sync
 - `docs/GUI_STANDARDIZATION.md` + `docs/CSS_USAGE_GUIDE.md` — kontrak GUI/theme
 - `AGENTS.md` — aturan kerja agen AI di repositori ini

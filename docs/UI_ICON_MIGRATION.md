@@ -1,6 +1,6 @@
 # Migrasi Icon Canonical
 
-Terakhir disinkronkan terhadap implementasi icon aktif: **2026-09-25** (`raw-rkas`, branch audit `hardening/raw-rkas-audit`).
+Terakhir disinkronkan terhadap implementasi icon aktif: **2026-10-05** (`raw-rkas`, branch `main`; branch audit `hardening/raw-rkas-audit` sudah digabung).
 
 Status: **PARTIAL MIGRATION / CANONICAL GLOBAL LAYOUT / COMPATIBILITY BRIDGE MASIH DIPAKAI.**
 
