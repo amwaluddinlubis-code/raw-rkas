@@ -195,13 +195,13 @@
         </div>
 
         {{-- Desktop table --}}
-        <div class="hidden overflow-x-auto border-t border-[var(--ui-line)] lg:block">
+        <div class="hidden border-t border-[var(--ui-line)] lg:block">
             <x-ui.table pagination="server">
                 <colgroup>
-                    <col class="w-[180px]">
+                    <col class="w-[150px]">
                     <col>
-                    <col class="w-[220px]">
-                    <col class="w-[200px]">
+                    <col class="w-[170px]">
+                    <col class="w-[160px]">
                 </colgroup>
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr class="border-b border-[var(--ui-line)]">
