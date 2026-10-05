@@ -227,7 +227,7 @@ class CriticalDocumentWorkflowTest extends TestCase
         $this->assertTrue($requirement['available']);
     }
 
-    public function test_duplicate_vendor_invoice_in_same_fiscal_year_blocks_numbering(): void
+    public function test_duplicate_vendor_invoice_does_not_block_numbering(): void
     {
         $this->mirrorTransaction([
             'fiscal_year_id' => 1, 'fund_source_id' => 1, 'no_bukti' => 'BKU-000',
@@ -245,7 +245,7 @@ class CriticalDocumentWorkflowTest extends TestCase
 
         $issues = app(SpjPackageValidationService::class)->validate($package->load(['transaction.items', 'transaction.goods']));
 
-        $this->assertContains('Keunikan invoice', collect($issues)->pluck('label')->all());
+        $this->assertNotContains('Keunikan invoice', collect($issues)->pluck('label')->all());
     }
 
     private function readyGoodsTransaction(): Transaction

@@ -138,16 +138,6 @@ class SpjPackageValidationService
                 $this->addCheck($checks, 'goods_staged_letters', 'Belanja barang bertahap', 'Tanggal surat per tahap', $incompleteStages === '', 'Setiap tahap penerimaan memiliki tanggal pesanan, BAP, dan BAST.', 'Lengkapi tanggal pesanan, BAP, dan BAST pada: '.$incompleteStages.'. Isi pada tab Penomoran bagian penerimaan bertahap.', $packageUrl);
             }
 
-            $duplicateExists = false;
-            if (filled($transaction->invoice_number) && filled($transaction->vendor_name)) {
-                $duplicateExists = $transaction->newQuery()
-                    ->where('fiscal_year_id', $transaction->fiscal_year_id)
-                    ->whereKeyNot($transaction->id)
-                    ->whereRaw('LOWER(TRIM(invoice_number)) = ?', [mb_strtolower(trim((string) $transaction->invoice_number))])
-                    ->whereRaw('LOWER(TRIM(vendor_name)) = ?', [mb_strtolower(trim((string) $transaction->vendor_name))])
-                    ->exists();
-            }
-            $this->addCheck($checks, 'invoice_duplicate', 'Belanja barang', 'Keunikan invoice', ! $duplicateExists, 'Nomor invoice tidak terdeteksi sebagai duplikat.', 'Nomor invoice ini sudah digunakan oleh vendor yang sama pada tahun anggaran aktif.', $packageUrl);
         }
 
         if ($category === 'HONOR_PEGAWAI') {
