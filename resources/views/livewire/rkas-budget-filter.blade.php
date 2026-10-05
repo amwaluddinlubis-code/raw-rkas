@@ -71,7 +71,8 @@
                     @endforeach
                 </x-ui.select>
             </x-ui.field>
-            <x-ui.field label="Sub Program" for="rkas-filter-sub">
+            <x-ui.field label="Sub Program" for="rkas-filter-sub"
+                :hint="$program ? null : 'Pilih Program terlebih dahulu.'">
                 <x-ui.select id="rkas-filter-sub" wire:model.live="sub" :disabled="!$program">
                     <option value="">Semua Sub Program</option>
                     @foreach ($subOptions as $s)
@@ -79,7 +80,8 @@
                     @endforeach
                 </x-ui.select>
             </x-ui.field>
-            <x-ui.field label="Kegiatan" for="rkas-filter-kegiatan">
+            <x-ui.field label="Kegiatan" for="rkas-filter-kegiatan"
+                :hint="$sub ? null : 'Pilih Sub Program terlebih dahulu.'">
                 <x-ui.select id="rkas-filter-kegiatan" wire:model.live="kegiatan" :disabled="!$sub">
                     <option value="">Semua Kegiatan</option>
                     @foreach ($kegiatanOptions as $k)

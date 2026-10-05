@@ -370,6 +370,7 @@ Gunakan token, bukan pasangan `bg-white dark:bg-slate-900` untuk surface utama.
 | `page-header-unified.css` | Page Header |
 | `transactions-standardization.css` | Daftar/detail transaksi |
 | `spj-workspace-standardization.css` | SPJ workspace base |
+| `rkas-hierarchy-tree.css` | Tree hierarki RKAS: sticky header, affordance level, penanda kelebihan belanja |
 | `dark-form-controls.css` | Dark control safety |
 | `spj-package-theme-fix.css` | Paket/Isian Manual/theme compatibility, compact template list, numbering hover |
 | `spj-package-document-placement.css` | Pemisahan panel Rincian Transaksi vs Dokumen Template setelah DOM placement |

@@ -495,7 +495,7 @@ const initializeScrollToTop = () => {
     const button = document.createElement('button');
     button.id = 'app-scroll-to-top';
     button.type = 'button';
-    button.className = 'fixed bottom-5 left-1/2 z-40 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-3.5 py-2 text-sm font-bold text-slate-700 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--theme-accent)]/30 dark:border-slate-700 dark:bg-slate-900/90 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800';
+    button.className = 'ui-btn ui-btn-secondary fixed bottom-5 left-1/2 z-40 hidden -translate-x-1/2 items-center gap-2 !rounded-full !px-3.5 !py-2 text-sm font-bold shadow-lg backdrop-blur transition hover:-translate-y-0.5';
     button.setAttribute('aria-label', 'Kembali ke atas halaman');
     button.setAttribute('title', 'Kembali ke atas');
     button.innerHTML = '<span aria-hidden="true" class="text-base leading-none">↑</span><span class="hidden sm:inline">Ke atas</span>';

@@ -15,6 +15,7 @@
 @import './transaction-detail-normalization.css';
 @import './spj-workspace-standardization.css';
 @import './dashboard-standardization.css';
+@import './rkas-hierarchy-tree.css';
 @import './settings-database-standardization.css';
 @import './database-header-generalization.css';
 @import './document-settings-standardization.css';

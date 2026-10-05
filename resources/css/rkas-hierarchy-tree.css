@@ -1,0 +1,32 @@
+/* RKAS hierarchy tree: sticky header, level affordance, and over-budget signal.
+   Scoped to the RKAS workspace tree only. Read-only presentation layer; it does not
+   change any budgeting, filtering, or sync behaviour. */
+
+main[data-page="rkas"] .rkas-tree-scroll {
+    max-height: min(72vh, 900px);
+    overflow-y: auto;
+}
+
+main[data-page="rkas"] .rkas-tree-head th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--ui-surface-soft);
+    box-shadow: inset 0 -1px 0 var(--ui-line);
+}
+
+main[data-page="rkas"] .rkas-tree-row-sub td:first-child {
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--theme-accent) 34%, transparent);
+}
+
+main[data-page="rkas"] .rkas-tree-row-activity td:first-child {
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--ui-line-strong) 70%, transparent);
+}
+
+main[data-page="rkas"] .rkas-tree-row-over td {
+    background: color-mix(in srgb, #f43f5e 7%, var(--ui-surface-base));
+}
+
+main[data-page="rkas"] .rkas-tree-row-over td:first-child {
+    box-shadow: inset 3px 0 0 #f43f5e;
+}

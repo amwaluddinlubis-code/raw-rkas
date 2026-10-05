@@ -1,5 +1,17 @@
 <div class="flex flex-col gap-6">
     @php($rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
+    @php($serapan = fn ($amount, $realization): string => (float) $amount > 0
+        ? number_format(((float) $realization / (float) $amount) * 100, 1, ',', '.') . '%'
+        : '—')
+    @php($isOverBudget = fn ($remaining): bool => (float) $remaining < -0.5)
+    @php($remainingTone = fn ($remaining): string => (float) $remaining < -0.5
+        ? 'text-rose-700 font-bold'
+        : 'text-[var(--ui-fg-muted)]')
+    @php($serapanTone = fn ($amount, $realization): string => (float) $amount <= 0
+        ? 'text-[var(--ui-fg-muted)]'
+        : (((float) $realization / (float) $amount) >= 1
+            ? 'text-rose-700 font-bold'
+            : (((float) $realization / (float) $amount) >= 0.9 ? 'text-amber-700 font-semibold' : 'text-[var(--ui-fg-muted)]')))
 
     <x-page-header title="Penganggaran RKAS" :subtitle="'Pantau pagu RKAS dan realisasi BKU pada konteks ' . $contextLabel . '.'" kicker="Anggaran & Realisasi">
         <x-slot:actions>
@@ -143,7 +155,7 @@
                     <div class="flex shrink-0 items-center gap-2">
                         <label class="sr-only" for="rkas-report-triwulan-bulanan">Triwulan laporan</label>
                         <select id="rkas-report-triwulan-bulanan" x-ref="reportQuarter" required
-                            class="ui-select px-3 py-2 text-sm">
+                            class="ui-select w-[9.5rem] shrink-0 px-3 py-2 text-sm">
                             <option value="">Pilih triwulan</option>
                             <option value="1">Triwulan I</option>
                             <option value="2">Triwulan II</option>
@@ -173,7 +185,7 @@
                     <div class="flex shrink-0 items-center gap-2">
                         <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
                         <select id="rkas-report-bulan" x-ref="reportMonth" required
-                            class="ui-select px-3 py-2 text-sm">
+                            class="ui-select w-[9.5rem] shrink-0 px-3 py-2 text-sm">
                             <option value="">Pilih bulan…</option>
                             @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
                                 <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
@@ -266,7 +278,7 @@
     <x-section-card title="Rincian Hierarki RKAS" :description="'Pagu, realisasi, dan sisa ' . $filterContext . '.'" :padding="false">
         <x-slot:actions>
             <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">•
-                {{ number_format($treeTotals['items'], 0, ',', '.') }} data</span>
+                {{ number_format($treeTotals['items'], 0, ',', '.') }} baris rincian</span>
             <a class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition hover:brightness-95"
                 style="border-color: var(--ui-line); color: var(--ui-fg-muted); background: var(--ui-bg)"
                 href="{{ route('synced-data.show', 'rkas') }}">
@@ -285,15 +297,15 @@
                 @endforeach
             @endforeach
         @endforeach
-        <div class="mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)" wire:loading.class="opacity-60" x-data="{ open: {}, allKeys: @js($allKeys), toggleAll(v) { const o = {}; this.allKeys.forEach(k => o[k] = v); this.open = o; } }">
-            <div class="mb-2 flex items-center justify-end gap-2 text-xs">
-                <button type="button" class="rounded border px-2 py-1" style="border-color: var(--ui-line)" @click="toggleAll(true)">Buka semua</button>
-                <button type="button" class="rounded border px-2 py-1" style="border-color: var(--ui-line)" @click="toggleAll(false)">Tutup semua</button>
+        <div class="rkas-tree-scroll mt-2 overflow-x-auto rounded-xl border" style="border-color: var(--ui-line)" wire:loading.class="opacity-60" x-data="{ open: {}, allKeys: @js($allKeys), toggleAll(v) { const o = {}; this.allKeys.forEach(k => o[k] = v); this.open = o; } }">
+            <div class="sticky top-0 z-10 mb-2 flex items-center justify-end gap-2 bg-[var(--ui-surface-base)] px-2 py-1.5 text-xs">
+                <x-ui.button type="button" variant="ghost" icon="chevron-down" icon-size="xs" class="!min-h-7 !px-2 !py-1 text-xs" @click="toggleAll(true)">Buka semua</x-ui.button>
+                <x-ui.button type="button" variant="ghost" icon="chevron-up" icon-size="xs" class="!min-h-7 !px-2 !py-1 text-xs" @click="toggleAll(false)">Tutup semua</x-ui.button>
             </div>
-            <div wire:loading class="px-4 py-2 text-xs text-[var(--ui-fg-muted)]">Memuat data RKAS…</div>
-            <table class="min-w-[1100px] w-full divide-y text-sm" style="border-color: var(--ui-line)"
+
+            <table class="min-w-[1180px] w-full divide-y text-sm" style="border-color: var(--ui-line)"
                 data-pagination="none">
-                <thead style="background: var(--ui-surface-soft)">
+                <thead class="rkas-tree-head" style="background: var(--ui-surface-soft)">
                     <tr>
                         <th class="px-3 py-1.5 text-left text-xs font-bold uppercase" style="color: var(--ui-fg-muted)">
                             Kode Program</th>
@@ -313,16 +325,23 @@
                             style="color: var(--ui-fg-muted)">Realisasi</th>
                         <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
                             style="color: var(--ui-fg-muted)">Selisih</th>
+                        <th class="px-3 py-1.5 text-right text-xs font-bold uppercase"
+                            style="color: var(--ui-fg-muted)">Serapan</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y" style="border-color: var(--ui-line)">
+                <tbody id="rkas-tree-body" class="divide-y" style="border-color: var(--ui-line)">
                     @forelse($hierarchyTree as $program)
-                        <tr
+                        <tr @class([
+                            'rkas-tree-row-over' => $isOverBudget($program['remaining']),
+                        ])
                             style="background: color-mix(in srgb, var(--theme-accent-soft) 45%, var(--ui-surface-base))">
                             <td colspan="6" class="px-3 py-1 text-xs">
                                 <button type="button" class="inline-flex items-center gap-2 text-left font-bold"
                                     style="color: var(--ui-fg-strong)"
-                                    x-on:click="open['p-{{ $program['code'] }}'] = ! open['p-{{ $program['code'] }}']">
+                                    aria-expanded="false"
+                                    aria-controls="rkas-tree-body"
+                                    x-on:click="open['p-{{ $program['code'] }}'] = ! open['p-{{ $program['code'] }}']"
+                                    x-bind:aria-expanded="open['p-{{ $program['code'] }}'] ? 'true' : 'false'">
                                     <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border"
                                         style="color: var(--theme-content-accent); border-color: color-mix(in srgb, var(--theme-content-accent) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 55%, var(--ui-surface-base))">
                                         <x-ui.icon name="chevron-down" size="xs"
@@ -332,6 +351,10 @@
                                     </span>
                                     <span class="font-mono">{{ $program['code'] }}</span>
                                     <span>· {{ $program['name'] }}</span>
+                                    @if ($isOverBudget($program['remaining']))
+                                        <x-ui.badge variant="danger"
+                                            class="!px-1.5 !py-0 !text-[10px] uppercase tracking-wide">kelebihan belanja</x-ui.badge>
+                                    @endif
                                 </button>
                             </td>
                             <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-bold"
@@ -340,17 +363,24 @@
                             <td
                                 class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold text-emerald-700">
                                 {{ $rupiah($program['realization']) }}</td>
-                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-bold"
-                                style="color: var(--ui-fg-muted)">{{ $rupiah($program['remaining']) }}</td>
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs {{ $remainingTone($program['remaining']) }}"
+                                style="{{ $isOverBudget($program['remaining']) ? '' : 'color: var(--ui-fg-muted);' }}">{{ $rupiah($program['remaining']) }}</td>
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs {{ $serapanTone($program['amount'], $program['realization']) }}">{{ $serapan($program['amount'], $program['realization']) }}</td>
                         </tr>
                         @foreach ($program['subs'] as $sub)
-                            <tr x-show="open['p-{{ $program['code'] }}']"
+                            <tr x-show="open['p-{{ $program['code'] }}']" class="rkas-tree-row-sub"
+                                @class([
+                                    'rkas-tree-row-over' => $isOverBudget($sub['remaining']),
+                                ])
                                 style="background: color-mix(in srgb, var(--theme-accent-soft) 25%, var(--ui-surface-base))">
                                 <td colspan="6" class="px-3 py-1 pl-8 text-xs">
                                     <button type="button"
                                         class="inline-flex items-center gap-2 text-left font-semibold"
                                         style="color: var(--ui-fg-strong)"
-                                        x-on:click="open['s-{{ $sub['code'] }}'] = ! open['s-{{ $sub['code'] }}']">
+                                        aria-expanded="false"
+                                        aria-controls="rkas-tree-body"
+                                        x-on:click="open['s-{{ $sub['code'] }}'] = ! open['s-{{ $sub['code'] }}']"
+                                        x-bind:aria-expanded="open['s-{{ $sub['code'] }}'] ? 'true' : 'false'">
                                         <span
                                             class="inline-flex h-4 w-4 items-center justify-center rounded-full border"
                                             style="color: var(--theme-accent-strong); border-color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 35%, var(--ui-surface-base))">
@@ -359,26 +389,37 @@
                                             <x-ui.icon name="chevron-right" size="xs"
                                                 x-show="! open['s-{{ $sub['code'] }}']" />
                                         </span>
-                                        <span class="font-mono">{{ $sub['code'] }}</span>
-                                        <span>· {{ $sub['name'] }}</span>
-                                    </button>
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
-                                    style="color: var(--theme-content-accent)">{{ $rupiah($sub['amount']) }}
-                                </td>
-                                <td class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
-                                    {{ $rupiah($sub['realization']) }}</td>
-                                <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
-                                    style="color: var(--ui-fg-muted)">{{ $rupiah($sub['remaining']) }}</td>
-                            </tr>
+<span class="font-mono">{{ $sub['code'] }}</span>
+                                    <span>· {{ $sub['name'] }}</span>
+                                    @if ($isOverBudget($sub['remaining']))
+                                        <x-ui.badge variant="danger"
+                                            class="!px-1.5 !py-0 !text-[10px] uppercase tracking-wide">kelebihan belanja</x-ui.badge>
+                                    @endif
+                                </button>
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
+                                style="color: var(--theme-content-accent)">{{ $rupiah($sub['amount']) }}
+                            </td>
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
+                                {{ $rupiah($sub['realization']) }}</td>
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs {{ $remainingTone($sub['remaining']) }}"
+                                style="{{ $isOverBudget($sub['remaining']) ? '' : 'color: var(--ui-fg-muted);' }}">{{ $rupiah($sub['remaining']) }}</td>
+                            <td class="whitespace-nowrap px-3 py-1 text-right text-xs {{ $serapanTone($sub['amount'], $sub['realization']) }}">{{ $serapan($sub['amount'], $sub['realization']) }}</td>
+                        </tr>
                             @foreach ($sub['activities'] as $activity)
-                                <tr x-show="open['p-{{ $program['code'] }}'] && open['s-{{ $sub['code'] }}']"
+                                <tr x-show="open['p-{{ $program['code'] }}'] && open['s-{{ $sub['code'] }}']" class="rkas-tree-row-activity"
+                                    @class([
+                                        'rkas-tree-row-over' => $isOverBudget($activity['remaining']),
+                                    ])
                                     style="background: var(--ui-surface-soft)">
                                     <td colspan="6" class="px-3 py-1 pl-14 text-xs">
                                         <button type="button"
                                             class="inline-flex items-center gap-2 text-left font-semibold"
                                             style="color: var(--ui-fg-strong)"
-                                            x-on:click="open['k-{{ $activity['code'] }}'] = ! open['k-{{ $activity['code'] }}']">
+                                            aria-expanded="false"
+                                            aria-controls="rkas-tree-body"
+                                            x-on:click="open['k-{{ $activity['code'] }}'] = ! open['k-{{ $activity['code'] }}']"
+                                            x-bind:aria-expanded="open['k-{{ $activity['code'] }}'] ? 'true' : 'false'">
                                             <span
                                                 class="inline-flex h-4 w-4 items-center justify-center rounded-full border"
                                                 style="color: var(--theme-accent-strong); border-color: color-mix(in srgb, var(--theme-accent-strong) 55%, var(--ui-line)); background: color-mix(in srgb, var(--theme-accent-soft) 35%, var(--ui-surface-base))">
@@ -389,6 +430,10 @@
                                             </span>
                                             <span class="font-mono">{{ $activity['code'] }}</span>
                                             <span>· {{ $activity['name'] }}</span>
+                                            @if ($isOverBudget($activity['remaining']))
+                                                <x-ui.badge variant="danger"
+                                                    class="!px-1.5 !py-0 !text-[10px] uppercase tracking-wide">kelebihan belanja</x-ui.badge>
+                                            @endif
                                         </button>
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
@@ -396,13 +441,18 @@
                                         {{ $rupiah($activity['amount']) }}</td>
                                     <td class="whitespace-nowrap px-3 py-1 text-right text-xs text-emerald-700">
                                         {{ $rupiah($activity['realization']) }}</td>
-                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs font-semibold"
-                                        style="color: var(--ui-fg-muted)">
+                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs {{ $remainingTone($activity['remaining']) }}"
+                                        style="{{ $isOverBudget($activity['remaining']) ? '' : 'color: var(--ui-fg-muted);' }}">
                                         {{ $rupiah($activity['remaining']) }}</td>
+                                    <td class="whitespace-nowrap px-3 py-1 text-right text-xs {{ $serapanTone($activity['amount'], $activity['realization']) }}">
+                                        {{ $serapan($activity['amount'], $activity['realization']) }}</td>
                                 </tr>
                                 @foreach ($activity['items'] as $item)
                                     <tr x-show="open['p-{{ $program['code'] }}'] && open['s-{{ $sub['code'] }}'] && open['k-{{ $activity['code'] }}']"
-                                        class="text-xs">
+                                        class="text-xs"
+                                        @class([
+                                            'rkas-tree-row-over' => $isOverBudget($item->variance),
+                                        ])>
                                         <td class="whitespace-nowrap px-3 py-1 pl-20 font-mono"
                                             style="color: var(--ui-fg-muted)">
                                             {{ trim((string) $item->activity_code, '.') }}</td>
@@ -424,8 +474,11 @@
                                             {{ $rupiah($item->display_amount) }}</td>
                                         <td class="whitespace-nowrap px-3 py-1 text-right text-emerald-700">
                                             {{ $rupiah($item->realization) }}</td>
-                                        <td class="whitespace-nowrap px-3 py-1 text-right"
-                                            style="color: var(--ui-fg-muted)">{{ $rupiah($item->variance) }}
+                                        <td class="whitespace-nowrap px-3 py-1 text-right {{ $remainingTone($item->variance) }}"
+                                            style="{{ $isOverBudget($item->variance) ? '' : 'color: var(--ui-fg-muted);' }}">{{ $rupiah($item->variance) }}
+                                        </td>
+                                        <td class="whitespace-nowrap px-3 py-1 text-right {{ $serapanTone($item->display_amount, $item->realization) }}">
+                                            {{ $serapan($item->display_amount, $item->realization) }}
                                         </td>
                                     </tr>
                                 @endforeach
@@ -433,7 +486,7 @@
                         @endforeach
                     @empty
                         <tr>
-                            <td colspan="9" class="px-5 py-6 text-center">
+                            <td colspan="10" class="px-5 py-6 text-center">
                                 <p class="text-sm font-semibold" style="color: var(--ui-fg-strong)">Belum ada
                                     RKAS.</p>
                                 <p class="mt-1 text-base" style="color: var(--ui-fg-muted)">Jalankan

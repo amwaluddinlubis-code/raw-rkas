@@ -1567,3 +1567,74 @@ tanpa perubahan batch ini. Visual browser tetap RVR.
 Perubahan ini tidak mengubah business rule, tenant boundary, lifecycle
 numbering, maupun kontrak sync; semua verifikasi difokuskan pada
 signature/style/markup.
+
+## Peningkatan UI/UX tree hierarki RKAS 2026-10-05
+
+Status: **PASS (focused, static + build + test) / BROWSER RVR**.
+
+Audit visual halaman `/penganggaran/rkas` pada dua state (collapsed dan
+expanded) menemukan lima isu yang diperbaiki di
+`resources/views/livewire/rkas-budget-workspace.blade.php`,
+`resources/views/livewire/rkas-budget-filter.blade.php`,
+`resources/js/app.js`, dan CSS baru `resources/css/rkas-hierarchy-tree.css`.
+
+1. **Kelebihan belanja tidak pernah ditandai.** `variance`/
+   `remaining` dapat negatif (`ArkasMirrorBudgetService.php:72`), tetapi
+   render memakai warna muted yang sama untuk nilai positif dan negatif.
+   Bar yang kelebihan belanja tampil identik dengan bar sehat — informasi
+   paling kritis di aplikasi anggaran. Kini nilai di bawah −0,5 ditandai
+   `text-rose-700 font-bold`, badge "kelebihan belanja" pada program/
+   subprogram/kegiatan, dan latar bar `rkas-tree-row-over`.
+2. **Kolom Serapan ditambahkan.** Operator harus menghitung
+   realisasi ÷ pagu secara mental per baris. Kolom tenth `Serapan`
+   sekarang tampil di keempat level dengan tone: ≥100% rose, ≥90% amber,
+   di bawah itu muted, pagu nol `—`. Kolom kosong meningkat menjadi 10 dan
+   `min-w-[1100px]` → `1180px`.
+3. **Tree bisa dibaca tanpa kehilangan konteks.** `<thead>` sticky di dalam
+   container `rkas-tree-scroll` (max 72vh), sehingga tabel 130 baris tidak
+   lagi_rule COLUMN context saat scroll. Indentasi subprogram vs kegiatan
+   dibedakan lewat rail accent di `td:first-child`; sebelumnya keduanya
+   hanya berbeda 1,5rem dan sharing surface.
+4. **Aksesibilitas tree.** `aria-expanded` ditambahkan pada ketiga level
+   toggle (sebelumnya nol) dengan binding ke state Alpine, plus
+   `aria-controls` ke `rkas-tree-body`.
+5. **Tiga自己不 clean up.** Tombol scroll-to-top global di `app.js` masih
+   memakai palette Tailwind hard-coded (`border-slate-200 bg-white/95
+   dark:bg-slate-900/90`) sehingga tetap putih di theme ARKAS Dark; kini
+   memakai `ui-btn ui-btn-secondary`. "Buka semua / Tutup semua" memakai
+   `x-ui.button variant="ghost"` sesuai §17 CSS guide. Select periode pada
+   baris "Triwulan per Bulan" dan "Bulanan" diberi lebar tetap supaya trio
+   tombol sejajar dengan baris lain. Indikator loading ganda
+   ("Memuat data RKAS…") dihapus. Counter "126 data" menjadi
+   "126 baris rincian" supaya satuan yang ditampilkan bisa dihitung user.
+
+### Verifikasi
+
+`vendor/bin/pint --test` passed, `git diff --check` bersih,
+`npm run build` sukses, `npm run theme:qa` all pass,
+`php artisan view:cache` sukses, dan rule sticky terkonfirmasi hadir di
+bundle CSS hasil build. Focused suite: `RkasHierarchyTest` 4/4,
+`RkasRevisionModesTest`, `RkasPlanningSuggestionTest`,
+`GuiAudit09To13SourceReadinessTest` 32 passed / 205 assertions.
+
+Satu kegagalan tersisa `RkasBudgetUiTest::test_rkas_workspace_exposes_revision_comparison_freshness_and_report_package`
+dibuktikan pre-existing lewat stash A/B. Akar masalahnya assertion stale:
+`Kesegaran data ARKAS` memang ada di `livewire/arkas-health-banner.blade.php`
+(yang dirender di dashboard), bukan di view RKAS. annexed: `RkasBudgetController`
+sudah mengirim `syncFreshness` dan `integrity` ke view tetapi keduanya belum
+dirender di halaman RKAS. Assertion sengaja tidak dihapus agar sinyal
+ketidakcocokan freshness tetap terekspos; perlu keputusan produk apakah
+banner freshness ought to appear di halaman RKAS.
+
+### Catatan koreksi analisis
+
+Audit awal sempat menyimpulkan kolom tabel tidak sinkron dengan isi dan pagu
+tidak mengikuti filter periode. Keduanya **salah**: `colspan="6"` memang disengaja
+dan benar sejajar, serta `display_amount` maupun `realization` sudah
+period-scoped di `ArkasMirrorBudgetService.php:70-72`. Yang tetap valid dari
+audit awal: over-budget tidak ditandai, serapan tidak ada, `aria-expanded` nol,
+dan cleanup di atas.
+
+Perubahan ini murni presentasi dan aksesibilitas. Tidak menyentuh perhitungan
+anggaran, filter, scope periode, sinkronisasi, atau kontrak SPJ. Visual
+browser dan mobile tetap RVR; `docs/MOBILE_VISUAL_QA_TODO.md` belum ditutup.
