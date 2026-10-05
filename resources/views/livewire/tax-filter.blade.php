@@ -119,7 +119,7 @@
         </x-ui.toolbar>
 
         <div class="overflow-x-auto">
-            <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+            <x-ui.table pagination="server">
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr>
                         <th class="px-5 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bukti /
@@ -189,7 +189,7 @@
                         </tr>
                     @endforelse
                 </tbody>
-            </table>
+            </x-ui.table>
         </div>
 
         @if($transactions->hasPages())

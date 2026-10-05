@@ -196,7 +196,7 @@
 
         {{-- Desktop table --}}
         <div class="hidden overflow-x-auto border-t border-[var(--ui-line)] lg:block">
-            <table data-pagination="server" class="w-full table-fixed text-sm">
+            <x-ui.table pagination="server">
                 <colgroup>
                     <col class="w-[180px]">
                     <col>
@@ -290,7 +290,7 @@
                         </tr>
                     @endif
                 </tbody>
-            </table>
+            </x-ui.table>
         </div>
 
         <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
