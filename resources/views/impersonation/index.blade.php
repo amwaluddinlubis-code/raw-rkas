@@ -30,7 +30,7 @@
         <section class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             <div class="border-b border-[var(--ui-line)] px-5 py-4"><h2 class="font-bold text-slate-800">Daftar User</h2><p class="mt-1 text-sm text-slate-500">Pilih user operator yang ingin diuji.</p></div>
             <div class="overflow-x-auto">
-                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                <x-ui.table pagination="none">
                     <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500">User</th><th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Role</th><th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Sekolah</th><th class="px-5 py-2 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th></tr></thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($users as $user)
@@ -52,7 +52,7 @@
                             <tr><td colspan="4" class="px-5 py-6 text-center text-slate-500">Belum ada user.</td></tr>
                         @endforelse
                     </tbody>
-                </table>
+                </x-ui.table>
             </div>
         </section>
     </div>

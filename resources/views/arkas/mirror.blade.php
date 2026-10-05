@@ -268,7 +268,17 @@
                         </form>
                     @endif
                 </div>
-                </section> @endif
+                </section>
+                @else
+                    <section aria-label="Kesehatan mirror kas" class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 text-center shadow-sm">
+                        <h2 class="font-bold text-[var(--ui-fg-strong)]">Data kesehatan belum tersedia</h2>
+                        <p class="mx-auto mt-1 max-w-xl text-xs leading-5 text-[var(--ui-fg-muted)]">Pemeriksaan mirror kas membutuhkan sekolah aktif yang sudah memiliki kas tersinkron. Muat ulang halaman atau jalankan Sinkronisasi Sekolah Aktif terlebih dahulu.</p>
+                        <div class="mt-3 flex flex-wrap justify-center gap-2">
+                            <x-ui.button variant="secondary" :href="route('arkas.mirror', ['mirror_tab' => 'kesehatan'])">Muat ulang</x-ui.button>
+                            <x-ui.button variant="secondary" :href="route('schools.select')">Ganti sekolah</x-ui.button>
+                        </div>
+                    </section>
+                @endif
             </div>
             </div>
         </section>

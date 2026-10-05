@@ -78,7 +78,7 @@
 
         @if($latest && $latest->changes !== [])
             <div class="overflow-x-auto">
-                <table data-pagination="none" class="min-w-full text-sm">
+                <x-ui.table pagination="none">
                     <thead class="bg-[var(--ui-surface-soft)] text-xs uppercase tracking-wide text-[var(--ui-fg-muted)]">
                         <tr>
                             <th class="px-5 py-2 text-left">Field sumber berubah</th>
@@ -95,7 +95,7 @@
                             </tr>
                         @endforeach
                     </tbody>
-                </table>
+                </x-ui.table>
             </div>
         @elseif($latest)
             <div class="px-5 py-4 text-sm text-[var(--ui-fg)]">

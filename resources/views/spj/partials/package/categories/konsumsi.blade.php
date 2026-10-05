@@ -174,7 +174,7 @@
     <input type="hidden" name="primary_recipient_index" :value="primaryIndex ?? ''">
 
     <div class="mt-2 overflow-x-auto rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-        <table data-pagination="none" data-spj-local-pagination="true" class="min-w-full border-collapse text-xs">
+        <x-ui.table pagination="none">
             <thead class="bg-[var(--ui-surface-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                 <tr>
                     <th class="w-20 px-1.5 py-1 text-center">Urut</th>
@@ -222,7 +222,7 @@
                     </tr>
                 </template>
             </tbody>
-        </table>
+        </x-ui.table>
     </div>
 
     <div class="mt-2 flex flex-col gap-2 border-t border-[var(--ui-line)] pt-2 text-xs sm:flex-row sm:items-center sm:justify-between">

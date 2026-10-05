@@ -58,7 +58,7 @@
             </div>
             @endif
             <div class="overflow-x-auto">
-                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-base">
+                <x-ui.table pagination="none">
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="w-14 px-5 py-2 text-center text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">No</th>
@@ -119,7 +119,7 @@
                             </tr>
                         </tfoot>
                     @endif
-                </table>
+                </x-ui.table>
             </div>
             <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-3 sm:flex-row sm:items-center sm:justify-end">
                 <p x-show="spjDescriptionsDirty" x-cloak class="text-xs font-semibold text-amber-700">

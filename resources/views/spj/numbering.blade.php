@@ -81,7 +81,7 @@
             @endif
 
             <div class="overflow-x-auto rounded-xl border border-[var(--ui-line)]">
-                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                <x-ui.table pagination="none">
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti / Tanggal</th>
@@ -106,7 +106,7 @@
                             <tr><td colspan="6" class="px-5 py-6 text-center"><p class="font-semibold text-[var(--ui-fg)]">Belum ada paket yang siap diberi nomor pada triwulan ini.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Lengkapi transaksi, buat paket SPJ, lalu tandai paket sebagai siap diproses.</p></td></tr>
                         @endforelse
                     </tbody>
-                </table>
+                </x-ui.table>
             </div>
             @if($pagedPackages->hasPages())
                 <x-ui.server-pagination :paginator="$pagedPackages" class="mt-3" noun="paket" />
@@ -200,7 +200,7 @@
 
         <x-section-card title="Riwayat penomoran" description="Lihat hasil proses penomoran sebelumnya, termasuk jumlah nomor yang dibuat dan dokumen yang dilewati.">
             <div class="overflow-x-auto rounded-xl border border-[var(--ui-line)]">
-                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                <x-ui.table pagination="none">
                     <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Waktu</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Triwulan</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th><th class="px-4 py-2 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Nomor dibuat</th><th class="px-4 py-2 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Dilewati</th><th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Catatan</th></tr></thead>
                     <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                         @forelse($recentRuns as $run)
@@ -209,7 +209,7 @@
                             <tr><td colspan="6" class="px-5 py-10 text-center text-[var(--ui-fg-muted)]">Belum ada riwayat penomoran untuk triwulan.</td></tr>
                         @endforelse
                     </tbody>
-                </table>
+                </x-ui.table>
             </div>
         </x-section-card>
     </div>

@@ -54,7 +54,7 @@
 
         <x-section-card title="Nomor SPJ saat ini" description="Daftar ini membantu menentukan titik rollback. Cancel individual tidak dilakukan dari halaman ini.">
             <div class="overflow-x-auto rounded-xl border border-[var(--ui-line)]">
-                <table data-pagination="none" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+                <x-ui.table pagination="none">
                     <thead class="bg-[var(--ui-surface-soft)]">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Urut</th>
@@ -77,7 +77,7 @@
                             <tr><td colspan="5" class="px-5 py-10 text-center text-[var(--ui-fg-muted)]">Belum ada nomor SPJ pada konteks aktif.</td></tr>
                         @endforelse
                     </tbody>
-                </table>
+                </x-ui.table>
             </div>
         </x-section-card>
     </div>

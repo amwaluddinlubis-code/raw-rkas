@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
@@ -27,7 +28,12 @@ class ArkasMirrorController extends Controller
             $databases->activate($school);
             try {
                 $mirrorHealth = $health->check();
-            } catch (\Throwable) {
+            } catch (\Throwable $exception) {
+                Log::warning('Pemeriksaan kesehatan mirror kas gagal.', [
+                    'school_id' => $school->id,
+                    'npsn' => $school->npsn,
+                    'exception' => $exception,
+                ]);
                 $mirrorHealth = null;
             }
         }

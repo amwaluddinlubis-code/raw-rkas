@@ -92,7 +92,7 @@
     <input type="hidden" name="primary_recipient_index" :value="primaryIndex ?? ''">
 
     <div class="mt-3 overflow-x-auto rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)]">
-        <table data-pagination="none" data-spj-local-pagination="true" class="min-w-full border-collapse text-xs">
+        <x-ui.table pagination="none">
             <thead class="bg-[var(--ui-surface-muted)] text-[10px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                 <tr>
                     <th class="w-10 px-1.5 py-1 text-center">No</th>
@@ -125,7 +125,7 @@
             <tfoot class="bg-[var(--ui-surface-soft)]">
                 <tr><td colspan="5" class="px-2 py-1 text-right text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Total</td><td class="px-2 py-1 text-right font-mono text-xs font-bold text-[var(--ui-fg-strong)]" x-text="accounting(total())"></td><td colspan="2"></td></tr>
             </tfoot>
-        </table>
+        </x-ui.table>
     </div>
 
     <div class="mt-2 flex flex-col gap-2 border-t border-[var(--ui-line)] pt-2 text-xs sm:flex-row sm:items-center sm:justify-between">

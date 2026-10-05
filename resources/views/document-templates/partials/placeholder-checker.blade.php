@@ -154,7 +154,7 @@
                                     <span class="rounded-full border border-[var(--ui-line)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]" x-text="group.scope === 'umum' ? 'Umum' : (group.scope === 'transaksional' ? 'Transaksional' : 'Khusus')"></span>
                                 </header>
                                 <div class="overflow-x-auto">
-                                    <table data-pagination="none" class="min-w-full text-sm">
+                                    <x-ui.table pagination="none">
                                         <thead class="bg-[var(--ui-surface-muted)]">
                                             <tr class="text-left text-xs font-bold text-[var(--ui-fg-muted)]">
                                                 <th class="w-[24rem] px-4 py-2.5">Placeholder</th>
@@ -191,7 +191,7 @@
                                                 </tr>
                                             </template>
                                         </tbody>
-                                    </table>
+                                    </x-ui.table>
                                 </div>
                             </section>
                         </template>

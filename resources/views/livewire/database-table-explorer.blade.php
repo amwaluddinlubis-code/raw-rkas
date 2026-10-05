@@ -17,7 +17,7 @@
 
     <div class="overflow-hidden rounded-xl border border-[var(--ui-line)]">
         <div class="overflow-x-auto">
-            <table data-pagination="server" class="db-data-table w-full min-w-[860px]">
+            <x-ui.table pagination="server">
                 <thead>
                     <tr>
                         <th><button type="button" wire:click="sortBy('name')" class="font-inherit">Tabel {{ $sort === 'name' ? ($direction === 'asc' ? '↑' : '↓') : '↕' }}</button></th>
@@ -46,7 +46,7 @@
                                     <div class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4 text-sm text-[var(--ui-fg-muted)]">
                                         <p class="mb-3 text-xs leading-5">{{ $detail['meta']['blurb'] ?? '' }}</p>
                                         <p class="mb-2 text-[11px] font-bold uppercase tracking-wide">Struktur kolom ({{ count($detail['columns']) }})</p>
-                                        <div class="mb-4 overflow-x-auto"><table class="db-data-table w-full"><thead><tr><th>Nama kolom</th><th>Type</th><th>Keterangan</th></tr></thead><tbody>@foreach($detail['columns'] as $column)<tr><td class="font-mono text-xs">{{ $column['name'] }}</td><td class="font-mono text-xs">{{ $column['type'] }}</td><td class="text-xs">{{ $column['pk'] ? 'Kunci utama' : ($column['required'] ? 'Wajib diisi' : '—') }}</td></tr>@endforeach</tbody></table></div>
+                                        <div class="mb-4 overflow-x-auto"><table class="db-data-table w-full"><thead><tr><th>Nama kolom</th><th>Type</th><th>Keterangan</th></tr></thead><tbody>@foreach($detail['columns'] as $column)<tr><td class="font-mono text-xs">{{ $column['name'] }}</td><td class="font-mono text-xs">{{ $column['type'] }}</td><td class="text-xs">{{ $column['pk'] ? 'Kunci utama' : ($column['required'] ? 'Wajib diisi' : '—') }}</td></tr>@endforeach</tbody></x-ui.table></div>
                                         <p class="mb-2 text-[11px] font-bold uppercase tracking-wide">Contoh isi (10 pertama dari {{ $detail['total'] }} baris)</p>
                                         @if(empty($detail['rows']))<p class="text-xs">Tabel ini belum memiliki data.</p>@else<div class="max-h-[320px] overflow-auto"><table class="db-data-table w-full"><thead><tr>@foreach(array_keys($detail['rows'][0]) as $column)<th>{{ $column }}</th>@endforeach</tr></thead><tbody>@foreach($detail['rows'] as $row)<tr>@foreach($row as $value)<td class="max-w-[220px] truncate font-mono text-xs">{{ is_scalar($value) || $value === null ? ($value ?? 'NULL') : json_encode($value) }}</td>@endforeach</tr>@endforeach</tbody></table></div>@endif
                                     </div>

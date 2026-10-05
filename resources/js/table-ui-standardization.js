@@ -29,11 +29,14 @@ const localContainerFor = (table) => table.parentElement?.parentElement instance
     ? table.parentElement.parentElement
     : table.closest('section, .card, .audit-panel');
 
+const toolbarHasPageSizeControl = (toolbar) => toolbar instanceof HTMLElement
+    && Boolean(toolbar.querySelector('[data-table-page-size]'));
+
 const toolbarTargetFor = (table) => {
     const localContainer = localContainerFor(table);
     if (localContainer instanceof HTMLElement) {
         const directToolbar = Array.from(localContainer.children).find((child) => child.matches?.('.ui-toolbar, .audit-panel-heading, div.border-b'));
-        if (directToolbar instanceof HTMLElement) {
+        if (directToolbar instanceof HTMLElement && !toolbarHasPageSizeControl(directToolbar)) {
             if (directToolbar.classList.contains('ui-toolbar')) {
                 const groups = directToolbar.querySelectorAll(':scope > .ui-toolbar-group');
                 return groups.length > 1 ? groups[groups.length - 1] : directToolbar;
@@ -46,13 +49,18 @@ const toolbarTargetFor = (table) => {
     if (!(section instanceof HTMLElement)) return null;
 
     const toolbar = section.querySelector('.ui-toolbar');
-    if (toolbar instanceof HTMLElement) {
+    if (toolbar instanceof HTMLElement && !toolbarHasPageSizeControl(toolbar)) {
         const groups = toolbar.querySelectorAll(':scope > .ui-toolbar-group');
         return groups.length > 1 ? groups[groups.length - 1] : toolbar;
     }
 
     const heading = section.querySelector(':scope > .audit-panel-heading, :scope > header, :scope > div.border-b');
-    return heading instanceof HTMLElement ? heading : null;
+    if (heading instanceof HTMLElement && !toolbarHasPageSizeControl(heading)) return heading;
+
+    // Jangan menumpang ke toolbar tabel lain (satu section bisa memuat
+    // beberapa panel tabel seperti tab Referensi/Operasional mirror):
+    // tiap tabel yang tak punya toolbar sendiri mendapat fallback sendiri.
+    return null;
 };
 
 const createPageSizeControl = (table, perPage, onChange, marker = 'client') => {
