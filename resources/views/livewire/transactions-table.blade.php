@@ -199,7 +199,7 @@
             <x-ui.table pagination="server">
                 <colgroup>
                     <col class="w-[150px]">
-                    <col class="w-[48%]">
+                    <col class="w-[30%]">
                     <col class="w-[170px]">
                     <col class="w-[160px]">
                 </colgroup>
