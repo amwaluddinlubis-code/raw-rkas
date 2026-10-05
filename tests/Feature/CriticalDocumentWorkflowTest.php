@@ -227,7 +227,7 @@ class CriticalDocumentWorkflowTest extends TestCase
         $this->assertTrue($requirement['available']);
     }
 
-    public function test_duplicate_vendor_invoice_does_not_block_numbering(): void
+    public function test_duplicate_vendor_invoice_in_same_fiscal_year_blocks_numbering(): void
     {
         $this->mirrorTransaction([
             'fiscal_year_id' => 1, 'fund_source_id' => 1, 'no_bukti' => 'BKU-000',
@@ -236,6 +236,27 @@ class CriticalDocumentWorkflowTest extends TestCase
         ]);
         $transaction = $this->readyGoodsTransaction();
         $transaction->forceFill(['vendor_name' => 'toko maju', 'invoice_number' => 'inv-001'])->save();
+        $item = $this->mirrorItem($transaction, [
+            'description' => 'Kertas', 'item_description' => 'Kertas',
+            'quantity' => 1, 'unit' => 'rim', 'unit_price' => 1000, 'amount' => 1000,
+        ]);
+        $item->goods()->create(['order_date' => '2026-01-10']);
+        $package = $transaction->spjPackage()->create(['quarter_code' => 'TW1', 'semester_code' => 'S1', 'status' => 'READY']);
+
+        $issues = app(SpjPackageValidationService::class)->validate($package->load(['transaction.items', 'transaction.goods']));
+
+        $this->assertContains('Keunikan invoice', collect($issues)->pluck('label')->all());
+    }
+
+    public function test_placeholder_dash_invoice_does_not_block_numbering(): void
+    {
+        $this->mirrorTransaction([
+            'fiscal_year_id' => 1, 'fund_source_id' => 1, 'no_bukti' => 'BKU-000',
+            'transaction_date' => '2026-01-10', 'gross_amount' => 500, 'net_amount' => 500,
+            'vendor_name' => 'Naufal Fotocopy', 'invoice_number' => '-',
+        ]);
+        $transaction = $this->readyGoodsTransaction();
+        $transaction->forceFill(['vendor_name' => 'Naufal Fotocopy', 'invoice_number' => '-'])->save();
         $item = $this->mirrorItem($transaction, [
             'description' => 'Kertas', 'item_description' => 'Kertas',
             'quantity' => 1, 'unit' => 'rim', 'unit_price' => 1000, 'amount' => 1000,
