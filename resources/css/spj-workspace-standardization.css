@@ -363,22 +363,26 @@ main[data-page="spj"] .spj-monitoring-status.is-empty {
     color: currentColor;
 }
 
-/* Pilot density profile for the primary /spj operator workspace. Keep the
-   change scoped here until browser QA confirms the reading rhythm. */
+/* Workspace scale tokens for the primary /spj operator surface.
+
+   Deliberately does NOT re-declare the density-owned tokens
+   (--profile-section-gap, --profile-control-height, --profile-table-row-y).
+   This file is imported after theme-profiles.css, so redeclaring them here
+   pinned every density to a single value and made the active theme density
+   unreachable on /spj. Density must stay owned by theme-profiles.css so the
+   compact/comfortable/spacious profile selected by the theme keeps working.
+   Only geometry that is genuinely workspace-specific belongs here. */
 main[data-page="spj"] .spj-semantic-workspace {
     --profile-card-radius: .75rem;
     --profile-control-radius: .5rem;
-    --profile-section-gap: 1rem;
-    --profile-control-height: 2.5rem;
     --profile-content-padding: 1.25rem;
     --profile-header-padding-x: 1.25rem;
     --profile-header-padding-y: 1.25rem;
-    --profile-table-row-y: .625rem;
     font-size: .875rem;
 }
 
 main[data-page="spj"] .spj-semantic-workspace.space-y-6> :not([hidden])~ :not([hidden]) {
-    margin-top: 1rem !important;
+    margin-top: var(--profile-section-gap) !important;
 }
 
 main[data-page="spj"] .spj-semantic-workspace>section,
@@ -510,13 +514,16 @@ main[data-page="spj"] .spj-semantic-workspace div[x-show="tab === 'persiapan'"]>
     box-shadow: var(--profile-card-shadow);
 }
 
+/* Touch-target floor on small screens. Uses max() so the active theme density
+   stays the baseline and is only raised when it would fall below the
+   accessible touch minimum, instead of pinning one fixed height. */
 @media (max-width: 1023px) {
     main[data-page="spj"] .spj-semantic-workspace {
-        --profile-control-height: 2.75rem;
+        --profile-control-height: max(var(--profile-control-height), 2.75rem);
     }
 
     main[data-page="spj"] .spj-semantic-workspace [data-package-tab] {
-        min-height: 2.75rem;
+        min-height: max(var(--profile-control-height), 2.75rem);
     }
 }
 

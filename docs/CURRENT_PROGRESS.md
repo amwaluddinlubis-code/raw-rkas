@@ -1686,3 +1686,69 @@ penuh untuk pertama kalinya pada HEAD ini.
 Tidak ada perubahan perhitungan anggaran, filter, scope periode, atau kontrak
 SPJ. Lebar card dan breakpoint mobile tetap perlu pemeriksaan visual browser;
 status mobile tetap RVR.
+
+## Perbaikan density token yang terkunci di halaman /spj 2026-10-05
+
+Status: **PASS (focused, static + build + test) / BROWSER RVR**.
+
+Audit cascade layer (diminta user) menemukan bug arsitektur pada density
+system. `--profile-table-row-y` dideklarasikan di delapan tempat, dan
+`resources/css/spj-workspace-standardization.css:376` yang paling bermasalah:
+file itu mengimpor token density miliknya sendiri **setelah** `theme-profiles.css`
+(`theme-system.css:3` vs `:16`), sehingga mengunci density halaman SPJ pada satu
+nilai dan membuat density dari tema aktif tidak pernah sampai ke sana. Karena
+`theme-profile-components.css:413` menerapkannya dengan `!important`, override
+itu juga tidak bisa dilepas dari sisi view.
+
+Dampaknya nyata: density tidak bisa dipilih bebas user — ia terikat ke tema
+lewat `theme-init.blade.php:24` (`profile[2]`) — dan tema `dark`/`slate`/
+`neutral` yang memakai `compact` tetap tampil dengan padding Comfortable di
+halaman /spj.
+
+Perbaikan:
+
+1. Block profil `/spj` tidak lagi mendeklarasikan token yang dimiliki density
+   (`--profile-section-gap`, `--profile-control-height`,
+   `--profile-table-row-y`). Hanya geometri yang benar-benar milik workspace
+   yang tersisa: `--profile-card-radius`, `--profile-control-radius`,
+   `--profile-content-padding`, dan dua token header. Komentar di file
+   menjelaskan mengapa token density tidak boleh dideklarasikan ulang di sini.
+2. `margin-top` pada `.spj-semantic-workspace.space-y-6` yang tadinya hardcode
+   `1rem` kini memakai `var(--profile-section-gap)`.
+3. Lantai touch-target mobile tidak lagi mengunci tinggi kontrol, melainkan
+   menaikkan baseline: `--profile-control-height: max(var(--profile-control-height), 2.75rem)`
+   baik pada token maupun pada `[data-package-tab]`. Density tema tetap
+   berlaku dan hanya dinaikkan bila jatuh di bawah minimum sentuh.
+4. `GuiAudit09To13SourceReadinessTest::test_spj_density_pilot_stays_compact_without_reducing_touch_targets`
+   diubah menjadi `test_spj_workspace_does_not_pin_density_owned_tokens` dan
+   kini mengunci kontrak yang benar: file tersebut tidak boleh mendeklarasikan
+   token density, lantai mobile harus berupa `max()`, dan geometri SPJ-specific
+   tetap ada. Test lama justru mengunci `--profile-control-height: 2.5rem` —
+   즉 persis bug yang diperbaiki.
+
+Verifikasi: `vendor/bin/pint --test` passed, `git diff --check` bersih,
+`npm run build` sukses, `npm run theme:qa` all pass, `php artisan view:cache`
+sukses, dan hasil build mengonfirmasi blok /spj tidak lagi memuat
+`--profile-table-row-y`, `--profile-control-height`, maupun
+`--profile-section-gap`; `max(var(--profile-control-height), 2.75rem)`
+terkonfirmasi terbawa ke media query. Focused suite: 24 passed / 188 assertions
+pada `GuiAudit09To13SourceReadinessTest`, `SpjProgramHierarchyPlaceholderTest`,
+`RkasBudgetUiTest`. `SpjReportLayoutTest::spj_monitoring_surfaces_use_theme_tokens`
+tetap FAIL dan terbukti pre-existing lewat stash A/B.
+
+### Temuan lanjutan (belum dikerjakan)
+
+Audit cascade layer juga mengukur 108 rule `padding !important` di dalam
+`utilities` layer, 7 di antaranya berbasis token (patuh) dan 95 literal
+(setelah memisahkan utility `!px-*`/`!py-*` milik Tailwind sendiri).
+Tidak semuanya bug — `.app-topbar`, `.app-shell-*`, `.app-sidebar-brand*`,
+dan variant `html[data-ui-controls=pill]` memang layout-owned dan tidak boleh
+disentuh. Yang layak dimigrasi ke token hanya override density-owned pada
+`.audit-table`, `#rincian-transaksi`, `.spj-semantic-workspace table`,
+`td.app-table-empty`, dan panel `.dashboard-*`: sekitar 30-35 rule di 4 file.
+`view-theme-hardening.css` (~1240 baris) adalah kandidat milestone tersendiri
+untuk pola yang sama pada warna.
+
+Perubahan ini hanya调整 token density dan tidak menyentuh perhitungan
+anggaran, form, kontrak SPJ, maupun perilaku numerasi. Penampilan aktual
+setiap tema pada /spj tetap perlu browser check; status visual tetap RVR.

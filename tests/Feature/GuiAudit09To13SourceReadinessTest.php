@@ -168,7 +168,7 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringContainsString('var(--theme-accent)', $css);
     }
 
-    public function test_spj_density_pilot_stays_compact_without_reducing_touch_targets(): void
+    public function test_spj_workspace_does_not_pin_density_owned_tokens(): void
     {
         $css = file_get_contents(resource_path('css/spj-workspace-standardization.css'));
         $summary = file_get_contents(resource_path('views/spj/partials/summary.blade.php'));
@@ -176,12 +176,21 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertIsString($css);
         $this->assertIsString($summary);
         $this->assertStringContainsString('spj-work-summary', $summary);
-        $this->assertStringContainsString('--profile-control-height: 2.5rem;', $css);
-        $this->assertStringContainsString('min-height: 0 !important;', $css);
-        $this->assertStringContainsString('.page-header-summary', $css);
+
+        // Density tokens must stay owned by theme-profiles.css. This file is
+        // imported later, so redeclaring them pinned every /spj density to one
+        // value and made the active theme density unreachable.
+        $this->assertStringNotContainsString('--profile-table-row-y:', $css);
+        $this->assertStringNotContainsString('--profile-section-gap:', $css);
+        $this->assertStringNotContainsString('--profile-control-height: 2.5rem', $css);
+
+        // Touch-target floor must raise the density, not replace it.
         $this->assertStringContainsString('@media (max-width: 1023px)', $css);
-        $this->assertStringContainsString('--profile-control-height: 2.75rem;', $css);
-        $this->assertStringContainsString('min-height: 2.75rem;', $css);
+        $this->assertStringContainsString('max(var(--profile-control-height), 2.75rem)', $css);
+
+        // Workspace geometry that is genuinely SPJ-specific stays scoped here.
+        $this->assertStringContainsString('--profile-card-radius: .75rem;', $css);
+        $this->assertStringContainsString('--profile-control-radius: .5rem;', $css);
     }
 
     public function test_core_operator_lists_keep_desktop_and_mobile_source_fallbacks(): void
