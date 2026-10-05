@@ -518,10 +518,6 @@ main[data-page="spj"] .spj-semantic-workspace div[x-show="tab === 'persiapan'"]>
    stays the baseline and is only raised when it would fall below the
    accessible touch minimum, instead of pinning one fixed height. */
 @media (max-width: 1023px) {
-    main[data-page="spj"] .spj-semantic-workspace {
-        --profile-control-height: max(var(--profile-control-height), 2.75rem);
-    }
-
     main[data-page="spj"] .spj-semantic-workspace [data-package-tab] {
         min-height: max(var(--profile-control-height), 2.75rem);
     }

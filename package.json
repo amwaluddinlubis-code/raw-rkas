@@ -4,7 +4,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "theme:qa": "node scripts/theme-contrast-qa.mjs"
+        "theme:qa": "node scripts/theme-contrast-qa.mjs",
+        "density:qa": "node scripts/density-qa.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

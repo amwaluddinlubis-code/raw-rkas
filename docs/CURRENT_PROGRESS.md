@@ -1752,3 +1752,49 @@ untuk pola yang sama pada warna.
 Perubahan ini hanya调整 token density dan tidak menyentuh perhitungan
 anggaran, form, kontrak SPJ, maupun perilaku numerasi. Penampilan aktual
 setiap tema pada /spj tetap perlu browser check; status visual tetap RVR.
+
+## Guardrail density: script density:qa 2026-10-05
+
+Status: **PASS (static + build) / BROWSER RVR**.
+
+Tahap 2 dari rencana GUI的一名wako. `scripts/density-qa.mjs` ditambahkan
+sebagai gerbang yang gagal bila kepemilikan token density bocor lagi:
+
+1. Token `--profile-section-gap`, `--profile-control-height`, dan
+   `--profile-table-row-y` hanya boleh **di-assign** di
+   `resources/css/theme-profiles.css`. Pembacaan lewat `var()` di file lain
+   tetap diperbolehkan; hanya assignment yang ditolak, karena itulah yang
+   mengunci density tema aktif.
+2. Padding sel tabel (`th`/`td`) tidak boleh angka literal; harus memakai
+   `--profile-table-row-y`.
+
+Script langsung menemukan 10 pelanggaran nyata yang sudah ada di repo:
+sembilan hardcoded table cell padding di `app-base.css` (`.audit-table`,
+`.table`, dan varian mobile) serta `settings-database-standardization.css`
+(`.db-data-table`, `.db-table-sidebar-list`), dan satu density assignment
+di `spj-workspace-standardization.css` — `--profile-control-height` pada media
+query mobile. Ketigabelas分组: lima blok padding tabel kini memakai
+`padding-block: var(--profile-table-row-y)` dengan `padding-inline` terpisah
+supaya lebar kolom tetap stabil, dan assignment token mobile dihapus karena
+lantai touch-target sudah terpenuhi lewat `min-height` pada
+`[data-package-tab]`.
+
+Script ini juga menangkap regresi yang sebelumnya tidak terlihat:委员会 file
+`token-native-components.css` memang **konsumen** token yang benar dan
+tidak boleh ikut dianggap pelanggaran, sedangkan `theme-profiles.css` adalah
+pemilik sah.
+
+Verifikasi: `npm run density:qa` PASS, `npm run theme:qa` all pass,
+`npm run build` sukses dan hasil build mengonfirmasi
+`padding-block:var(--profile-table-row-y,.875rem)` pada `.audit-table th`,
+`.table th`, dan `.db-data-table th`; `php artisan view:cache` sukses,
+`vendor/bin/pint --test` passed, `git diff --check` bersih.
+`DatabaseTableSummaryTest` gagal 3 test dan terbukti pre-existing lewat
+stash A/B.
+
+Catatan: `resources/views/users/index.blade.php`,
+`resources/views/livewire/database-table-explorer.blade.php`,
+`resources/views/livewire/database-status-summary.blade.php`,
+`resources/views/rkas-budget/audit-mirror.blade.php`, dan
+`resources/views/school-backups/index.blade.php` berubah di luar pekerjaan ini
+dan sengaja tidak ikut di-commit.
