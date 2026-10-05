@@ -1887,3 +1887,62 @@ segmented control tab.
 
 Penghematan scroll dan breakpoint mobile tetap perlu pemeriksaan visual
 browser; status visual tetap RVR.
+
+## Navigasi Tab Datar & Transparan (2026-10-05)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Perubahan visual CSS pada `resources/css/apple-theme-profiles.css` dan
+`resources/css/spj-workspace-standardization.css` membuat semua tab menjadi
+datar (border-radius 0) dan transparan (background: transparent).
+
+- Tab utama SPJ (`Persiapan`, `Paket`, `Laporan`, `Monitoring`) kini tanpa
+  sudut membulat dan latar belakang tertutup; tab aktif hanya menunjukkan
+  indikator `padding-bottom: .1rem` tipis
+- Tab internal paket (`Rincian`, `Isian Manual`, `Rincian Pajak`, `Penomoran`)
+  ikut standar flat tanpa border, radius, atau background hover berwarna
+- Semua tab menggunakan CSS variable `--theme-content-accent` untuk warna indikator aktif
+- Double border-bottom telah dieliminir; hanya satu border untuk tab aktif
+- Pint code style check lulus (`vendor/bin/pint --dirty --format agent`)
+
+Evidence: `SpjMainTabsRenderingTest` 9 passed / 65 assertions,
+`SpjPackageNavigationButtonsTest` 3 passed / 16 assertions,
+Pint passed, `view:cache` sukses, `git diff --check` bersih.
+
+---
+
+## Self-healing database test + perbaikan assertion tab aktif 2026-10-05
+
+Status: **PASS (focused, test) / BROWSER RVR**.
+
+Dua perbaikan dari audit kekurangan aplikasi.
+
+1. **`tests/bootstrap.php` sekarang menyiapkan `database/testing.sqlite` sendiri.**
+   Dua kegagalan yang berulang sudah tercatat di `CURRENT_PROGRESS.md`: berkas
+   hilang membuat setiap test gagal dengan "Database file at path ... does not
+   exist", dan berkas korup memicu "database disk image is malformed" atau
+   "file is not a database". Guard lama hanya menolak jalan bila
+   `bootstrap/cache/config.php` aktif dan tidak menyentuh berkas test.
+   Sekarang bootstrap membuat berkas bila belum ada dan mengosongkan isinya bila
+   `PRAGMA integrity_check` bukan `ok`, sehingga skema dibangun ulang oleh
+   `RefreshDatabase`. Perubahan isi ditulis di tempat, bukan rename, karena PDO
+   sempat membuka handle dan pada Windows berkas sqlite tidak bisa di-rename
+   selama masih dirujuk proses; percobaan rename justru meninggalkan berkas
+   `testing.sqlite.rebuild-*` dan membuat suite rusak.
+   Error mode PDO dipaksa exception karena tanpa itu query
+   `PRAGMA integrity_check` mengembalikan `false` tanpa error untuk
+   "file is not a database" sehingga korup tidak terdeteksi.
+   Halaman produksi `database/database.sqlite` tidak pernah disentuh; jalur ini
+   hanya aktif lewat `phpunit.xml` yang memaksa `DB_DATABASE`.
+2. **`SpjReportLayoutTest::test_spj_main_tabs_render_as_segmented_control`**
+   assertion-nya salah arah: melarang `.ui-tab-active` di CSS, padahal
+   `components/tabs.blade.php` memakai kelas itu untuk menandai tab terpilih.
+   Assertion sekarang memeriksa keberadaan penanda aktif pada markup dan pada
+   `ui-generalization.css`, plus keberadaan contracted `.ui-tabs-list` dan
+   `.ui-tab` pada `spj-workspace-standardization.css`.
+
+Verifikasi: `SpjReportLayoutTest` 15 passed / 199 assertions hijau penuh untuk
+pertama kalinya di HEAD ini. Skenario bootstrap diuji langsung: berkas dihapus
+lalu suite hijau; berkas diisi `CORRUPT-GARBAGE` lalu suite memulih dengan
+NOTICE dan hijau. Tujuh test file lain tetap hijau. `vendor/bin/pint --test`
+passed, `git diff --check` bersih.

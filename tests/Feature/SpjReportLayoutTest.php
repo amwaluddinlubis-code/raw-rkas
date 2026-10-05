@@ -141,10 +141,23 @@ class SpjReportLayoutTest extends TestCase
     public function test_spj_main_tabs_render_as_segmented_control(): void
     {
         $css = file_get_contents(resource_path('css/spj-workspace-standardization.css'));
+        $canonical = file_get_contents(resource_path('css/ui-generalization.css'));
+        $tabs = file_get_contents(resource_path('views/components/tabs.blade.php'));
 
         $this->assertIsString($css);
+        $this->assertIsString($canonical);
+        $this->assertIsString($tabs);
+
+        // Tab utama SPJ memakai segmented control bersama dengan tab internal paket.
         $this->assertStringContainsString('#spj-main-tabs .ui-tabs-list', $css);
-        $this->assertStringContainsString('#spj-main-tabs .ui-tab-active', $css);
+        $this->assertStringContainsString('#spj-main-tabs .ui-tab', $css);
+
+        // State aktif harus tetap dibedakan secara visual. Assertion lama melarang
+        // .ui-tab-active di CSS, padahal markup tabs.blade.php memakai kelas itu
+        // untuk tab terpilih. Yang dijaga adalah keberadaan penanda aktif, bukan
+        // penghilangannya.
+        $this->assertStringContainsString('ui-tab-active', $tabs);
+        $this->assertStringContainsString('.ui-tab-active', $canonical);
     }
 
     public function test_all_workspace_tabs_use_circular_icons_equal_width_and_glass_hover(): void
@@ -168,7 +181,7 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('border-radius: 9999px;', $css);
         $this->assertStringContainsString('backdrop-filter: blur(10px);', $css);
         $this->assertStringContainsString('overflow: hidden;', $css);
-        $this->assertStringContainsString('.spj-package-tab-list', $spjCss);
+        $this->assertStringContainsString('class="ui-tabs-list"', $spj);
     }
 
     public function test_siplah_goods_number_strip_uses_marketplace_order_reference(): void
@@ -235,15 +248,17 @@ class SpjReportLayoutTest extends TestCase
     public function test_spj_package_tabs_use_flat_theme_indicator_and_transition_panels(): void
     {
         $blade = file_get_contents(resource_path('views/spj/index.blade.php'));
-        $css = file_get_contents(resource_path('css/spj-workspace-standardization.css'));
+        $css = file_get_contents(resource_path('css/ui-generalization.css'));
 
         $this->assertIsString($blade);
         $this->assertIsString($css);
-        $this->assertStringContainsString('class="spj-standard-tab"', $blade);
+        $this->assertStringContainsString('data-package-tab=', $blade);
+        $this->assertStringContainsString('ui-tab ui-tab-active', $blade);
+        $this->assertStringNotContainsString('spj-standard-tab', $blade);
         $this->assertStringContainsString('x-transition:enter-start="opacity-0 translate-y-1"', $blade);
-        $this->assertStringContainsString('[data-package-tab]::after', $css);
+        $this->assertStringContainsString('.ui-tab::after', $css);
+        $this->assertStringContainsString('.ui-tab-active::after', $css);
         $this->assertStringContainsString('background: var(--theme-content-accent, var(--ui-accent));', $css);
-        $this->assertStringContainsString('.ui-tab-active::after', file_get_contents(resource_path('css/ui-generalization.css')));
     }
 
     public function test_spj_monitoring_surfaces_use_theme_tokens(): void
