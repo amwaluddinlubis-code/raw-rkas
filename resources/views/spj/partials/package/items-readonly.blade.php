@@ -5,21 +5,13 @@
                             <div class="divide-y divide-[var(--ui-line)]">
                                 @forelse($transaction->items as $index => $item)
                                     @php($spjDescription = $item->item_description ?: ($transaction->is_siplah ? ($item->siplah_item_name ?: $item->sourceValue('description')) : $item->sourceValue('description')))
-                                    <div class="flex gap-3 px-4 py-3">
-                                        <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ui-surface-muted)] text-[11px] font-bold text-[var(--ui-fg-muted)]">{{ $index + 1 }}</span>
-                                        <div class="min-w-0 flex-1">
-                                            <p class="text-base font-medium leading-tight text-[var(--ui-fg-strong)]">{{ $spjDescription }}</p>
-                                            <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--ui-fg-muted)]">
-                                                <span><span class="font-semibold text-[var(--ui-fg)]">Volume:</span> {{ $item->sourceValue('quantity') }}</span>
-                                                <span><span class="font-semibold text-[var(--ui-fg)]">Satuan:</span> {{ $item->sourceValue('unit') ?: '—' }}</span>
-                                                <span><span class="font-semibold text-[var(--ui-fg)]">Harga Satuan:</span> {{ $rupiah($item->sourceValue('unit_price')) }}</span>
-                                                <span><span class="font-semibold text-[var(--ui-fg)]">Rekening:</span> {{ $item->sourceValue('account_code') ?: $transaction->sourceValue('account_code') ?: '—' }}</span>
-                                            </div>
+                                    <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2">
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <span class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--ui-surface-muted)] text-[11px] font-bold text-[var(--ui-fg-muted)]">{{ $index + 1 }}</span>
+                                            <p class="truncate text-sm font-medium leading-tight text-[var(--ui-fg-strong)]" title="{{ $spjDescription }}">{{ $spjDescription }}</p>
                                         </div>
-                                        <div class="shrink-0 text-right">
-                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</p>
-                                            <p class="mt-0.5 text-base font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($item->sourceValue('amount')) }}</p>
-                                        </div>
+                                        <p class="min-w-0 truncate border-l border-[var(--ui-line)] pl-3 text-xs text-[var(--ui-fg-muted)]" title="Volume {{ $item->sourceValue('quantity') }} · Satuan {{ $item->sourceValue('unit') }} · Harga {{ $rupiah($item->sourceValue('unit_price')) }} · Rek {{ $item->sourceValue('account_code') ?: $transaction->sourceValue('account_code') }}"><span class="font-semibold text-[var(--ui-fg)]">Volume</span> {{ $item->sourceValue('quantity') }} · <span class="font-semibold text-[var(--ui-fg)]">Satuan</span> {{ $item->sourceValue('unit') ?: '—' }} · <span class="font-semibold text-[var(--ui-fg)]">Harga</span> {{ $rupiah($item->sourceValue('unit_price')) }} · <span class="font-semibold text-[var(--ui-fg)]">Rek</span> {{ $item->sourceValue('account_code') ?: $transaction->sourceValue('account_code') ?: '—' }}</p>
+                                        <p class="shrink-0 border-l border-[var(--ui-line)] pl-3 text-right text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($item->sourceValue('amount')) }}</p>
                                     </div>
                                 @empty
                                     <p class="px-4 py-8 text-center text-base text-[var(--ui-fg-muted)]">Tidak ada rincian barang/jasa.</p>
