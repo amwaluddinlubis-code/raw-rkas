@@ -1,6 +1,6 @@
 # P0-01 — Source Audit & Real-Database Verification Guide
 
-Terakhir diperbarui: **2026-09-11**
+Terakhir diperbarui: **2026-10-05**
 
 Status: **FUNCTIONAL SIX-CATEGORY E2E PASS / REAL-DATA VERIFICATION ACTIVE**
 
@@ -37,7 +37,8 @@ Checkpoint deterministic yang berlaku dirangkum di `CURRENT_PROGRESS.md`.
 
 ## 2. Real-data baseline aktif
 
-Baseline sekolah nyata terbaru yang sudah dianalisis:
+Baseline sekolah nyata yang sudah dianalisis — snapshot 2026-09-11 pada satu
+tenant (angka-angka ini **tidak lagi current**, lihat §2.1):
 
 ```text
 transactions                  170
@@ -73,6 +74,36 @@ SPPD                  0
 ```
 
 SPPD nyata tersedia pada 2025 sebanyak 14 transaksi. Tidak ada satu fiscal year nyata yang memuat keenam kategori sekaligus. Jangan membuat SPPD 2026 fiktif hanya untuk memenuhi coverage.
+
+### 2.1 Baseline terkini 3 tenant nyata (2026-10-05)
+
+Audit read-only terhadap **10208183**, **10208246**, dan **10260756** pada
+`SPJ_DATA_PATH` aktif. Tenant lain di folder tersebut adalah tenant uji coba dan
+tidak dipakai sebagai bukti. Angka menggantikan snapshot di atas sebagai
+baseline kerja; detail lengkap di `CURRENT_PROGRESS.md`.
+
+```text
+NPSN       migrasi  integrity  fk      transaksi  READY  DRAFT  tabela
+10208183      70/70      ok   0 bersih        65      46       0     43
+10208246      69/70      ok   0 bersih        74      24      50     43
+10260756      70/70      ok   0 bersih       198      94       0     43
+```
+
+Coverage kategori READY:
+
+```text
+NPSN       BARANG  KONSUMSI  PEMELIHARAAN  JASA_LAINNYA  HONOR_PEGAWAI  SPPD
+10208183        32         2             2             6             4  0
+10208246        17         1             1             1             4  0
+10260756        64         6             2             5            17  0
+```
+
+`document_number_formats` kini terisi (30/35/55 baris), `spj_documents` dan
+`document_number_sequences` masih 0 di ketiga tenant — belum ada penomoran
+sungguhan yang pernah dijalankan pada data produksi. Source bersih di
+ketiganya (`ACTIVE`, tanpa `requires_reconciliation`, tanpa
+`source_missing_since`), dan `arkas:mirror-health` dry-run melaporkan nol baris
+stale maupun hilang-di-mirror.
 
 ## 3. Auditor read-only canonical
 

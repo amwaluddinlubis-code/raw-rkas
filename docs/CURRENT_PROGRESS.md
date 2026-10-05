@@ -344,6 +344,104 @@ Bagian dokumentasi tidak menghasilkan functional gate baru. Semua status
 visual/browser tetap **RVR** — tidak ada halaman yang dibuka di browser atau PDF
 viewer pada batch ini.
 
+## Audit real-data 3 tenant nyata (2026-10-05)
+
+Status: **REAL-DATA VERIFIED (read-only) / BLOCKER DATA: TIDAK ADA**.
+
+Audit dijalankan **read-only** terhadap tiga tenant produksi pada
+`SPJ_DATA_PATH` aktif (`.env:82` → `school-databases-arkas-mirror`):
+**10208183** (SDN 318 Bangun Saroha), **10208246** (SDN 316 Ranto Panjang),
+**10260756** (SMP Negeri 2 Ranto Baek). Enam tenant lain di folder tersebut
+(`10211735`, `10215538`, `10255901`, `10271767`, `10277611`, `00000001`) adalah
+tenant uji coba dan **tidak** dipakai sebagai bukti.
+
+Semua pemeriksaan dilakukan pada salinan file di `%TEMP%`; tidak ada write,
+reprovision, migrate, maupun `--repair` terhadap file tenant asli.
+
+### Skema dan integritas
+
+```text
+NPSN       migrasi  integrity  fk_check  sort_order  checklist_ticks
+10208183      70/70      ok       0 bersih     ADA      8 baris, FK -> spj_packages.id
+10208246      69/70      ok       0 bersih     ADA      0 baris, FK -> spj_packages.id
+10260756      70/70      ok       0 bersih     ADA      0 baris, FK -> spj_packages.id
+```
+
+Temuan:
+
+- **Tidak ada gap migrasi yang merusak fitur.** 10208246 tertinggal satu
+  migrasi (`2026_10_04_000003_drop_dangling_users_fk_from_checklist_ticks`),
+  tetapi migrasi itu hanya rebuild tabel bila FK `checked_by → users` masih
+  ada. Audit `PRAGMA foreign_key_list` pada 10208246 menunjukkan FK yang ada
+  **hanya** `spj_package_id → spj_packages.id`, dan tabel berisi 0 baris.
+  Jadi migrasi tersebut akan menjadi no-op; tidak ada risiko data.
+- **17 tabel mirror aktif di ketiga tenant**, dan kolom yang didokumentasikan
+  sebagai sudah di-drop memang hilang di data nyata:
+  `transactions.{gross_amount,tax_total,net_amount}` dan
+  `transaction_items.{description,quantity,unit,unit_price,amount}` **tidak ada**.
+  Ini mengonfirmasi koreksi dokumentasi pada batch sebelumnya bukan sekadar
+  klaim — nilai source benar-benar hanya tersedia via mirror + `sourceValue()`.
+- `transaction_items.sort_order` ada di ketiganya, sehingga
+  `Transaction::items()` (`COALESCE(NULLIF(sort_order,0), id)`) aman. Query
+  ekuivalen dijalankan langsung dan berhasil pada ketiga tenant.
+
+### Kesehatan mirror kas (`arkas:mirror-health`, dry-run)
+
+Dijalankan tanpa `--repair` untuk seluruh sekolah:
+
+```text
+baris dengan stale > 0        : 0
+baris hilang-di-mirror > 0    : 0
+kategori tanpa scope           : 0
+```
+
+Untuk (tahun, dana) yang punya kas, `mirror` dan `bku` cocok pada n dan sum —
+contoh 10260756 TA 2026 fund 1: `SALDO_AWAL 20/483.682.500`,
+`PENERIMAAN_BOS 2/276.390.000`, `BELANJA 219/207.292.500`,
+`PAJAK 96/21.179.232`, seluruhnya `stale n=0`, `hilang n=0`. Regresi overuse
+pagu yang dicatat 2026-10-04 (realisasi 2x pagu pada 10208183 dan 10208246)
+tidak terulang.
+
+### Readiness penomoran
+
+```text
+NPSN       transaksi  READY  DRAFT  tw READY per triwulan (dari sx_tanggal mirror)
+10208183        65      46       0  FY3/dana1: TW1=23, TW2=23
+10208246        74      24      50  FY3/dana1: TW1=24
+10260756       198      94       0  FY5/dana1: TW2=66, TW3=28
+```
+
+Semua paket READY punya `sx_tanggal` mirror (0 tanpa tanggal), jadi scope
+triwulan pada `/spj/penomoran` dapat ditentukan tanpa fallback. PAJAK turunan
+dan dokumen: `document_number_formats` terisi 30/35/55 baris.
+
+Distribusi kategori READY (tanpa fabrikasi):
+
+```text
+NPSN       BARANG  KONSUMSI  PEMELIHARAAN  JASA_LAINNYA  HONOR_PEGAWAI  SPPD
+10208183        32         2             2             6             4  0
+10208246        17         1             1             1             4  0
+10260756        64         6             2             5            17  0
+```
+
+SPPD tetap 0 di ketiga tenant. Ini konsisten dengan kontrak: jangan membuat
+SPPD fiktif untuk sixth-category coverage. Lima kategori lain punya data nyata
+representatif di sini.
+
+Status source bersih di ketiganya: seluruh transaksi `ACTIVE`,
+`requires_reconciliation = 0`, `source_missing_since = 0`. Tidak ada antrean
+rekonsiliasi yang perlu operator tangani.
+
+### Konsekuensi untuk prioritas
+
+Tidak ada blocker data. Prioritas P1 yang tersisa murni soal output dan
+runtime, bukan perbaikan data:
+
+1. Generated-document real-data QA pada paket READY di atas (5 kategori × 3
+   tenant) — termasuk penomoran sungguhan pada salinan terisolasi.
+2. Browser/operator QA desktop-laptop sesuai `GUI_RUNTIME_QA.md`.
+3. Office/PDF visual QA untuk XLSX/PDF hasil generate.
+
 ## Batch UI/UX workspace Paket SPJ (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
@@ -1304,7 +1402,7 @@ SPPD
 HONOR_PEGAWAI
 ```
 
-Baseline real-data 2026 yang sudah terdokumentasi:
+Baseline real-data yang sudah terdokumentasi (snapshot 2026-09-11, tenant 10260756):
 
 ```text
 transactions              : 170
@@ -1315,7 +1413,15 @@ document_number_sequences : 0
 document_number_formats   : 0
 ```
 
-Distribusi Paket 2026: BARANG 41, HONOR_PEGAWAI 12, JASA_LAINNYA 9, KONSUMSI 2, PEMELIHARAAN 2, SPPD 0. SPPD nyata tersedia pada data 2025; jangan fabrikasi SPPD 2026 untuk coverage.
+> **Diperbarui 2026-10-05.** Baseline di atas adalah snapshot lama tenant
+> 10260756 dan sekarang **tidak lagi akurat**: audit read-only terhadap tiga
+> tenant nyata pada `SPJ_DATA_PATH` aktif menunjukkan angka berbeda dan
+> `document_number_formats` sudah terisi. Lihat entri "Audit real-data 3 tenant
+> nyata (2026-10-05)" di atas untuk angka terkini. Distribusi paket READY saat
+> itu: BARANG 32/17/64, HONOR_PEGAWAI 4/4/17, JASA_LAINNYA 6/1/5, KONSUMSI
+> 2/1/6, PEMELIHARAAN 2/1/2, SPPD 0 untuk 10208183/10208246/10260756.
+
+SPPD tetap 0 di ketiga tenant nyata. Jangan fabrikasi SPPD untuk coverage.
 
 ---
 

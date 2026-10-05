@@ -270,7 +270,8 @@ Kontrak:
 - tidak mengubah metadata `SchoolDatabase`;
 - hash baseline harus tetap sama.
 
-Evidence real-data aktif yang sudah terdokumentasi:
+Evidence real-data historis yang sudah terdokumentasi (snapshot 2026-09-11,
+satu tenant):
 
 ```text
 2026 / TW2 / Fund Source 1 : 66 transaksi ber-item / 66 Paket READY -> PASS
@@ -278,7 +279,15 @@ Evidence real-data aktif yang sudah terdokumentasi:
 TW1/TW3/TW4 2026           : tidak mempunyai transaksi pada baseline aktif
 ```
 
-SPPD 2026 tidak tersedia pada real data; jangan dibuat fiktif untuk coverage.
+Baseline tersebut sudah usang. Audit read-only 2026-10-05 pada tiga tenant nyata
+memberi sebaran berbeda (`CURRENT_PROGRESS.md` entri "Audit real-data 3 tenant
+nyata") — 46 / 24 / 94 paket READY dengan triwulan TW1–TW3 yang semuanya punya
+paket, sehingga klaim "TW1/TW3/TW4 tidak mempunyai transaksi" tidak lagi
+berlaku. Jalankan ulang `spj:audit-quarter` per tenant sebelum memakai angka ini
+sebagai preflight.
+
+SPPD 2026 tidak tersedia pada real data ketiga tenant; jangan dibuat fiktif
+untuk coverage.
 
 ---
 

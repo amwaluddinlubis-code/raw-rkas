@@ -454,7 +454,7 @@ Kontrak:
 - tidak mengubah metadata `SchoolDatabase`;
 - memahami policy kategori/SiPLah/reconciliation.
 
-Command ini dipakai untuk audit 66 Paket READY sebelum numbering pada isolated copy.
+Command ini dipakai untuk audit paket READY sebelum numbering pada isolated copy. Baseline 3 tenant nyata (2026-10-05): 46 / 24 / 94 paket READY pada 10208183 / 10208246 / 10260756.
 
 ## 19. Frontend/theme
 
