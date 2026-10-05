@@ -5,6 +5,19 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Suggest Referensi pembayaran per metode (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Isian Manual kini memberi suggest `Referensi pembayaran` mengikuti `Metode
+pembayaran` saat kosong: Siplah → `VA Sumut - `, Tunai → `-`, Transfer
+Bank → `ACC Sumut` (default server per metode + Alpine `suggest()` saat
+metode diganti; isian operator yang diketik manual tak ditimpa).
+
+Evidence: `SpjMainTabsRenderingTest` 9 passed / 65 assertions,
+`SpjWorkspaceMigrationTest` 15 passed, `view:cache` sukses,
+`git diff --check` bersih.
+
 ## Relink 88 + hapus 2 SOURCE_MISSING tenant 10260756 (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused, real tenant data) / BROWSER RVR**.

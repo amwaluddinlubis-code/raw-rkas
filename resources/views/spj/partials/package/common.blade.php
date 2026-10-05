@@ -34,13 +34,30 @@
                 required>{{ old('payment_description', $transaction->payment_description ?: $paymentDescriptionDefault) }}</x-ui.textarea>
         </div>
 
-        <div class="grid min-w-0 gap-2 sm:grid-cols-2">
+        @php($effectiveCategory = strtoupper((string) old('spj_category', $transaction->spj_category ?: $selectedSpjType ?? '')))
+        @php($currentMethod = old('payment_method', $transaction->payment_method ?: ($transaction->is_siplah ? 'siplah' : 'tunai')))
+        @php($referenceDefault = match ($currentMethod) {
+            'siplah' => 'VA Sumut - ',
+            'transfer_bank' => 'ACC Sumut',
+            default => '-',
+        })
+        <div class="grid min-w-0 gap-2 sm:grid-cols-2" x-data="{
+            method: @js($currentMethod),
+            suggestions: { siplah: 'VA Sumut - ', tunai: '-', transfer_bank: 'ACC Sumut' },
+            suggest() {
+                const input = this.$refs.paymentReference;
+                if (!(input instanceof HTMLInputElement)) return;
+                const current = input.value.trim();
+                const known = Object.values(this.suggestions).map((suggestion) => suggestion.trim());
+                if (current === '' || known.includes(current)) {
+                    input.value = this.suggestions[this.method] ?? '';
+                }
+            },
+        }">
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode pembayaran <span
                         class="text-rose-600">*</span></label>
-                @php($effectiveCategory = strtoupper((string) old('spj_category', $transaction->spj_category ?: $selectedSpjType ?? '')))
-                @php($currentMethod = old('payment_method', $transaction->payment_method ?: ($transaction->is_siplah ? 'siplah' : 'tunai')))
-                <x-ui.select name="payment_method" class="mt-1 !py-1.5 !text-sm" required>
+                <x-ui.select name="payment_method" class="mt-1 !py-1.5 !text-sm" required x-on:change="method = $event.target.value; suggest()">
                     @foreach (['tunai' => 'Tunai', 'transfer_bank' => 'Transfer Bank'] as $value => $label)
                         <option value="{{ $value }}" @selected($currentMethod === $value)>{{ $label }}</option>
                     @endforeach
@@ -52,7 +69,7 @@
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Referensi pembayaran</label>
                 @php($siplahOrder = $transaction->siplah_order_number ?: (filled($siplahInvoice) ? collect(explode('/', $siplahInvoice))->filter()->last() : null))
-                <x-ui.input name="payment_reference" :value="old('payment_reference', $transaction->payment_reference ?: 'VA Sumut - ')" class="mt-1 !py-1.5 !text-sm" />
+                <x-ui.input name="payment_reference" x-ref="paymentReference" :value="old('payment_reference', $transaction->payment_reference ?: $referenceDefault)" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
                 <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penyedia / Merchant / Toko</label>

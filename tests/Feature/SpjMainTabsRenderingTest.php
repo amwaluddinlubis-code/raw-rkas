@@ -148,4 +148,16 @@ class SpjMainTabsRenderingTest extends TestCase
         $this->assertStringContainsString('name="payment_date" max="{{ $transactionDateLimit }}"', $numbering);
         $this->assertMatchesRegularExpression('/name="receipt_date"\s+max="\{\{ \$transactionDateLimit \}\}"/', $numbering);
     }
+
+    public function test_payment_reference_suggests_per_payment_method(): void
+    {
+        $common = file_get_contents(resource_path('views/spj/partials/package/common.blade.php'));
+
+        $this->assertIsString($common);
+        $this->assertStringContainsString("'siplah' => 'VA Sumut - '", $common);
+        $this->assertStringContainsString("'transfer_bank' => 'ACC Sumut'", $common);
+        $this->assertStringContainsString('default => \'-\'', $common);
+        $this->assertStringContainsString('x-ref="paymentReference"', $common);
+        $this->assertStringContainsString('x-on:change="method = $event.target.value; suggest()"', $common);
+    }
 }
