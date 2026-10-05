@@ -196,23 +196,23 @@
 
         {{-- Desktop table --}}
         <div class="hidden border-t border-[var(--ui-line)] lg:block">
-            <x-ui.table pagination="server">
+            <x-ui.table pagination="server" class="table-fixed">
                 <colgroup>
-                    <col class="w-[150px]">
-                    <col class="w-[30%]">
-                    <col class="w-[170px]">
-                    <col class="w-[160px]">
+                    <col style="width: 8.25rem">
+                    <col>
+                    <col style="width: 9.5rem">
+                    <col style="width: 6.5rem">
                 </colgroup>
                 <thead class="bg-[var(--ui-surface-soft)]">
                     <tr class="border-b border-[var(--ui-line)]">
-                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">ID
+                        <th class="px-3 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">ID
                             / Status</th>
-                        <th class="px-4 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                        <th class="px-3 py-2 text-left text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             Uraian / Referensi</th>
-                        <th class="px-4 py-2 text-right text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
+                        <th class="px-3 py-2 text-right text-[13px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">
                             Nilai</th>
                         <th
-                            class="transaction-action-column px-4 py-2 text-center text-[13px] font-bold uppercase tracking-wide">
+                            class="transaction-action-column px-3 py-2 text-center text-[13px] font-bold uppercase tracking-wide">
                             Aksi</th>
                     </tr>
                 </thead>
@@ -222,11 +222,11 @@
                             @php($workStatus = $this->workStatusFor($transaction))
                             <tr class="transition hover:bg-[var(--ui-surface-soft)]"
                                 wire:key="transaction-row-{{ $transaction->id }}">
-                                <td class="px-4 py-2 align-middle">
-                                    <div class="flex min-w-0 items-center gap-2">
+                                <td class="px-3 py-2 align-middle">
+                                    <div class="flex min-w-0 flex-wrap items-center gap-1.5">
                                         <span
                                             class="shrink-0 font-mono text-[13px] font-bold text-[var(--ui-fg-muted)]">#{{ $transaction->id }}</span>
-                                        <div class="min-w-0"><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']"
+                                        <div class="min-w-0 max-w-full"><x-ui.status-badge :status="$workStatus['status']" :label="$workStatus['label']"
                                                 size="xs" /></div>
                                     </div>
                                     <p class="mt-1 truncate text-[13px]" style="color: var(--ui-fg-muted)">
@@ -236,7 +236,7 @@
                                         {{ $transaction->sourceCarbon()?->format('d/m/Y') ?? '—' }}{{ $this->paymentMethodFor($transaction) === 'siplah' ? ' · SiPLah' : '' }}
                                     </p>
                                 </td>
-                                <td class="min-w-0 px-4 py-2 align-middle">
+                                <td class="min-w-0 max-w-0 px-3 py-2 align-middle">
                                     <p class="truncate text-sm font-semibold" style="color: var(--ui-fg)"
                                         title="{{ $transaction->sourceValue('description') }}">
                                         {{ $transaction->sourceValue('description') ?: 'Tanpa uraian ARKAS' }}</p>
@@ -252,10 +252,9 @@
                                         {{ $transaction->effective_receipt_recipient_name ?: $transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}{{ $transaction->requires_reconciliation ? ' · Rekonsiliasi' : '' }}
                                     </p>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right align-middle">
+                                <td class="break-words px-3 py-2 text-right align-middle">
                                     <p class="text-sm font-semibold" style="color: var(--ui-fg)"><span
-                                            class="font-medium" style="color: var(--ui-fg-muted)">Total
-                                            Transaksi:</span> {{ $rupiah($transaction->sourceValue('gross_amount')) }}
+                                            class="font-medium" style="color: var(--ui-fg-muted)">Total:</span> {{ $rupiah($transaction->sourceValue('gross_amount')) }}
                                     </p>
                                     <p class="mt-1 text-[13px] font-semibold text-amber-700"><span
                                             class="font-medium">Pajak:</span>
