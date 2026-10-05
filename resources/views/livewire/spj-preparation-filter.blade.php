@@ -93,7 +93,7 @@
         </div>
     </div>
     <div class="overflow-x-auto">
-        <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-base">
+        <x-ui.table pagination="server">
             <colgroup>
                 <col class="w-[180px]">
                 <col class="w-[170px]">
@@ -184,7 +184,7 @@
                     </tr>
                 @endforelse
             </tbody>
-        </table>
+        </x-ui.table>
     </div>
     @if($transactions->hasPages())
         <x-ui.server-pagination :paginator="$transactions" noun="transaksi" />
