@@ -480,6 +480,21 @@
     padding: var(--profile-content-padding);
 }
 
+/* Form sections follow the form rhythm tokens so a long manual-entry form can
+   be tightened by the density profile without shrinking the data tables that
+   share the same page. */
+.ui-form-section-body > * + * {
+    margin-top: var(--profile-form-row-gap);
+}
+
+.ui-form-section-body :is(.ui-input, .ui-select, .ui-textarea) {
+    min-height: var(--profile-form-control-height);
+}
+
+.ui-form-section-body .ui-btn {
+    min-height: var(--profile-form-control-height);
+}
+
 @media(min-width:1024px) {
 
     .ui-section-card-header,

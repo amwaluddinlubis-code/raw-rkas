@@ -3,6 +3,12 @@
     --profile-control-radius: .625rem;
     --profile-section-gap: 1.5rem;
     --profile-control-height: 2.75rem;
+    /* Form rhythm. Kept separate from --profile-section-gap so a data-heavy
+       page can stay readable while a long form stays compact: panels consume
+       the form tokens, tables keep consuming --profile-table-row-y. */
+    --profile-form-gap: 1rem;
+    --profile-form-row-gap: .75rem;
+    --profile-form-control-height: 2.375rem;
     --profile-card-shadow: 0 1px 3px rgb(15 23 42 / .08);
     --profile-floating-shadow: 0 14px 34px rgb(15 23 42 / .12);
     --profile-border-width: 1px;
@@ -12,22 +18,50 @@
     --profile-sidebar-blur: 0px;
 }
 
+/* Dense is for operator forms: long checklists and manual-entry pages where the
+   row cost dominates. It only tightens control height and form rhythm, never
+   table row height, because data tables must stay readable when scanned.
+   Control height stays at or above 2.25rem so the 44px touch target combined
+   with horizontal padding is not lost. */
+/* Dense is for operator forms: long checklists and manual-entry pages where
+   every saved pixel of vertical scroll matters. It tightens form rhythm and
+   control height only. Table row height is deliberately left untouched so a
+   data table inside the same page stays readable when scanned. Control height
+   stays at 2.25rem, above the point where a 44px touch target is lost. */
+html[data-ui-density='dense'] {
+    --profile-section-gap: .875rem;
+    --profile-control-height: 2.25rem;
+    --profile-content-padding: 1rem;
+    --profile-form-gap: .625rem;
+    --profile-form-row-gap: .5rem;
+    --profile-form-control-height: 2.125rem;
+}
+
 html[data-ui-density='compact'] {
     --profile-section-gap: 1rem;
     --profile-control-height: 2.375rem;
     --profile-table-row-y: .625rem;
+    --profile-form-gap: .75rem;
+    --profile-form-row-gap: .625rem;
+    --profile-form-control-height: 2.25rem;
 }
 
 html[data-ui-density='comfortable'] {
     --profile-section-gap: 1.5rem;
     --profile-control-height: 2.75rem;
     --profile-table-row-y: .875rem;
+    --profile-form-gap: 1rem;
+    --profile-form-row-gap: .75rem;
+    --profile-form-control-height: 2.375rem;
 }
 
 html[data-ui-density='spacious'] {
     --profile-section-gap: 2rem;
     --profile-control-height: 3rem;
     --profile-table-row-y: 1rem;
+    --profile-form-gap: 1.25rem;
+    --profile-form-row-gap: 1rem;
+    --profile-form-control-height: 2.75rem;
 }
 
 html[data-ui-radius='small'] {

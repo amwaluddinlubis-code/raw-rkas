@@ -1845,3 +1845,45 @@ Verifikasi: `npm run density:qa` PASS, `npm run theme:qa` all pass,
 `vendor/bin/pint --test` passed, `git diff --check` bersih. Focused suite
 per-file 8 dari 9 hijau; `SpjReportLayoutTest` tersisa satu kegagalan yang
 pre-existing. Visual browser tetap RVR.
+
+## Density `dense` untuk form operator 2026-10-05
+
+Status: **PASS (static + build + test) / BROWSER RVR**.
+
+Tahap terakhir dari rencana keseragaman GUI: profil density baru `dense`
+untuk form panjang operator.
+
+Keputusan desain utama: `dense` **sengaja tidak menyentuh**
+`--profile-table-row-y`. Tabel data harus tetap terbaca saat discan; hanya
+ritme form yang diperketat. Kontrol turun ke 2,25rem pada profil ini karena
+di bawah angka itu target sentuh 44px bersama padding horizontal mulai hilang.
+
+Token baru `--profile-form-gap`, `--profile-form-row-gap`, dan
+`--profile-form-control-height` ditambahkan di `theme-profiles.css` sebagai
+pemilik density, lalu dikonsumsi `token-native-components.css` pada
+`.ui-form-section-body`: jarak antar baris memakai form-row-gap dan kontrol
+memakai form-control-height. Pemisahan ini penting: form panjang bisa rapat
+tanpa membuat tabel di halaman yang sama ikut mengecil, dan keduanya tetap
+berasal dari satu pemilik density.
+
+Nilai per density: dense .5rem / 2,125rem · compact .625rem / 2,25rem ·
+comfortable .75rem / 2,375rem · spacious 1rem / 2,75rem.
+
+Catatan: `data-ui-density` hanya diisi dari profil tema
+(`theme-init.blade.php`), tidak ada picker density di UI. Density `dense`
+karena itu belum dapat dipilih user sampai ada profil tema yang
+memakainya; sementara ini ia tersedia sebagai profil yang siap dipakai dan
+sudah terverifikasi di bundle build.
+
+Verifikasi: `npm run density:qa` PASS, `npm run theme:qa` all pass,
+`npm run build` sukses dan hasil build mengonfirmasi blok
+`html[data-ui-density=dense]` beserta Consumption token pada
+`.ui-form-section-body`. `php artisan view:cache` sukses,
+`vendor/bin/pint --test` passed, `git diff --check` bersih. Focused suite:
+GuiAudit09To13SourceReadinessTest, CriticalDocumentWorkflowTest,
+RkasBudgetUiTest, DocumentNumberingWorkflowTest hijau;
+SpjReportLayoutTest tetap satu kegagalan pre-existing pada assertion
+segmented control tab.
+
+Penghematan scroll dan breakpoint mobile tetap perlu pemeriksaan visual
+browser; status visual tetap RVR.
