@@ -100,7 +100,7 @@
         </div>
 
         <div class="hidden overflow-x-auto lg:block">
-            <table data-pagination="server" class="min-w-full divide-y divide-[var(--ui-line)] text-sm">
+            <x-ui.table pagination="server">
                 <thead class="bg-[var(--ui-surface-soft)]"><tr><th class="px-5 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Bukti / Tanggal</th><th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Perhatian</th><th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data ARKAS / BKU</th><th class="px-4 py-2 text-left text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data SPJ Operator</th><th class="px-4 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Nilai</th><th class="px-5 py-2 text-right text-xs font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Tindakan</th></tr></thead>
                 <tbody class="divide-y divide-[var(--ui-line)] bg-[var(--ui-surface-base)]">
                     @forelse($transactions as $transaction)
@@ -116,7 +116,7 @@
                         <tr><td colspan="6" class="px-5 py-6 text-center"><p class="font-bold text-emerald-700">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Antrean akan muncul otomatis bila sinkronisasi mendeteksi perubahan sumber.</p></td></tr>
                     @endforelse
                 </tbody>
-            </table>
+            </x-ui.table>
         </div>
 
         <div class="flex flex-col gap-2 border-t border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 text-[13px] sm:flex-row sm:items-center sm:justify-between">
