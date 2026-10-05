@@ -11,10 +11,52 @@ GUI-AUDIT-12 source readiness : PASS pada gate run #46 / e4ba5cf;
                                 HEAD sekarang sudah beberapa commit
                                 setelah gate itu sehingga perlu
                                 focused re-verification
-GUI-AUDIT-12 browser runtime  : RVR
+GUI-AUDIT-12 browser runtime  : FUNCTIONAL PASS (focused, 2026-10-05,
+                                Chrome 154, SDN 318/2026/BOS Reguler) /
+                                RVR tersisa untuk: modal Pratinjau Massal
+                                + batas 20 paket (butuh paket NUMBERED,
+                                data aktif 0 bernomor), eksekusi penomoran
+                                triwulan, eksekusi sinkronisasi, output
+                                biner PDF/Excel, dan kontras tema gelap
 GUI-AUDIT-13 source readiness : PASS pada gate run #46 / e4ba5cf (sama)
-GUI-AUDIT-13 mobile/tablet     : RVR
+GUI-AUDIT-13 mobile/tablet     : FUNCTIONAL PASS (focused, viewport
+                                375/768/1024, 2 temuan diperbaiki) /
+                                RVR tersisa untuk dokumen cetak folio
+                                pada layar kecil (scroll halaman, non-blocking:
+                                jalur cetak/PDF resmi via desktop)
 ```
+
+Sesi evidence 2026-10-05 (Playwright MCP, Chrome 154.0.8037.97,
+role ADMIN, 10208183 / 2026 / BOS Reguler, commit kerja
+`SpjPeriodicReportPrintService` + `document.blade.php` + 2 Blade mobile):
+
+- Desktop 1366×768 PASS tanpa console error/warning: `/`,
+  `/transaksi` (+pager hal. 2, filter triwulan), `/transaksi/93`,
+  `/spj?tab=paket`, `&package_id=48` (+tab Isian, modal Pratinjau
+  muat dalam viewport + iframe pratinjau-pdf, tombol Tutup ada),
+  `/spj/penomoran?quarter=1`, `/spj?tab=laporan` (empty state benar,
+  0 bernomor), `/spj?tab=monitoring`, `/penganggaran-rkas`,
+  `/pajak`, `/rekonsiliasi` (empty state), `/spj/rekap-triwulan`,
+  `/laporan-periode`, `/referensi`, `/siswa`, `/pegawai`,
+  `/pegawai/tinjau-identitas` (read-only), `/data-sinkron`,
+  `/pengaturan/arkas/mirror`, `/laporan-audit`,
+  `/pengaturan/database-aktif`, `/pengaturan/user`,
+  `/pengaturan/database-reset` (tombol Reset/Batal ada, TIDAK
+  dieksekusi), `/pengaturan/backup`, `/pengaturan/template-dokumen`,
+  `/pengaturan/format-penomoran`, `/spj/penomoran/koreksi`,
+  `/penganggaran-rkas/{saran,simulasi,audit-mirror,perbandingan-revisi}`,
+  `/pengaturan/dapodik`, `/pengaturan/impersonate`.
+- `/laporan-periode/triwulan/bku/cetak?periode_laporan=1` PASS di
+  1366 dan 1920: 110 baris, 0 uraian kosong, bunga bank/pajak bunga
+  bernominal, tepat 1 blok tanda tangan.
+- Tablet 768×1024: kartu mobile, tanpa overflow. Tablet 1024×768:
+  tabel desktop kembali, tanpa overflow (breakpoint `lg` benar).
+- Mobile 375×812: dashboard + siswa tanpa overflow; 2 temuan
+  diperbaiki dan terverifikasi (kartu transaksi `min-w-0`,
+  baris dokumen paket `flex-wrap`).
+- Reset database, penomoran massal, dan sinkronisasi TIDAK dieksekusi
+  (mutasi destruktif/berat); freshness WARNING (>24 jam) tercatat
+  informatif, bukan blocker.
 
 Evidence source-readiness terakhir: lihat angka gate di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
 

@@ -1,9 +1,36 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-05** (cleanup view orphan importer + dokumentasi stale; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-05** (browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
+
+## Browser QA focused + 2 perbaikan mobile (2026-10-05)
+
+Status: **FUNCTIONAL PASS (focused) / RVR tersisa tercatat**.
+
+Sesi Playwright MCP pertama (Chrome 154.0.8037.97, ADMIN,
+10208183 / 2026 / BOS Reguler): ±30 rute pada 1366×768 tanpa console
+error/warning (daftar rute + viewport di `GUI_RUNTIME_QA.md` §Status).
+Verifikasi visual BKU TW1 via DOM + screenshot: 110 baris, 0 uraian
+kosong, bunga bank/pajak bunga bernominal, tepat 1 blok tanda tangan.
+Modal Pratinjau Paket muat dalam viewport + iframe `pratinjau-pdf`;
+pager transaksi dan filter triwulan berfungsi.
+
+Dua temuan mobile diperbaiki + terverifikasi (sebelum/sesudah via
+pengukuran DOM):
+
+- kartu daftar transaksi 617px pada viewport 360px (teks `truncate`
+  nowrap sebagai min-content grid item) → `min-w-0` pada `article`
+  (`livewire/transactions-table.blade.php`); kartu 294px, overflow hilang;
+- baris Dokumen & Template paket 406px (grup 3 tombol `shrink-0`) →
+  `flex-wrap` (`spj/partials/package/documents.blade.php`); overflow hilang.
+
+Regression: `GuiAudit09To13SourceReadinessTest` 14 passed (1 test
+kontrak baru), Pint passed, `view:cache` sukses, `git diff --check`
+bersih. RVR tersisa (eksplisit, bukan PASS): modal Pratinjau Massal +
+batas 20 paket, eksekusi penomoran, eksekusi sinkronisasi/reset,
+output biner PDF/Excel, tema gelap, dan cetak folio pada layar kecil.
 >
 > **Cara membaca identifier gate.** Dokumentasi ini memakai dua scheme yang
 > berbeda dan keduanya pernah ditulis "CI #", sehingga mudah tertukar:

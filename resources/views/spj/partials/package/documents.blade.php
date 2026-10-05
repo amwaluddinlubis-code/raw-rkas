@@ -76,7 +76,8 @@
                 </header>
                 <div class="grid gap-px bg-[var(--ui-line)] md:grid-cols-2">
                     @foreach ($groupTemplates as $template)
-                        <div class="flex items-center justify-between gap-3 bg-[var(--ui-surface-base)] px-4 py-3">
+                        {{-- flex-wrap: grup tombol shrink-0 tidak boleh mendorong baris melewati viewport mobile. --}}
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-[var(--ui-surface-base)] px-4 py-3">
                             <div>
                                 <p class="font-semibold" style="color: var(--ui-fg)">{{ $template->name }}</p>
                                 <p class="mt-0.5 font-mono text-[11px]" style="color: var(--theme-content-accent)">

@@ -217,6 +217,20 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringContainsString('overflow-x-auto', $spj.$spjLivewire);
     }
 
+    public function test_mobile_cards_and_document_rows_can_shrink_below_min_content(): void
+    {
+        // Regresi temuan browser QA 2026-10-05 (viewport 360px): kartu
+        // transaksi 617px dan baris dokumen paket 406px mendorong viewport.
+        $cards = file_get_contents(resource_path('views/livewire/transactions-table.blade.php'));
+        $documents = file_get_contents(resource_path('views/spj/partials/package/documents.blade.php'));
+
+        $this->assertIsString($cards);
+        $this->assertIsString($documents);
+        $this->assertStringContainsString('transaction-card-', $cards);
+        $this->assertStringContainsString('min-w-0', $cards);
+        $this->assertStringContainsString('flex-wrap', $documents);
+    }
+
     public function test_wide_data_views_keep_horizontal_overflow_or_shared_table_contracts(): void
     {
         $syncedData = file_get_contents(resource_path('views/synced-data/index.blade.php'));

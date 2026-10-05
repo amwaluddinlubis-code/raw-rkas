@@ -135,7 +135,10 @@
             @if ($transactions->count() > 0)
                 @foreach ($transactions as $transaction)
                     @php($workStatus = $this->workStatusFor($transaction))
-                    <article class="border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-3"
+                    {{-- min-w-0: item grid boleh menyusut di bawah min-content
+                        (teks truncate nowrap) agar kartu tidak melebar
+                        melewati viewport mobile. --}}
+                    <article class="min-w-0 border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-3"
                         wire:key="transaction-card-{{ $transaction->id }}">
                         <div class="flex items-center justify-between gap-2">
                             <div class="flex min-w-0 items-center gap-2">
