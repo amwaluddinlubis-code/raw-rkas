@@ -125,12 +125,13 @@
             <div class="grid gap-2 md:grid-cols-2">
                 @foreach ([['tahunan', 'Tahunan', 'Pagu setahun per sumber dana (Operasi/Modal).'], ['tahap', 'Tahap', 'Alokasi Tahap 1 (TW 1+2) dan Tahap 2 (TW 3+4).'], ['triwulan', 'Triwulan', 'Alokasi TW 1 sampai TW 4.']] as [$reportScope, $reportLabel, $reportDesc])
                     <div
-                        class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                        <div class="min-w-0">
+                        class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 md:grid-cols-[minmax(0,1fr)_9.5rem_auto]">
+                        <div class="col-span-2 min-w-0 md:col-span-1">
                             <p class="text-sm font-bold text-[var(--ui-fg-strong)]">{{ $reportLabel }}</p>
                             <p class="text-xs text-[var(--ui-fg-muted)]">{{ $reportDesc }}</p>
                         </div>
-                        <div class="flex shrink-0 items-center gap-2">
+                        <div class="hidden md:block"></div>
+                        <div class="flex items-center justify-end gap-2">
                             <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                                 title="Pratinjau {{ $reportLabel }}" aria-label="Pratinjau {{ $reportLabel }}"
                                 @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => $reportScope], $reportQuery))))"><x-ui.icon name="preview"
@@ -147,21 +148,21 @@
                     </div>
                 @endforeach
                 <div
-                    class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                    <div class="min-w-0">
+                    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 md:grid-cols-[minmax(0,1fr)_9.5rem_auto]">
+                    <div class="col-span-2 min-w-0 md:col-span-1">
                         <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Triwulan per Bulan</p>
                         <p class="text-xs text-[var(--ui-fg-muted)]">Rincian tiga bulan dalam triwulan terpilih.</p>
                     </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <label class="sr-only" for="rkas-report-triwulan-bulanan">Triwulan laporan</label>
-                        <select id="rkas-report-triwulan-bulanan" x-ref="reportQuarter" required
-                            class="ui-select w-[9.5rem] shrink-0 px-3 py-2 text-sm">
-                            <option value="">Pilih triwulan</option>
-                            <option value="1">Triwulan I</option>
-                            <option value="2">Triwulan II</option>
-                            <option value="3">Triwulan III</option>
-                            <option value="4">Triwulan IV</option>
-                        </select>
+                    <label class="sr-only" for="rkas-report-triwulan-bulanan">Triwulan laporan</label>
+                    <select id="rkas-report-triwulan-bulanan" x-ref="reportQuarter" required
+                        class="ui-select w-full min-w-0 px-3 py-2 text-sm">
+                        <option value="">Pilih triwulan</option>
+                        <option value="1">Triwulan I</option>
+                        <option value="2">Triwulan II</option>
+                        <option value="3">Triwulan III</option>
+                        <option value="4">Triwulan IV</option>
+                    </select>
+                    <div class="flex items-center justify-end gap-2">
                         <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Pratinjau Triwulan per Bulan" aria-label="Pratinjau Triwulan per Bulan"
                             @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => 'triwulan-bulanan'], $reportQuery))), $refs.reportQuarter.value, 'triwulan')"><x-ui.icon
@@ -177,20 +178,20 @@
                     </div>
                 </div>
                 <div
-                    class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3">
-                    <div class="min-w-0">
+                    class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 md:grid-cols-[minmax(0,1fr)_9.5rem_auto]">
+                    <div class="col-span-2 min-w-0 md:col-span-1">
                         <p class="text-sm font-bold text-[var(--ui-fg-strong)]">Bulanan</p>
                         <p class="text-xs text-[var(--ui-fg-muted)]">Rincian per bulan terpilih.</p>
                     </div>
-                    <div class="flex shrink-0 items-center gap-2">
-                        <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
-                        <select id="rkas-report-bulan" x-ref="reportMonth" required
-                            class="ui-select w-[9.5rem] shrink-0 px-3 py-2 text-sm">
-                            <option value="">Pilih bulan…</option>
-                            @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
-                                <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
-                            @endforeach
-                        </select>
+                    <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
+                    <select id="rkas-report-bulan" x-ref="reportMonth" required
+                        class="ui-select w-full min-w-0 px-3 py-2 text-sm">
+                        <option value="">Pilih bulan…</option>
+                        @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
+                            <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
+                        @endforeach
+                    </select>
+                    <div class="flex items-center justify-end gap-2">
                         <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Pratinjau Bulanan" aria-label="Pratinjau Bulanan"
                             @click="openPreview(@js(route('rkas-reports.preview', array_merge(['scope' => 'bulanan'], $reportQuery))), $refs.reportMonth.value)"><x-ui.icon

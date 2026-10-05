@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
 use App\Services\ArkasMirrorBudgetService;
-use App\Services\ArkasMirrorFreshnessService;
-use App\Services\ArkasMirrorIntegrityService;
 use App\Services\ArkasMirrorResolver;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -35,8 +33,6 @@ class RkasBudgetController extends Controller
         if ($this->hasUsableMirrorBudget($db, $yearId, $fundSourceId)) {
             return [
                 ...app(ArkasMirrorBudgetService::class)->render($request, $yearId, $fundSourceId),
-                'syncFreshness' => app(ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
-                'integrity' => app(ArkasMirrorIntegrityService::class)->summarize($yearId, $fundSourceId),
             ];
         }
         $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
@@ -386,8 +382,6 @@ class RkasBudgetController extends Controller
 
         return [
             ...compact('hierarchyTree', 'treeTotals', 'filterContext', 'search', 'budget', 'spent', 'remaining', 'overBudget', 'underBudget', 'activityCount', 'scope', 'scopeValue', 'periodLabel', 'programFilter', 'subprogramFilter', 'activityFilter', 'contextLabel'),
-            'syncFreshness' => app(ArkasMirrorFreshnessService::class)->summarize((int) session('active_school_id'), $yearId),
-            'integrity' => app(ArkasMirrorIntegrityService::class)->summarize($yearId, $fundSourceId),
         ];
     }
 

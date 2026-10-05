@@ -1638,3 +1638,51 @@ dan cleanup di atas.
 Perubahan ini murni presentasi dan aksesibilitas. Tidak menyentuh perhitungan
 anggaran, filter, scope periode, sinkronisasi, atau kontrak SPJ. Visual
 browser dan mobile tetap RVR; `docs/MOBILE_VISUAL_QA_TODO.md` belum ditutup.
+
+## Perbaikan melebar blok Unduh Laporan RKAS + buang payload freshness usang 2026-10-05
+
+Status: **PASS (focused, static + build + test) / BROWSER RVR**.
+
+Dua perbaikan terpisah pada halaman `/penganggaran/rkas`.
+
+1. **Baris "Triwulan per Bulan" dan "Bulanan" melebar melewati card.** Select periode
+   memakai kelas `ui-select` yang didefinisikan `width: 100%` pada
+   `token-native-components.css:110`. Aturan itu unlayered sehingga menang atas
+   utility Tailwind yang ber-layer, jadi efforts sebelumnya给 select `w-[9.5rem]`
+   tidak berlaku dan select tetap memakan seluruh sisa ruang, mendorong trio
+   tombol keluar tepi kanan card. Setiap baris kini memakai grid eksplisit
+   `grid-cols-[minmax(0,1fr)_auto]` pada mobile dan
+   `md:grid-cols-[minmax(0,1fr)_9.5rem_auto]` pada desktop: label fleksibel,
+   select 9,5rem pas, trio tombol auto. Baris tanpa select mendapat placeholder
+   `hidden md:block` sehingga kelima baris saling sejajar. Di mobile select
+   turun ke baris penuh sendiri.
+2. **Payload freshness dan integrity yang tidak terpakai dibuang.**
+   `RkasBudgetController::renderData` mengirim `syncFreshness` dan `integrity`
+   ke view pada dua jalur return, tetapi keduanya tidak pernah dirender di
+   halaman RKAS; header freshness tetap hidup di
+   `livewire/arkas-health-banner.blade.php` untuk dashboard. Atas instruksi
+   user, payload usang dibuang beserta import
+   `ArkasMirrorFreshnessService` dan `ArkasMirrorIntegrityService` dari
+   controller. Kedua service tidak dihapus karena masih dipakai banner dashboard
+   dan，覆盖 oleh test RkasReportTest serta ArkasMirrorIntegrityTest.
+   Assertion stale `Kesegaran data ARKAS` pada
+   `RkasBudgetUiTest::test_rkas_workspace_exposes_revision_comparison_freshness_and_report_package`
+   ikut dibuang dan method di-rename menjadi
+   `test_rkas_workspace_exposes_revision_comparison_and_report_package`.
+
+### Verifikasi
+
+`vendor/bin/pint --test` passed, `git diff --check` bersih,
+`php artisan view:cache` sukses, `npm run build` sukses, `npm run theme:qa`
+all pass, dan rule grid terkonfirmasi hadir pada bundle CSS hasil build sebagai
+`grid-template-columns:minmax(0,1fr) 9.5rem auto`. Focused suite: 56 passed /
+267 assertions pada RkasBudgetUiTest, RkasHierarchyTest,
+RkasRevisionModesTest, RkasPlanningSuggestionTest, RkasBudgetFilterTest,
+RkasReportTest, ArkasMirrorIntegrityTest; ditambah 19 passed / 157 assertions
+pada RkasScopedRealizationTest, GuiAudit09To13SourceReadinessTest,
+ArkasMirrorHealthTest, ArkasMirrorHealthUiTest. `RkasBudgetUiTest` kini hijau
+penuh untuk pertama kalinya pada HEAD ini.
+
+Tidak ada perubahan perhitungan anggaran, filter, scope periode, atau kontrak
+SPJ. Lebar card dan breakpoint mobile tetap perlu pemeriksaan visual browser;
+status mobile tetap RVR.

@@ -63,12 +63,11 @@ class RkasBudgetUiTest extends TestCase
         $this->assertStringNotContainsString('<style>', $view);
     }
 
-    public function test_rkas_workspace_exposes_revision_comparison_freshness_and_report_package(): void
+    public function test_rkas_workspace_exposes_revision_comparison_and_report_package(): void
     {
         $view = file_get_contents(resource_path('views/livewire/rkas-budget-workspace.blade.php'));
 
         $this->assertStringContainsString("route('rkas-budget.revisions.compare'", $view);
-        $this->assertStringContainsString('Kesegaran data ARKAS', $view);
         $this->assertStringContainsString("route('rkas-reports.package')", $view);
         $this->assertStringContainsString('name="scopes[]"', $view);
         $this->assertStringContainsString('name="formats[]"', $view);
