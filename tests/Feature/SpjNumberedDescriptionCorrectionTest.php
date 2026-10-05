@@ -38,7 +38,8 @@ class SpjNumberedDescriptionCorrectionTest extends TestCase
 
         $this->put(route('spj.update', $package->id), [
             'payment_description' => 'Uraian koreksi',
-        ])->assertSessionHas('success');
+        ])->assertSessionHas('success')
+            ->assertRedirect(route('spj.index', ['tab' => 'paket', 'package_id' => $package->id, 'package_tab' => 'isian']));
 
         $package->refresh();
         $this->assertSame('NUMBERED', $package->status);

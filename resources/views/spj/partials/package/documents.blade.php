@@ -67,7 +67,7 @@
             @endphp
             @continue($groupTemplates->isEmpty())
             <section class="border-t border-[var(--ui-line)]" aria-label="{{ $title }}">
-                <header class="flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 px-4 py-3">
+                <header class="flex flex-wrap items-center justify-between gap-3 bg-[var(--ui-surface-soft)] px-4 py-3">
                     <div>
                         <h3 class="font-semibold" style="color: var(--ui-fg)">{{ $title }}</h3>
                         <p class="mt-0.5 text-xs" style="color: var(--ui-fg-muted)">{{ $description }}</p>

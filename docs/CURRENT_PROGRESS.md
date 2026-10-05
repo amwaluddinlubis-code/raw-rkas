@@ -5,6 +5,27 @@ Terakhir diperbarui: **2026-09-29** (SPJ report bulk preview, `raw-rkas`)
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Batch UI/UX workspace Paket SPJ (2026-10-04)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+- Sticky action bar Isian Manual (`x-ui.sticky-actions` untuk Prev/Simpan/
+  Next) agar aksi tetap terlihat pada form panjang.
+- Simpan Isian kembali ke tab Isian (`backToIsian` di
+  `UpdateSpjPackageDetailsUseCase`; sebelumnya `back()` me-reset ke
+  Rincian). Error/validasi tetap `back()` agar input tak hilang.
+- Migrasi teks `slate-*` → token `--ui-fg*` di `items-readonly`,
+  `numbering`, `summary`, `documents` (workspace paket). Warna semantik
+  amber/emerald/rose/indigo dibiarkan untuk pass desain khusus.
+- Audit: tombol icon-only tanpa label tidak ditemukan di view SPJ;
+  panel paket tanpa tabel mentah (tanpa overflow issue baru). Viewport
+  runtime tetap RVR.
+
+Evidence: `SpjNumberedDescriptionCorrectionTest` 6 passed (asersi redirect
+`package_tab=isian` baru), `SpjMainTabsRenderingTest` 9 passed,
+`CriticalDocumentWorkflowTest` 16 passed (jalur error tak berubah),
+Pint passed, `view:cache` sukses, `git diff --check` bersih.
+
 ## Suggest Referensi pembayaran per metode (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.

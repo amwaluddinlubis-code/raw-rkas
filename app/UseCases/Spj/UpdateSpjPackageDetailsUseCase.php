@@ -81,7 +81,19 @@ class UpdateSpjPackageDetailsUseCase
             'Isian manual paket '.$package->transaction->sourceValue('no_bukti').' diperbarui tanpa mengubah pajak transaksi.',
         );
 
-        return back()->with('success', 'Isian Paket SPJ berhasil disimpan. Nilai PPN, PPh, dan SSPD tetap mengikuti transaksi/BKU.');
+        return $this->backToIsian($package, 'success', 'Isian Paket SPJ berhasil disimpan. Nilai PPN, PPh, dan SSPD tetap mengikuti transaksi/BKU.');
+    }
+
+    /**
+     * Kembali ke tab Isian Manual setelah simpan agar operator tidak
+     * terlempar ke tab Rincian (back() kehilangan package_tab yang hanya
+     * dikelola client-side).
+     */
+    private function backToIsian(SpjPackage $package, string $key, string $message): RedirectResponse
+    {
+        return redirect()
+            ->route('spj.index', ['tab' => 'paket', 'package_id' => $package->id, 'package_tab' => 'isian'])
+            ->with($key, $message);
     }
 
     /**
@@ -107,7 +119,7 @@ class UpdateSpjPackageDetailsUseCase
             'Uraian pembayaran paket '.$package->transaction->sourceValue('no_bukti').' dikoreksi pada status NUMBERED tanpa mengubah nomor, kategori, pembayaran, atau detail lain.'
         );
 
-        return back()->with('success', 'Uraian pembayaran berhasil diperbarui. Nomor, kategori, dan data lain tidak berubah.');
+        return $this->backToIsian($package, 'success', 'Uraian pembayaran berhasil diperbarui. Nomor, kategori, dan data lain tidak berubah.');
     }
 
     private function clearIncompatibleGoodsDetails(Transaction $transaction, string $category): void

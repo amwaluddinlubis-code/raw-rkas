@@ -179,7 +179,7 @@
 @include('spj.partials.package.categories.konsumsi')
 @include('spj.partials.package.categories.pemeliharaan')
                                 @include('spj.partials.package.categories.jasa-lainnya')
-                                <div class="grid grid-cols-1 gap-2 pt-1 sm:grid-cols-3">
+                                <x-ui.sticky-actions class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                                     @if($previousPackageId ?? null)
                                         <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $previousPackageId, 'package_tab' => 'isian'])" title="Buka paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center">← Prev</x-ui.button>
                                     @else
@@ -191,7 +191,7 @@
                                     @else
                                         <x-ui.button variant="secondary" disabled title="Tidak ada paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">Next →</x-ui.button>
                                     @endif
-                                </div>
+                                </x-ui.sticky-actions>
                     </div>
                     </fieldset>
                             </form>

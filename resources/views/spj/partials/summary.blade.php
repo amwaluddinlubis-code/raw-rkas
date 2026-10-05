@@ -1,5 +1,5 @@
 <div class="spj-work-summary grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-    <x-stat-item label="Transaksi siap" :value="number_format($readyTransactions ?? 0, 0, ',', '.')" hint="Siap diproses menjadi paket" value-class="text-slate-800" icon="inbox" icon-class="text-slate-800" />
+    <x-stat-item label="Transaksi siap" :value="number_format($readyTransactions ?? 0, 0, ',', '.')" hint="Siap diproses menjadi paket" value-class="text-[var(--ui-fg-strong)]" icon="inbox" icon-class="text-[var(--ui-fg-strong)]" />
     <x-stat-item label="Menunggu nomor" :value="number_format($packagesAwaitingNumber, 0, ',', '.')" hint="Paket yang belum bernomor" value-class="text-amber-700" icon="clock" icon-class="text-amber-700" />
     <x-stat-item label="Belum dibuat paket" :value="number_format($transactionsWithoutPackage, 0, ',', '.')" hint="Transaksi yang perlu diproses" value-class="text-indigo-700" icon="document" icon-class="text-indigo-700" />
     <x-stat-item label="Sudah bernomor" :value="number_format($numberedPackages ?? 0, 0, ',', '.')" :hint="$spjProgress.'% paket'" value-class="text-emerald-700" icon="check" icon-class="text-emerald-700" />

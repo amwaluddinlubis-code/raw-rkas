@@ -1,18 +1,18 @@
 <div data-spj-refresh="numbering">
-    <h2 class="text-base font-bold text-slate-800">Penomoran Dokumen</h2>
-    <p class="mt-1 text-xs text-slate-500">Nomor mengikuti format aktif dan tanggal peristiwa. Nomor yang sudah
+    <h2 class="text-base font-bold text-[var(--ui-fg-strong)]">Penomoran Dokumen</h2>
+    <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Nomor mengikuti format aktif dan tanggal peristiwa. Nomor yang sudah
         diterbitkan tidak akan ditimpa.</p>
     <div class="mt-3 grid gap-3 sm:grid-cols-3">
         <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-            <p class="text-[11px] font-bold uppercase text-slate-500">Kategori</p>
-            <p class="mt-1 font-bold text-slate-800">{{ $spjTypeLabel($packageCategory) }}</p>
+            <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Kategori</p>
+            <p class="mt-1 font-bold text-[var(--ui-fg-strong)]">{{ $spjTypeLabel($packageCategory) }}</p>
         </div>
         <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-            <p class="text-[11px] font-bold uppercase text-slate-500">Tanggal sumber</p>
-            <p class="mt-1 font-bold text-slate-800">{{ $transaction->transaction_date?->translatedFormat('d F Y') }}</p>
+            <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Tanggal sumber</p>
+            <p class="mt-1 font-bold text-[var(--ui-fg-strong)]">{{ $transaction->transaction_date?->translatedFormat('d F Y') }}</p>
         </div>
         <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-            <p class="text-[11px] font-bold uppercase text-slate-500">Cakupan nomor</p>
+            <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Cakupan nomor</p>
             <p class="mt-1 font-bold text-indigo-700">
                 {{ $isHonorPackage ? 'SPJ utama · dipakai pada kuitansi honor' : ($isGoodsPackage ? 'SPJ, Pesanan, BAP, BAST' : 'SPJ dan dokumen kategori') }}
             </p>
@@ -45,11 +45,11 @@
     @else
         <div
             class="mt-4 rounded-lg border border-dashed border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] p-6 text-center">
-            <p class="text-base font-medium text-slate-700">Belum bernomor</p>
-            <p class="mt-1 text-xs text-slate-500">Periksa kembali data sumber dan Data Umum sebelum menerbitkan nomor.
+            <p class="text-base font-medium text-[var(--ui-fg)]">Belum bernomor</p>
+            <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Periksa kembali data sumber dan Data Umum sebelum menerbitkan nomor.
             </p>
             @include('spj.partials.package.numbering-preflight-modal')
-            <p class="mt-2 text-xs text-slate-500">Nomor SPJ mengikuti tanggal transaksi dan urutan BKU. Nomor pesanan,
+            <p class="mt-2 text-xs text-[var(--ui-fg-muted)]">Nomor SPJ mengikuti tanggal transaksi dan urutan BKU. Nomor pesanan,
                 BAP, dan BAST diterbitkan terpisah menurut tanggal dokumennya.</p>
         </div>
     @endif
@@ -59,7 +59,7 @@
                 <div class="p-3">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div><b>{{ $document->document_type }}</b>
-                            <p class="font-mono text-xs text-slate-600">{{ $document->document_number }}</p>
+                            <p class="font-mono text-xs text-[var(--ui-fg)]">{{ $document->document_number }}</p>
                         </div><span
                             class="rounded-full bg-[var(--ui-surface-muted)] px-2 py-1 text-xs font-bold">{{ $document->status }}
                             @if ($document->is_late_entry)
@@ -102,7 +102,7 @@
                                 <button
                                     class="rounded bg-violet-600 px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-violet-700">Terbitkan
                                     nomor pengganti</button>
-                                <p class="mt-1 text-xs text-slate-500">Nomor lama tetap tersimpan dalam riwayat dan
+                                <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Nomor lama tetap tersimpan dalam riwayat dan
                                     tidak digunakan kembali.</p>
                             </form>
                         @endif
@@ -116,8 +116,8 @@
             <div class="grid gap-4 {{ $isGoodsPackage ? 'lg:grid-cols-2' : '' }}">
                 @if ($isGoodsPackage)
                     <section class="rounded-lg border border-[var(--ui-line)] p-4">
-                        <h3 class="font-bold text-slate-800">Pembayaran bertahap</h3>
-                        <p class="mt-1 text-xs text-slate-500">Total bruto tidak boleh melampaui nilai transaksi.</p>
+                        <h3 class="font-bold text-[var(--ui-fg-strong)]">Pembayaran bertahap</h3>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Total bruto tidak boleh melampaui nilai transaksi.</p>
                         <div class="mt-3 space-y-2">
                             @forelse($transaction->payments as $payment)
                                 <div class="flex justify-between text-sm">
@@ -127,7 +127,7 @@
                                         @endif
                                     </span>
                                     <b>{{ $rupiah($payment->gross_amount) }}</b>
-                            </div>@empty<p class="text-xs text-slate-400">Belum ada pembayaran.</p>
+                            </div>@empty<p class="text-xs text-[var(--ui-fg-muted)]">Belum ada pembayaran.</p>
                             @endforelse
                         </div>
                         <form method="POST" action="{{ route('spj.payments.store', $transaction->id) }}"
@@ -146,8 +146,8 @@
                         </form>
                     </section>
                     <section class="rounded-lg border border-[var(--ui-line)] p-4">
-                        <h3 class="font-bold text-slate-800">Penerimaan barang bertahap</h3>
-                        <p class="mt-1 text-xs text-slate-500">Jumlah kumulatif tidak boleh melebihi jumlah pesanan.</p>
+                        <h3 class="font-bold text-[var(--ui-fg-strong)]">Penerimaan barang bertahap</h3>
+                        <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Jumlah kumulatif tidak boleh melebihi jumlah pesanan.</p>
                         <div class="mt-3 space-y-2">
                             @forelse($transaction->goodsReceipts as $receipt)
                                 <div class="flex items-center justify-between gap-2 text-sm">
@@ -155,7 +155,7 @@
                                         {{ $receipt->receipt_date?->translatedFormat('d F Y') }} @if ($receipt->is_late_entry)
                                             <b class="text-amber-700">Susulan</b>
                                             @endif@if (filled($receipt->order_date) || filled($receipt->bap_date) || filled($receipt->bast_date))
-                                                <span class="text-slate-500"> · Pesanan:
+                                                <span class="text-[var(--ui-fg-muted)]"> · Pesanan:
                                                     {{ $receipt->order_date?->translatedFormat('d/m/Y') ?: '—' }} · BAP:
                                                     {{ $receipt->bap_date?->translatedFormat('d/m/Y') ?: '—' }} · BAST:
                                                     {{ $receipt->bast_date?->translatedFormat('d/m/Y') ?: '—' }}</span>
@@ -170,12 +170,12 @@
                                         </form>
                                     @endif
                                 </div>
-                            @empty<p class="text-xs text-slate-400">Belum ada penerimaan bertahap.</p>
+                            @empty<p class="text-xs text-[var(--ui-fg-muted)]">Belum ada penerimaan bertahap.</p>
                             @endforelse
                         </div>
                         @php($receivableItems = app(\App\Services\TransactionSettlementService::class)->receivableItems($transaction))
                         @if ($receivableItems === [])
-                            <p class="mt-3 text-xs text-slate-500">Semua barang sudah diterima penuh — tidak ada sisa untuk
+                            <p class="mt-3 text-xs text-[var(--ui-fg-muted)]">Semua barang sudah diterima penuh — tidak ada sisa untuk
                                 tahap baru.</p>
                         @else
                             <form method="POST" action="{{ route('spj.receipts.store', $transaction->id) }}"
@@ -209,7 +209,7 @@
                                             name="items[0][quantity_received]" data-receipt-qty required
                                             placeholder="Contoh: 2"
                                             class="h-10 w-full rounded-md border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 text-sm text-[var(--ui-fg)]">
-                                        <p data-receipt-hint class="text-xs text-slate-500"></p>
+                                        <p data-receipt-hint class="text-xs text-[var(--ui-fg-muted)]"></p>
                                     </x-ui.field>
                                     <x-ui.field label="Nilai penerimaan"
                                         hint="Otomatis dari harga satuan sumber.">
@@ -222,7 +222,7 @@
                                     </x-ui.field>
                                 </div>
                                 <fieldset class="rounded-lg border border-[var(--ui-line)] p-3">
-                                    <legend class="px-1 text-xs font-bold text-slate-600">Tanggal surat tahap
+                                    <legend class="px-1 text-xs font-bold text-[var(--ui-fg)]">Tanggal surat tahap
                                     </legend>
                                     <div class="grid gap-3 sm:grid-cols-2">
                                         <x-ui.field label="Tgl pesanan tahap" for="receipt-order-date">
@@ -255,22 +255,22 @@
                         @endif
                         @if ($transaction->goodsReceipts->where('status', '!==', 'CANCELLED')->count() > 1)
                             <div class="mt-3 rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-                                <p class="text-xs font-bold text-slate-700">Nomor surat per tahap</p>
-                                <p class="mt-0.5 text-[11px] text-slate-500">Kuitansi tetap satu (scope MAIN). Pesanan,
+                                <p class="text-xs font-bold text-[var(--ui-fg)]">Nomor surat per tahap</p>
+                                <p class="mt-0.5 text-[11px] text-[var(--ui-fg-muted)]">Kuitansi tetap satu (scope MAIN). Pesanan,
                                     BAP, dan BAST diterbitkan per tahap penerimaan.</p>
                                 <div class="mt-2 space-y-2">
                                     @foreach ($transaction->goodsReceipts->where('status', '!==', 'CANCELLED')->sortBy('receipt_sequence') as $receipt)
                                         @php($tahapScope = 'TAHAP:' . $receipt->receipt_sequence)
                                         <div
                                             class="rounded-md border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-2">
-                                            <p class="text-xs font-bold text-slate-700">Tahap
+                                            <p class="text-xs font-bold text-[var(--ui-fg)]">Tahap
                                                 {{ $receipt->receipt_sequence }} ·
                                                 {{ $receipt->receipt_date?->translatedFormat('d F Y') }}</p>
                                             <div class="mt-1 grid gap-2 sm:grid-cols-3">
                                                 @foreach (['PESANAN' => $receipt->order_date, 'BAP' => $receipt->bap_date, 'BAST' => $receipt->bast_date] as $docType => $letterDate)
                                                     @php($tahapDoc = $package->documents->first(fn($doc) => $doc->document_type === $docType && $doc->scope_key === $tahapScope && $doc->status !== 'CANCELLED'))
                                                     <div class="text-xs">
-                                                        <p class="font-bold text-slate-600">{{ $docType }}</p>
+                                                        <p class="font-bold text-[var(--ui-fg)]">{{ $docType }}</p>
                                                         @if ($tahapDoc?->document_number)
                                                             <p class="mt-0.5 font-mono font-bold text-emerald-700">
                                                                 {{ $tahapDoc->document_number }}</p>
@@ -288,7 +288,7 @@
                                                                     class="shrink-0 rounded bg-indigo-600 px-2 py-1 text-xs font-bold text-white">Nomori</button>
                                                             </form>
                                                         @else
-                                                            <p class="mt-0.5 text-slate-400">Belum bernomor</p>
+                                                            <p class="mt-0.5 text-[var(--ui-fg-muted)]">Belum bernomor</p>
                                                         @endif
                                                     </div>
                                                 @endforeach
