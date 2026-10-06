@@ -5,13 +5,17 @@
     'options' => [15, 25, 50, 100],
     'allowAll' => false,
     'label' => 'Baris',
+    'id' => null,
 ])
 
 @php($selected = (string) ($current ?? request($name, '15')))
+@php($selectId = $id ?: 'page-per-page-'.$name)
 
 <div data-page-table-per-page {{ $attributes->class(['ui-toolbar-group flex items-center gap-2 text-xs']) }}>
-    <label class="font-semibold" style="color: var(--ui-fg-muted)">{{ $label }}</label>
+    <label for="{{ $selectId }}" class="font-semibold" style="color: var(--ui-fg-muted)">{{ $label }}</label>
     <select
+        id="{{ $selectId }}"
+        name="{{ $name }}"
         aria-label="{{ $label }} per halaman"
         onchange="try{const u=new window.URL(window.location.href);u.searchParams.set('{{ $name }}',this.value);u.searchParams.delete('page');window.location.href=u.toString()}catch(e){window.location.reload()}"
         class="ui-select !min-h-9 !w-auto !py-1.5 !text-xs"

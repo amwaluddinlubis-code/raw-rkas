@@ -361,6 +361,25 @@
     background: color-mix(in srgb, var(--text-comfort-on-dark, #e8edf4) 8%, transparent);
 }
 
+/* Di layar sempit dekorasi meluber 43px melewati kanan header. Karena parent
+   memakai overflow:hidden, hal ini tidak merusak scroll, tetapi dekorasi
+   tetap tampil di luar area header yang terlihat. Kembalikan ke dalam bound. */
+@media(max-width:639px) {
+    .page-header-decoration-top {
+        right: -1rem;
+        top: -3.5rem;
+        width: 10rem;
+        height: 10rem;
+    }
+
+    .page-header-decoration-bottom {
+        left: 24%;
+        bottom: -3.5rem;
+        width: 9rem;
+        height: 9rem;
+    }
+}
+
 .page-header-decoration-bottom {
     left: 33%;
     bottom: -6rem;

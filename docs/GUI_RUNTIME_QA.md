@@ -8,9 +8,9 @@ Dokumen ini adalah checklist runtime untuk menutup **GUI-AUDIT-12** dan **GUI-AU
 
 ```text
 GUI-AUDIT-12 source readiness : PASS pada gate run #46 / e4ba5cf;
-                                HEAD sekarang sudah beberapa commit
-                                setelah gate itu sehingga perlu
-                                focused re-verification
+                                + focused re-verification 2026-10-05
+                                (SPJ Critical 335/2.494, GUI readiness
+                                20/154, build, theme:qa, density:qa)
 GUI-AUDIT-12 browser runtime  : FUNCTIONAL PASS (focused, 2026-10-05,
                                 Chrome 154, SDN 318/2026/BOS Reguler) /
                                 RVR tersisa untuk: modal Pratinjau Massal
@@ -20,7 +20,8 @@ GUI-AUDIT-12 browser runtime  : FUNCTIONAL PASS (focused, 2026-10-05,
                                 biner PDF/Excel, dan kontras tema gelap
 GUI-AUDIT-13 source readiness : PASS pada gate run #46 / e4ba5cf (sama)
 GUI-AUDIT-13 mobile/tablet     : FUNCTIONAL PASS (focused, viewport
-                                375/768/1024, 2 temuan diperbaiki) /
+                                375/768/1024; 4 temuan diperbaiki
+                                termasuk overflow topbar 375px) /
                                 RVR tersisa untuk dokumen cetak folio
                                 pada layar kecil (scroll halaman, non-blocking:
                                 jalur cetak/PDF resmi via desktop)
@@ -59,6 +60,163 @@ role ADMIN, 10208183 / 2026 / BOS Reguler, commit kerja
   informatif, bukan blocker.
 
 Evidence source-readiness terakhir: lihat angka gate di `P0_VERIFICATION_KIT.md` §1 (tidak disalin ke sini agar tidak divergen).
+
+## Sesi QA audit GUI 2026-10-05 (kedua): seragam halaman dan kompatibilitas form
+
+Playwright MCP, Chrome, role ADMIN, 10208183 / 2026 / BOS Reguler. Lintas:
+`/masuk`, `/pilih-sekolah`, `/pilih-tahun`, `/`, `/transaksi`, `/transaksi/93`,
+`/spj?tab=paket` (+ `package_id=48` + `package_tab=isian`), `/penganggaran-rkas`,
+`/pajak`, `/spj/penomoran`, `/pengaturan/template-dokumen`, `/rekonsiliasi`,
+`/laporan-periode` (+ `?periode_laporan=1`), `/laporan-periode/bulan/bku/cetak`.
+Viewport 1366x768 dan 375x812; tema `light` dan `arkas_dark_v2`.
+
+**0 console error** di seluruh rute yang diuji (dicek via `browser_console_messages`).
+
+### Yang sudah seragam (tidak perlu tindakan)
+
+- Breadcrumb global konsisten: manusiawi, bordered, sticky di bawah topbar,
+  offset mengikuti tinggi topbar nyata (topbar 61px, breadcrumb mulai y=93).
+- Palette header/stats konsisten antar halaman (Light Modern): surface
+  putih/`--ui-surface-soft`, border `--ui-line`, aksen teal
+  `--theme-content-accent` = `#134e4a`.
+- Kontras token inti **LULUS AA** pada kedua tema:
+
+  ```text
+  pasangan                                    light    arkas_dark_v2
+  --ui-fg on --ui-surface-base               10.35     15.85
+  --ui-fg-muted on --ui-surface-base          4.76      7.41
+  --theme-action-fg on --theme-action-bg      7.17      7.15
+  --theme-content-accent on --ui-surface-base 9.48      8.37
+  ```
+
+- Density token benar-benar terpakai: `--profile-table-row-y` untuk padding sel,
+  `--profile-control-height` untuk tinggi kontrol (44px realized). Nol
+  hardcoded padding tabel di halaman yang diuji.
+- Tab datar sesuai kontrak: radius 0, tinggi 52px seragam, indikator accent.
+- Tap target: **nol** elemen interaktif di bawah 32px tinggi / 24px lebar pada
+  1366 dan pada `/spj?tab=paket`.
+- Focus ring: 26 elemen focusable di `/spj/penomoran`, **nol** tanpa outline.
+- `/laporan-periode/bulan/bku/cetak?periode_laporan=1` PASS: 110 baris, 0 uraian
+  kosong, bunga bank + pajak bunga bernominal, tepat 1 blok tanda tangan,
+  disclaimer sumber data terbaca.
+
+### Temuan dan perbaikannya (SEMUA SUDAH DIPERBAIKAN)
+
+Ketiga temuan di bawah ditemukan pada sesi ini, diperbaiki, lalu diverifikasi
+ulang di browser. Guard source-level ditambahkan untuk masing-masing.
+
+**T1 (tinggi) — SUDAH DIPERBAIKAN: tombol "Ke atas" menutupi kontrol.**
+`#app-scroll-to-top` sebelumnya memakai `fixed bottom-5 left-1/2 z-40` dengan
+label teks sehingga area 93x44 px menutupi baris aksi tengah bawah. Bukti
+sebelum perbaikan di `/laporan-periode?periode_laporan=1` (1366x768):
+
+```text
+tombol   : x=629 y=704 w=93 h=44
+terkunci : link "Cetak" (baris Buku Kas Umum)
+overlap  : 2828 px2 dari 44px target sentuh
+elementFromPoint() pada titik tengah tombol -> SPAN "Ke atas", bukan link
+```
+
+Link `Cetak` masih ter-*reachable* lewat klik terarah, tetapi klik mouse pada
+area tombunya tidak mengenai link. Ini berdampak negatif nyata bagi operator.
+
+Perbaikan: tombol dipindahkan ke pojok kanan, ditumpuk di atas tombol asisten
+(`fixed bottom-[5.5rem] right-5`), dan diubah menjadi ikon bulat 48×48 tanpa
+label teks. Bukti sesudah perbaikan pada halaman yang sama:
+
+```text
+tombol      : x=1283 y=632 w=48 h=48 (grid, place-items-center)
+kontrol yang tertutup: 0
+elementFromPoint di area tombol: tidak ada kontrol ter blokir
+```
+
+Area tertutup berkurang dari 2828 px2 menjadi 0, dan tombol tidak lagi berada
+di kolom aksi. Guard: `test_scroll_to_top_button_does_not_overlay_the_center_action_column`.
+
+**T2 (sedang) — SUDAH DIPERBAIKAN: asosiasi label ke kontrol.**
+Di `/spj?tab=paket&package_id=48&package_tab=isian` seluruh kontrol terukur
+sebelum perbaikan:
+
+```text
+total kontrol (tanpa radio/hidden)      : 17
+label dengan for= yang cocok              : 0
+label membungkus kontrol (implicit)       : 0
+aria-label / aria-labelledby              : 0
+klik label -> fokus pindah ke kontrol    : tidak
+```
+
+Artinya 17 field (Kategori SPJ, Uraian pembayaran, Metode pembayaran, Referensi
+pembayaran, Penyedia, NPWP, Tanggal-tanggal, dan seterusnya) **tidak punya
+asosiasi label dengan kontrol**. Label terlihat secara visual, tetapi klik
+label tidak memfokuskan input dan screen reader tidak membacakan kontrol
+berikutnya. Audit repo awal: **45 `<label>` tanpa `for=` pada 18 file**.
+
+Perbaikan dilakukan dua arah:
+
+1. **Field eksplisit** di `spj/partials/package/common.blade.php` — 7 field
+   kini memakai id berawalan `spj-common-{transactionId}-` dan `label for=`
+   yang cocok (payment-description, payment-method, payment-reference,
+   vendor-name, vendor-owner, vendor-npwp, receipt-recipient).
+2. **Perbaikan generik pada primitive `x-ui.field`** — bila pemanggil tidak
+   mengoper `:for`, primitive membuat id sendiri dan menaruh marker
+   `data-ui-field-bind-id`; `bindGeneratedFieldIds()` di `resources/js/app.js`
+   mengikat id itu ke kontrol submit yang benar. Detail penting: widget tanggal
+   Indonesia membuat input cermin (type=text, tanpa `name`) lebih dulu, jadi
+   binder memilih kontrol **ber-`name`**, bukan "yang pertama" — jika tidak,
+   id terikat ke input mati dan tanggal tetap terputus.
+3. **Empat label yang benar-benar terputus** (tidak membungkus kontrol)
+   diperbaiki langsung: `spj/index.blade.php` (Kategori SPJ),
+   `components/page-table-per-page.blade.php` (selector baris per halaman),
+   `livewire/school-selector.blade.php`, `livewire/database-school-list.blade.php`.
+
+Bukti sesudah perbaikan pada halaman yang sama:
+
+```text
+total kontrol : 17
+tanpa asosiasi: 0
+klik label memfokuskan kontrol: 6/6 kontrol yang diuji (uraian, metode,
+  referensi, penerima utama, tanggal pesanan, kategori SPJ)
+```
+
+Sweep 14 rute representative (`/`, `/transaksi`, `/penganggaran-rkas`,
+`/pajak`, `/rekonsiliasi`, `/laporan-periode`, `/pegawai`,
+`/pegawai/tambah/baru`, `/siswa`, `/referensi`,
+`/pengaturan/template-dokumen`, `/pengaturan/format-penomoran`,
+`/spj/penomoran`, `/pengaturan/database-aktif`): **0 kontrol tanpa asosiasi
+label di semua rute**. Guard:
+`test_every_visible_label_is_associated_with_a_control`,
+`test_package_form_fields_expose_ids_matching_their_labels`,
+`test_ui_field_component_can_bind_generated_label_to_its_control`.
+
+**T3 (rendah) — SUDAH DIPERBAIKAN: dekorasi header meluber pada mobile.**
+`.page-header-decoration-top` sebelumnya memakai `right: -4rem; width: 14rem`
+sehingga pada 375px tepi kanan dekorasi mencapai 403px vs viewport 360px. Tidak
+merusak scroll (`docScrollW` = 360 = viewport dan parent sudah
+`overflow: hidden`), jadi murni kosmetik.
+
+Perbaikan: blok `@media(max-width:639px)` baru pada
+`token-native-components.css` mengecilkan dan menarik kedua dekorasi ke dalam
+bound header (`right: -1rem; top: -3.5rem; 10rem` untuk atas, `left: 24%;
+bottom: -3.5rem; 9rem` untuk bawah). Guard:
+`test_page_header_decoration_stays_inside_header_on_small_screens`.
+
+### Temuan tambahan dari sesi perbaikan (juga sudah diperbaiki)
+
+**T4: grup topbar kanan tidak bisa wrap pada 375px.** Scanner overflow pada
+375x812 menemukan `docScrollW` = 430px vs `clientWidth` = 360px, dengan
+`div.flex.items-center.gap-2` (tema + profil) memakai `flex-wrap: nowrap`
+sehingga mendorong dokumen. Perbaikan: grup tersebut kini
+`flex min-w-0 flex-wrap items-center justify-end gap-2`, dan span nama user
+mendapat `min-w-0`. Bukti sesudah perbaikan: `docScrollW` = 360 = viewport,
+scanner overflow = 0 pada `/spj?tab=paket`. Guard:
+`test_topbar_action_group_can_wrap_on_narrow_viewports`.
+
+### RVR yang masih terbuka
+
+Tidak berubah dari sesi sebelumnya: modal Pratinjau Massal + batas 20 paket
+(butuh paket NUMBERED; data aktif masih 0 bernomor), eksekusi penomoran
+triwulan, eksekusi sinkronisasi, output biner PDF/Excel, kontras seluruh 29
+profil tema (hanya 2 profil diuji), dan dokumen cetak folio di layar kecil.
 
 Guard terkait:
 

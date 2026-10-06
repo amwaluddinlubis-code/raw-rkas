@@ -231,6 +231,131 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringContainsString('flex-wrap', $documents);
     }
 
+    public function test_scroll_to_top_button_does_not_overlay_the_center_action_column(): void
+    {
+        // Regresi temuan browser QA 2026-10-05: tombol "Ke atas" memakai
+        // `fixed bottom-5 left-1/2` sehingga menutupi baris aksi terakhir pada
+        // daftar panjang (terbukti menutupi link "Cetak" pada /laporan-periode,
+        // overlap 2828px, elementFromPoint mengembalikan tombol).
+        $app = file_get_contents(resource_path('js/app.js'));
+
+        $this->assertIsString($app);
+        $this->assertStringContainsString('app-scroll-to-top', $app);
+        $this->assertStringNotContainsString(
+            'bottom-5 left-1/2',
+            $app,
+            'Scroll-to-top must not sit at the horizontal center where row actions live.'
+        );
+        $this->assertStringContainsString('bottom-[5.5rem] right-5', $app);
+        $this->assertStringContainsString('grid h-12 w-12', $app);
+        $this->assertStringContainsString("aria-label', 'Kembali ke atas halaman'", $app);
+    }
+
+    public function test_ui_field_component_can_bind_generated_label_to_its_control(): void
+    {
+        // Penutup umum untuk field yang pemanggilnya tidak mengoper `for`:
+        // primitive harus menghasilkan marker agar sisi client bisa mengikat
+        // id ke kontrol submit (input pertama bernama, bukan input cermin).
+        $field = file_get_contents(resource_path('views/components/ui/field.blade.php'));
+        $app = file_get_contents(resource_path('js/app.js'));
+
+        $this->assertIsString($field);
+        $this->assertIsString($app);
+        $this->assertStringContainsString('data-ui-field-bind-id', $field);
+        $this->assertStringContainsString('bindGeneratedFieldIds', $app);
+        $this->assertStringContainsString('input[name]:not([type="hidden"])', $app);
+        $this->assertStringContainsString('livewire:navigated', $app);
+    }
+
+    public function test_topbar_action_group_can_wrap_on_narrow_viewports(): void
+    {
+        // Regresi browser QA 2026-10-05 (375px): grup tema + profil memakai
+        // `flex-nowrap` sehingga mendorong dokumen scrollWidth ke 430px vs 360px.
+        $layout = file_get_contents(resource_path('views/components/layouts/tailwind-app.blade.php'));
+
+        $this->assertIsString($layout);
+        $this->assertStringContainsString('flex min-w-0 flex-wrap items-center justify-end gap-2', $layout);
+        $this->assertStringContainsString('max-w-[10rem] min-w-0 truncate', $layout);
+    }
+
+    public function test_page_header_decoration_stays_inside_header_on_small_screens(): void
+    {
+        // Regresi temuan browser QA 2026-10-05: dekorasi header meluber 43px
+        // ke kanan pada viewport 375px (right dekorasi 403px vs viewport 360px).
+        $css = file_get_contents(resource_path('css/token-native-components.css'));
+
+        $this->assertIsString($css);
+        $this->assertStringContainsString('.page-header-decoration-top', $css);
+        $this->assertMatchesRegularExpression(
+            '/@media\(max-width:639px\)\s*\{\s*\.page-header-decoration-top\s*\{[^}]*right:\s*-1rem/',
+            $css,
+            'Header decoration must be constrained inside the header on small screens.'
+        );
+    }
+
+    public function test_every_visible_label_is_associated_with_a_control(): void
+    {
+        // Regresi temuan browser QA 2026-10-05: 17 kontrol pada Isian Manual
+        // Paket tidak punya asosiasi label (klik label tidak memfokuskan input).
+        // Label yang membungkus kontrol (implicit) tetap valid; yang terlarang
+        // adalah label tanpa `for=` DAN tidak membungkus kontrol.
+        $offenders = [];
+        $viewPath = resource_path('views');
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($viewPath));
+
+        foreach ($files as $file) {
+            if (! $file->isFile() || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $content = (string) file_get_contents($file->getPathname());
+            preg_match_all('/<label(?![^>]*\bfor=)[^>]*>(.*?)<\/label>/s', $content, $matches);
+
+            foreach ($matches[1] as $body) {
+                if (! preg_match('/<(input|select|textarea)\b/', $body)) {
+                    $offenders[] = $file->getPathname();
+                }
+            }
+        }
+
+        $this->assertSame(
+            [],
+            array_values(array_unique($offenders)),
+            'Labels must either use for= with a matching control id, or wrap the control.'
+        );
+    }
+
+    public function test_package_form_fields_expose_ids_matching_their_labels(): void
+    {
+        // Kunci utama pada Isian Manual Paket: label harus punya `for` yang
+        // menunjuk id kontrol, bukan hanya label visual.
+        $common = file_get_contents(resource_path('views/spj/partials/package/common.blade.php'));
+
+        $this->assertIsString($common);
+        $this->assertStringContainsString('$fieldPrefix', $common);
+
+        foreach ([
+            'payment-description',
+            'payment-method',
+            'payment-reference',
+            'vendor-name',
+            'vendor-owner',
+            'vendor-npwp',
+            'receipt-recipient',
+        ] as $suffix) {
+            $this->assertStringContainsString(
+                'for="{{ $fieldPrefix }}-'.$suffix.'"',
+                $common,
+                "Label for {$suffix} must reference its control id."
+            );
+            $this->assertStringContainsString(
+                'id="{{ $fieldPrefix }}-'.$suffix.'"',
+                $common,
+                "Control {$suffix} must expose the id referenced by its label."
+            );
+        }
+    }
+
     public function test_wide_data_views_keep_horizontal_overflow_or_shared_table_contracts(): void
     {
         $syncedData = file_get_contents(resource_path('views/synced-data/index.blade.php'));

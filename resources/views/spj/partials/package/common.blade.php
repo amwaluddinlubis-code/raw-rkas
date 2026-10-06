@@ -26,11 +26,12 @@
 
     <div class="mt-2 grid gap-3 lg:grid-cols-2 lg:items-start">
         <div class="min-w-0">
-            <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian pembayaran <span
+            @php($fieldPrefix = 'spj-common-'.$transaction->id)
+            <label for="{{ $fieldPrefix }}-payment-description" class="text-xs font-semibold text-[var(--ui-fg-strong)]">Uraian pembayaran <span
                     class="text-rose-600">*</span></label>
             @php($siplahInvoice = data_get($transaction->siplah_metadata, 'siplahResponse.invoice_number'))
             @php($paymentDescriptionDefault = $transaction->is_siplah ? app(\App\Services\SpjDescriptionService::class)->siplahPaymentDescription($transaction) : null)
-            <x-ui.textarea name="payment_description" rows="5" class="mt-1 !min-h-[8.75rem] !py-1.5 !text-sm"
+            <x-ui.textarea id="{{ $fieldPrefix }}-payment-description" name="payment_description" rows="5" class="mt-1 !min-h-[8.75rem] !py-1.5 !text-sm"
                 required>{{ old('payment_description', $transaction->payment_description ?: $paymentDescriptionDefault) }}</x-ui.textarea>
         </div>
 
@@ -55,9 +56,9 @@
             },
         }">
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode pembayaran <span
+                <label for="{{ $fieldPrefix }}-payment-method" class="text-xs font-semibold text-[var(--ui-fg-strong)]">Metode pembayaran <span
                         class="text-rose-600">*</span></label>
-                <x-ui.select name="payment_method" class="mt-1 !py-1.5 !text-sm" required x-on:change="method = $event.target.value; suggest()">
+                <x-ui.select id="{{ $fieldPrefix }}-payment-method" name="payment_method" class="mt-1 !py-1.5 !text-sm" required x-on:change="method = $event.target.value; suggest()">
                     @foreach (['tunai' => 'Tunai', 'transfer_bank' => 'Transfer Bank'] as $value => $label)
                         <option value="{{ $value }}" @selected($currentMethod === $value)>{{ $label }}</option>
                     @endforeach
@@ -67,28 +68,28 @@
                 </x-ui.select>
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Referensi pembayaran</label>
+                <label for="{{ $fieldPrefix }}-payment-reference" class="text-xs font-semibold text-[var(--ui-fg-strong)]">Referensi pembayaran</label>
                 @php($siplahOrder = $transaction->siplah_order_number ?: (filled($siplahInvoice) ? collect(explode('/', $siplahInvoice))->filter()->last() : null))
-                <x-ui.input name="payment_reference" x-ref="paymentReference" :value="old('payment_reference', $transaction->payment_reference ?: $referenceDefault)" class="mt-1 !py-1.5 !text-sm" />
+                <x-ui.input id="{{ $fieldPrefix }}-payment-reference" name="payment_reference" x-ref="paymentReference" :value="old('payment_reference', $transaction->payment_reference ?: $referenceDefault)" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penyedia / Merchant / Toko</label>
-                <x-ui.input name="vendor_name" data-vendor-name-input :value="old('vendor_name', $transaction->vendor_name)" class="mt-1 !py-1.5 !text-sm" />
+                <label for="{{ $fieldPrefix }}-vendor-name" class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penyedia / Merchant / Toko</label>
+                <x-ui.input id="{{ $fieldPrefix }}-vendor-name" name="vendor_name" data-vendor-name-input :value="old('vendor_name', $transaction->vendor_name)" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Pemilik Merchant / Toko /
+                <label for="{{ $fieldPrefix }}-vendor-owner" class="text-xs font-semibold text-[var(--ui-fg-strong)]">Pemilik Merchant / Toko /
                     Direktur</label>
-                <x-ui.input name="vendor_owner" data-vendor-owner-input :value="old('vendor_owner', $transaction->vendor_owner)" class="mt-1 !py-1.5 !text-sm" />
+                <x-ui.input id="{{ $fieldPrefix }}-vendor-owner" name="vendor_owner" data-vendor-owner-input :value="old('vendor_owner', $transaction->vendor_owner)" class="mt-1 !py-1.5 !text-sm" />
                 <p data-vendor-owner-hint class="mt-1 hidden text-[11px] text-[var(--ui-fg-muted)]"></p>
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">NPWP penyedia</label>
-                <x-ui.input name="vendor_npwp" :value="old('vendor_npwp', $transaction->vendor_npwp)" class="mt-1 !py-1.5 !text-sm" />
+                <label for="{{ $fieldPrefix }}-vendor-npwp" class="text-xs font-semibold text-[var(--ui-fg-strong)]">NPWP penyedia</label>
+                <x-ui.input id="{{ $fieldPrefix }}-vendor-npwp" name="vendor_npwp" :value="old('vendor_npwp', $transaction->vendor_npwp)" class="mt-1 !py-1.5 !text-sm" />
             </div>
             <div>
-                <label class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama / Kuitansi /
+                <label for="{{ $fieldPrefix }}-receipt-recipient" class="text-xs font-semibold text-[var(--ui-fg-strong)]">Penerima Utama / Kuitansi /
                     Penandatangan <span class="text-rose-600">*</span></label>
-                <x-ui.input name="receipt_recipient_name" data-vendor-recipient-input :value="old('receipt_recipient_name', $transaction->receipt_recipient_name)" class="mt-1 !py-1.5 !text-sm" required />
+                <x-ui.input id="{{ $fieldPrefix }}-receipt-recipient" name="receipt_recipient_name" data-vendor-recipient-input :value="old('receipt_recipient_name', $transaction->receipt_recipient_name)" class="mt-1 !py-1.5 !text-sm" required />
                 <p data-vendor-recipient-hint class="mt-1 hidden text-[11px] text-[var(--ui-fg-muted)]"></p>
             </div>
 

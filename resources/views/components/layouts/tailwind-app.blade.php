@@ -305,7 +305,7 @@
                                 </select></form>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex min-w-0 flex-wrap items-center justify-end gap-2">
                     <label class="sr-only" for="theme-select">Tema tampilan</label>
                     <select id="theme-select" data-theme-selector
                         class="app-topbar-select app-theme-select px-3 py-2 text-xs font-bold"
@@ -315,7 +315,7 @@
                             :aria-expanded="profileMenuOpen.toString()" aria-haspopup="menu" title="Profil User"
                             class="app-runtime-badge inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold">
                             <x-ui.icon name="employee" size="sm" />
-                            <span class="max-w-[10rem] truncate">{{ auth()->user()->name }}</span>
+                            <span class="max-w-[10rem] min-w-0 truncate">{{ auth()->user()->name }}</span>
                             <x-ui.icon name="chevron-down" size="xs" />
                         </button>
                         <div x-show="profileMenuOpen" x-cloak x-transition.origin.top.right role="menu"

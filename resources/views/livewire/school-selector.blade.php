@@ -1,5 +1,5 @@
 <div class="space-y-5">
-    <label class="relative block">
+    <label for="school-search" class="relative block">
         <span class="sr-only">Cari sekolah</span>
         <x-ui.icon name="search" size="sm"
             class="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-slate-400" />

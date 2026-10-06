@@ -469,6 +469,92 @@ runtime, bukan perbaikan data:
 2. Browser/operator QA desktop-laptop sesuai `GUI_RUNTIME_QA.md`.
 3. Office/PDF visual QA untuk XLSX/PDF hasil generate.
 
+## Sesi QA browser audit GUI + perbaikan (2026-10-05)
+
+Status: **FUNCTIONAL PASS (focused, findings Fixed) / BROWSER RVR**.
+
+QA Playwright (Chrome, ADMIN, 10208183 / 2026 / BOS Reguler) lintas 14 rute pada
+1366x768 dan 375x812, tema `light` + `arkas_dark_v2`. Temuan sudah
+diperbaiki, diverifikasi ulang di browser, dan dikunci regression test.
+Detail per temuan ada di `GUI_RUNTIME_QA.md` §"Sesi QA audit GUI 2026-10-05
+(kedua)".
+
+### Yang terverifikasi seragam
+
+- Breadcrumb global konsisten dan sticky mengikuti tinggi topbar nyata.
+- Kontras token inti LULUS AA pada kedua tema: `--ui-fg-muted on
+  --ui-surface-base` 4.76 (light) / 7.41 (dark); `--theme-action-fg on
+  --theme-action-bg` 7.15 (dark).
+- Density token terpakai benar (padding sel via `--profile-table-row-y`, tinggi
+  kontrol via `--profile-control-height` = 44px realized). Nol hardcoded padding
+  tabel di halaman yang diuji.
+- Tap target: nol elemen interaktif < 32px tinggi di 1366 dan `/spj?tab=paket`.
+- Focus ring: 26 elemen focusable di `/spj/penomoran`, nol tanpa outline.
+- `/laporan-periode/bulan/bku/cetak?periode_laporan=1` PASS: 110 baris, 0 uraian
+  kosong, bunga bank + pajak bunga bernominal, tepat 1 blok tanda tangan.
+
+### Temuan dan perbaikannya (semua sudah diperbaiki)
+
+```text
+T1 (tinggi)  SUDAH DIPERBAIKAN : tombol scroll-to-top memblokir kontrol.
+              Dipindah dari fixed bottom-5 left-1/2 ke bottom-[5.5rem]
+              right-5 (ditumpuk di atas tombol asisten) dan diubah jadi ikon
+              bulat 48x48 tanpa label teks. Area tertutup pada
+              /laporan-periode: 2828 px2 -> 0 kontrol terblokir.
+T2 (sedang)  SUDAH DIPERBAIKAN : 17 kontrol Isian Manual Paket tanpa
+              asosiasi label. (1) common.blade.php kini memakai id
+              spj-common-{transactionId}-* dengan label for= yang cocok;
+              (2) primitive x-ui.field membuat id sendiri bila :for tidak
+              dioper, dan bindGeneratedFieldIds() di app.js mengikatkan ke
+              kontrol submit yang ber-name (bukan input cermin widget
+              tanggal); (3) 4 label yang benar-benar terputus diperbaiki
+              langsung di spj/index, page-table-per-page, school-selector,
+              database-school-list.
+              Bukti: 0 kontrol tanpa asosiasi pada 17 kontrol isian manual,
+              dan 0 pada sweep 14 rute representative.
+T3 (rendah)  SUDAH DIPERBAIKAN : dekorasi header meluber 43px di mobile.
+              Blok @media(max-width:639px) baru menarik kedua dekorasi ke
+              dalam bound header.
+T4 (tambahan) SUDAH DIPERBAIKAN : grup topbar kanan (tema + profil) tidak
+              wrap pada 375px sehingga docScrollW 430px vs 360px. Grup kini
+              flex min-w-0 flex-wrap items-center justify-end gap-2 dan
+              span nama user mendapat min-w-0. Bukti sesudah: docScrollW
+              360 = viewport, scanner overflow 0.
+```
+
+Tidak ada perubahan business rule, lifecycle, numbering, tenant boundary,
+ataukan kontrak sync. Perbaikan murni presentation, aksesibilitas, dan
+interaksi.
+
+Guard baru di `tests/Feature/GuiAudit09To13SourceReadinessTest.php` (7 test,
+semua terbukti gagal tanpa fix lewat stash A/B):
+`test_scroll_to_top_button_does_not_overlay_the_center_action_column`,
+`test_ui_field_component_can_bind_generated_label_to_its_control`,
+`test_topbar_action_group_can_wrap_on_narrow_viewports`,
+`test_page_header_decoration_stays_inside_header_on_small_screens`,
+`test_every_visible_label_is_associated_with_a_control`,
+`test_package_form_fields_expose_ids_matching_their_labels`.
+
+```text
+GuiAudit09To13SourceReadinessTest : 20 passed / 154 assertions
+SpjReportLayoutTest + MainTabs +
+  PackageNavigationButtons          : 27 passed / 280 assertions
+SPJ Critical suite                : 335 passed / 2.494 assertions
+Repository Pint                   : passed
+npm run theme:qa                  : All representative theme checks passed
+npm run density:qa                : All density ownership checks passed
+npm run build                     : sukses
+php artisan view:cache            : sukses
+git diff --check                  : bersih
+```
+
+### RVR tetap terbuka
+
+Modal Pratinjau Massal + batas 20 paket (butuh paket NUMBERED; data aktif 0
+bernomor), eksekusi penomoran triwulan, eksekusi sinkronisasi, output biner
+PDF/Excel, kontras 29 profil tema (hanya 2 diuji), dan dokumen cetak folio di
+layar kecil.
+
 ## Batch UI/UX workspace Paket SPJ (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.

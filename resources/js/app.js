@@ -495,14 +495,18 @@ const initializeScrollToTop = () => {
     const button = document.createElement('button');
     button.id = 'app-scroll-to-top';
     button.type = 'button';
-    button.className = 'ui-btn ui-btn-secondary fixed bottom-5 left-1/2 z-40 hidden -translate-x-1/2 items-center gap-2 !rounded-full !px-3.5 !py-2 text-sm font-bold shadow-lg backdrop-blur transition hover:-translate-y-0.5';
+    // Diletakkan di pojok kanan, ditumpuk di atas tombol asisten, bukan di
+    // tengah bawah. Posisi tengah bawah menutupi baris aksi terakhir pada
+    // daftar panjang (terbukti menutupi link "Cetak" pada /laporan-periode).
+    // Bentuk ikon-saja juga mengecilkan area yang menutupi konten.
+    button.className = 'ui-btn ui-btn-secondary fixed bottom-[5.5rem] right-5 z-40 hidden grid h-12 w-12 place-items-center !rounded-full shadow-lg backdrop-blur transition hover:-translate-y-0.5';
     button.setAttribute('aria-label', 'Kembali ke atas halaman');
     button.setAttribute('title', 'Kembali ke atas');
-    button.innerHTML = '<span aria-hidden="true" class="text-base leading-none">↑</span><span class="hidden sm:inline">Ke atas</span>';
+    button.innerHTML = '<span aria-hidden="true" class="text-lg leading-none">↑</span>';
 
     const update = () => {
         button.classList.toggle('hidden', window.scrollY <= 320);
-        button.classList.toggle('flex', window.scrollY > 320);
+        button.classList.toggle('grid', window.scrollY > 320);
     };
 
     button.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
@@ -513,3 +517,39 @@ const initializeScrollToTop = () => {
 
 initializeScrollToTop();
 document.addEventListener('livewire:navigated', initializeScrollToTop);
+
+/**
+ * Hubungkan label x-ui.field yang di-generate id-nya ke kontrol pertama di
+ * dalam field. Tanpa ini, label terlihat tetapi tidak terasosiasi: klik label
+ * tidak memfokuskan input dan screen reader tidak membacakan kontrol.
+ * Ditemukan pada browser QA 2026-10-05 (17 kontrol pada Isian Manual Paket).
+ */
+const bindGeneratedFieldIds = (root = document) => {
+    root.querySelectorAll('span[data-ui-field-bind-id]').forEach((marker) => {
+        const id = marker.dataset.uiFieldBindId;
+        if (!id || marker.dataset.uiFieldBound === 'true') return;
+
+        const field = marker.closest('div');
+        if (!field) return;
+
+        // Kontrol yang dip submits adalah yang punya `name`. Widget tanggal
+        // Indonesia membuat input cermin (type=text, tanpa name) sebelum input
+        // aslinya, jadi memilih "yang pertama" akan mengikat id ke input mati.
+        const named = field.querySelector('input[name]:not([type="hidden"]), select[name], textarea[name]');
+        const control = named ?? field.querySelector('input:not([type="hidden"]), select, textarea');
+        if (!control) return;
+        if (control.id) {
+            // Pemanggil sudah mengoper id sendiri; arahkan label ke sana.
+            const label = field.querySelector('label');
+            if (label && !label.getAttribute('for')) label.setAttribute('for', control.id);
+            marker.dataset.uiFieldBound = 'true';
+            return;
+        }
+
+        control.id = id;
+        marker.dataset.uiFieldBound = 'true';
+    });
+};
+
+bindGeneratedFieldIds();
+document.addEventListener('livewire:navigated', () => bindGeneratedFieldIds());

@@ -161,7 +161,7 @@
                                 <div class="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
                                     <div class="grid gap-3">
                                         <div>
-                                            <label class="text-xs font-bold text-amber-900">Kategori SPJ <span class="text-rose-600">*</span></label>
+                                            <label for="spj-type" class="text-xs font-bold text-amber-900">Kategori SPJ <span class="text-rose-600">*</span></label>
                                             <x-ui.select id="spj-type" name="spj_category" class="mt-1">
                                                 <option value="">Pilih kategori</option>
                                                 @foreach(['BARANG','KONSUMSI','PEMELIHARAAN','JASA_LAINNYA','SPPD','HONOR_PEGAWAI'] as $value)
