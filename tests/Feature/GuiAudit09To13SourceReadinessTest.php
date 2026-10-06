@@ -217,6 +217,18 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
         $this->assertStringContainsString('overflow-x-auto', $spj.$spjLivewire);
     }
 
+    public function test_blanket_button_radius_keeps_form_control_triggers_on_theme_token(): void
+    {
+        // Temuan 2026-10-06: aturan blanket `main button` memaksa radius
+        // 12px pada tombol pemicu dropdown select sehingga lepas dari token
+        // (input/select 8px pada scope workspace). Trigger wajib
+        // dikecualikan agar mengikuti --profile-control-radius.
+        $humanUi = file_get_contents(resource_path('css/human-ui.css'));
+
+        $this->assertIsString($humanUi);
+        $this->assertStringContainsString('main button:not(.app-nav):not(.ui-searchable-select-trigger)', $humanUi);
+    }
+
     public function test_mobile_cards_and_document_rows_can_shrink_below_min_content(): void
     {
         // Regresi temuan browser QA 2026-10-05 (viewport 360px): kartu

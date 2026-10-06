@@ -106,8 +106,12 @@ main p { line-height: 1.6; }
 main .text-slate-400,
 main .text-slate-500 { color: #6b778c; }
 
-/* Buttons: softer radius, clear weight, comfortable targets */
-main button:not(.app-nav),
+/* Buttons: softer radius, clear weight, comfortable targets.
+   Tombol pemicu dropdown select (.ui-searchable-select-trigger)
+   dikecualikan: ia adalah kontrol form dan wajib mengikuti token
+   --profile-control-radius seperti input/select (bukan radius
+   literal tombol) agar radiusnya konsisten di semua scope tema. */
+main button:not(.app-nav):not(.ui-searchable-select-trigger),
 main a[class*="rounded-lg"][class*="px-"],
 main a[class*="rounded-xl"][class*="px-"],
 main .btn,
