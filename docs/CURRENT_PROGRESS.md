@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-05** (browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-06** (tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
@@ -615,6 +615,52 @@ Modal Pratinjau Massal + batas 20 paket (butuh paket NUMBERED; data aktif 0
 bernomor), eksekusi penomoran triwulan, eksekusi sinkronisasi, output biner
 PDF/Excel, kontras 29 profil tema (hanya 2 diuji), dan dokumen cetak folio di
 layar kecil.
+
+## Tab Attribut SPJ (2026-10-06)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Halaman baru "Attribut SPJ" ditambahkan sebagai tab ke-3 pada halaman SPJ
+(setelah Persiapan dan Paket, sebelum Laporan). Fitur ini menyediakan
+pemeriksaan cepat atribut Data Umum Dokumen dan Data Pengadaan/Kategori
+dari setiap kategori SPJ dalam satu tabel ringkas.
+
+### Fitur utama:
+- **Filtering** identik tab Paket: pencarian (no bukti/uraian/penerima),
+  status paket (DRAFT/READY/NUMBERED/FINAL/CANCELLED), kategori SPJ
+  (BARANG/KONSUMSI/PEMELIHARAAN/JASA_LAINNYA/SPPD/HONOR_PEGAWAI)
+- **Kolom tabel desktop**:
+  - Bukti / Tanggal (no bukti mirror + tanggal transaksi)
+  - Kategori SPJ
+  - Data Umum Dokumen: uraian, metode, referensi, vendor/penerima, NPWP,
+    invoice SiPLah
+  - Data Pengadaan per kategori:
+    - BARANG: No Pesanan/BAP/BAST + tanggal, SiPLah
+    - KONSUMSI: Jumlah peserta, total porsi, penerima utama, daftar peserta
+    - PEMELIHARAAN: Jenis biaya, uraian, lokasi, periode, SPK/RAB, pekerja
+    - SPPD: Pelaksana, tujuan, maksud, periode, transportasi, ST, nominal
+    - HONOR_PEGAWAI: Penerima, jabatan, golongan, NIP/NIK, NPWP, periode,
+      tarif, bruto/pajak/netto, rekening
+    - JASA_LAINNYA: Penerima, NPWP, jenis jasa, uraian, volume, harga, pajak,
+      netto, kuitansi, perjanjian
+  - Status paket + nomor dokumen
+  - Aksi: Buka paket →
+- **Mobile**: Card view dengan detail lengkap per paket
+- **Eager loading** dioptimalkan: `transaction.items.participants`,
+  `transaction.goods`, `transaction.workOrder`, `transaction.workers`,
+  `transaction.travels`, `transaction.honors`, `transaction.serviceRecipients`
+
+### Implementation:
+- Livewire component: `app/Livewire/SpjAttributeList.php`
+- View: `resources/views/livewire/spj-attribute-list.blade.php`
+- Partials: `attribute-data-umum.blade.php`, `attribute-data-pengadaan.blade.php`,
+  `attribute-card-detail.blade.php`
+- Use case: `SpjWorkspaceUseCase::attributeListData()` + `tabAtribut()`
+- Route: `/spj?tab=atribut` (existing `spj.index` route)
+
+Evidence: `SpjMainTabsRenderingTest` 8/9 passed (1 Windows file-lock flaky),
+`SpjWorkspaceMigrationTest` 15 passed, `SpjOwnershipMigrationTest` 20 passed,
+Pint passed, `view:cache` sukses, `git diff --check` bersih.
 
 ## Batch UI/UX workspace Paket SPJ (2026-10-04)
 

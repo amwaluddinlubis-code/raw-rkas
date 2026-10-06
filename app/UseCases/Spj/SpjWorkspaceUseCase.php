@@ -33,6 +33,7 @@ class SpjWorkspaceUseCase
         return match ($tab) {
             'persiapan' => $this->tabPersiapan($request),
             'paket' => $this->tabPaket($request),
+            'atribut' => $this->tabAtribut($request),
             'laporan' => app(SpjReportUseCase::class)->tabLaporan($request),
             'monitoring' => app(SpjReportUseCase::class)->tabMonitoring($request),
             default => $this->tabPersiapan($request),
@@ -164,6 +165,47 @@ class SpjWorkspaceUseCase
             ->orderByDesc('numbered_at')
             ->orderByDesc('id')
             ->paginate($perPage, ['*'], 'package_page')
+            ->withQueryString();
+    }
+
+    /**
+     * @param  array{search?:string,status?:string,category?:string}  $filters
+     */
+    public function attributeListData(int $perPage, array $filters = []): LengthAwarePaginator
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+        $status = strtoupper(trim((string) ($filters['status'] ?? '')));
+        $category = strtoupper(trim((string) ($filters['category'] ?? '')));
+
+        return SpjPackage::query()
+            ->with([
+                'transaction:id,payment_description,spj_category,fiscal_year_id,fund_source_id,payment_method,payment_reference,vendor_name,vendor_owner,vendor_npwp,invoice_number,invoice_date,invoice_status,is_siplah,siplah_order_number,receipt_recipient_name,event_name,event_location,event_date,participant_count,maintenance_material_transaction_id,maintenance_labor_transaction_id',
+                'transaction.items:id,transaction_id,item_description,source_item_id',
+                'transaction.items.participants',
+                'transaction.goods',
+                'transaction.workOrder',
+                'transaction.workers',
+                'transaction.travels',
+                'transaction.honors',
+                'transaction.serviceRecipients',
+            ])
+            ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
+            ->whereHas('transaction', function ($query) use ($search, $category): void {
+                $query->forSpjContext($this->context)
+                    ->when($category !== '', fn ($transactionQuery) => $transactionQuery->where('transactions.spj_category', $category));
+                if ($search !== '') {
+                    ArkasMirrorResolver::joinKasUmum($query);
+                    $query->where(function ($searchQuery) use ($search): void {
+                        $searchQuery->whereRaw('mkas.sx_no_bukti like ?', ['%'.$search.'%'])
+                            ->orWhereRaw(ArkasMirrorResolver::mirrorTextSearchExists($search))
+                            ->orWhere('transactions.payment_description', 'like', '%'.$search.'%');
+                    });
+                }
+            })
+            ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
+            ->orderByDesc('numbered_at')
+            ->orderByDesc('id')
+            ->paginate($perPage, ['*'], 'attribute_page')
             ->withQueryString();
     }
 
@@ -313,6 +355,20 @@ class SpjWorkspaceUseCase
             'participantRoster' => $participantRoster,
             'consumptionOrderSources' => $consumptionOrderSources,
             'serviceOrderSources' => $serviceOrderSources,
+        ]);
+    }
+
+    private function tabAtribut(Request $request): View
+    {
+        // Daftar atribut dirender oleh <livewire:spj-attribute-list /> dengan
+        // paginasinya sendiri; tidak dihitung di sini agar tidak ganda.
+        return view('spj.index', [
+            'tab' => 'atribut',
+            'attributeList' => null,
+            'transactions' => null,
+            ...$this->overviewMetrics(),
+            'spjTypes' => [],
+            'filters' => [],
         ]);
     }
 

@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-10-05**
+Terakhir diperbarui: **2026-10-06**
 
 Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah workflow run #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
@@ -360,7 +360,25 @@ Functional identity baseline PASS. Tersisa bila muncul pada operator flow:
 - [ ] participant manual UX;
 - [ ] same-name/different-identifier review.
 
-## P1-09 — Mobile/tablet minimum usability
+## P1-09 — Tab Attribut SPJ (2026-10-06) ✅
+
+**Status: FUNCTIONAL PASS (focused) / BROWSER RVR.**
+
+Halaman "Attribut SPJ" baru ditambahkan sebagai tab ke-3 pada halaman SPJ
+(`/spj?tab=atribut`). Menyediakan pemeriksaan cepat atribut Data Umum Dokumen
+dan Data Pengadaan/Kategori per kategori SPJ dalam tabel ringkas.
+
+- [x] Filtering identik tab Paket (search, status, kategori)
+- [x] Kolom Data Umum Dokumen (uraian, metode, referensi, vendor/penerima, NPWP, invoice)
+- [x] Kolom Data Pengadaan per 6 kategori SPJ (BARANG, KONSUMSI, PEMELIHARAAN, SPPD, HONOR_PEGAWAI, JASA_LAINNYA)
+- [x] Mobile card view responsif
+- [x] Eager loading dioptimalkan (items.participants, goods, workOrder, workers, travels, honors, serviceRecipients)
+- [x] Test coverage: SpjMainTabsRenderingTest, SpjWorkspaceMigrationTest, SpjOwnershipMigrationTest
+- [x] Pint, view:cache, git diff --check bersih
+
+RVR: Browser QA desktop/mobile per `GUI_RUNTIME_QA.md`.
+
+## P1-10 — Mobile/tablet minimum usability
 
 **Status: SOURCE READINESS / RUNTIME RVR / NON-BLOCKER untuk target desktop-laptop.**
 

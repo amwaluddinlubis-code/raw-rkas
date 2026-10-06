@@ -4,6 +4,7 @@
     <x-tabs :tabs="[
         ['id' => 'persiapan', 'label' => 'Persiapan', 'icon' => 'archive'],
         ['id' => 'paket', 'label' => 'Paket', 'icon' => 'document'],
+        ['id' => 'atribut', 'label' => 'Attribut SPJ', 'icon' => 'list'],
         ['id' => 'laporan', 'label' => 'Laporan', 'icon' => 'report'],
         ['id' => 'monitoring', 'label' => 'Monitoring', 'icon' => 'warning'],
     ]" :activeTab="$activeSpjTab" />

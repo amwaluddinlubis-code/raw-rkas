@@ -221,6 +221,13 @@
             </div>
             @endif
 
+            {{-- Tab: Attribut SPJ --}}
+            @if(($tab ?? 'persiapan') === 'atribut')
+            <div x-show="tab === 'atribut'" x-transition>
+                <livewire:spj-attribute-list />
+            </div>
+            @endif
+
             {{-- Tab: Laporan (filter AJAX via Livewire, tanpa reload) --}}
             @if(($tab ?? 'persiapan') === 'laporan')
             <div x-show="tab === 'laporan'" x-transition>
