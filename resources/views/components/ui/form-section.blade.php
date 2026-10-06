@@ -3,7 +3,12 @@
     'description' => null,
     'collapsible' => false,
     'open' => true,
+    'panelId' => null,
 ])
+
+@php
+    $resolvedPanelId = $panelId ?? 'ui-form-section-' . \Illuminate\Support\Str::slug($title);
+@endphp
 
 <section
     @if($collapsible)
@@ -19,12 +24,9 @@
         <div class="ui-form-section-actions">
             @if(isset($actions)){{ $actions }}@endif
             @if($collapsible)
-                <button type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-3 !py-1.5 text-xs" @click="open = !open" :aria-expanded="open.toString()" aria-label="Buka atau tutup panel">
-                    <span x-text="open ? 'Tutup panel' : 'Buka panel'"></span>
-                    <x-ui.icon name="chevron-down" size="xs" ::class="open ? 'rotate-180' : ''" />
-                </button>
+                <x-ui.panel-toggle :panel="$title" :controls="$resolvedPanelId" />
             @endif
         </div>
     </div>
-    <div class="ui-form-section-body" @if($collapsible) x-show="open" @endif>{{ $slot }}</div>
+    <div class="ui-form-section-body" @if($collapsible) id="{{ $resolvedPanelId }}" x-show="open" @endif>{{ $slot }}</div>
 </section>

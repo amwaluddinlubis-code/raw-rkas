@@ -211,6 +211,56 @@ mendapat `min-w-0`. Bukti sesudah perbaikan: `docScrollW` = 360 = viewport,
 scanner overflow = 0 pada `/spj?tab=paket`. Guard:
 `test_topbar_action_group_can_wrap_on_narrow_viewports`.
 
+**T5: lima tombol "Tutup panel" tidak dapat dibedakan pengguna screen reader.**
+Ternyata kelimanya memang lima panel berbeda (batas upload, Import Paket
+Template, Tambah/Ganti Template, Hasil Validasi, Template yang Tersedia), jadi
+bukan aksi yang terduplikasi. Cacatnya ada di accessible name: dua tombol
+memakai `aria-label="Buka atau tutup panel"` yang menimpa teks dinamis sehingga
+state terbuka/tertutup hilang dan nama aksesibel tidak lagi memuat label yang
+terlihat (WCAG 2.5.3 Label in Name); tiga tombol lain hanya reductions `Tutup
+panel` tanpa nama panel. consequence: pengguna SR mendengar "Tutup panel" lima
+kali tanpa tahu tombol mana menutup bagian apa. Tidak satu pun tombol punya
+`aria-controls`.
+
+Perbaikan: primitive baru `resources/views/components/ui/panel-toggle.blade.php`
+mengganti kelima tombol. Accessible name sekarang `<state> <judul panel>` dan
+setiap tombol menunjuk body-nya lewat `aria-controls` dengan id yang dijamin
+ada. `x-ui.form-section` ikut diperbaiki: prop `panelId` (default
+`ui-form-section-<slug judul>`) dipasang pada body, sehingga primitive yang
+dipakai halaman lain otomatis benar tanpa edit per halaman.
+
+Catatan proses: versi pertama memakai ternary di dalam backtick
+(`` `open ? 'Tutup panel' : 'Buka panel' ` ``). Alpine mengevaluasi template
+literal itu sebagai teks biasa, sehingga `aria-label` berisi literal
+`open ? 'Tutup panel' : 'Buka panel' Import Paket Template`. Ketahuan karena
+probe DOM membaca `aria-label` mentah, bukan karena error. Diperbaiki ke
+`(open ? 'Tutup panel ' : 'Buka panel ') + 'Import Paket Template'`.
+
+Bukti sesudah perbaikan (probe DOM, 1366x768):
+
+```text
+Tutup panel Status batas unggah server      expanded=true  target ada
+Tutup panel Import Paket Template           expanded=true  target ada
+Tutup panel Tambah atau Ganti Satu Template expanded=true  target ada
+Tutup panel Hasil Validasi Template         expanded=true  target ada
+Tutup panel Template yang Tersedia          expanded=true  target ada
+```
+
+Uji interaksi pada `ui-form-section-import-paket-template`: nama berubah
+`Tutup panel` -> `Buka panel`, `aria-expanded` `true` -> `false`, body
+`sembunyi` -> lalu `true` lagi saat diklik ulang. Sweep 5 rute
+(`/pengaturan/template-dokumen`, `/sekolah/setting`, `/employees`, `/users`,
+`/siswa`): 0 tombol dengan nama generik, 0 target `aria-controls` menggantung.
+Guard: `test_panel_toggle_names_the_panel_it_collapses` dan
+`test_collapsible_panels_expose_an_aria_controls_target`.
+
+**Koreksi atas klaim sesi sebelumnya:** dugaan bahwa tombol unduh laporan
+RKAS pada `/penganggaran-rkas` tidak sejajar adalah **salah**. Pengukuran
+`getBoundingClientRect` menunjukkan inset tombol dari tepi kanan kartu 17px
+pada kelima baris (select 152px = spacer 152px). Yang tampak seperti zigzag
+hanya efek grid 2 kolom dengan lima kartu, bukan defect. Tidak ada perubahan
+source untuk temuan itu.
+
 ### RVR yang masih terbuka
 
 Tidak berubah dari sesi sebelumnya: modal Pratinjau Massal + batas 20 paket

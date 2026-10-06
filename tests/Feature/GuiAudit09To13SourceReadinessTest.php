@@ -369,4 +369,89 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
             'Numbering workspace must retain a horizontally safe table contract.'
         );
     }
+
+    public function test_panel_toggle_names_the_panel_it_collapses(): void
+    {
+        // Regresi temuan browser QA 2026-10-05: lima tombol "Tutup panel"
+        // pada /pengaturan/template-dokumen sama-sama bernama "Tutup panel"
+        // atau aria-label generik "Buka atau tutup panel", sehingga pengguna
+        // screen reader tidak tahu tombol mana menutup bagian apa. aria-label
+        // generik itu juga menimpa teks dinamis sehingga state hilang.
+        $toggle = file_get_contents(resource_path('views/components/ui/panel-toggle.blade.php'));
+
+        $this->assertIsString($toggle);
+        $this->assertStringNotContainsString(
+            'Buka atau tutup panel',
+            $toggle,
+            'Panel toggle must not override the dynamic visible label with a generic aria-label.'
+        );
+        $this->assertStringContainsString(
+            ":aria-label=\"({{ \$state }} ? 'Tutup panel ' : 'Buka panel ') + @js(\$panel)\"",
+            $toggle,
+            'Panel toggle accessible name must be prefixed with the state and suffixed with the panel title.'
+        );
+        $this->assertStringContainsString('aria-controls="{{ $controls }}"', $toggle);
+    }
+
+    public function test_collapsible_panels_expose_an_aria_controls_target(): void
+    {
+        // Setiap panel yang punya tombol buka/tutup harus menunjuk body yang
+        // dikendelnya lewat id, supaya aria-controls tidak pernah menggantung.
+        $bodies = [
+            'views/document-templates/index.blade.php' => [
+                'document-templates-validation-results',
+                'document-templates-available-list',
+            ],
+            'views/document-templates/partials/upload-limits.blade.php' => [
+                'document-templates-upload-limits',
+            ],
+        ];
+
+        foreach ($bodies as $relativePath => $ids) {
+            $content = file_get_contents(resource_path($relativePath));
+
+            $this->assertIsString($content);
+
+            foreach ($ids as $id) {
+                $this->assertStringContainsString(
+                    'id="'.$id.'"',
+                    $content,
+                    "{$relativePath} must render the collapsible body with id {$id}."
+                );
+            }
+        }
+
+        // Header partial holds the toggle, page holds the body it controls.
+        $toggles = [
+            'views/document-templates/index.blade.php' => [
+                'document-templates-available-list',
+            ],
+            'views/document-templates/partials/validation-header.blade.php' => [
+                'document-templates-validation-results',
+            ],
+            'views/document-templates/partials/upload-limits.blade.php' => [
+                'document-templates-upload-limits',
+            ],
+        ];
+
+        foreach ($toggles as $relativePath => $ids) {
+            $content = file_get_contents(resource_path($relativePath));
+
+            $this->assertIsString($content);
+
+            foreach ($ids as $id) {
+                $this->assertStringContainsString(
+                    'controls="'.$id.'"',
+                    $content,
+                    "{$relativePath} must point its panel toggle at {$id}."
+                );
+            }
+        }
+
+        $formSection = file_get_contents(resource_path('views/components/ui/form-section.blade.php'));
+
+        $this->assertIsString($formSection);
+        $this->assertStringContainsString('id="{{ $resolvedPanelId }}"', $formSection);
+        $this->assertStringContainsString(':controls="$resolvedPanelId"', $formSection);
+    }
 }

@@ -202,7 +202,7 @@
             class="overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm">
             @include('document-templates.partials.validation-header')
 
-            <div x-show="open" class="divide-y divide-[var(--ui-line)]">
+            <div x-show="open" id="document-templates-validation-results" class="divide-y divide-[var(--ui-line)]">
                 @forelse($templates as $template)
                     @php
                         $validation = $validationResults[$template->id] ?? [
@@ -303,13 +303,10 @@
                             Gunakan Unduh Master Template Terbaru untuk merakit seluruh template XLSX aktif.
                             Tombol ▲▼ mengatur susunan dokumen pada pratinjau paket.</p>
                     </div>
-                    <button type="button" class="ui-btn ui-btn-secondary !min-h-0 !px-3 !py-1.5 text-xs" @click="open = !open" :aria-expanded="open.toString()">
-                        <span x-text="open ? 'Tutup panel' : 'Buka panel'"></span>
-                        <x-ui.icon name="chevron-down" size="xs" ::class="open ? 'rotate-180' : ''" />
-                    </button>
+                    <x-ui.panel-toggle panel="Template yang Tersedia" controls="document-templates-available-list" />
                 </div>
             </div>
-            <div x-show="open">
+            <div x-show="open" id="document-templates-available-list">
                 <livewire:document-template-list :status="$filters['status'] ?? 'all'" :category="$filters['category'] ?? ''" />
                 @if (false)
                 @include('document-templates.partials.template-filters')
