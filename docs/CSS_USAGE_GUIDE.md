@@ -175,6 +175,15 @@ Icon dekoratif di dalam tombol berlabel dibiarkan tanpa `label`. Icon standalone
 <input readonly class="ui-input ui-input-readonly">
 ```
 
+`x-ui.select` merender class `select ui-select`. Class `select` mengikuti
+kontrak visual DaisyUI-compatible (ukuran `select-xs` hingga `select-xl`,
+`select-ghost`, dan modifier warna semantic) tetapi tetap memakai token tema
+project dan tidak menambah dependency DaisyUI. Pada halaman SPJ, initializer
+`initializeSpjSelectDropdowns()` mengubah single-select menjadi dropdown custom
+berbasis JavaScript dengan opsi searchable, hover, keyboard focus, dan tanda
+centang; nilai tetap disimpan pada select asli untuk kompatibilitas form dan
+Livewire. Multi-select tetap memakai kontrol khusus.
+
 Untuk single-select yang membutuhkan pencarian, gunakan komponen Blade
 `<x-ui.searchable-select>` agar trigger, pencarian, opsi, keyboard focus, dan
 tema tetap konsisten. Komponen ini bukan pengganti kontrol multi-select.

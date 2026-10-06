@@ -20,7 +20,7 @@ form label:not(.inline-flex):not(.flex),
 }
 
 form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not([type='submit']):not([type='button']):not(.ui-input),
-form select:not(.ui-select),
+form select,
 form textarea:not(.ui-textarea) {
     width: 100%;
     min-height: var(--profile-control-height, var(--ui-control-height));
@@ -41,13 +41,13 @@ form textarea:not(.ui-textarea) {
 }
 
 form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not(.ui-input):hover,
-form select:not(.ui-select):hover,
+form select:hover,
 form textarea:not(.ui-textarea):hover {
     border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--ui-component-border-strong, #94a3b8));
 }
 
 form input:not([type='hidden']):not([type='checkbox']):not([type='radio']):not([type='file']):not(.ui-input):focus,
-form select:not(.ui-select):focus,
+form select:focus,
 form textarea:not(.ui-textarea):focus {
     outline: none;
     border-color: var(--theme-focus-ring, var(--theme-accent, #4f46e5)) !important;
@@ -62,7 +62,7 @@ form textarea:not(.ui-textarea)::placeholder {
 form input:not(.ui-input)[readonly],
 form textarea:not(.ui-textarea)[readonly],
 form input:not(.ui-input):disabled,
-form select:not(.ui-select):disabled,
+form select:disabled,
 form textarea:not(.ui-textarea):disabled {
     cursor: default;
     border-color: var(--ui-component-border, #e2e8f0);
@@ -182,4 +182,81 @@ main:has(form[action*="schools/profile"]) .ui-form-actions { margin-top: .25rem;
     .ui-form-actions>* { flex: 1 1 auto; }
     main:has(#modul-buat-spj) section>div[class*="bg-slate-900"] { min-height: 9rem; }
     main:has(form[action*="document-templates"]) .ui-choice-card { min-height: 2.6rem; }
+}
+
+select:not(.ui-select) {
+    --_select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --_select-arrow-bg: var(--ui-component-text-muted, #64748b);
+    appearance: none;
+    background-image: var(--_select-arrow);
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    background-size: 1rem 1rem;
+    border-color: var(--ui-component-border-strong, #cbd5e1);
+    --_select-bg: var(--ui-component-surface, #fff);
+    --_select-text: var(--ui-component-text-strong, #0f172a);
+    --_select-radius: var(--ui-control-radius, .625rem);
+    background-color: var(--_select-bg);
+    color: var(--_select-text);
+    border-radius: var(--_select-radius);
+}
+
+select:not(.ui-select):hover {
+    border-color: color-mix(in srgb, var(--theme-accent, #4f46e5) 24%, var(--ui-component-border-strong, #94a3b8));
+}
+
+select:not(.ui-select):focus {
+    outline: none;
+    border-color: var(--theme-accent, #4f46e5);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--theme-accent, #4f46e5) 16%, transparent);
+}
+
+select:not(.ui-select):focus:not(:focus-visible) {
+    box-shadow: none;
+}
+
+select:not(.ui-select):disabled {
+    cursor: not-allowed;
+    background: var(--ui-component-surface-soft, #f8fafc);
+    color: var(--ui-component-text-muted, #64748b);
+    border-color: var(--ui-component-border, #e2e8f0);
+    box-shadow: none;
+}
+
+select:not(.ui-select):focus:disabled {
+    box-shadow: none;
+}
+
+/* Dropdown panel when focused/open */
+select:not(.ui-select):focus::-ms-expand,
+select:not(.ui-select):open::-ms-expand {
+    display: none;
+}
+
+select:not(.ui-select):focus,
+select:not(.ui-select):open {
+    --_select-input-color: var(--ui-component-text-strong, #0f172a);
+    box-shadow: 0 1px color-mix(in oklab, var(--_select-input-color) calc(var(--depth) * 10%), #0000) inset,
+        0 -1px oklch(100% 0 0 / calc(var(--depth) * 0.1)) inset;
+}
+
+select:not(.ui-select):open {
+    background-image:
+        linear-gradient(135deg, #0000 50%, var(--_select-text) 50%),
+        linear-gradient(45deg, var(--_select-text) 50%, #0000 50%);
+    background-position:
+        calc(100% - 20px) calc(1px + 50%),
+        calc(100% - 16.1px) calc(1px + 50%);
+    background-size:
+        4px 4px,
+        4px 4px;
+}
+
+fieldset[disabled] select:not(.ui-select),
+select:not(.ui-select)[disabled] {
+    cursor: not-allowed;
+    background: var(--ui-component-surface-soft, #f8fafc);
+    color: var(--ui-component-text-muted, #64748b);
+    border-color: var(--ui-component-border, #e2e8f0);
+    box-shadow: none;
 }

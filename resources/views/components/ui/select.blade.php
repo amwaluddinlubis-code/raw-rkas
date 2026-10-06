@@ -8,7 +8,7 @@
     @if($name) name="{{ $name }}" @endif
     @if($id) id="{{ $id }}" @endif
     @disabled($disabled)
-    {{ $attributes->class(['ui-select']) }}
+    {{ $attributes->class(['select', 'ui-select']) }}
 >
     {{ $slot }}
 </select>

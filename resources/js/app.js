@@ -2,6 +2,7 @@ import './bootstrap';
 import Alpine from 'alpinejs';
 import persist from '@alpinejs/persist';
 import collapse from '@alpinejs/collapse';
+import { initializePageSelectDropdowns } from './spj-select-dropdowns';
 
 if (!window.Alpine) {
     if (!Object.prototype.hasOwnProperty.call(Alpine, '$persist')) {
@@ -553,3 +554,6 @@ const bindGeneratedFieldIds = (root = document) => {
 
 bindGeneratedFieldIds();
 document.addEventListener('livewire:navigated', () => bindGeneratedFieldIds());
+
+initializePageSelectDropdowns();
+document.addEventListener('livewire:navigated', initializePageSelectDropdowns);

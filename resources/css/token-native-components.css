@@ -105,6 +105,7 @@
 
 /* Form controls */
 .ui-input,
+.select,
 .ui-select,
 .ui-textarea {
     width: 100%;
@@ -117,7 +118,20 @@
     transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease, border-radius .15s ease;
 }
 
+/* Native single-selects use the same trigger geometry as the searchable
+   select. Keep the native option behavior, but make every select consistent
+   across filters, compact controls, and manual-entry forms. */
+select:not([multiple]) {
+    appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right .75rem center;
+    background-repeat: no-repeat;
+    background-size: 1rem 1rem;
+}
+
 .ui-input,
+.select,
 .ui-select {
     min-height: var(--profile-control-height);
     padding: .5rem .75rem;
@@ -139,12 +153,14 @@
 }
 
 .ui-input:hover,
+.select:hover,
 .ui-select:hover,
 .ui-textarea:hover {
     border-color: color-mix(in srgb, var(--theme-accent) 24%, var(--ui-component-border-strong));
 }
 
 .ui-input:focus,
+.select:focus,
 .ui-select:focus,
 .ui-textarea:focus {
     border-color: color-mix(in srgb, var(--theme-accent) 64%, var(--ui-component-border-strong));
@@ -152,6 +168,7 @@
 }
 
 .ui-input:disabled,
+.select:disabled,
 .ui-select:disabled,
 .ui-textarea:disabled,
 .ui-input-readonly {
@@ -160,6 +177,38 @@
     color: var(--ui-component-text-muted);
     box-shadow: none;
 }
+
+/* DaisyUI-compatible select modifiers backed by the project's theme tokens. */
+.select-ghost {
+    border-color: transparent;
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.select-primary,
+.select-secondary,
+.select-accent,
+.select-info {
+    border-color: color-mix(in srgb, var(--theme-accent) 62%, var(--ui-component-border-strong));
+}
+
+.select-success {
+    border-color: color-mix(in srgb, #10b981 62%, var(--ui-component-border-strong));
+}
+
+.select-warning {
+    border-color: color-mix(in srgb, #f59e0b 62%, var(--ui-component-border-strong));
+}
+
+.select-error {
+    border-color: color-mix(in srgb, #f43f5e 62%, var(--ui-component-border-strong));
+}
+
+.select-xs { min-height: 1.5rem; padding-block: .2rem; font-size: .6875rem; }
+.select-sm { min-height: 2rem; padding-block: .35rem; font-size: .75rem; }
+.select-md { min-height: var(--profile-control-height); }
+.select-lg { min-height: 3rem; padding-block: .7rem; font-size: 1rem; }
+.select-xl { min-height: 3.5rem; padding-block: .85rem; font-size: 1.125rem; }
 
 /* Searchable single-select dropdowns share the canonical control geometry and
    theme tokens while adding a filterable option panel. */
@@ -264,6 +313,74 @@
     padding: .6rem .65rem;
     color: var(--ui-fg-muted);
     font-size: var(--ui-font-caption);
+}
+
+.ui-daisy-select-native {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.ui-daisy-select-trigger:disabled {
+    cursor: not-allowed;
+    opacity: .65;
+}
+
+.ui-daisy-select-menu {
+    min-width: 100%;
+}
+
+.ui-daisy-select-search-icon,
+.ui-daisy-select-chevron {
+    display: block;
+    flex: 0 0 auto;
+}
+
+.ui-daisy-select-search-icon {
+    position: absolute;
+    top: 50%;
+    left: .75rem;
+    width: .8rem;
+    height: .8rem;
+    border: 1.5px solid var(--ui-fg-muted);
+    border-radius: 999px;
+    transform: translateY(-60%);
+}
+
+.ui-daisy-select-search-icon::after {
+    position: absolute;
+    right: -.3rem;
+    bottom: -.18rem;
+    width: .35rem;
+    height: 1.5px;
+    background: currentColor;
+    content: '';
+    transform: rotate(45deg);
+}
+
+.ui-daisy-select-chevron {
+    width: .55rem;
+    height: .55rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-.15rem);
+}
+
+.ui-searchable-select-option .ui-daisy-select-check {
+    width: .45rem;
+    height: .7rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    opacity: 0;
+    transform: rotate(45deg) translate(-.1rem, -.1rem);
+}
+
+.ui-searchable-select-option.is-selected .ui-daisy-select-check,
+.ui-searchable-select-option[aria-selected='true'] .ui-daisy-select-check {
+    opacity: 1;
 }
 
 /* Page header structural contract */
