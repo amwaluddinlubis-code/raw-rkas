@@ -1112,9 +1112,9 @@ final class SpjSourceRelinkService
      * ditemukan TIDAK dipasangkan diam-diam — dilewati dan dilaporkan.
      *
      * @param  array<int, array{item: object, fp: string}>  $oldRows  berurutan ID
-     * @param  array<int, array{id: string, fp: string}>    $newRows  berurutan ID
+     * @param  array<int, array{id: string, fp: string}>  $newRows  berurutan ID
      * @param  array<string, object>  $newRowsById  baris item baru (command repair; kosong pada jalur sync)
-     * @return array{paired: int, skipped: array<int, string>}  old_item_id => alasan
+     * @return array{paired: int, skipped: array<int, string>} old_item_id => alasan
      */
     private function repointItems(array $oldRows, array $newRows, ?int $runId, array $newRowsById = []): array
     {
@@ -1160,8 +1160,8 @@ final class SpjSourceRelinkService
      * sehingga pairing kembali ke urutan deterministik lama.
      *
      * @param  array<int, array{item: object, fp: string}>  $oldRows
-     * @param  array<int, array{id: string, fp: string}>    $newRows
-     * @return array{paired: array<int, string>, skipped: array<int, string>}  old_item_id => new_id / alasan
+     * @param  array<int, array{id: string, fp: string}>  $newRows
+     * @return array{paired: array<int, string>, skipped: array<int, string>} old_item_id => new_id / alasan
      */
     public static function pairItemsByFingerprint(array $oldRows, array $newRows): array
     {
