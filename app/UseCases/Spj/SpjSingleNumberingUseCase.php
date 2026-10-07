@@ -13,6 +13,7 @@ use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class SpjSingleNumberingUseCase
 {
@@ -124,6 +125,7 @@ class SpjSingleNumberingUseCase
         }
 
         $school = $this->context->school();
+        $this->warnWhenDocumentDateIgnored($package, $documentType, $scopeKey, (string) $data['document_date']);
         $document = $this->numbers->assign(
             $package,
             $documentType,
@@ -138,5 +140,33 @@ class SpjSingleNumberingUseCase
         $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_DOCUMENT', $document->id, 'TETAPKAN_NOMOR', 'Nomor '.$document->document_type.' '.$document->document_number.' ditetapkan.');
 
         return back()->with('success', 'Nomor '.$definition['label'].' berhasil dibuat: '.$document->document_number);
+    }
+
+    /**
+     * Tanggal dokumen efektif selalu mengikuti aturan event date registry
+     * canonical (lihat SpjDocumentNumberService::canonicalDocumentDate);
+     * input document_date hanya menjadi fallback bila event date kosong
+     * (yang sudah ditolak di atas). Catat warning eksplisit bila input
+     * operator diabaikan agar tidak menyesatkan.
+     */
+    private function warnWhenDocumentDateIgnored(SpjPackage $package, string $documentType, string $scopeKey, string $inputDate): void
+    {
+        $effective = $this->numberingPolicy->documentEventDateValue($package->transaction, $documentType, $scopeKey);
+        if (blank($effective)) {
+            return;
+        }
+
+        $effectiveDate = Carbon::parse($effective)->format('Y-m-d');
+        if ($effectiveDate === Carbon::parse($inputDate)->format('Y-m-d')) {
+            return;
+        }
+
+        Log::warning('Input document_date penomoran diabaikan; tanggal peristiwa registry yang dipakai.', [
+            'package_id' => $package->id,
+            'document_type' => $documentType,
+            'scope_key' => $scopeKey,
+            'input_document_date' => $inputDate,
+            'effective_event_date' => $effectiveDate,
+        ]);
     }
 }
