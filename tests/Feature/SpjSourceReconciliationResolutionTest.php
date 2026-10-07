@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\Transaction;
+use App\Models\User;
 use App\Services\SpjSourceReconciliationService;
 use DomainException;
 use Illuminate\Support\Facades\Artisan;
@@ -240,25 +241,32 @@ class SpjSourceReconciliationResolutionTest extends TestCase
 
     public function test_locked_package_can_resolve_with_explicit_unlock_and_notes(): void
     {
-        $transaction = $this->transaction('FINAL');
-        $eventId = $this->event($transaction, ['gross_amount' => 100000], ['gross_amount' => 150000]);
+        [$restoreEnv, $admin] = $this->enableTemporaryUnlockForAdmin();
 
-        $result = app(SpjSourceReconciliationService::class)->resolve(
-            $transaction,
-            SpjSourceReconciliationService::ACCEPT_SOURCE,
-            'Buka sementara: angka ARKAS sudah dikonfirmasi bendahara.',
-            13,
-            $eventId,
-            true,
-        );
+        try {
+            $transaction = $this->transaction('FINAL');
+            $eventId = $this->event($transaction, ['gross_amount' => 100000], ['gross_amount' => 150000]);
 
-        $this->assertSame(SpjSourceReconciliationService::ACCEPT_SOURCE, $result['resolution']);
-        $this->assertFalse((bool) $transaction->fresh()->requires_reconciliation);
-        $this->assertSame('FINAL', $transaction->fresh()->spjPackage->status);
+            $result = app(SpjSourceReconciliationService::class)->resolve(
+                $transaction,
+                SpjSourceReconciliationService::ACCEPT_SOURCE,
+                'Buka sementara: angka ARKAS sudah dikonfirmasi bendahara.',
+                $admin->id,
+                $eventId,
+                true,
+            );
+
+            $this->assertSame(SpjSourceReconciliationService::ACCEPT_SOURCE, $result['resolution']);
+            $this->assertFalse((bool) $transaction->fresh()->requires_reconciliation);
+            $this->assertSame('FINAL', $transaction->fresh()->spjPackage->status);
+        } finally {
+            $restoreEnv();
+        }
     }
 
     public function test_locked_unlock_requires_written_notes(): void
     {
+        [$restoreEnv, $admin] = $this->enableTemporaryUnlockForAdmin();
         $transaction = $this->transaction('NUMBERED');
         $eventId = $this->event($transaction, ['gross_amount' => 100000], ['gross_amount' => 150000]);
 
@@ -270,13 +278,53 @@ class SpjSourceReconciliationResolutionTest extends TestCase
                 $transaction,
                 SpjSourceReconciliationService::ACCEPT_SOURCE,
                 null,
-                13,
+                $admin->id,
                 $eventId,
                 true,
             );
         } finally {
+            $restoreEnv();
             $this->assertTrue((bool) $transaction->fresh()->requires_reconciliation);
         }
+    }
+
+    /**
+     * Siapkan prakondisi kontrak baru resolve(): jalur buka-sementara aktif
+     * dan penyelesai adalah administrator (defense-in-depth R8).
+     *
+     * @return array{callable, User}
+     */
+    private function enableTemporaryUnlockForAdmin(): array
+    {
+        $prevServer = $_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION'] ?? null;
+        $prevEnv = $_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION'] ?? null;
+        $prevGetenv = getenv('SPJ_TEMP_UNLOCK_RECONCILIATION');
+
+        putenv('SPJ_TEMP_UNLOCK_RECONCILIATION=true');
+        $_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION'] = 'true';
+        $_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION'] = 'true';
+
+        $admin = User::factory()->create(['role' => User::ROLE_ADMIN]);
+
+        $restore = function () use ($prevServer, $prevEnv, $prevGetenv): void {
+            if ($prevGetenv === false) {
+                putenv('SPJ_TEMP_UNLOCK_RECONCILIATION');
+            } else {
+                putenv('SPJ_TEMP_UNLOCK_RECONCILIATION='.$prevGetenv);
+            }
+            if ($prevServer === null) {
+                unset($_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION']);
+            } else {
+                $_SERVER['SPJ_TEMP_UNLOCK_RECONCILIATION'] = $prevServer;
+            }
+            if ($prevEnv === null) {
+                unset($_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION']);
+            } else {
+                $_ENV['SPJ_TEMP_UNLOCK_RECONCILIATION'] = $prevEnv;
+            }
+        };
+
+        return [$restore, $admin];
     }
 
     public function test_temporary_unlock_defaults_to_closed(): void
