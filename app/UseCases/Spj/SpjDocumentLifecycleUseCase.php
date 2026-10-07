@@ -11,6 +11,7 @@ use App\Services\SpjNumberingPolicyService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SpjDocumentLifecycleUseCase
 {
@@ -74,23 +75,31 @@ class SpjDocumentLifecycleUseCase
         $documentDate = $old->document_date ?: now();
         $templateId = $old->document_template_id;
 
-        $this->lifecycle->cancel($old, $this->context->actorId(), $data['reason']);
-        $package = $old->package->fresh(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
-        $school = $this->context->school();
-        $replacement = $this->numbers->assign(
-            $package,
-            $documentType,
-            $documentDate,
-            $school->school_code ?: $school->npsn,
-            $scopeKey,
-            $templateId,
-            $school->npsn,
-        );
-        $replacement->forceFill([
-            'replaces_document_id' => $old->id,
-            'is_late_entry' => true,
-        ])->save();
-        $this->syncDerivedNumber($replacement);
+        // S2: cancel + assign harus atomik dalam satu transaksi. Bila assign
+        // gagal setelah cancel ter-commit, paket tertinggal CANCELLED tanpa
+        // pengganti. Transaksi bersarang Laravel memakai savepoint sehingga
+        // kegagalan assign me-rollback cancel juga.
+        [$package, $replacement] = DB::connection('school')->transaction(function () use ($old, $documentType, $documentDate, $scopeKey, $templateId, $data): array {
+            $this->lifecycle->cancel($old, $this->context->actorId(), $data['reason']);
+            $package = $old->package->fresh(['transaction.goods', 'transaction.workOrder', 'transaction.travels']);
+            $school = $this->context->school();
+            $replacement = $this->numbers->assign(
+                $package,
+                $documentType,
+                $documentDate,
+                $school->school_code ?: $school->npsn,
+                $scopeKey,
+                $templateId,
+                $school->npsn,
+            );
+            $replacement->forceFill([
+                'replaces_document_id' => $old->id,
+                'is_late_entry' => true,
+            ])->save();
+            $this->syncDerivedNumber($replacement);
+
+            return [$package, $replacement];
+        });
 
         $this->audit->record(
             $package->transaction->fiscal_year_id,
