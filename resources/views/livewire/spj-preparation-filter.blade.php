@@ -46,49 +46,68 @@
                     bernomor</span><strong>{{ $workQueueCounts['numbered'] ?? 0 }}</strong></button>
         </nav>
         <div class="spj-filter-bar mt-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 lg:items-end">
-                <x-ui.field label="Cari bukti / uraian / vendor" for="spj-preparation-search"><x-ui.input id="spj-preparation-search"
-                        type="search" placeholder="No. bukti, uraian, vendor…" autocomplete="off"
-                        wire:model.live.debounce.300ms="search" />
+            <div class="grid gap-2 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-[minmax(10rem,1fr)_minmax(7rem,0.8fr)_minmax(7rem,0.8fr)_minmax(26rem,2fr)_auto_auto] lg:items-end">
+                <x-ui.field label="Cari paket" for="spj-preparation-search" class="md:col-span-6 lg:col-span-1">
+                    <div class="relative">
+                        <x-ui.icon name="search" size="sm" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
+                        <x-ui.input id="spj-preparation-search" wire:model.live.debounce.300ms="search" placeholder="No. bukti, uraian, atau penerima..." class="!pl-9" />
+                    </div>
                 </x-ui.field>
-                <x-ui.field label="Bulan" for="spj-preparation-month"><x-ui.select id="spj-preparation-month"
-                        wire:model.live="month">
-                        <option value="">Semua bulan</option>
-                        @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $month)
-                            <option value="{{ $index + 1 }}">{{ $month }}
-                            </option>
+                <x-ui.field label="Status" for="spj-preparation-status">
+                    <x-ui.searchable-select id="spj-preparation-status" wire-model="state"
+                        :options="[
+                            ['value' => 'all', 'label' => 'Semua status'],
+                            ['value' => 'attention', 'label' => 'Perlu perhatian: rincian belum ada'],
+                            ['value' => 'ready', 'label' => 'Siap dibuat'],
+                            ['value' => 'unprepared', 'label' => 'Belum dikerjakan'],
+                            ['value' => 'draft', 'label' => 'Perlu dilengkapi'],
+                            ['value' => 'numbered', 'label' => 'Sudah bernomor'],
+                        ]" placeholder="Semua status" search-placeholder="Cari status..." />
+                </x-ui.field>
+                <x-ui.field label="Kategori SPJ" for="spj-preparation-category">
+                    <x-ui.searchable-select id="spj-preparation-category" wire-model="spj_category"
+                        :options="array_merge(
+                            [['value' => '', 'label' => 'Semua kategori']],
+                            collect($spjTypes ?? [])->map(fn ($type) => ['value' => $type, 'label' => $spjTypeLabel($type)])->all()
+                        )" placeholder="Semua kategori" search-placeholder="Cari kategori..." />
+                </x-ui.field>
+                <x-ui.field label="Periode" for="spj-preparation-period" class="min-w-0 md:col-span-2 lg:col-span-1">
+                    <div class="spj-period-filter flex min-w-0 flex-wrap items-end gap-2">
+                        <div class="ui-segment-group flex shrink-0 max-w-full overflow-x-auto" role="group" aria-label="Mode periode">
+                        @foreach($this->modes() as $modeOption => $label)
+                            <button type="button" wire:click="setMode('{{ $modeOption }}')"
+                                aria-pressed="{{ $mode === $modeOption ? 'true' : 'false' }}"
+                                class="whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-xs transition {{ $loop->first ? '' : '-ml-px' }} {{ $mode === $modeOption ? 'font-bold text-[var(--theme-content-accent)]' : 'font-medium text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg-strong)]' }}"
+                                style="{{ $mode === $modeOption ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">{{ $label }}</button>
                         @endforeach
+                        </div>
+                        {{-- Mode Semua tidak butuh dropdown (satu-satunya opsi "Semua
+                            periode" hanya menambah baris visual). --}}
+                        @if($mode !== 'semua')
+                        <x-ui.select id="spj-preparation-period" wire:model.live="periode" class="w-full min-w-0 flex-1 !py-1.5 !text-sm"
+                            style="width: auto;">
+                            <option value="">{{ 'Pilih '.$mode }}</option>
+                            @if($mode === 'semester')
+                                @foreach(range(1,2) as $semester)<option value="{{ $semester }}">Semester {{ $semester }}</option>@endforeach
+                            @elseif($mode === 'triwulan')
+                                @foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach
+                            @elseif($mode === 'bulan')
+                                @foreach(range(1,12) as $month)<option value="{{ $month }}">{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach
+                        @endif
+                        </x-ui.select>
+                        @endif
+                    </div>
+                </x-ui.field>
+                <x-ui.field label="Baris" for="spj-preparation-per-page">
+                    <x-ui.select id="spj-preparation-per-page" wire:model.live="perPage" aria-label="Baris per halaman"
+                        class="!w-auto !py-1.5 !text-sm">
+                        @foreach ([15, 25, 50, 100] as $perPageOption)<option value="{{ $perPageOption }}"
+                            @selected($perPage == $perPageOption)>{{ $perPageOption }} baris</option>@endforeach
+                        <option value="all" @selected($perPage === 'all')>Semua</option>
                     </x-ui.select>
                 </x-ui.field>
-                <x-ui.field label="Triwulan" for="spj-preparation-quarter"><x-ui.select id="spj-preparation-quarter"
-                        wire:model.live="quarter">
-                        <option value="">Semua triwulan</option>
-                        @foreach (range(1, 4) as $quarter)
-                            <option value="{{ $quarter }}">Triwulan
-                                {{ $quarter }}</option>
-                        @endforeach
-                    </x-ui.select>
-                </x-ui.field>
-                <x-ui.field label="Kategori" for="spj-preparation-category"><x-ui.select id="spj-preparation-category"
-                        wire:model.live="spj_category">
-                        <option value="">Semua jenis SPJ</option>
-                        @foreach ($spjTypes ?? [] as $type)
-                            <option value="{{ $type }}">
-                                {{ $spjTypeLabel($type) }}</option>
-                        @endforeach
-                    </x-ui.select>
-                </x-ui.field>
-                <x-ui.field label="Status" for="spj-preparation-state"><x-ui.select id="spj-preparation-state"
-                        wire:model.live="state">
-                        <option value="all">Semua status</option>
-                        <option value="needs_details">Perlu perhatian: rincian belum ada</option>
-                        <option value="ready">Siap dibuat</option>
-                        <option value="unprepared">Belum dikerjakan</option>
-                        <option value="draft">Perlu dilengkapi</option>
-                        <option value="numbered">Sudah bernomor</option>
-                    </x-ui.select></x-ui.field>
-                <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="resetFilters">Reset Filter</x-ui.button>
-                <x-ui.button variant="secondary" :href="route('spj.quarter-recap', ['quarter' => $quarter ?? (int) ceil((int) now()->format('n') / 3)])">Rekap triwulan</x-ui.button>
+                <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="resetFilters" wire:loading.attr="disabled"
+                    wire:target="resetFilters" class="w-full justify-center md:self-end lg:w-auto">Bersihkan</x-ui.button>
             </div>
         </div>
     </div>

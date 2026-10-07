@@ -12,11 +12,11 @@ class SpjPreparationFilter extends Component
 {
     use WithPagination;
 
-    #[Url(except: null)]
-    public ?int $month = null;
+    #[Url(except: 'semua')]
+    public string $mode = 'semua';
 
     #[Url(except: null)]
-    public ?int $quarter = null;
+    public ?int $periode = null;
 
     #[Url(except: '')]
     public string $spj_category = '';
@@ -32,8 +32,27 @@ class SpjPreparationFilter extends Component
 
     public function mount(): void
     {
-        $this->month = request()->integer('month') ?: null;
-        $this->quarter = request()->integer('quarter') ?: null;
+        $mode = (string) request('mode', 'semua');
+        $periode = request()->integer('periode') ?: null;
+        if (! in_array($mode, array_keys($this->modes()), true)) {
+            $mode = 'semua';
+        }
+
+        // Kompatibilitas URL lama ?month= / ?quarter=.
+        if ($mode === 'semua' && $periode === null) {
+            $month = request()->integer('month') ?: null;
+            $quarter = request()->integer('quarter') ?: null;
+            if ($month) {
+                $mode = 'bulan';
+                $periode = $month;
+            } elseif ($quarter) {
+                $mode = 'triwulan';
+                $periode = $quarter;
+            }
+        }
+
+        $this->mode = $mode;
+        $this->periode = $periode;
         $this->spj_category = trim((string) request('spj_category', ''));
         $state = (string) request('state', 'all');
         $this->state = in_array($state, $this->allowedStates(), true) ? $state : 'all';
@@ -43,9 +62,26 @@ class SpjPreparationFilter extends Component
 
     public function updating($property): void
     {
-        if (in_array($property, ['month', 'quarter', 'spj_category', 'state', 'perPage', 'search'], true)) {
+        if (in_array($property, ['mode', 'periode', 'spj_category', 'state', 'perPage', 'search'], true)) {
             $this->resetPage();
         }
+    }
+
+    public function modes(): array
+    {
+        return [
+            'bulan' => 'Bulan',
+            'triwulan' => 'Triwulan',
+            'semester' => 'Semester',
+            'semua' => 'Semua',
+        ];
+    }
+
+    public function setMode(string $modeOption): void
+    {
+        $this->mode = $modeOption;
+        $this->periode = null;
+        $this->resetPage();
     }
 
     public function setQueueState(string $state): void
@@ -60,7 +96,7 @@ class SpjPreparationFilter extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['month', 'quarter', 'spj_category', 'state', 'perPage', 'search']);
+        $this->reset(['mode', 'periode', 'spj_category', 'state', 'perPage', 'search']);
         $this->resetPage();
     }
 
@@ -75,12 +111,12 @@ class SpjPreparationFilter extends Component
         ]);
     }
 
-    /** @return array{month: int|null, quarter: int|null, spj_category: string|null, state: string, search: string|null} */
+    /** @return array{mode: string, periode: int|null, spj_category: string|null, state: string, search: string|null} */
     private function filters(): array
     {
         return [
-            'month' => $this->month,
-            'quarter' => $this->quarter,
+            'mode' => $this->mode,
+            'periode' => $this->periode,
             'spj_category' => $this->spj_category === '' ? null : $this->spj_category,
             'state' => $this->state,
             'search' => $this->search === '' ? null : $this->search,

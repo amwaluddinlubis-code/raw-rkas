@@ -12,6 +12,7 @@ use App\Services\SpjPackageValidationService;
 use App\Services\SpjWorkflowFilterService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -71,8 +72,8 @@ class SpjWorkspaceUseCase
     public static function preparationFilterRules(): array
     {
         return [
-            'month' => ['nullable', 'integer', 'between:1,12'],
-            'quarter' => ['nullable', 'integer', 'between:1,4'],
+            'mode' => ['nullable', 'string', 'in:semua,bulan,triwulan,semester'],
+            'periode' => ['nullable', 'integer', 'between:1,12'],
             'spj_category' => ['nullable', 'string', 'max:40'],
             'state' => ['nullable', 'in:all,attention,needs_details,unprepared,draft,ready,numbered'],
             'search' => ['nullable', 'string', 'max:100'],
@@ -87,17 +88,21 @@ class SpjWorkspaceUseCase
      */
     public function preparationData(array $filters, int $perPage): array
     {
-        $month = isset($filters['month']) && $filters['month'] !== null ? (int) $filters['month'] : null;
-        $quarter = isset($filters['quarter']) && $filters['quarter'] !== null ? (int) $filters['quarter'] : null;
+        $mode = (string) ($filters['mode'] ?? 'semua');
+        $periode = isset($filters['periode']) && $filters['periode'] !== null ? (int) $filters['periode'] : null;
         $search = trim((string) ($filters['search'] ?? ''));
 
         $query = Transaction::query()->forSpjContext($this->context);
         ArkasMirrorResolver::joinKasUmum($query);
         $query
-            ->when($month, fn ($q, $selectedMonth) => $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [$selectedMonth]))
-            ->when(! $month && $quarter, function ($q) use ($quarter): void {
-                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($quarter - 1) * 3) + 1])
-                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$quarter * 3]);
+            ->when($mode === 'bulan' && $periode >= 1 && $periode <= 12, fn ($q) => $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [$periode]))
+            ->when($mode === 'triwulan' && $periode >= 1 && $periode <= 4, function ($q) use ($periode): void {
+                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($periode - 1) * 3) + 1])
+                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$periode * 3]);
+            })
+            ->when($mode === 'semester' && $periode >= 1 && $periode <= 2, function ($q) use ($periode): void {
+                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($periode - 1) * 6) + 1])
+                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$periode * 6]);
             })
             ->when($filters['spj_category'] ?? null, fn ($q, $type) => $q->where('transactions.spj_category', $type))
             ->when($search !== '', function ($q) use ($search): void {
@@ -138,17 +143,20 @@ class SpjWorkspaceUseCase
     }
 
     /**
-     * @param  array{search?:string,status?:string,category?:string}  $filters
+     * @param  array{search?:string,status?:string,category?:string,mode?:string,periode?:int|null}  $filters
      */
     public function packageListData(int $perPage, array $filters = []): LengthAwarePaginator
     {
         $search = trim((string) ($filters['search'] ?? ''));
         $status = strtoupper(trim((string) ($filters['status'] ?? '')));
         $category = strtoupper(trim((string) ($filters['category'] ?? '')));
+        $mode = $filters['mode'] ?? 'semua';
+        $periode = $filters['periode'] ?? null;
 
         return SpjPackage::query()
             ->with(['transaction:id,payment_description,spj_category,fiscal_year_id,fund_source_id'])
             ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
+            ->when($mode !== 'semua' && $periode !== null, fn ($query) => $this->applyPackagePeriodScope($query, $mode, $periode))
             ->whereHas('transaction', function ($query) use ($search, $category): void {
                 $query->forSpjContext($this->context)
                     ->when($category !== '', fn ($transactionQuery) => $transactionQuery->where('transactions.spj_category', $category));
@@ -169,13 +177,15 @@ class SpjWorkspaceUseCase
     }
 
     /**
-     * @param  array{search?:string,status?:string,category?:string}  $filters
+     * @param  array{search?:string,status?:string,category?:string,mode?:string,periode?:int|null}  $filters
      */
     public function attributeListData(int $perPage, array $filters = []): LengthAwarePaginator
     {
         $search = trim((string) ($filters['search'] ?? ''));
         $status = strtoupper(trim((string) ($filters['status'] ?? '')));
         $category = strtoupper(trim((string) ($filters['category'] ?? '')));
+        $mode = $filters['mode'] ?? 'semua';
+        $periode = $filters['periode'] ?? null;
 
         return SpjPackage::query()
             ->with([
@@ -190,6 +200,7 @@ class SpjWorkspaceUseCase
                 'transaction.serviceRecipients',
             ])
             ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
+            ->when($mode !== 'semua' && $periode !== null, fn ($query) => $this->applyPackagePeriodScope($query, $mode, $periode))
             ->whereHas('transaction', function ($query) use ($search, $category): void {
                 $query->forSpjContext($this->context)
                     ->when($category !== '', fn ($transactionQuery) => $transactionQuery->where('transactions.spj_category', $category));
@@ -207,6 +218,47 @@ class SpjWorkspaceUseCase
             ->orderByDesc('id')
             ->paginate($perPage, ['*'], 'attribute_page')
             ->withQueryString();
+    }
+
+    /**
+     * Scope periode daftar paket via tanggal mirror kas_umum.
+     *
+     * Kolom tanggal lokal transactions.* sudah di-drop pasca-refactor
+     * overlay, sehingga filter wajib memakai JOIN mirror
+     * (ArkasMirrorResolver::joinKasUmum) + predikat tanggal mirror yang
+     * sama dengan jalur laporan periode — bukan strftime mentah pada
+     * tabel yang tidak ter-join (500) maupun format %q/%s yang tidak
+     * dikenal SQLite.
+     */
+    private function applyPackagePeriodScope(Builder $query, string $mode, mixed $periode): void
+    {
+        $periode = is_numeric($periode) ? (int) $periode : null;
+
+        $valid = match ($mode) {
+            'bulan' => $periode !== null && $periode >= 1 && $periode <= 12,
+            'triwulan' => $periode !== null && $periode >= 1 && $periode <= 4,
+            'semester' => $periode !== null && $periode >= 1 && $periode <= 2,
+            default => false,
+        };
+
+        if (! $valid || $periode === null) {
+            return;
+        }
+
+        [$from, $to] = match ($mode) {
+            'bulan' => [$periode, $periode],
+            'triwulan' => [(($periode - 1) * 3) + 1, $periode * 3],
+            'semester' => [(($periode - 1) * 6) + 1, $periode * 6],
+        };
+
+        $query->whereHas('transaction', function ($transactionQuery) use ($from, $to): void {
+            ArkasMirrorResolver::joinKasUmum($transactionQuery);
+            ArkasMirrorResolver::whereMirrorDate(
+                $transactionQuery,
+                "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?",
+                [$from, $to]
+            );
+        });
     }
 
     private function tabPersiapan(Request $request): View

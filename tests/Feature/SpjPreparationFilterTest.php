@@ -68,19 +68,24 @@ class SpjPreparationFilterTest extends TestCase
         $this->assertSame([$sourceMissing->id], $this->filteredIds('needs_details'));
     }
 
-    public function test_month_filter_takes_precedence_when_month_and_quarter_are_both_present(): void
+    public function test_period_modes_filter_by_mirror_month(): void
     {
         $april = $this->transaction('BPU-APR', '2026-04-10');
-        $this->transaction('BPU-FEB', '2026-02-10');
+        $february = $this->transaction('BPU-FEB', '2026-02-10');
+        $august = $this->transaction('BPU-AUG', '2026-08-10');
 
-        $data = app(SpjWorkspaceUseCase::class)->preparationData([
-            'month' => 4,
-            'quarter' => 1,
-        ], 15);
+        $ids = fn (array $filters): array => app(SpjWorkspaceUseCase::class)
+            ->preparationData($filters, 15)['transactions']->getCollection()->pluck('id')->all();
 
-        $ids = $data['transactions']->getCollection()->pluck('id')->all();
-
-        $this->assertSame([$april->id], $ids);
+        $this->assertSame([$april->id], $ids(['mode' => 'bulan', 'periode' => 4]));
+        $this->assertSame([$february->id], $ids(['mode' => 'triwulan', 'periode' => 1]));
+        $this->assertEqualsCanonicalizing(
+            [$february->id, $april->id],
+            $ids(['mode' => 'semester', 'periode' => 1])
+        );
+        $this->assertSame([$august->id], $ids(['mode' => 'semester', 'periode' => 2]));
+        $this->assertCount(3, $ids(['mode' => 'semua', 'periode' => null]));
+        $this->assertCount(3, $ids(['mode' => 'triwulan', 'periode' => 9]));
     }
 
     private function filteredIds(string $state): array

@@ -36,11 +36,12 @@ class SpjTabFiltersLivewireTest extends TestCase
             ->assertSee('BKU-001')
             ->assertSee('BKU-002')
             ->assertSee('BKU-003')
-            ->set('month', 2)
+            ->call('setMode', 'bulan')
+            ->set('periode', 2)
             ->assertSee('BKU-002')
             ->assertDontSee('BKU-001')
             ->assertDontSee('BKU-003')
-            ->set('month', null)
+            ->call('setMode', 'semua')
             ->set('spj_category', 'JASA_LAINNYA')
             ->assertSee('BKU-002')
             ->assertDontSee('BKU-001');
@@ -250,6 +251,7 @@ class SpjTabFiltersLivewireTest extends TestCase
             $table->text('description')->nullable();
             $table->text('item_description')->nullable();
             $table->decimal('amount', 18, 2)->default(0);
+            $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
 

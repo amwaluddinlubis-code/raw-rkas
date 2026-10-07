@@ -1,9 +1,59 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-06** (tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-07** (unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
+
+## Unifikasi filter tab Persiapan + Paket ikut pola Atribut (2026-10-07)
+
+Status: **FUNCTIONAL PASS (focused + browser)**.
+
+Bar filter Persiapan (select Bulan + Triwulan ganda) dan Paket
+dimigrasi ke pola Atribut: segmen Bulan/Triwulan/Semester/Semua +
+satu dropdown periode (sembunyi saat Semua) + searchable
+Status/Kategori + kontrol Baris + Bersihkan, 1 baris responsif.
+`SpjPreparationFilter` kini memakai `mode/periode` (+semester,
+sebelumnya tak ada) dengan pemetaan URL lama `?month=/?
+quarter=` di `mount()`; `preparationData` + `preparationFilterRules`
+mengikuti. Tanpa JS baru — enhancement dropdown daisy + Livewire
+yang sudah ada terpakai ulang.
+
+Regression: `SpjPreparationFilterTest` 3 passed,
+`SpjPackagePeriodFilterTest` 6 passed, `SpjTabFiltersLivewireTest`
+7 passed (sebelumnya 7 failed pra-eksis: fixture `sort_order`
+dilengkapi + ekspektasi diselaraskan API baru), Pint passed,
+`view:cache` + `git diff --check` bersih. Browser: Persiapan TW1
+23 transaksi, legacy `?month=6` → mode bulan Juni benar, Paket TW1
+23 paket, Atribut TW1 23 — tanpa console error.
+
+## Filter periode tab Paket/Atribut 500 + state Bulan/TW Persiapan (2026-10-06)
+
+Status: **FUNCTIONAL PASS (focused) / RVR tersisa pra-eksis**.
+
+Temuan browser QA pada `/spj?tab=paket`: memilih periode Triwulan 1
+memicu `livewire/update` 500 (`no such column:
+transactions.transaction_date`). Akar: `SpjWorkspaceUseCase::
+packageListData`/`attributeListData` memfilter strftime pada kolom
+yang sudah di-drop pasca-refactor mirror (plus format `%q`/`%s`
+yang tidak dikenal SQLite — TW/semester takkan pernah cocok).
+Perbaikan: helper `applyPackagePeriodScope()` via JOIN mirror +
+rentang bulan (`whereMirrorDate`, pola sama seperti
+`SpjPeriodicReportUseCase`), nilai liar diabaikan. Terverifikasi
+browser: TW1 Paket 23 paket + Atribut 23 tanpa console error;
+Persiapan TW1 23 transaksi; Laporan TW1 empty-state benar.
+
+Temuan kedua: filter Persiapan menampilkan Bulan=Juni +
+Triwulan=TW1 bersamaan (data ikut Bulan, backend month-precedence
+memang deliberate). `SpjPreparationFilter::updatedMonth/
+updatedQuarter` kini mereset pasangannya agar state tunggal.
+
+Regression: `SpjPackagePeriodFilterTest` baru 4 passed / 13
+assertions (bulan/triwulan/semester/invalid + atribut +
+reset-coherence), `SpjPreparationFilterTest` 3 passed, Pint passed,
+`view:cache` + `git diff --check` bersih. `SpjTabFiltersLivewireTest`
+7 failed terbukti pra-eksis via stash (fixture `sort_order` hilang
+di `:memory:`, tak tersentuh perubahan ini).
 
 ## Browser QA focused + 2 perbaikan mobile (2026-10-05)
 
