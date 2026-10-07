@@ -4,13 +4,14 @@ namespace App\Services;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
 use ZipArchive;
 
 final class SpjUnresolvedPlaceholderGuard
 {
     /** @return array<int,string> */
-    public function findInFile(string $documentType, string $path, ?string $format = null): array
+    public function findInFile(?string $documentType, string $path, ?string $format = null): array
     {
         if (! is_file($path)) {
             throw new RuntimeException('Berkas hasil generate tidak ditemukan untuk diperiksa.');
@@ -25,7 +26,7 @@ final class SpjUnresolvedPlaceholderGuard
         };
     }
 
-    public function assertResolved(string $documentType, string $path, ?string $format = null): void
+    public function assertResolved(?string $documentType, string $path, ?string $format = null): void
     {
         $markers = $this->findInFile($documentType, $path, $format);
         $this->assertNoMarkers($markers);
@@ -34,6 +35,17 @@ final class SpjUnresolvedPlaceholderGuard
     public function assertSpreadsheetResolved(string $documentType, Spreadsheet $spreadsheet): void
     {
         $markers = $this->findInSpreadsheet($documentType, $spreadsheet);
+        $this->assertNoMarkers($markers);
+    }
+
+    /**
+     * Periksa seluruh sheet konten (non-teknis) pada workbook paket yang
+     * menggabungkan beberapa tipe dokumen sehingga tidak ada placeholder
+     * yang lolos tanpa terdeteksi.
+     */
+    public function assertAllSheetsResolved(Spreadsheet $spreadsheet): void
+    {
+        $markers = $this->findInSpreadsheet(null, $spreadsheet);
         $this->assertNoMarkers($markers);
     }
 
@@ -50,14 +62,20 @@ final class SpjUnresolvedPlaceholderGuard
     }
 
     /** @return array<int,string> */
-    private function findInExcel(string $documentType, string $path): array
+    private function findInExcel(?string $documentType, string $path): array
     {
         return $this->findInSpreadsheet($documentType, IOFactory::load($path));
     }
 
     /** @return array<int,string> */
-    private function findInSpreadsheet(string $documentType, Spreadsheet $spreadsheet): array
+    private function findInSpreadsheet(?string $documentType, Spreadsheet $spreadsheet): array
     {
+        $documentType = $documentType !== null ? trim($documentType) : '';
+
+        if ($documentType === '') {
+            return $this->findInAllContentSheets($spreadsheet);
+        }
+
         $canonical = SpjDocumentTypeRegistry::canonical($documentType);
         $definition = $canonical ? SpjDocumentTypeRegistry::definition($canonical) : null;
         if (! $definition) {
@@ -83,9 +101,33 @@ final class SpjUnresolvedPlaceholderGuard
             }
         }
 
+        return $this->extractSheetMarkers($selected);
+    }
+
+    /** @return array<int,string> */
+    private function findInAllContentSheets(Spreadsheet $spreadsheet): array
+    {
+        $technical = array_fill_keys(SpjDocumentTypeRegistry::technicalSheets(), true);
         $markers = [];
-        foreach ($selected->getCellCollection()->getCoordinates() as $coordinate) {
-            $value = $selected->getCell($coordinate)->getValue();
+        foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            if (isset($technical[$sheet->getTitle()])) {
+                continue;
+            }
+
+            foreach ($this->extractSheetMarkers($sheet) as $marker) {
+                $markers[$marker] = true;
+            }
+        }
+
+        return array_keys($markers);
+    }
+
+    /** @return array<int,string> */
+    private function extractSheetMarkers(Worksheet $sheet): array
+    {
+        $markers = [];
+        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+            $value = $sheet->getCell($coordinate)->getValue();
             if (! is_string($value)) {
                 continue;
             }
@@ -129,7 +171,9 @@ final class SpjUnresolvedPlaceholderGuard
     /** @return array<int,string> */
     private function extractMarkers(string $content): array
     {
-        preg_match_all('/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/u', $content, $matches);
+        // Tangkap seluruh isi {{...}} termasuk marker non-word seperti
+        // {{NOMOR-SPJ}} agar tidak ada placeholder yang lolos diam-diam.
+        preg_match_all('/\{\{\s*([^{}]+?)\s*\}\}/u', $content, $matches);
 
         return collect($matches[1] ?? [])
             ->map(fn ($marker) => strtoupper(trim((string) $marker)))

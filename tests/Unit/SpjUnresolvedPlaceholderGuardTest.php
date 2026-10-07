@@ -86,4 +86,22 @@ class SpjUnresolvedPlaceholderGuardTest extends TestCase
             @unlink($path);
         }
     }
+
+    public function test_it_finds_non_word_placeholder_markers(): void
+    {
+        $path = storage_path('framework/testing/unresolved-dash-marker.xlsx');
+        @mkdir(dirname($path), 0775, true);
+
+        $book = new Spreadsheet;
+        $sheet = $book->getActiveSheet()->setTitle('TPL_RINCIAN');
+        $sheet->setCellValue('A1', 'Nomor {{NOMOR-SPJ}}');
+        (new Xlsx($book))->save($path);
+
+        try {
+            $markers = (new SpjUnresolvedPlaceholderGuard)->findInFile('RINCIAN_BELANJA', $path, 'xlsx');
+            $this->assertSame(['NOMOR-SPJ'], $markers);
+        } finally {
+            @unlink($path);
+        }
+    }
 }
