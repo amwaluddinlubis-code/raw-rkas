@@ -29,7 +29,10 @@ class SpjNumberingGateService
             ->has('items')
             ->where(function ($query): void {
                 $query->doesntHave('spjPackage')
-                    ->orWhereHas('spjPackage', fn ($package) => $package->where('status', '!=', 'FINAL'));
+                    // CANCELLED adalah status terminal yang tidak pernah bisa
+                    // FINAL; paket batal tidak boleh memblokir penomoran
+                    // triwulan berikutnya (T1).
+                    ->orWhereHas('spjPackage', fn ($package) => $package->whereNotIn('status', ['FINAL', 'CANCELLED']));
             })
             ->count();
 

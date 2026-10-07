@@ -42,7 +42,10 @@ class FiscalPeriodWorkflowService
                 ArkasMirrorResolver::joinKasUmum($query);
                 $this->applyPeriod($query, $period, $fundSourceId);
             })
+            // CANCELLED adalah status terminal yang tidak pernah bisa FINAL;
+            // paket batal tidak boleh menghalangi penutupan triwulan (T1).
             ->where('status', '!=', 'FINAL')
+            ->where('status', '!=', 'CANCELLED')
             ->count();
         $unfinished = $withoutPackage + $notFinal;
         if ($unfinished > 0) {
