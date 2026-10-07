@@ -64,6 +64,8 @@ class SpjNumberingOrderService
         $month = (int) Carbon::parse($transactionDate)->format('n');
         $quarter = ArkasMirrorResolver::quarterOfMonth($month);
         [$startMonth, $endMonth] = ArkasMirrorResolver::quarterMonthRange($quarter);
+        // CANCELLED adalah status terminal: paket yang dibatalkan tidak pernah
+        // bisa FINAL sehingga tidak boleh memblokir penomoran paket lain (T1).
         $candidates = SpjPackage::query()->with([
             'documents', 'transaction.items', 'transaction.goods', 'transaction.goodsReceipts', 'transaction.workOrder',
             'transaction.honors', 'transaction.travels', 'transaction.payments', 'transaction.workers',
@@ -74,7 +76,7 @@ class SpjNumberingOrderService
             $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$startMonth])
                 ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$endMonth]);
         })
-            ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'DICETAK', 'CANCELLED'])->get();
+            ->whereIn('status', ['DRAFT', 'READY', 'NUMBERED', 'DICETAK'])->get();
 
         foreach ($documentTypes as $documentType) {
             $documentType = $this->numberingPolicy->canonicalAutomaticDocumentType($documentType);
