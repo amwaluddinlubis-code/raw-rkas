@@ -4,10 +4,12 @@ namespace App\UseCases\Spj;
 
 use App\Models\DocumentNumberFormat;
 use App\Models\FiscalPeriodClosure;
+use App\Models\FiscalYear;
 use App\Models\QuarterNumberingRun;
 use App\Models\SpjDocument;
 use App\Models\SpjPackage;
 use App\Services\ArkasMirrorResolver;
+use App\Services\DocumentStoragePathService;
 use App\Services\OperationalAuditService;
 use App\Services\SpjDocumentNumberService;
 use App\Support\ActiveSpjContext;
@@ -173,7 +175,11 @@ class SpjNumberingRollbackUseCase
     /** @param Collection<int, int|string> $packageIds */
     private function rollbackPackages(Collection $packageIds, string $reason): void
     {
-        DB::connection('school')->transaction(function () use ($packageIds, $reason): void {
+        // [fiscal_year_id, document_number] yang arsip foldernya harus dibersihkan
+        // setelah transaksi DB sukses (penghapusan file tidak bisa di-rollback).
+        $revokedArchives = [];
+
+        DB::connection('school')->transaction(function () use ($packageIds, $reason, &$revokedArchives): void {
             $packages = SpjPackage::query()
                 ->with(['transaction.items.goods', 'transaction.workOrder', 'transaction.travels', 'documents'])
                 ->whereIn('id', $packageIds)
@@ -227,6 +233,9 @@ class SpjNumberingRollbackUseCase
                 }
 
                 $package->documents()->where('status', '!=', 'CANCELLED')->delete();
+                if (filled($package->document_number)) {
+                    $revokedArchives[] = [(int) $package->transaction->fiscal_year_id, (string) $package->document_number];
+                }
                 $package->forceFill([
                     'status' => 'DRAFT',
                     'document_number' => null,
@@ -246,6 +255,18 @@ class SpjNumberingRollbackUseCase
 
             $this->rebuildSequences();
         }, 3);
+
+        // Bersihkan arsip folder dokumen untuk nomor yang dicabut. Di luar
+        // transaksi DB agar kegagalan file tidak menggagalkan rollback data.
+        $storage = app(DocumentStoragePathService::class);
+        foreach ($revokedArchives as [$fiscalYearId, $documentNumber]) {
+            $year = (string) (FiscalYear::query()->whereKey($fiscalYearId)->value('year') ?: $fiscalYearId);
+            try {
+                $storage->deletePackageArchive($year, $documentNumber);
+            } catch (\Throwable $exception) {
+                report($exception);
+            }
+        }
     }
 
     private function rebuildSequences(): void
