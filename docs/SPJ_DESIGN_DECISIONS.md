@@ -446,6 +446,11 @@ Prinsip:
 - NUMBERED berarti nomor domain sudah diterbitkan;
 - FINAL berarti finalization/snapshot selesai dan Paket terkunci;
 - CANCELLED adalah lifecycle eksplisit, bukan delete tersembunyi.
+- CANCELLED bersifat terminal (tidak pernah bisa FINAL): paket CANCELLED
+  dikecualikan dari perhitungan blocker penomoran triwulan
+  (`singleNumberingBlocker`, `previousQuarterFinalBlocker`) dan penutupan
+  triwulan agar tidak memblokir selamanya; `finalizePackage` tetap hanya
+  menerima NUMBERED.
 
 Cancellation, reissue, reopen, rollback, dan finalization harus mempunyai jalur domain eksplisit dan audit trail.
 

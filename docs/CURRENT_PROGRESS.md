@@ -5,6 +5,46 @@ Terakhir diperbarui: **2026-10-07** (K7B+K7C resmi; generator Format BOS A-1; si
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
+## Perbaikan cluster penomoran K2/S3/T1/S2 (2026-10-07)
+
+Status: **CODE+TEST WRITTEN / UNVERIFIED — PHP tidak tersedia di VM kerja ini.**
+
+Empat bug penomoran diperbaiki, satu bug satu commit `fix:` terpisah (tanpa push):
+
+1. **K2** — `document_number_sequences.fund_source_id` nullable membuat unique
+   index tidak melindungi grup NULL di SQLite (NULL = distinct) → race dapat
+   menyisipkan dua baris → nomor ganda. Dipilih opsi (a): migrasi
+   `2026_10_07_000001_backfill_document_number_sequences_fund_source_sentinel`
+   (dedupe per grup canonical — pertahankan `last_number` tertinggi, backfill
+   NULL → sentinel 0, rebuild tabel jadi NOT NULL), normalisasi NULL →
+   `SpjDocumentNumberService::NULL_FUND_SOURCE_SENTINEL` di `assign()` dan
+   `SpjNumberingRollbackUseCase::rebuildSequences()`. Opsi (b) ditolak karena
+   baris NULL tetap dapat terduplikasi di SQLite tanpa perubahan skema.
+2. **S3** — race insert-pertama sequence → duplicate-key → HTTP 500.
+   `SpjDocumentNumberService::allocateSequenceNumber()` menangkap duplicate-key
+   (SQLSTATE 23000 + pesan khas SQLite/MySQL/Postgres) lalu retry idempoten:
+   baca ulang baris pemenang di bawah lock, increment.
+3. **T1** — paket CANCELLED (terminal, tak pernah bisa FINAL) dihitung
+   `!= FINAL` sehingga memblokir penomoran triwulan berikutnya & penutupan
+   triwulan selamanya. Dikecualikan di `singleNumberingBlocker()`,
+   `previousQuarterFinalBlocker()`, `FiscalPeriodWorkflowService::close()`.
+   `finalizePackage()` tidak diubah — tetap hanya menerima NUMBERED.
+4. **S2** — `SpjDocumentLifecycleUseCase::replaceDocument()`: cancel + assign +
+   sync kini satu transaksi `school` (savepoint bersarang); kegagalan assign
+   me-rollback cancel.
+
+Test baru (belum dijalankan di sini): 3 test K2/S3 di
+`DocumentNumberingWorkflowTest` (invariansi NOT NULL, sentinel 0, simulasi
+race deterministik), `SpjCancelledNumberingBlockerTest` (4 test),
+`SpjDocumentReplaceAtomicityTest` (2 test). Docs: catatan sentinel di
+`docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`, klarifikasi CANCELLED di
+`docs/SPJ_DESIGN_DECISIONS.md` §16.
+
+**Butuh verifikasi pemilik repo sebelum merge/push:** `vendor/bin/pint`,
+`php artisan test --compact` untuk file test di atas, `php artisan migrate`
+(pastikan migrasi sentinel jalan di DB sekolah), dan `php artisan spj:verify`.
+Klaim PASS apa pun di atas belum ada evidence-nya sampai langkah itu jalan.
+
 ## Register Penutupan Kas K7B + Berita Acara K7C resmi (2026-10-07)
 
 Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
