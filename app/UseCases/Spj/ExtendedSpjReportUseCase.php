@@ -12,8 +12,8 @@ use App\Services\RoutineHonorRegisterService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -33,15 +33,80 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
     {
         $relation = $category === 'HONOR_PEGAWAI' ? 'honors' : 'serviceRecipients';
 
+        return $this->baseSelectionQuery($category, [$relation, 'spjPackage'], $filters)->get();
+    }
+
+    /**
+     * Query dasar seleksi transaksi per kategori (Honor vs Jasa).
+     *
+     * Satu sumber untuk select/compose agar filter konteks, join mirror,
+     * scope periode, dan ordering tidak divergen.
+     *
+     * @param  array<int, string>  $with
+     */
+    private function baseSelectionQuery(string $category, array $with, array $filters = []): Builder
+    {
+        $relation = $category === 'HONOR_PEGAWAI' ? 'honors' : 'serviceRecipients';
+
         return Transaction::query()
-            ->with([$relation, 'spjPackage'])
+            ->with($with)
             ->forSpjContext($this->activeContext)
             ->where('transactions.spj_category', $category)
             ->has($relation)
             ->tap(fn ($query) => ArkasMirrorResolver::joinKasUmum($query))
             ->when(! empty($filters['month']), fn ($query) => $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [(int) $filters['month']]))
-            ->when(! empty($filters['quarter']), fn ($query) => $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' BETWEEN ? AND ?', [(((int) $filters['quarter'] - 1) * 3) + 1, (int) $filters['quarter'] * 3]))
-            ->when(! empty($filters['semester']), fn ($query) => $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' BETWEEN ? AND ?', [(int) $filters['semester'] === 1 ? 1 : 7, (int) $filters['semester'] === 1 ? 6 : 12]))
+            ->when(! empty($filters['quarter']), function ($query) use ($filters): void {
+                [$from, $to] = ArkasMirrorResolver::quarterMonthRange((int) $filters['quarter']);
+                $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' BETWEEN ? AND ?', [$from, $to]);
+            })
+            ->when(! empty($filters['semester']), function ($query) use ($filters): void {
+                [$from, $to] = ArkasMirrorResolver::semesterMonthRange((int) $filters['semester']);
+                $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' BETWEEN ? AND ?', [$from, $to]);
+            })
+            ->select('transactions.*')
+            ->orderByRaw(ArkasMirrorResolver::mirrorDate())
+            ->orderBy('transactions.id');
+    }
+
+    /**
+     * Filter periode + transaction_ids yang dipakai ulang export Honor dan Jasa.
+     */
+    private function applyRecipientExportScope(mixed $query, Request $request, string $category): void
+    {
+        $query->forSpjContext($this->activeContext)->where('transactions.spj_category', $category);
+        ArkasMirrorResolver::joinKasUmum($query);
+        if ($request->filled('transaction_ids')) {
+            $query->whereIn('transactions.id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
+        }
+        if ($request->filled('month')) {
+            $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [$request->integer('month')]);
+        }
+        if ($request->filled('quarter')) {
+            [$from, $to] = ArkasMirrorResolver::quarterMonthRange($request->integer('quarter'));
+            $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$from])
+                ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$to]);
+        }
+        if ($request->filled('semester')) {
+            [$from, $to] = ArkasMirrorResolver::semesterMonthRange($request->integer('semester'));
+            $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$from])
+                ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$to]);
+        }
+    }
+
+    /**
+     * Query dasar compose (validasi ids + konteks + relasi) untuk Honor vs Jasa.
+     *
+     * @return Collection<int, Transaction>
+     */
+    private function baseComposeTransactions(string $category, string $relation, array $transactionIds): Collection
+    {
+        return Transaction::query()
+            ->with([$relation, 'spjPackage'])
+            ->forSpjContext($this->activeContext)
+            ->where('transactions.spj_category', $category)
+            ->whereKey($transactionIds)
+            ->has($relation)
+            ->tap(fn ($query) => ArkasMirrorResolver::joinKasUmum($query))
             ->select('transactions.*')
             ->orderByRaw(ArkasMirrorResolver::mirrorDate())
             ->orderBy('transactions.id')
@@ -61,24 +126,14 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
             'transaction_ids' => ['required', 'array', 'min:1'],
             'transaction_ids.*' => ['integer', 'distinct'],
         ]);
-        $transactions = Transaction::query()
-            ->with(['honors', 'spjPackage'])
-            ->forSpjContext($this->activeContext)
-            ->where('transactions.spj_category', 'HONOR_PEGAWAI')
-            ->whereKey($data['transaction_ids'])
-            ->has('honors')
-            ->tap(fn ($query) => ArkasMirrorResolver::joinKasUmum($query))
-            ->select('transactions.*')
-            ->orderByRaw(ArkasMirrorResolver::mirrorDate())
-            ->orderBy('transactions.id')
-            ->get();
+        $transactions = $this->baseComposeTransactions('HONOR_PEGAWAI', 'honors', $data['transaction_ids']);
         abort_if($transactions->count() !== count($data['transaction_ids']), 422, 'Sebagian transaksi honor tidak berada pada konteks aktif atau bukan kategori Honor Pegawai.');
 
         $honors = SpjHonor::query()
             ->with(['item.transaction.spjPackage'])
             ->whereHas('item', fn ($query) => $query->whereIn('transaction_id', $transactions->modelKeys()))
             ->get()
-            ->sortBy(fn (SpjHonor $honor) => sprintf('%s-%010d-%010d', (($d = $honor->item->transaction?->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null) ?? '', $honor->item->transaction_id, $honor->id))
+            ->sortBy(fn (SpjHonor $honor) => sprintf('%s-%010d-%010d', $honor->item->transaction?->sourceDateString() ?? '', $honor->item->transaction_id, $honor->id))
             ->values();
         $register = $this->routineHonorRegister->aggregate($honors);
 
@@ -98,29 +153,12 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         $honors = SpjHonor::query()
             ->with(['item.transaction.spjPackage'])
             ->whereHas('item.transaction', function ($query) use ($request): void {
-                $query->forSpjContext($this->activeContext)->where('transactions.spj_category', 'HONOR_PEGAWAI');
-                ArkasMirrorResolver::joinKasUmum($query);
-                if ($request->filled('transaction_ids')) {
-                    $query->whereIn('transactions.id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
-                }
-                if ($request->filled('month')) {
-                    $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [$request->integer('month')]);
-                }
-                if ($request->filled('quarter')) {
-                    $quarter = $request->integer('quarter');
-                    $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($quarter - 1) * 3) + 1])
-                        ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$quarter * 3]);
-                }
-                if ($request->filled('semester')) {
-                    $semester = $request->integer('semester');
-                    $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$semester === 1 ? 1 : 7])
-                        ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$semester === 1 ? 6 : 12]);
-                }
+                $this->applyRecipientExportScope($query, $request, 'HONOR_PEGAWAI');
             })
             ->get()
             ->sortBy(fn (SpjHonor $honor) => sprintf(
                 '%s-%010d-%010d-%010d',
-                (($d = $honor->item->transaction?->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null) ?? '',
+                $honor->item->transaction?->sourceDateString() ?? '',
                 $honor->item->transaction_id,
                 $honor->sort_order,
                 $honor->id,
@@ -193,24 +231,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
         $recipients = SpjServiceRecipient::query()
             ->with('transaction.spjPackage')
             ->whereHas('transaction', function ($query) use ($request): void {
-                $query->forSpjContext($this->activeContext)->where('transactions.spj_category', 'JASA_LAINNYA');
-                ArkasMirrorResolver::joinKasUmum($query);
-                if ($request->filled('transaction_ids')) {
-                    $query->whereIn('transactions.id', collect($request->input('transaction_ids', []))->map(fn ($id): int => (int) $id)->all());
-                }
-                if ($request->filled('month')) {
-                    $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [$request->integer('month')]);
-                }
-                if ($request->filled('quarter')) {
-                    $quarter = $request->integer('quarter');
-                    $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($quarter - 1) * 3) + 1])
-                        ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$quarter * 3]);
-                }
-                if ($request->filled('semester')) {
-                    $semester = $request->integer('semester');
-                    $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$semester === 1 ? 1 : 7])
-                        ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$semester === 1 ? 6 : 12]);
-                }
+                $this->applyRecipientExportScope($query, $request, 'JASA_LAINNYA');
             })
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -237,7 +258,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
                 $index + 1,
                 $transaction->sourceValue('no_bukti'),
                 $transaction->spjPackage?->document_number,
-                (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null),
+                $transaction->sourceDateString('transaction_date', 'd-m-Y'),
                 $recipient->name,
                 $recipient->service_type,
                 $recipient->service_description,
@@ -281,17 +302,7 @@ class ExtendedSpjReportUseCase extends SpjReportUseCase
             'transaction_ids' => ['required', 'array', 'min:1'],
             'transaction_ids.*' => ['integer', 'distinct'],
         ]);
-        $transactions = Transaction::query()
-            ->with(['serviceRecipients', 'spjPackage'])
-            ->forSpjContext($this->activeContext)
-            ->where('transactions.spj_category', 'JASA_LAINNYA')
-            ->whereKey($data['transaction_ids'])
-            ->has('serviceRecipients')
-            ->tap(fn ($query) => ArkasMirrorResolver::joinKasUmum($query))
-            ->select('transactions.*')
-            ->orderByRaw(ArkasMirrorResolver::mirrorDate())
-            ->orderBy('transactions.id')
-            ->get();
+        $transactions = $this->baseComposeTransactions('JASA_LAINNYA', 'serviceRecipients', $data['transaction_ids']);
         abort_if($transactions->count() !== count($data['transaction_ids']), 422, 'Sebagian transaksi jasa tidak berada pada konteks aktif atau tidak memiliki penerima jasa.');
         $recipients = $transactions->flatMap(function (Transaction $transaction) {
             return $transaction->serviceRecipients->each(

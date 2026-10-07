@@ -379,6 +379,12 @@ class Transaction extends Model
         return null;
     }
 
+    /** String tanggal sumber null-safe (pengganti Carbon::parse(sourceValue(...))->format(...)). */
+    public function sourceDateString(string $field = 'transaction_date', string $format = 'Y-m-d'): ?string
+    {
+        return $this->sourceCarbon($field)?->format($format);
+    }
+
     /**
      * Klon read-only dengan fakta sumber diganti nilai mirror.
      * Overlay operator tidak disentuh. Bila mirror belum ada,

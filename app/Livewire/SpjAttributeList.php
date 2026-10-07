@@ -10,6 +10,7 @@ use Livewire\WithPagination;
 
 class SpjAttributeList extends Component
 {
+    use HasSpjListFilter;
     use WithPagination;
 
     #[Url(as: 'attribute_perPage', except: 15)]
@@ -32,38 +33,17 @@ class SpjAttributeList extends Component
 
     public function mount(): void
     {
-        $perPage = request()->integer('attribute_perPage', 15);
-        $this->perPage = in_array($perPage, [10, 15, 25, 50, 100], true) ? $perPage : 15;
+        $this->perPage = $this->resolvePerPage();
     }
 
-    public function updating($property): void
+    protected function paginationPageName(): string
     {
-        if (in_array($property, ['perPage', 'search', 'status', 'category', 'mode', 'periode'], true)) {
-            $this->resetPage('attribute_page');
-        }
+        return 'attribute_page';
     }
 
-    public function clearFilters(): void
+    protected function perPageQueryParam(): string
     {
-        $this->reset(['search', 'status', 'category', 'mode', 'periode']);
-        $this->resetPage('attribute_page');
-    }
-
-    public function modes(): array
-    {
-        return [
-            'bulan' => 'Bulan',
-            'triwulan' => 'Triwulan',
-            'semester' => 'Semester',
-            'semua' => 'Semua',
-        ];
-    }
-
-    public function setMode(string $modeOption): void
-    {
-        $this->mode = $modeOption;
-        $this->periode = null;
-        $this->resetPage('attribute_page');
+        return 'attribute_perPage';
     }
 
     public function render(): View

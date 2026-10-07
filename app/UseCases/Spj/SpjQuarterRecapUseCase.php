@@ -31,8 +31,7 @@ final class SpjQuarterRecapUseCase
     public function recap(int $quarter): array
     {
         $quarter = max(1, min(4, $quarter));
-        $fromMonth = (($quarter - 1) * 3) + 1;
-        $toMonth = $quarter * 3;
+        [$fromMonth, $toMonth] = ArkasMirrorResolver::quarterMonthRange($quarter);
 
         $transactions = Transaction::query()
             ->forSpjContext($this->context)

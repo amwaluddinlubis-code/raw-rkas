@@ -12,7 +12,6 @@ use App\Services\DocumentStoragePathService;
 use App\Support\ActiveSpjContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -122,17 +121,19 @@ class SpjReportUseCase
                 }
                 if ($request->filled('quarter')) {
                     $quarter = $request->integer('quarter');
-                    ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [(($quarter - 1) * 3) + 1, $quarter * 3]);
+                    [$from, $to] = ArkasMirrorResolver::quarterMonthRange($quarter);
+                    ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to]);
                 }
                 if ($request->filled('semester')) {
                     $semester = $request->integer('semester');
-                    ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$semester === 1 ? 1 : 7, $semester === 1 ? 6 : 12]);
+                    [$from, $to] = ArkasMirrorResolver::semesterMonthRange($semester);
+                    ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to]);
                 }
             })
             ->get()
             ->sortBy(fn (SpjHonor $honor) => sprintf(
                 '%s-%010d-%010d-%010d',
-                (($d = $honor->item->transaction?->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null) ?? '',
+                $honor->item->transaction?->sourceDateString() ?? '',
                 $honor->item->transaction_id,
                 $honor->sort_order,
                 $honor->id
@@ -156,7 +157,7 @@ class SpjReportUseCase
         $sheet->fromArray(['No', 'No Bukti', 'Nomor SPJ', 'Tanggal', 'Penerima', 'Jabatan/Jenis Honor', 'Bulan/Kali', 'Tarif', 'Bruto', 'PPh 21', 'Dibayarkan', 'Tanda Tangan'], null, 'A1');
         foreach ($honors as $index => $honor) {
             $transaction = $honor->item->transaction;
-            $sheet->fromArray([[$index + 1, $transaction->sourceValue('no_bukti'), $transaction->spjPackage?->document_number, (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null), $honor->name, $honor->position, (float) $honor->honor_months, (float) $honor->rate_per_unit, (float) $honor->gross_amount, (float) $honor->tax_amount, (float) $honor->net_amount, ($index + 1).'. __________________']], null, 'A'.($index + 2));
+            $sheet->fromArray([[$index + 1, $transaction->sourceValue('no_bukti'), $transaction->spjPackage?->document_number, $transaction->sourceDateString('transaction_date', 'd-m-Y'), $honor->name, $honor->position, (float) $honor->honor_months, (float) $honor->rate_per_unit, (float) $honor->gross_amount, (float) $honor->tax_amount, (float) $honor->net_amount, ($index + 1).'. __________________']], null, 'A'.($index + 2));
         }
         $totalRow = $honors->count() + 2;
         $sheet->fromArray([['', '', '', '', '', 'TOTAL', '', '', $summary['gross'], $summary['pph21'], $summary['net'], '']], null, 'A'.$totalRow);

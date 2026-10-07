@@ -549,6 +549,61 @@ class ArkasMirrorResolver
     }
 
     /**
+     * Rentang bulan kanonis untuk satu triwulan (1-4).
+     *
+     * @return array{0: int, 1: int}
+     */
+    public static function quarterMonthRange(int $quarter): array
+    {
+        $quarter = max(1, min(4, $quarter));
+
+        return [(($quarter - 1) * 3) + 1, $quarter * 3];
+    }
+
+    /**
+     * Rentang bulan kanonis untuk satu semester (1-2).
+     *
+     * @return array{0: int, 1: int}
+     */
+    public static function semesterMonthRange(int $semester): array
+    {
+        return $semester === 2 ? [7, 12] : [1, 6];
+    }
+
+    /**
+     * Rentang bulan kanonis untuk mode filter SPJ.
+     *
+     * @return array{0: int, 1: int}|null null bila mode/periode tidak valid.
+     */
+    public static function periodMonthRange(string $mode, mixed $periode): ?array
+    {
+        $periode = is_numeric($periode) ? (int) $periode : null;
+
+        if ($mode === 'bulan' && $periode !== null && $periode >= 1 && $periode <= 12) {
+            return [$periode, $periode];
+        }
+
+        if ($mode === 'triwulan' && $periode !== null && $periode >= 1 && $periode <= 4) {
+            return self::quarterMonthRange($periode);
+        }
+
+        if ($mode === 'semester' && $periode !== null && $periode >= 1 && $periode <= 2) {
+            return self::semesterMonthRange($periode);
+        }
+
+        return null;
+    }
+
+    /**
+     * Terapkan filter bulan mirror memakai predikat orphan-safe yang sama
+     * dengan whereMirrorDate (bukan whereRaw mentah).
+     */
+    public static function whereMirrorMonthRange(mixed $query, int $from, int $to, string $alias = 'mkas'): void
+    {
+        self::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to], $alias);
+    }
+
+    /**
      * Filter tanggal mirror dengan fallback baris yatim.
      *
      * Kasus nyata: id_kas_umum transaksi menunjuk kunci pra-rebuild yang

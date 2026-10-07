@@ -589,7 +589,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         return storage_path('app/'.$relativePath);
     }
 
-    private function safeDownloadName(string $name): string
+    protected function safeDownloadName(string $name): string
     {
         return preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?: 'dokumen-spj';
     }

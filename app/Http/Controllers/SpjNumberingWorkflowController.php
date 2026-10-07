@@ -95,8 +95,7 @@ class SpjNumberingWorkflowController extends Controller
 
     private function applyQuarterScope(Builder $query, int $quarter): Builder
     {
-        $startMonth = (($quarter - 1) * 3) + 1;
-        $endMonth = $quarter * 3;
+        [$startMonth, $endMonth] = ArkasMirrorResolver::quarterMonthRange($quarter);
         ArkasMirrorResolver::joinKasUmum($query);
 
         return $query->select('transactions.*')

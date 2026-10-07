@@ -97,12 +97,14 @@ class SpjWorkspaceUseCase
         $query
             ->when($mode === 'bulan' && $periode >= 1 && $periode <= 12, fn ($q) => $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' = ?', [$periode]))
             ->when($mode === 'triwulan' && $periode >= 1 && $periode <= 4, function ($q) use ($periode): void {
-                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($periode - 1) * 3) + 1])
-                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$periode * 3]);
+                [$from, $to] = ArkasMirrorResolver::quarterMonthRange($periode);
+                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$from])
+                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$to]);
             })
             ->when($mode === 'semester' && $periode >= 1 && $periode <= 2, function ($q) use ($periode): void {
-                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [(($periode - 1) * 6) + 1])
-                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$periode * 6]);
+                [$from, $to] = ArkasMirrorResolver::semesterMonthRange($periode);
+                $q->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$from])
+                    ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$to]);
             })
             ->when($filters['spj_category'] ?? null, fn ($q, $type) => $q->where('transactions.spj_category', $type))
             ->when($search !== '', function ($q) use ($search): void {
@@ -147,31 +149,9 @@ class SpjWorkspaceUseCase
      */
     public function packageListData(int $perPage, array $filters = []): LengthAwarePaginator
     {
-        $search = trim((string) ($filters['search'] ?? ''));
-        $status = strtoupper(trim((string) ($filters['status'] ?? '')));
-        $category = strtoupper(trim((string) ($filters['category'] ?? '')));
-        $mode = $filters['mode'] ?? 'semua';
-        $periode = $filters['periode'] ?? null;
-
-        return SpjPackage::query()
-            ->with(['transaction:id,payment_description,spj_category,fiscal_year_id,fund_source_id'])
-            ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
-            ->when($mode !== 'semua' && $periode !== null, fn ($query) => $this->applyPackagePeriodScope($query, $mode, $periode))
-            ->whereHas('transaction', function ($query) use ($search, $category): void {
-                $query->forSpjContext($this->context)
-                    ->when($category !== '', fn ($transactionQuery) => $transactionQuery->where('transactions.spj_category', $category));
-                if ($search !== '') {
-                    ArkasMirrorResolver::joinKasUmum($query);
-                    $query->where(function ($searchQuery) use ($search): void {
-                        $searchQuery->whereRaw('mkas.sx_no_bukti like ?', ['%'.$search.'%'])
-                            ->orWhereRaw(ArkasMirrorResolver::mirrorTextSearchExists($search))
-                            ->orWhere('transactions.payment_description', 'like', '%'.$search.'%');
-                    });
-                }
-            })
-            ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
-            ->orderByDesc('numbered_at')
-            ->orderByDesc('id')
+        return $this->basePackageQuery($filters, [
+            'transaction:id,payment_description,spj_category,fiscal_year_id,fund_source_id',
+        ])
             ->paginate($perPage, ['*'], 'package_page')
             ->withQueryString();
     }
@@ -181,6 +161,33 @@ class SpjWorkspaceUseCase
      */
     public function attributeListData(int $perPage, array $filters = []): LengthAwarePaginator
     {
+        return $this->basePackageQuery($filters, [
+            'transaction:id,payment_description,spj_category,fiscal_year_id,fund_source_id,payment_method,payment_reference,vendor_name,vendor_owner,vendor_npwp,invoice_number,invoice_date,invoice_status,is_siplah,siplah_order_number,receipt_recipient_name,event_name,event_location,event_date,participant_count,maintenance_material_transaction_id,maintenance_labor_transaction_id',
+            'transaction.items:id,transaction_id,item_description,source_item_id',
+            'transaction.items.participants',
+            'transaction.goods',
+            'transaction.workOrder',
+            'transaction.workers',
+            'transaction.travels',
+            'transaction.honors',
+            'transaction.serviceRecipients',
+        ])
+            ->paginate($perPage, ['*'], 'attribute_page')
+            ->withQueryString();
+    }
+
+    /**
+     * Query dasar daftar paket yang dipakai ulang tab Paket dan Atribut.
+     *
+     * Satu-satunya pembeda kedua tab adalah eager load + nama halaman
+     * paginasi; filter status/periode/search, tenant scope, dan ordering
+     * tetap satu sumber agar tidak divergen.
+     *
+     * @param  array{search?:string,status?:string,category?:string,mode?:string,periode?:int|null}  $filters
+     * @param  array<int, string>  $with
+     */
+    private function basePackageQuery(array $filters, array $with): Builder
+    {
         $search = trim((string) ($filters['search'] ?? ''));
         $status = strtoupper(trim((string) ($filters['status'] ?? '')));
         $category = strtoupper(trim((string) ($filters['category'] ?? '')));
@@ -188,17 +195,7 @@ class SpjWorkspaceUseCase
         $periode = $filters['periode'] ?? null;
 
         return SpjPackage::query()
-            ->with([
-                'transaction:id,payment_description,spj_category,fiscal_year_id,fund_source_id,payment_method,payment_reference,vendor_name,vendor_owner,vendor_npwp,invoice_number,invoice_date,invoice_status,is_siplah,siplah_order_number,receipt_recipient_name,event_name,event_location,event_date,participant_count,maintenance_material_transaction_id,maintenance_labor_transaction_id',
-                'transaction.items:id,transaction_id,item_description,source_item_id',
-                'transaction.items.participants',
-                'transaction.goods',
-                'transaction.workOrder',
-                'transaction.workers',
-                'transaction.travels',
-                'transaction.honors',
-                'transaction.serviceRecipients',
-            ])
+            ->with($with)
             ->when(in_array($status, ['DRAFT', 'READY', 'NUMBERED', 'FINAL', 'CANCELLED'], true), fn ($query) => $query->where('status', $status))
             ->when($mode !== 'semua' && $periode !== null, fn ($query) => $this->applyPackagePeriodScope($query, $mode, $periode))
             ->whereHas('transaction', function ($query) use ($search, $category): void {
@@ -215,9 +212,7 @@ class SpjWorkspaceUseCase
             })
             ->orderByRaw("CASE status WHEN 'CANCELLED' THEN 3 WHEN 'FINAL' THEN 2 WHEN 'NUMBERED' THEN 1 ELSE 0 END DESC")
             ->orderByDesc('numbered_at')
-            ->orderByDesc('id')
-            ->paginate($perPage, ['*'], 'attribute_page')
-            ->withQueryString();
+            ->orderByDesc('id');
     }
 
     /**
@@ -247,8 +242,8 @@ class SpjWorkspaceUseCase
 
         [$from, $to] = match ($mode) {
             'bulan' => [$periode, $periode],
-            'triwulan' => [(($periode - 1) * 3) + 1, $periode * 3],
-            'semester' => [(($periode - 1) * 6) + 1, $periode * 6],
+            'triwulan' => ArkasMirrorResolver::quarterMonthRange($periode),
+            'semester' => ArkasMirrorResolver::semesterMonthRange($periode),
         };
 
         $query->whereHas('transaction', function ($transactionQuery) use ($from, $to): void {
@@ -428,8 +423,7 @@ class SpjWorkspaceUseCase
     private function packageNavigation(SpjPackage $package): array
     {
         $transaction = $package->transaction;
-        $rawDate = $transaction->sourceValue('transaction_date');
-        $transactionDate = $rawDate ? Carbon::parse($rawDate)->format('Y-m-d') : null;
+        $transactionDate = $transaction->sourceDateString();
         $mirrorDate = ArkasMirrorResolver::mirrorDate();
 
         $baseQuery = function () {

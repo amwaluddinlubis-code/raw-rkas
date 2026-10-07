@@ -322,9 +322,4 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
             'Cache-Control' => 'private, no-store, max-age=0',
         ]);
     }
-
-    private function safeDownloadName(string $name): string
-    {
-        return preg_replace('/[^A-Za-z0-9._-]+/', '-', $name) ?: 'dokumen-spj';
-    }
 }

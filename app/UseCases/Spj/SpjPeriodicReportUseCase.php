@@ -163,13 +163,15 @@ final class SpjPeriodicReportUseCase
         }
 
         if ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period) {
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [(($period - 1) * 3) + 1, $period * 3]);
+            [$from, $to] = ArkasMirrorResolver::quarterMonthRange((int) $period);
+            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to]);
 
             return $query;
         }
 
         if ($scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period) {
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [(($period - 1) * 6) + 1, $period * 6]);
+            [$from, $to] = ArkasMirrorResolver::semesterMonthRange((int) $period);
+            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to]);
 
             return $query;
         }
