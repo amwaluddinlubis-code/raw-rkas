@@ -53,7 +53,7 @@ class ArkasSynchronizationServiceV2
      *
      * @param  array<string, mixed>|null  $beforeAggregate
      * @param  array<string, mixed>  $afterSnapshot
-     * @return bool  true bila sebuah event benar-benar dicatat
+     * @return bool true bila sebuah event benar-benar dicatat
      */
     private function recordSourceChangedEvent(
         int $transactionId,

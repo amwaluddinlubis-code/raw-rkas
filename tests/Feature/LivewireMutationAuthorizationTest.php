@@ -2,10 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\DashboardWorkspace;
 use App\Livewire\DatabaseMaintenance;
 use App\Livewire\DatabaseResetForm;
 use App\Livewire\DatabaseSchoolList;
-use App\Livewire\DashboardWorkspace;
 use App\Livewire\DocumentStorageSettings;
 use App\Livewire\SchoolMaster;
 use App\Livewire\TransactionDetailWorkspace;
@@ -14,6 +14,8 @@ use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
 use App\Models\SpjPackage;
+use App\Models\Transaction;
+use App\Models\TransactionItem;
 use App\Models\User;
 use App\Services\SpjSourceReconciliationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -251,7 +253,7 @@ class LivewireMutationAuthorizationTest extends TestCase
      * Siapkan konteks SPJ minimal (koneksi sekolah in-memory + sesi aktif)
      * agar mount workspace Livewire lolos penjagaan konteks tenant.
      *
-     * @return array{school: School, year: FiscalYear, fund: FundSource, transaction: \App\Models\Transaction, item: \App\Models\TransactionItem, package: SpjPackage}
+     * @return array{school: School, year: FiscalYear, fund: FundSource, transaction: Transaction, item: TransactionItem, package: SpjPackage}
      */
     private function prepareSpjWorkspaceContext(): array
     {
