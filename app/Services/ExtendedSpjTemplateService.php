@@ -182,6 +182,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
 
         $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school, $receipt);
+        (new SpjUnresolvedPlaceholderGuard)->assertSpreadsheetResolved((string) $template->document_type, $spreadsheet);
         try {
             return $this->pdfResponseExtended(
                 $this->spreadsheetPdfContentsExtended($spreadsheet, false),

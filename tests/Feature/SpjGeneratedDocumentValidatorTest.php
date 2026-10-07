@@ -69,6 +69,44 @@ class SpjGeneratedDocumentValidatorTest extends TestCase
         app(SpjGeneratedDocumentValidator::class)->assertFile($path, 'xlsx', 'Paket SPJ Excel');
     }
 
+    public function test_non_word_placeholder_marker_is_detected(): void
+    {
+        $path = $this->xlsx('Nomor {{NOMOR-SPJ}}');
+
+        try {
+            app(SpjGeneratedDocumentValidator::class)->assertFile(
+                $path,
+                'xlsx',
+                'Rincian Belanja',
+                'RINCIAN_BELANJA',
+            );
+            $this->fail('Placeholder {{NOMOR-SPJ}} seharusnya ditolak.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('NOMOR-SPJ', $exception->getMessage());
+        }
+    }
+
+    public function test_placeholder_guard_still_runs_without_document_type(): void
+    {
+        $xlsx = $this->xlsx('{{UNKNOWN_RELEASE_MARKER}}');
+
+        try {
+            app(SpjGeneratedDocumentValidator::class)->assertFile($xlsx, 'xlsx', 'Paket SPJ Excel');
+            $this->fail('Guard seharusnya tetap berjalan walau tipe dokumen null.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('UNKNOWN_RELEASE_MARKER', $exception->getMessage());
+        }
+
+        $docx = $this->docx('{{UNKNOWN_WORD_MARKER}}');
+
+        try {
+            app(SpjGeneratedDocumentValidator::class)->assertFile($docx, 'docx', 'Paket SPJ Word');
+            $this->fail('Guard seharusnya tetap berjalan walau tipe dokumen null.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('UNKNOWN_WORD_MARKER', $exception->getMessage());
+        }
+    }
+
     public function test_valid_docx_is_accepted_and_unresolved_docx_is_rejected(): void
     {
         $valid = $this->docx('Dokumen selesai');

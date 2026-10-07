@@ -136,6 +136,7 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     public function downloadPackageExcel(Collection $templates, SpjPackage $package, School $school)
     {
         [$spreadsheet, $temporaryFiles] = $this->packageSpreadsheetForOutput($templates, $package, $school);
+        (new SpjUnresolvedPlaceholderGuard)->assertAllSheetsResolved($spreadsheet);
         $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-xlsx-');
         if ($temporaryFile === false) {
             $spreadsheet->disconnectWorksheets();
@@ -164,6 +165,7 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
     public function downloadPackagePdf(Collection $templates, SpjPackage $package, School $school)
     {
         [$spreadsheet, $temporaryFiles] = $this->packageSpreadsheetForOutput($templates, $package, $school);
+        (new SpjUnresolvedPlaceholderGuard)->assertAllSheetsResolved($spreadsheet);
 
         try {
             return $this->pdfResponse(

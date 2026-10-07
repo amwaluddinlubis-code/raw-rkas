@@ -44,9 +44,10 @@ final class SpjGeneratedDocumentValidator
 
         $this->assertOfficePackage($path, $extension, $documentLabel);
 
-        if ($documentType !== null && trim($documentType) !== '') {
-            $this->placeholderGuard->assertResolved($documentType, $path, $extension);
-        }
+        // Guard placeholder tidak boleh dilewati: bila tipe dokumen tidak
+        // diketahui, seluruh sheet konten tetap dipindai.
+        $resolvedType = $documentType !== null && trim($documentType) !== '' ? $documentType : null;
+        $this->placeholderGuard->assertResolved($resolvedType, $path, $extension);
     }
 
     public function assertPdfResponse(Response $response, string $documentLabel): void
