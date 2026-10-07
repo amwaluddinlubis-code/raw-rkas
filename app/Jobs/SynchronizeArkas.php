@@ -32,17 +32,28 @@ class SynchronizeArkas implements ShouldQueue
         $operation = BackgroundOperation::query()->findOrFail($this->operationId);
         $operation->update(['status' => 'RUNNING', 'progress' => 10, 'started_at' => now(), 'message' => 'Menghubungkan sumber ARKAS.']);
         $school = School::query()->findOrFail($this->schoolId);
-        $databases->activate($school);
-        $year = FiscalYear::query()->findOrFail($this->fiscalYearId);
-        $source = ArkasSource::query()->findOrFail($this->sourceId);
-        $result = $synchronizer->synchronize($school, $year, $source);
+        try {
+            $databases->activate($school);
+            $year = FiscalYear::query()->findOrFail($this->fiscalYearId);
+            $source = ArkasSource::query()->findOrFail($this->sourceId);
+            $result = $synchronizer->synchronize($school, $year, $source);
 
-        Cache::forget('school:'.$school->id.':header-years');
-        Cache::forget('school:'.$school->id.':year:'.$year->id.':transaction-statuses');
-        $operation->update([
-            'status' => 'COMPLETED', 'progress' => 100, 'result' => $result,
-            'message' => "Sinkronisasi selesai: {$result['bku']} baris BKU.", 'finished_at' => now(),
-        ]);
+            Cache::forget('school:'.$school->id.':header-years');
+            Cache::forget('school:'.$school->id.':year:'.$year->id.':transaction-statuses');
+            $operation->update([
+                'status' => 'COMPLETED', 'progress' => 100, 'result' => $result,
+                'message' => "Sinkronisasi selesai: {$result['bku']} baris BKU.", 'finished_at' => now(),
+            ]);
+        } finally {
+            // Worker queue dipakai ulang antar job: kembalikan koneksi
+            // 'school' ke tenant dummy agar job berikutnya tidak mewarisi
+            // tenant terakhir (boundary: School + Fiscal Year + Fund Source).
+            try {
+                $databases->deactivate();
+            } catch (Throwable $exception) {
+                Log::warning('Gagal menonaktifkan tenant pasca-sinkronisasi ARKAS.', ['exception' => $exception->getMessage()]);
+            }
+        }
     }
 
     public function failed(Throwable $exception): void
