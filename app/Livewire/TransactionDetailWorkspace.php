@@ -95,6 +95,14 @@ class TransactionDetailWorkspace extends Component
             ]);
         }
 
+        app(OperationalAuditService::class)->record(
+            $transaction->fiscal_year_id,
+            'TRANSACTION',
+            $transaction->id,
+            'KOREKSI_URAIAN_SPJ',
+            'Uraian pembayaran dan rincian barang/jasa untuk SPJ diperbarui tanpa mengubah data sumber ARKAS/BKU atau penomoran.',
+        );
+
         $this->loadTransaction();
         session()->flash('success', 'Uraian SPJ berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran.');
         $this->dispatch('app-notify', type: 'success', message: 'Koreksi uraian berhasil disimpan.');
