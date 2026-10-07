@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Services\SpjSourceRelinkService;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class SpjSourceRelinkTest extends TestCase
@@ -120,5 +122,137 @@ class SpjSourceRelinkTest extends TestCase
 
         $this->assertIsString($service);
         $this->assertStringContainsString('Pasangan manual pilihan operator', $service);
+    }
+
+    public function test_pair_items_by_fingerprint_matches_content_regardless_of_order(): void
+    {
+        $old = [
+            ['item' => (object) ['id' => 11], 'fp' => 'atk|10|1500000|paket'],
+            ['item' => (object) ['id' => 12], 'fp' => 'tinta|2|500000|botol'],
+        ];
+        $new = [
+            ['id' => 'N2', 'fp' => 'tinta|2|500000|botol'],
+            ['id' => 'N1', 'fp' => 'atk|10|1500000|paket'],
+        ];
+
+        $result = SpjSourceRelinkService::pairItemsByFingerprint($old, $new);
+
+        // Pairing posisional lama memasangkan 11->N2 (salah); berbasis
+        // fingerprint harus mengikuti isi.
+        $this->assertSame([11 => 'N1', 12 => 'N2'], $result['paired']);
+        $this->assertSame([], $result['skipped']);
+    }
+
+    public function test_pair_items_by_fingerprint_skips_unmatched_instead_of_silent_pairing(): void
+    {
+        $old = [
+            ['item' => (object) ['id' => 11], 'fp' => 'atk|10|1500000|paket'],
+            ['item' => (object) ['id' => 12], 'fp' => 'tinta|2|500000|botol'],
+        ];
+        $new = [
+            ['id' => 'N1', 'fp' => 'atk|10|1500000|paket'],
+            ['id' => 'N9', 'fp' => 'kertas|5|250000|rim'],
+        ];
+
+        $result = SpjSourceRelinkService::pairItemsByFingerprint($old, $new);
+
+        $this->assertSame([11 => 'N1'], $result['paired']);
+        $this->assertArrayHasKey(12, $result['skipped']);
+        $this->assertStringContainsString('tidak dipasangkan', $result['skipped'][12]);
+    }
+
+    public function test_pair_items_by_fingerprint_pairs_identical_duplicates_deterministically(): void
+    {
+        $old = [
+            ['item' => (object) ['id' => 11], 'fp' => 'pulsa|1|50000|voucher'],
+            ['item' => (object) ['id' => 12], 'fp' => 'pulsa|1|50000|voucher'],
+        ];
+        $new = [
+            ['id' => 'N1', 'fp' => 'pulsa|1|50000|voucher'],
+            ['id' => 'N2', 'fp' => 'pulsa|1|50000|voucher'],
+        ];
+
+        $result = SpjSourceRelinkService::pairItemsByFingerprint($old, $new);
+
+        $this->assertSame([11 => 'N1', 12 => 'N2'], $result['paired']);
+        $this->assertSame([], $result['skipped']);
+    }
+
+    public function test_pair_items_by_fingerprint_falls_back_to_positional_without_fingerprints(): void
+    {
+        // Jalur snapshot/perbaikan manual tidak punya sidik per item;
+        // kontrak lama (urutan deterministik) dipertahankan.
+        $old = [
+            ['item' => (object) ['id' => 11], 'fp' => ''],
+            ['item' => (object) ['id' => 12], 'fp' => ''],
+        ];
+        $new = [
+            ['id' => 'N1', 'fp' => ''],
+            ['id' => 'N2', 'fp' => ''],
+        ];
+
+        $result = SpjSourceRelinkService::pairItemsByFingerprint($old, $new);
+
+        $this->assertSame([11 => 'N1', 12 => 'N2'], $result['paired']);
+        $this->assertSame([], $result['skipped']);
+    }
+
+    public function test_repoint_items_updates_only_fingerprint_paired_rows(): void
+    {
+        config()->set('database.connections.school.database', ':memory:');
+        config()->set('database.connections.school.journal_mode', null);
+        DB::purge('school');
+        Artisan::call('migrate', [
+            '--database' => 'school',
+            '--path' => 'database/migrations/school',
+            '--force' => true,
+        ]);
+
+        try {
+            $yearId = DB::connection('school')->table('fiscal_years')->insertGetId([
+                'year' => 2026, 'fund_source' => 'BOSP', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $transactionId = DB::connection('school')->table('transactions')->insertGetId([
+                'fiscal_year_id' => $yearId, 'no_bukti' => 'BKU-1', 'transaction_date' => '2026-01-05',
+                'source_status' => 'SOURCE_MISSING', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $itemA = DB::connection('school')->table('transaction_items')->insertGetId([
+                'transaction_id' => $transactionId, 'source_item_id' => 'OLD-A', 'description' => 'ATK',
+                'source_status' => 'SOURCE_MISSING', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+            $itemB = DB::connection('school')->table('transaction_items')->insertGetId([
+                'transaction_id' => $transactionId, 'source_item_id' => 'OLD-B', 'description' => 'Tinta',
+                'source_status' => 'SOURCE_MISSING', 'created_at' => now(), 'updated_at' => now(),
+            ]);
+
+            $service = app(SpjSourceRelinkService::class);
+            $method = new \ReflectionMethod(SpjSourceRelinkService::class, 'repointItems');
+            $method->setAccessible(true);
+
+            $oldRows = [
+                ['item' => (object) ['id' => $itemA, 'item_description' => null], 'fp' => 'atk|10|1500000|paket'],
+                ['item' => (object) ['id' => $itemB, 'item_description' => null], 'fp' => 'tinta|2|500000|botol'],
+            ];
+            // Urutan baru dibalik + satu sidik tidak cocok: item B tidak
+            // boleh dipasangkan diam-diam ke NEW-X.
+            $newRows = [
+                ['id' => 'NEW-B', 'fp' => 'tinta|2|500000|botol'],
+                ['id' => 'NEW-X', 'fp' => 'kertas|5|250000|rim'],
+            ];
+
+            $result = $method->invoke($service, $oldRows, $newRows, null);
+
+            $this->assertSame(1, $result['paired']);
+            $this->assertArrayHasKey($itemA, $result['skipped']);
+
+            $rows = DB::connection('school')->table('transaction_items')->orderBy('id')->get();
+            $this->assertSame('NEW-B', $rows[1]->source_item_id);
+            $this->assertSame('ACTIVE', $rows[1]->source_status);
+            // Baris yang dilewati tidak tersentuh.
+            $this->assertSame('OLD-A', $rows[0]->source_item_id);
+            $this->assertSame('SOURCE_MISSING', $rows[0]->source_status);
+        } finally {
+            DB::purge('school');
+        }
     }
 }

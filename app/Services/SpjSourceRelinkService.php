@@ -189,7 +189,18 @@ final class SpjSourceRelinkService
             return null;
         }
 
-        $this->repointItems($match['items'], $newIds, $runId);
+        $newRows = [];
+        foreach ($newIds as $index => $id) {
+            $newRows[] = ['id' => $id, 'fp' => $newFps[$index] ?? ''];
+        }
+        $repoint = $this->repointItems($match['items'], $newRows, $runId);
+        if ($repoint['skipped'] !== []) {
+            $reasons = [];
+            foreach ($repoint['skipped'] as $oldItemId => $reason) {
+                $reasons[] = 'item #'.$oldItemId.': '.$reason;
+            }
+            $this->audit->record($fiscalYearId, 'TRANSACTION', $match['transaction']->id, 'SOURCE_RELINK', 'Adopsi ulang: '.$repoint['paired'].' rincian terpasangkan; '.count($repoint['skipped']).' rincian tidak terpasangkan berbasis fingerprint dan dibiarkan untuk telaah manual ('.implode('; ', $reasons).').');
+        }
 
         DB::connection('school')->table('transactions')->where('id', $match['transaction']->id)->update([
             'id_kas_umum' => $records[0]['ID_KAS_UMUM'] ?? $match['transaction']->id_kas_umum,
@@ -899,10 +910,20 @@ final class SpjSourceRelinkService
 
                     // Baris item baru keyed by ID untuk salinan deskripsi Siplah.
                     $newRowsById = [];
-                    foreach (DB::connection('school')->table('transaction_items')->where('transaction_id', $newId)->orderBy('id')->get() as $newItem) {
-                        $newRowsById[(string) $newItem->source_item_id] = $newItem;
+                    $newRows = [];
+                    foreach (DB::connection('school')->table('transaction_items')->where('transaction_id', $newId)->orderBy('id')->get() as $position => $newItem) {
+                        $newItemId = (string) $newItem->source_item_id;
+                        $newRowsById[$newItemId] = $newItem;
+                        $newRows[] = ['id' => $newItemId, 'fp' => (string) ($new['fps'][$position] ?? '')];
                     }
-                    $this->repointItems($old['items'], $new['ids'], $runId, $newRowsById);
+                    $repoint = $this->repointItems($old['items'], $newRows, $runId, $newRowsById);
+                    if ($repoint['skipped'] !== []) {
+                        $reasons = [];
+                        foreach ($repoint['skipped'] as $oldItemId => $reason) {
+                            $reasons[] = 'item #'.$oldItemId.': '.$reason;
+                        }
+                        throw new \RuntimeException('re-point rincian tidak lengkap berbasis fingerprint: '.implode('; ', $reasons));
+                    }
 
                     $oldRow = (array) $old['transaction'];
                     $newRow = (array) $new['transaction'];
@@ -1086,19 +1107,26 @@ final class SpjSourceRelinkService
      * participants, dan honors tidak terusik; deskripsi Siplah yang hanya
      * ada di baris baru ikut disalin bila baris lama masih kosong).
      *
-     * Baris kembar isi-identik dipasangkan deterministik berurutan ID.
+     * Pairing berbasis fingerprint isi per item (lihat
+     * pairItemsByFingerprint()): baris yang sidiknya tidak cocok/tidak
+     * ditemukan TIDAK dipasangkan diam-diam — dilewati dan dilaporkan.
      *
      * @param  array<int, array{item: object, fp: string}>  $oldRows  berurutan ID
-     * @param  array<int, string>  $newIds  ID sumber baru berurutan
+     * @param  array<int, array{id: string, fp: string}>    $newRows  berurutan ID
      * @param  array<string, object>  $newRowsById  baris item baru (command repair; kosong pada jalur sync)
+     * @return array{paired: int, skipped: array<int, string>}  old_item_id => alasan
      */
-    private function repointItems(array $oldRows, array $newIds, ?int $runId, array $newRowsById = []): void
+    private function repointItems(array $oldRows, array $newRows, ?int $runId, array $newRowsById = []): array
     {
-        foreach ($oldRows as $index => $entry) {
-            $newId = $newIds[$index] ?? null;
-            if ($newId === null) {
+        $pairing = self::pairItemsByFingerprint($oldRows, $newRows);
+        $paired = 0;
+
+        foreach ($oldRows as $entry) {
+            $oldItemId = (int) $entry['item']->id;
+            if (! array_key_exists($oldItemId, $pairing['paired'])) {
                 continue;
             }
+            $newId = $pairing['paired'][$oldItemId];
             $update = [
                 'source_item_id' => $newId,
                 'source_status' => 'ACTIVE',
@@ -1110,8 +1138,79 @@ final class SpjSourceRelinkService
             if ($newRow && blank($entry['item']->item_description) && filled($newRow->item_description)) {
                 $update['item_description'] = $newRow->item_description;
             }
-            DB::connection('school')->table('transaction_items')->where('id', $entry['item']->id)->update($update);
+            DB::connection('school')->table('transaction_items')->where('id', $oldItemId)->update($update);
+            $paired++;
         }
+
+        return ['paired' => $paired, 'skipped' => $pairing['skipped']];
+    }
+
+    /**
+     * Pasangkan baris item lama ke ID sumber baru berbasis fingerprint isi.
+     *
+     * Baris lama dipasangkan ke baris baru dengan sidik isi yang sama;
+     * baris kembar isi-identik dipasangkan deterministik berurutan ID di
+     * dalam bucket sidik yang sama. Baris yang sidiknya tidak cocok/tidak
+     * ditemukan dilewati dengan alasan tercatat (tidak dipasangkan
+     * posisional diam-diam).
+     *
+     * Pengecualian: bila tidak ada sidik pada kedua sisi (jalur
+     * snapshot/perbaikan manual — mirror lama sudah di-prune), kesetaraan
+     * sudah dibuktikan di level snapshot + jumlah rincian oleh pemanggil,
+     * sehingga pairing kembali ke urutan deterministik lama.
+     *
+     * @param  array<int, array{item: object, fp: string}>  $oldRows
+     * @param  array<int, array{id: string, fp: string}>    $newRows
+     * @return array{paired: array<int, string>, skipped: array<int, string>}  old_item_id => new_id / alasan
+     */
+    public static function pairItemsByFingerprint(array $oldRows, array $newRows): array
+    {
+        $paired = [];
+        $skipped = [];
+
+        $fpsAvailable = false;
+        foreach ([$oldRows, $newRows] as $rows) {
+            foreach ($rows as $entry) {
+                if (filled($entry['fp'] ?? '')) {
+                    $fpsAvailable = true;
+                    break 2;
+                }
+            }
+        }
+
+        if (! $fpsAvailable) {
+            foreach ($oldRows as $index => $entry) {
+                $newId = $newRows[$index]['id'] ?? null;
+                if ($newId === null) {
+                    $skipped[(int) $entry['item']->id] = 'tidak ada baris baru pada posisi '.$index.' — tidak dipasangkan';
+
+                    continue;
+                }
+                $paired[(int) $entry['item']->id] = (string) $newId;
+            }
+
+            return ['paired' => $paired, 'skipped' => $skipped];
+        }
+
+        $newByFp = [];
+        foreach ($newRows as $entry) {
+            $newByFp[(string) ($entry['fp'] ?? '')][] = (string) $entry['id'];
+        }
+
+        foreach ($oldRows as $entry) {
+            $oldItemId = (int) $entry['item']->id;
+            $fp = (string) ($entry['fp'] ?? '');
+            if ($fp === '' || ($newByFp[$fp] ?? []) === []) {
+                $skipped[$oldItemId] = $fp === ''
+                    ? 'fingerprint isi tidak tersedia — tidak dipasangkan'
+                    : 'tidak ada baris baru dengan fingerprint isi yang sama — tidak dipasangkan';
+
+                continue;
+            }
+            $paired[$oldItemId] = array_shift($newByFp[$fp]);
+        }
+
+        return ['paired' => $paired, 'skipped' => $skipped];
     }
 
     /** @param  array<string, mixed>  $pair */
@@ -1212,7 +1311,7 @@ final class SpjSourceRelinkService
 
         return [
             ['transaction' => $old, 'items' => $oldBuilt['rows'], 'first_date' => $oldBuilt['first_date'], 'first_payload' => $oldBuilt['first_payload']],
-            ['transaction' => $new, 'ids' => $newBuilt['ids'], 'first_date' => $newBuilt['first_date'], 'first_payload' => $newBuilt['first_payload']],
+            ['transaction' => $new, 'ids' => $newBuilt['ids'], 'fps' => $newBuilt['fps'], 'first_date' => $newBuilt['first_date'], 'first_payload' => $newBuilt['first_payload']],
         ];
     }
 
