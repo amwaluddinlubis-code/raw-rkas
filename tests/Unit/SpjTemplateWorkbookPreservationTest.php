@@ -229,4 +229,46 @@ class SpjTemplateWorkbookPreservationTest extends TestCase
         $this->assertSame($beforeMergeCells, $sheet->getMergeCells());
         $this->assertSame($beforeRowHeight, $sheet->getRowDimension(10)->getRowHeight());
     }
+
+    public function test_repeating_row_renderer_throws_when_anchor_is_missing_but_data_exists(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        // Anchor {{ITEM_NO}} hilang, tetapi marker ITEM_* lain masih ada.
+        $sheet->setCellValue('B10', '{{ITEM_URAIAN}}');
+
+        try {
+            app(SpjRepeatingRowRenderer::class)->render(
+                $sheet,
+                '{{ITEM_NO}}',
+                'ITEM_',
+                2,
+                fn (int $index): array => ['ITEM_NO' => $index, 'ITEM_URAIAN' => 'Item '.$index],
+            );
+            $this->fail('Renderer seharusnya melempar error saat anchor hilang tetapi ada data.');
+        } catch (\RuntimeException $exception) {
+            $this->assertStringContainsString('{{ITEM_NO}}', $exception->getMessage());
+        } finally {
+            $spreadsheet->disconnectWorksheets();
+        }
+    }
+
+    public function test_repeating_row_renderer_stays_silent_when_section_is_absent_from_template(): void
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        // Template (mis. cover) memang tidak memiliki section ITEM_* sama sekali.
+        $sheet->setCellValue('A1', '{{NAMA_SEKOLAH}}');
+
+        app(SpjRepeatingRowRenderer::class)->render(
+            $sheet,
+            '{{ITEM_NO}}',
+            'ITEM_',
+            2,
+            fn (int $index): array => ['ITEM_NO' => $index],
+        );
+
+        $this->assertSame('{{NAMA_SEKOLAH}}', $sheet->getCell('A1')->getValue());
+        $spreadsheet->disconnectWorksheets();
+    }
 }

@@ -39,6 +39,18 @@ class SpjRepeatingRowRenderer
         $templateRows = $this->findTemplateRows($sheet, $anchorMarker);
 
         if ($templateRows === []) {
+            // Template yang memang tidak memakai section ini (tidak ada marker
+            // berprefix sama sama sekali) tetap diabaikan diam-diam. Namun bila
+            // ada baris data yang harus dirender sementara anchor-nya hilang,
+            // lempar error yang jelas daripada menghilangkan data diam-diam.
+            if (max(0, $recordCount) > 0 && $this->sheetHasPrefixedMarkers($sheet, $markerPrefix, $extraMarkers)) {
+                throw new RuntimeException(
+                    'Anchor repeating-row '.$anchorMarker.' tidak ditemukan pada sheet '.$sheet->getTitle()
+                    .' padahal ada '.$recordCount.' baris data '.$markerPrefix.'* yang harus dirender.'
+                    .' Perbaiki template agar baris contoh tersedia.'
+                );
+            }
+
             return;
         }
 
@@ -116,6 +128,29 @@ class SpjRepeatingRowRenderer
         }
 
         return array_values(array_unique($rows));
+    }
+
+    /** @param array<int, string> $extraMarkers */
+    private function sheetHasPrefixedMarkers(Worksheet $sheet, string $markerPrefix, array $extraMarkers): bool
+    {
+        $alternatives = array_merge(
+            [preg_quote($markerPrefix, '/').'[A-Za-z0-9_]+'],
+            array_map(fn (string $marker): string => preg_quote(trim($marker), '/'), array_filter($extraMarkers)),
+        );
+        $pattern = '/\{\{(?:'.implode('|', $alternatives).')\}\}/u';
+        $maxRow = $sheet->getHighestDataRow();
+        $maxColumn = Coordinate::columnIndexFromString($sheet->getHighestDataColumn());
+
+        for ($row = 1; $row <= $maxRow; $row++) {
+            for ($column = 1; $column <= $maxColumn; $column++) {
+                $value = $sheet->getCell([$column, $row])->getValue();
+                if (is_string($value) && preg_match($pattern, $value) === 1) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private function clearMarkersOnRow(Worksheet $sheet, int $row, string $markerPrefix): void
