@@ -245,8 +245,16 @@ class TransactionDetailWorkspace extends Component
         );
 
         $transaction = $this->transaction();
-        if ($transaction->spjPackage?->status === 'FINAL') {
+        $packageStatus = strtoupper((string) ($transaction->spjPackage?->status ?: ''));
+        if ($packageStatus === 'FINAL') {
             $this->addError('form', 'Urutan rincian tidak dapat diubah karena paket sudah FINAL.');
+
+            return;
+        }
+        if ($packageStatus === 'NUMBERED') {
+            // Carve-out §4.2/§4.4: pada NUMBERED hanya payment_description dan
+            // item_description yang boleh dikoreksi; sort_order tetap terkunci.
+            $this->addError('form', 'Urutan rincian tidak dapat diubah karena paket sudah bernomor (NUMBERED).');
 
             return;
         }
