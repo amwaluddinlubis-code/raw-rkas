@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\OperationalAuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -42,6 +43,13 @@ class ImpersonationController extends Controller
         $request->session()->put('impersonator_user_id', $admin->id);
         $request->session()->put('impersonator_user_name', $admin->name);
         $request->session()->put('impersonated_user_id', $target->id);
+        app(OperationalAuditService::class)->record(
+            null,
+            'USER',
+            $target->id,
+            'IMPERSONATION_START',
+            'Mode uji user dimulai oleh '.$admin->name.' sebagai '.$target->name.' ('.$target->email.').',
+        );
         Auth::login($target);
         $request->session()->regenerate();
 
@@ -65,6 +73,8 @@ class ImpersonationController extends Controller
         }
 
         $admin = User::query()->findOrFail($adminId);
+        $impersonatedId = $request->session()->get('impersonated_user_id');
+        $impersonated = $impersonatedId ? User::query()->find($impersonatedId) : null;
         Auth::login($admin);
         $request->session()->forget([
             'impersonator_user_id',
@@ -75,6 +85,14 @@ class ImpersonationController extends Controller
             'active_fund_source_id',
         ]);
         $request->session()->regenerate();
+
+        app(OperationalAuditService::class)->record(
+            null,
+            'USER',
+            $impersonated?->id ?? $impersonatedId,
+            'IMPERSONATION_STOP',
+            'Mode uji user diakhiri oleh '.$admin->name.($impersonated ? ' (target: '.$impersonated->name.')' : '').'.',
+        );
 
         return redirect()->route('impersonation.index')->with('success', 'Sudah kembali sebagai administrator.');
     }
