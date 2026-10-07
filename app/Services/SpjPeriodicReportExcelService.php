@@ -19,8 +19,14 @@ final class SpjPeriodicReportExcelService
         $report = $book->createSheet()->setTitle('Laporan');
         if (($payload['presentation'] ?? '') === 'rekap_bosp') {
             $this->writeBospRecap($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'bos_a1') {
+            $this->writeBosA1($report, $payload);
         } elseif (($payload['presentation'] ?? '') === 'bpk_bos') {
             $this->writeBpk($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'k7b') {
+            $this->writeK7b($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'k7c') {
+            $this->writeK7c($report, $payload);
         } else {
             $this->writeTable($report, $payload);
         }
@@ -128,6 +134,40 @@ final class SpjPeriodicReportExcelService
         $this->autoSize($sheet, count($headers));
     }
 
+    private function writeBosA1(object $sheet, array $payload): void
+    {
+        $data = $payload['bosA1'];
+        $sheet->fromArray([[
+            'No', 'Program/Kegiatan',
+            'Belanja Pegawai', 'Barang dan Jasa',
+            'Belanja Modal Peralatan dan Mesin', 'Belanja Modal Aset Tetap Lainnya',
+            'Belanja Modal Jumlah', 'Total',
+        ]], null, 'A1');
+
+        $rowNumber = 2;
+        foreach ($data['rows'] as $row) {
+            $sheet->fromArray([[
+                $row['no'], $row['program'],
+                (float) $row['pegawai'], (float) $row['barang_jasa'],
+                (float) $row['modal_mesin'], (float) $row['modal_aset'],
+                (float) $row['modal_jumlah'], (float) $row['total'],
+            ]], null, 'A'.$rowNumber++);
+        }
+
+        $totals = $data['totals'];
+        $sheet->fromArray([[
+            '', 'TOTAL',
+            (float) $totals['pegawai'], (float) $totals['barang_jasa'],
+            (float) $totals['modal_mesin'], (float) $totals['modal_aset'],
+            (float) $totals['modal_jumlah'], (float) $totals['grand'],
+        ]], null, 'A'.$rowNumber);
+        $this->styleHeader($sheet, 'A1:'.$this->columnLetter(8).'1');
+        $this->formatMoneyRange($sheet, 'C2:H'.$rowNumber);
+        $sheet->getStyle('A'.$rowNumber.':H'.$rowNumber)->getFont()->setBold(true);
+        $sheet->freezePane('A2');
+        $this->autoSize($sheet, 8);
+    }
+
     private function writeBpk(object $sheet, array $payload): void
     {
         $data = $payload['bpkData'];
@@ -152,6 +192,52 @@ final class SpjPeriodicReportExcelService
         $this->styleHeader($sheet, 'A1:B1');
         $this->formatMoneyRange($sheet, 'B2:B'.$row);
         $sheet->getStyle('A1:B'.$row)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $this->autoSize($sheet, 2);
+    }
+
+    private function writeK7b(object $sheet, array $payload): void
+    {
+        $data = $payload['k7b'];
+        $rows = [
+            ['REGISTER PENUTUPAN KAS (Formulir BOS-K7B)'],
+            ['Tanggal Penutupan Kas', $data['closing_date']],
+            ['Tanggal Penutupan Kas Yang Lalu', $data['prev_closing']],
+            [],
+            ['Jumlah Total Penerimaan (D)', (float) $data['total_in']],
+            ['Jumlah Total Pengeluaran (K)', (float) $data['total_out']],
+            ['Saldo Buku (A = D - K)', (float) $data['book']],
+            ['Saldo Kas (B)', (float) $data['bank'] + (float) $data['cash']],
+            ['Saldo Bank, Surat Berharga dll', (float) $data['bank']],
+            ['Perbedaan (A-B)', (float) $data['diff']],
+            ['Penjelasan Perbedaan', 'Nihil — rincian pecahan diisi manual saat opname fisik'],
+        ];
+
+        $sheet->fromArray($rows, null, 'A1');
+        $this->styleHeader($sheet, 'A1:B1');
+        $this->formatMoneyRange($sheet, 'B5:B10');
+        $sheet->getStyle('A1:B'.count($rows))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $this->autoSize($sheet, 2);
+    }
+
+    private function writeK7c(object $sheet, array $payload): void
+    {
+        $data = $payload['k7c'];
+        $rows = [
+            ['BERITA ACARA PEMERIKSAAN KAS (Formulir BOS-K7C)'],
+            ['Tanggal pemeriksaan', $data['closing_date']],
+            [],
+            ['a. Uang kertas bank, uang logam', (float) $data['cash']],
+            ['b. Saldo Bank', (float) $data['bank']],
+            ['c. Surat Berharga dll', (float) $data['securities']],
+            ['Jumlah', (float) $data['total']],
+            ['Saldo uang menurut Buku Kas Umum', (float) $data['book']],
+            ['Perbedaan antara saldo kas dan saldo buku', (float) $data['diff']],
+        ];
+
+        $sheet->fromArray($rows, null, 'A1');
+        $this->styleHeader($sheet, 'A1:B1');
+        $this->formatMoneyRange($sheet, 'B4:B9');
+        $sheet->getStyle('A1:B'.count($rows))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         $this->autoSize($sheet, 2);
     }
 

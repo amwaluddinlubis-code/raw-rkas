@@ -52,6 +52,7 @@ class SpjPeriodicReportPrintableTest extends TestCase
         $this->assertIsString($service);
         $this->assertStringContainsString('new Spreadsheet', $service);
         $this->assertStringContainsString("'rekap_bosp'", $service);
+        $this->assertStringContainsString("'bos_a1'", $service);
         $this->assertStringContainsString("'bpk_bos'", $service);
         $this->assertStringContainsString('new Xlsx', $service);
     }

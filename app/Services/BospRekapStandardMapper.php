@@ -71,4 +71,59 @@ final class BospRekapStandardMapper
 
         return ['row' => $row, 'col' => $col];
     }
+
+    /**
+     * Taksonomi BARIS Format BOS A-1 (8 program resmi). BERBEDA dari grid
+     * 7x12 di atas: baris A-1 = segmen pertama kode kegiatan (01–08)
+     * apa adanya, sedangkan grid ARKAS menggabung 01+02 pada baris 1.
+     * Diverifikasi terhadap keluaran resmi TW IV 2024 (56.055.000 cocok
+     * per baris): kode 03–08 jatuh pada baris bernomor sama.
+     *
+     * @return array<int,string> baris 1–8 => label program resmi
+     */
+    public static function a1Programs(): array
+    {
+        return [
+            1 => 'Pengembangan Kompetensi Lulusan',
+            2 => 'Pengembangan Standar Isi',
+            3 => 'Pengembangan Standar Proses',
+            4 => 'Pengembangan Standar Pendidik dan Tenaga Kependidikan',
+            5 => 'Pengembangan Sarana dan Prasarana',
+            6 => 'Pengembangan Standar Pengelolaan',
+            7 => 'Pengembangan Standar Pembiayaan',
+            8 => 'Pengembangan dan Implementasi Sistem Penilaian',
+        ];
+    }
+
+    /**
+     * Baris A-1 untuk satu kode kegiatan, atau null bila segmen pertama
+     * di luar 01–08. Segmen 01/02 terverifikasi struktural (nol pada
+     * sampel resmi); 03–08 terverifikasi nominal per baris.
+     */
+    public static function a1RowForActivity(?string $activityCode): ?int
+    {
+        $parts = array_values(array_filter(explode('.', trim((string) $activityCode, '.')), fn (string $part): bool => $part !== ''));
+        if (! isset($parts[0]) || ! ctype_digit($parts[0])) {
+            return null;
+        }
+
+        $row = (int) $parts[0];
+
+        return $row >= 1 && $row <= 8 ? $row : null;
+    }
+
+    /**
+     * Honorarium (Belanja Pegawai A-1) = sub-program 12 (xx.12.*,
+     * "Pembayaran Honor"). Diverifikasi: satu-satunya pola honor pada
+     * data nyata (07.12.01–04, seluruhnya berkode rekening 5.1.02.02
+     * seperti jasa lain) dan jumlahnya sama persis dengan kolom Pegawai
+     * resmi. Aturan prefix rekening DITOLAK bukti: tidak ada baris
+     * 5.1.01.*, dan baris berkode 5.2.* tercatat resmi di Barang dan Jasa.
+     */
+    public static function a1IsHonor(?string $activityCode): bool
+    {
+        $parts = array_values(array_filter(explode('.', trim((string) $activityCode, '.')), fn (string $part): bool => $part !== ''));
+
+        return isset($parts[1]) && (int) $parts[1] === 12;
+    }
 }

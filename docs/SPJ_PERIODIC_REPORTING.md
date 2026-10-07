@@ -1,6 +1,6 @@
 # SPJ Periodic Reporting
 
-Terakhir diverifikasi terhadap source: **2026-10-05** (`raw-rkas`, branch `main`)
+Terakhir diverifikasi terhadap source: **2026-10-07** (`raw-rkas`, branch `main`)
 
 Status: **REGISTRY + DATA ENGINE + INTERNAL PRINT/PDF IMPLEMENTED / VISUAL RUNTIME RVR**
 
@@ -18,8 +18,8 @@ Dokumen ini adalah kontrak teknis modul **Laporan Pertanggungjawaban Periodik** 
 ## Paket laporan
 
 Daftar di bawah adalah cerminan langsung dari
-`SpjPeriodicReportRegistry::packages()`: **46 slot** (bulanan 11 + triwulan 12 +
-semester 13 + tahunan 10) dari **22 report key** berbeda. Bila daftar ini
+`SpjPeriodicReportRegistry::packages()`: **47 slot** (bulanan 11 + triwulan 13 +
+semester 13 + tahunan 10) dari **23 report key** berbeda. Bila daftar ini
 berbeda dengan registry, registry yang benar.
 
 ### Bulanan
@@ -52,6 +52,7 @@ Periode valid: bulan `1..12`.
 - Lampiran Berita Acara Rekonsiliasi
 - Rekapitulasi Pengeluaran Dana BOS
 - Laporan BPK Format BOS
+- Format BOS A-1
 
 Periode valid: triwulan `1..4`.
 

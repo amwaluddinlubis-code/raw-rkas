@@ -70,6 +70,7 @@ final class SpjPeriodicReportRegistry
                 $this->report('lampiran_berita_acara_rekonsiliasi', 'Lampiran Berita Acara Rekonsiliasi'),
                 $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS'),
                 $this->report('bpk_bos', 'Laporan BPK Format BOS'),
+                $this->report('bos_a1', 'Format BOS A-1'),
             ],
             self::SCOPE_SEMESTER => [
                 $this->report('sptjm', 'SPTJM'),

@@ -60,6 +60,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Lampiran Berita Acara Rekonsiliasi',
             'Rekapitulasi Pengeluaran Dana BOS',
             'Laporan BPK Format BOS',
+            'Format BOS A-1',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_QUARTERLY), 'label'));
 
         $this->assertSame([
@@ -91,7 +92,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_ANNUAL), 'label'));
 
-        $this->assertSame(46, array_sum(array_map('count', $registry->packages())));
+        $this->assertSame(47, array_sum(array_map('count', $registry->packages())));
     }
 
     #[Test]

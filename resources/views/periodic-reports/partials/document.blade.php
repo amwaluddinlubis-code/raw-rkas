@@ -7,6 +7,9 @@
     $isLedger = in_array($presentation, ['bku_ledger', 'cash_ledger'], true);
     $isRekap = $presentation === 'rekap_bosp';
     $isBpk = $presentation === 'bpk_bos';
+    $isA1 = $presentation === 'bos_a1' && isset($bosA1);
+    $isK7b = $presentation === 'k7b' && isset($k7b);
+    $isK7c = $presentation === 'k7c' && isset($k7c);
     $ledgerTitle = $presentation === 'cash_ledger' ? 'BUKU PEMBANTU KAS' : 'BUKU KAS UMUM (BKU)';
     $closingSubject = $presentation === 'cash_ledger' ? 'Buku Pembantu Kas' : 'Buku Kas Umum';
 @endphp
@@ -42,7 +45,76 @@
             </tr>
         </table>
     @else
-    @if(! $isRekap)
+    @if($isA1)
+    @php
+        $a1District = trim((string) ($school->district ?? ''));
+        if ($a1District !== '' && ! str_starts_with($a1District, 'Kec.')) {
+            $a1District = 'Kec. '.$a1District;
+        }
+        $a1Desa = trim((string) ($school->desa ?? ''));
+        $a1DesaKec = trim($a1Desa.($a1District !== '' ? ' / '.$a1District : ''), ' /') ?: '-';
+    @endphp
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="flex:1;text-align:center;">
+            <h1 class="doc-title">REKAPITULASI REALISASI PENGGUNAAN DANA BOS REGULER</h1>
+            <div class="doc-subtitle">PERIODE TANGGAL : {{ $bosA1Title['range'] ?? '-' }}</div>
+        </div>
+        <table style="border-collapse:collapse;font-size:11px;white-space:nowrap;">
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Format BOS A-1</td></tr>
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Diisi oleh sekolah</td></tr>
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Dikirim ke TIM Menajemen BOS Kab/Kota</td></tr>
+        </table>
+    </div>
+    <table class="bku-identity-block page-break-avoid">
+        <tr>
+            <td>NPSN</td>
+            <td>: {{ $school->npsn ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td>Nama Sekolah</td>
+            <td>: {{ $school->name }}</td>
+        </tr>
+        <tr>
+            <td>Desa / Kecamatan</td>
+            <td>: {{ $a1DesaKec }}</td>
+        </tr>
+        <tr>
+            <td>Kabupaten/Kota</td>
+            <td>: {{ $school->regency ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Provinsi</td>
+            <td>: {{ $school->province ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Sumber Dana</td>
+            <td>: {{ $fundSource }}</td>
+        </tr>
+    </table>
+    @endif
+    @if($isK7b)
+    <h1 class="doc-title">REGISTER PENUTUPAN KAS</h1>
+    <div class="doc-subtitle">Formulir BOS-K7B</div>
+    <table class="meta-table page-break-avoid">
+        <tr>
+            <td>Tanggal Penutupan Kas</td>
+            <td>: {{ $k7b['closing_date'] }}</td>
+        </tr>
+        <tr>
+            <td>Nama Penutup Kas (Pemegang Kas)</td>
+            <td>: {{ $treasurerName }}</td>
+        </tr>
+        <tr>
+            <td>Tanggal Penutupan Kas Yang Lalu</td>
+            <td>: {{ $k7b['prev_closing'] }}</td>
+        </tr>
+    </table>
+    @endif
+    @if($isK7c)
+    <h1 class="doc-title">BERITA ACARA PEMERIKSAAN KAS</h1>
+    <div class="doc-subtitle">Formulir BOS-K7C</div>
+    @endif
+    @if(! $isRekap && ! $isA1 && ! $isK7b && ! $isK7c)
     <header class="doc-header">
         <div class="school">{{ $school->name }}</div>
         <div class="address">
@@ -159,7 +231,192 @@
         </table>
     @endif
 
-    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk)
+    @if($isA1)
+    @php
+        $a1Money = fn ($value) => 'Rp '.($value > 0 ? $rupiah($value) : '-');
+    @endphp
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th rowspan="3">NO</th>
+                <th rowspan="3">PROGRAM/KEGIATAN</th>
+                <th colspan="5">JENIS BELANJA</th>
+                <th rowspan="3">TOTAL</th>
+            </tr>
+            <tr>
+                <th rowspan="2">BELANJA PEGAWAI</th>
+                <th rowspan="2">BARANG DAN JASA</th>
+                <th colspan="3">BELANJA MODAL</th>
+            </tr>
+            <tr>
+                <th>PERALATAN DAN MESIN</th>
+                <th>ASET TETAP LAINNYA BOS</th>
+                <th>JUMLAH</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($bosA1['rows'] as $a1row)
+                <tr>
+                    <td class="integer">{{ $a1row['no'] }}</td>
+                    <td>{{ $a1row['program'] }}</td>
+                    <td class="money">{{ $a1Money($a1row['pegawai']) }}</td>
+                    <td class="money">{{ $a1Money($a1row['barang_jasa']) }}</td>
+                    <td class="money">{{ $a1Money($a1row['modal_mesin']) }}</td>
+                    <td class="money">{{ $a1Money($a1row['modal_aset']) }}</td>
+                    <td class="money">{{ $a1Money($a1row['modal_jumlah']) }}</td>
+                    <td class="money"><strong>{{ $a1Money($a1row['total']) }}</strong></td>
+                </tr>
+            @endforeach
+            <tr>
+                <td class="integer"></td>
+                <td><strong>TOTAL</strong></td>
+                <td class="money"><strong>{{ $a1Money($bosA1['totals']['pegawai']) }}</strong></td>
+                <td class="money"><strong>{{ $a1Money($bosA1['totals']['barang_jasa']) }}</strong></td>
+                <td class="money"><strong>{{ $a1Money($bosA1['totals']['modal_mesin']) }}</strong></td>
+                <td class="money"><strong>{{ $a1Money($bosA1['totals']['modal_aset']) }}</strong></td>
+                <td class="money"><strong>{{ $a1Money($bosA1['totals']['modal_jumlah']) }}</strong></td>
+                <td class="money"><strong>{{ $a1Money($bosA1['totals']['grand']) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    @endif
+
+    @if($isK7b)
+    <table class="meta-table page-break-avoid">
+        <tr>
+            <td>Jumlah Total Penerimaan (D)</td>
+            <td>: Rp. {{ $rupiah($k7b['total_in']) }}</td>
+        </tr>
+        <tr>
+            <td>Jumlah Total Pengeluaran (K)</td>
+            <td>: Rp. {{ $rupiah($k7b['total_out']) }}</td>
+        </tr>
+        <tr>
+            <td>Saldo Buku (A = D - K)</td>
+            <td>: Rp. {{ $rupiah($k7b['book']) }}</td>
+        </tr>
+        <tr>
+            <td>Saldo Kas (B)</td>
+            <td>: Rp. {{ $rupiah($k7b['bank'] + $k7b['cash']) }}</td>
+        </tr>
+    </table>
+    <div style="margin-top:12px;font-weight:700;">Saldo kas B terdiri dari :</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Uraian</th>
+                <th>Lembar / Keping</th>
+                <th>Jumlah</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($k7b['paper'] as $paper)
+                <tr>
+                    <td>Lembaran uang kertas {{ $paper['label'] }}</td>
+                    <td class="integer">...... Lembar</td>
+                    <td class="money">Rp. ......</td>
+                </tr>
+            @endforeach
+            <tr>
+                <td><strong>Sub Jumlah (1)</strong></td>
+                <td class="integer"></td>
+                <td class="money">Rp. ......</td>
+            </tr>
+            @foreach($k7b['coins'] as $coin)
+                <tr>
+                    <td>Keping uang logam {{ $coin['label'] }}</td>
+                    <td class="integer">...... Keping</td>
+                    <td class="money">Rp. ......</td>
+                </tr>
+            @endforeach
+            <tr>
+                <td><strong>Sub Jumlah (2)</strong></td>
+                <td class="integer"></td>
+                <td class="money">Rp. ......</td>
+            </tr>
+            <tr>
+                <td>Saldo Bank, Surat Berharga dll</td>
+                <td class="integer"></td>
+                <td class="money">Rp. {{ $rupiah($k7b['bank']) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Sub Jumlah (3)</strong></td>
+                <td class="integer"></td>
+                <td class="money"><strong>Rp. {{ $rupiah($k7b['bank']) }}</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Jumlah (1+2+3)</strong></td>
+                <td class="integer"></td>
+                <td class="money"><strong>Rp. {{ $rupiah($k7b['bank'] + $k7b['cash']) }}</strong></td>
+            </tr>
+            <tr>
+                <td><strong>Perbedaan (A-B)</strong></td>
+                <td class="integer"></td>
+                <td class="money"><strong>Rp. {{ $rupiah($k7b['diff']) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="meta-table page-break-avoid">
+        <tr>
+            <td>Penjelasan Perbedaan</td>
+            <td>: Nihil — cocok dengan Buku Kas Umum. Rincian pecahan (1)+(2) diisi manual saat opname fisik.</td>
+        </tr>
+        <tr>
+            <td>Tanggal</td>
+            <td>: {{ $k7b['closing_date'] }}</td>
+        </tr>
+    </table>
+    @endif
+
+    @if($isK7c)
+    <div class="statement">
+        <p>Pada hari ini {{ $k7c['weekday_date'] }}, yang bertanda tangan di bawah ini, kami Kepala Sekolah yang ditunjuk berdasarkan Surat Keputusan No. - (diisi manual), Nama : {{ $principalName }}, Jabatan : Kepala Sekolah, melakukan pemeriksaan kas kepada : Nama : {{ $treasurerName }}, Jabatan : Bendahara / Pemegang Kas, yang berdasarkan Surat Keputusan No. - (diisi manual) ditugaskan dalam pengurusan uang Bantuan Operasional Sekolah (BOS).</p>
+        <p>Berdasarkan pemeriksaan kas serta bukti-bukti dalam pengurusan ini, kami menemui kenyataan sebagai berikut :</p>
+    </div>
+    <div style="margin-top:12px;font-weight:700;">Jumlah uang yang dihitung dihadapan bendahara / Pemegang Kas adalah :</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Uraian</th>
+                <th>Jumlah</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>a. Uang kertas bank, uang logam</td>
+                <td class="money">Rp. {{ $rupiah($k7c['cash']) }}</td>
+            </tr>
+            <tr>
+                <td>b. Saldo Bank</td>
+                <td class="money">Rp. {{ $rupiah($k7c['bank']) }}</td>
+            </tr>
+            <tr>
+                <td>c. Surat Berharga dll</td>
+                <td class="money">Rp. {{ $rupiah($k7c['securities']) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Jumlah</strong></td>
+                <td class="money"><strong>Rp. {{ $rupiah($k7c['total']) }}</strong></td>
+            </tr>
+            <tr>
+                <td>Saldo uang menurut Buku Kas Umum</td>
+                <td class="money">Rp. {{ $rupiah($k7c['book']) }}</td>
+            </tr>
+            <tr>
+                <td><strong>Perbedaan antara saldo kas dan saldo buku</strong></td>
+                <td class="money"><strong>Rp. {{ $rupiah($k7c['diff']) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="meta-table page-break-avoid">
+        <tr>
+            <td>Tanggal</td>
+            <td>: {{ $k7c['closing_date'] }}</td>
+        </tr>
+    </table>
+    @endif
+
+    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c)
     <table class="meta-table page-break-avoid">
         <tr>
             <td>Tahun Anggaran</td>
@@ -189,7 +446,7 @@
         </div>
     @endif
 
-    @if(! $isLedger && ! $isRekap && ! $isBpk)
+    @if(! $isLedger && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c)
     <table class="summary-table page-break-avoid">
         <thead>
             <tr>
@@ -343,9 +600,77 @@
         </tr>
     </table>
     {{-- Blok generik hanya bila belum ada blok khusus (BKU/pajak, rekap,
-        atau BPK Dinas yang membawa bloknya sendiri) agar tanda tangan
+        A-1, K7B/K7C, atau BPK Dinas yang membawa bloknya sendiri) agar tanda tangan
         tidak tampil ganda. --}}
-    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk)
+    @elseif($isA1)
+    <table class="signature-table">
+        <tr>
+            <td>
+                Menyetujui,<br>
+                Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+            <td>
+                {{ $bosA1Title['place'] ?? '-' }}, {{ $bosA1Title['signed_date'] ?? '-' }}<br>
+                Pemegang Kas Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @elseif($isK7b)
+    <table class="signature-table">
+        <tr>
+            <td>
+                Yang diperiksa,<br>
+                Bendahara / Pemegang Kas
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+            <td>
+                {{ $k7b['closing_date'] }}<br>
+                Yang Memeriksa, Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @elseif($isK7c)
+    <table class="signature-table">
+        <tr>
+            <td>
+                Bendahara / Pemegang Kas
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+            <td>
+                {{ $k7c['closing_date'] }}<br>
+                Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk && ! $isK7b && ! $isK7c)
     <table class="signature-table">
         <tr>
             <td>

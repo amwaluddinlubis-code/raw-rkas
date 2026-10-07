@@ -1,9 +1,52 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-07** (sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-07** (K7B+K7C resmi; generator Format BOS A-1; sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
+
+## Register Penutupan Kas K7B + Berita Acara K7C resmi (2026-10-07)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Tahap 1 dari perbaikan bertahap K7 & SPTJM. `k7b`/`k7c` (scope bulanan)
+keluar dari fallback `statement` generik menjadi presenter resmi mengikuti
+formulir BOS-K7B/K7C: D/K/A dari ledger BKU periode yang sama, rincian
+pecahan sebagai isian manual, Perbedaan (A-B), dan tanda tangan
+Bendahara + Kepsek. Nomor SK pada K7C memakai placeholder manual karena
+tidak tersedia di skema. Tidak ada perubahan registry/scope/tenant/
+numbering/sync; nilai tetap dari mirror via `bkuLedgerRows`.
+
+Regression: `K7bK7cReportTest` 5 passed / 45 assertions (data, print
+route K7B+K7C, excel), Printable 5 passed, BosA1 4 passed,
+filter PeriodicReport 13 passed, BkuOfficialLedger 12 passed; Pint
+passed; `view:cache` + `git diff --check` bersih. Browser/PDF aktual
+tetap RVR.
+
+## Generator Format BOS A-1 (2026-10-07)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
+
+Laporan Periode triwulan bertambah `bos_a1` ("Format BOS A-1"): grid 8
+program resmi × (Belanja Pegawai | Barang dan Jasa | 3 kolom Belanja Modal
+| TOTAL) + baris TOTAL, sel nol sebagai `Rp -`, kop Format BOS A-1,
+identitas desa/kecamatan, tanda tangan Menyetujui Kepsek + Pemegang Kas
+Sekolah (tempat + tanggal akhir periode + NIP). Orientasi landscape folio;
+Excel menulis grid + baris TOTAL.
+
+Aturan grid terverifikasi terhadap keluaran resmi TW IV 2024 (seluruh angka
+cocok per baris, total 56.055.000): baris = segmen pertama kode kegiatan
+01–08; kolom Pegawai = sub-program 12 honorarium; selainnya Barang dan
+Jasa (termasuk baris berkode rekening `5.2.*` — aturan prefix rekening
+ditolak bukti). Kolom modal dipertahankan nol + RVR: seluruh sampel resmi
+bernilai nol sehingga belum ada aturan populasi terverifikasi. Registry
+triwulan 12→13 slot (47 total, 23 key); kontrak teknis, indeks, dan
+regression count diselaraskan.
+
+Regression: `BosA1ReportTest` 4 passed / 40 assertions (data, print
+route, excel), registry Feature+Unit, Printable, RekapBudgetRealization,
+BkuOfficialLedger, ModuleUi hijau; Pint passed; `view:cache` +
+`git diff --check` bersih. Browser/PDF aktual tetap RVR.
 
 ## Unifikasi filter tab Persiapan + Paket ikut pola Atribut (2026-10-07)
 

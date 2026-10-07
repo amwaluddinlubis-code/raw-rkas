@@ -1,6 +1,6 @@
 # Modul Laporan Periode
 
-Terakhir diperbarui: **2026-10-05** (`raw-rkas`, branch `main`)
+Terakhir diperbarui: **2026-10-07** (`raw-rkas`, branch `main`)
 
 Dokumen ini adalah panduan fitur laporan periode (`/laporan-periode`): generator
 internal APP-SPJ untuk cetak browser dan PDF, terpisah dari template Paket SPJ.
@@ -65,7 +65,7 @@ Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 Semua report key pada registry dapat diekspor melalui route internal
 `/laporan-periode/{scope}/{report}/excel`. Workbook dibuat dari payload yang
 sama dengan cetak/PDF dan memiliki sheet `Ringkasan` serta `Laporan`.
-Presenter khusus `rekap_bosp` dan `bpk_bos` juga ditulis ke bentuk tabel Excel
+Presenter khusus `rekap_bosp`, `bos_a1`, dan `bpk_bos` juga ditulis ke bentuk tabel Excel
 yang sesuai dengan data masing-masing.
 
 ## Buku Pembantu Kas (bentuk BKU, sisi tunai)
@@ -132,6 +132,32 @@ Implementasi: `SpjPeriodicReportPrintService::rekapBospData/Title` +
 cabang `rekap_bosp` di `document.blade.php`.
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
+## Format BOS A-1 (rekapitulasi resmi per 8 program)
+
+Presentasi `bos_a1` (`bos_a1`, scope triwulan; Fase 1) meniru Formulir BOS
+A-1: judul + `PERIODE TANGGAL : 01 JANUARI - 31 MARET 2024` + kotak Format
+BOS A-1, blok identitas (NPSN, sekolah, desa/kecamatan, kab/kota, provinsi,
+sumber dana), grid 8 program × (Belanja Pegawai | Barang dan Jasa | 3 kolom
+Belanja Modal | TOTAL) + baris TOTAL, sel nol sebagai `Rp -`, tanda tangan
+Menyetujui Kepsek + `{desa}, {tanggal akhir periode}` / Pemegang Kas
+Sekolah. Orientasi landscape folio; Excel menulis grid + baris TOTAL.
+
+Aturan grid terverifikasi terhadap keluaran resmi TW IV 2024 (seluruh angka
+cocok per baris): baris = segmen pertama kode kegiatan 01–08
+(`BospRekapStandardMapper::a1RowForActivity`); kolom Pegawai = sub-program
+12 honorarium (`a1IsHonor`) — aturan prefix rekening DITOLAK bukti (tidak
+ada baris `5.1.01.*`, honor tercatat `5.1.02.02`, dan baris berkode `5.2.*`
+resmi masuk Barang dan Jasa); selainnya Barang dan Jasa dari
+`gross_amount`. Kolom modal dipertahankan nol + RVR: seluruh sampel resmi
+bernilai nol sehingga belum ada aturan populasi terverifikasi. Transaksi
+di luar 01–08 tercatat `unmapped` pada payload (tidak masuk grid agar
+TOTAL = jumlah baris).
+
+Implementasi: `SpjPeriodicReportPrintService::bosA1Data/Title`,
+`SpjPeriodicReportExcelService::writeBosA1`, cabang `bos_a1` di
+`document.blade.php` (header, tabel, signature khusus).
+Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
+
 ## Laporan BPK Format BOS
 
 Paket `bpk_bos` tersedia pada scope bulanan, triwulan, semester, dan tahunan.
@@ -146,7 +172,24 @@ Hasil dapat dibuka melalui cetak browser atau PDF dari halaman Laporan Periode.
 Format ini adalah laporan internal APP-SPJ yang perlu dicocokkan dengan bukti
 fisik dan format resmi instansi sebelum ditandatangani.
 
-## Status verifikasi (2026-10-05)
+## Register Penutupan Kas K7B + Berita Acara Pemeriksaan Kas K7C (2026-10-07)
+
+Presentasi `k7b`/`k7c` (scope bulanan) mengikuti formulir resmi BOS-K7B/K7C:
+K7B memuat tanggal penutupan + penutup kas + penutupan lalu, Total
+Penerimaan (D) / Pengeluaran (K) / Saldo Buku (A) dari ledger BKU periode
+yang sama, rincian pecahan uang kertas/logam sebagai baris isian manual
+(tidak tersedia di mirror), saldo bank dari BKU, Perbedaan (A-B), dan
+tanda tangan Yang diperiksa Bendahara + Yang Memeriksa Kepsek. K7C memuat
+narasi pemeriksaan (nomor SK memakai placeholder manual), rincian
+uang kertas+logam / saldo bank / surat berharga, jumlah, saldo BKU,
+selisih, dan tanda tangan Bendahara + Kepsek.
+
+Implementasi: `SpjPeriodicReportPrintService::k7bData/k7cData`, cabang
+`k7b`/`k7c` di `document.blade.php`, `SpjPeriodicReportExcelService::
+writeK7b/writeK7c`. Status visual/runtime: RVR sampai QA browser/PDF
+aktual dijalankan.
+
+## Status verifikasi (2026-10-07)
 
 Perubahan pada `SpjPeriodicReportPrintService` (dedup bayangan backfill pajak,
 normalisasi `REK_BKU` varian `Sisa`, perhitungan bunga/pajak sisi bank, dan
@@ -154,7 +197,8 @@ fallback uraian BKU) sudah tercakup regression:
 
 ```text
 BkuOfficialLedgerTest              : 12 passed / 124 assertions
-filter PeriodicReport              : 13 passed / 148 assertions
+filter PeriodicReport              : 13 passed / 152 assertions
+K7bK7cReportTest                   : 5 passed / 45 assertions
 ```
 
 Artinya kontrak **source/data** terverifikasi; tampilan cetaknya tetap **RVR**

@@ -49,7 +49,7 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository me
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` | **ACTIVE REFERENCE / FASE 1 IMPLEMENTED** — 10 pola bukti dukung + mapping kategori/channel; checklist manual per paket sudah tersedia dan sengaja non-blocking. Aturan otomatis/threshold lanjutan masih RVR. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
-| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat scope periode dengan 46 slot (22 report key) pada `SpjPeriodicReportRegistry`, generator internal, browser print, PDF, Excel, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
+| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat scope periode dengan 47 slot (23 report key) pada `SpjPeriodicReportRegistry`, generator internal, browser print, PDF, Excel, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
 | `SPJ_PERIODIC_REPORTING.md` | **ACTIVE TECHNICAL CONTRACT** — prinsip, registry, scope, dan boundary data modul Laporan Periode; berpasangan dengan feature guide di atas. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |

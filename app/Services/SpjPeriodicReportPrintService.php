@@ -70,6 +70,16 @@ final class SpjPeriodicReportPrintService
             $extra['bpkSchoolName'] = $this->bpkSchoolName($school->name ?? '');
             $extra['bpkSchoolAddress'] = mb_strtoupper(trim('DESA '.(string) $school->desa.' KECAMATAN '.(string) $school->district));
         }
+        if ($presentation === 'bos_a1') {
+            $extra['bosA1'] = $this->bosA1Data($transactions);
+            $extra['bosA1Title'] = $this->bosA1Title($summary);
+        }
+        if ($presentation === 'k7b') {
+            $extra['k7b'] = $this->k7bData($scope, $period, $summary);
+        }
+        if ($presentation === 'k7c') {
+            $extra['k7c'] = $this->k7cData($scope, $period, $summary);
+        }
 
         return [
             ...$payload,
@@ -99,6 +109,9 @@ final class SpjPeriodicReportPrintService
             'bos_k7a', 'bos_k8' => 'activity_summary',
             'rekapitulasi_pengeluaran_dana_bos' => 'rekap_bosp',
             'bpk_bos' => 'bpk_bos',
+            'bos_a1' => 'bos_a1',
+            'k7b' => 'k7b',
+            'k7c' => 'k7c',
             'format_k7', 'rekap_belanja_modal_barang_jasa', 'rekap_bmd',
             'rekap_belanja_dana_bos', 'form_1c' => 'account_summary',
             'lampiran_sp2b', 'lampiran_berita_acara_rekonsiliasi' => 'transaction_recap',
@@ -116,10 +129,14 @@ final class SpjPeriodicReportPrintService
             'bank_ledger' => [$this->ledgerColumns(), $this->ledgerRows($this->bankTransactions($transactions))],
             'tax' => [$this->taxColumns(), $this->taxRows($transactions)],
             'rekap_bosp' => [$this->rekapBospColumns(), $this->rekapBospRows($scope, $period)],
+            'bpk_bos' => [[], []],
             'activity_summary' => [$this->activityColumns(), $this->activityRows($transactions)],
+            'k7b' => [[], []],
+            'k7c' => [[], []],
             'account_summary' => [$this->accountColumns(), $this->accountRows($transactions)],
             'transaction_recap' => [$this->recapColumns(), $this->recapRows($transactions)],
             'bpk_bos' => [[], []],
+            'bos_a1' => [[], []],
             default => [$this->accountColumns(), $this->accountRows($transactions)],
         };
     }
@@ -1605,6 +1622,183 @@ final class SpjPeriodicReportPrintService
         return ['range' => $range, 'phase' => $phase];
     }
 
+    /**
+     * Grid REKAPITULASI A-1: 8 program resmi x jenis belanja.
+     *
+     * Aturan terverifikasi terhadap keluaran resmi TW IV 2024 (seluruh
+     * angka cocok per baris): baris = segmen pertama kode kegiatan
+     * (01–08); kolom Pegawai = sub-program 12 honorarium; selainnya
+     * Barang dan Jasa (termasuk baris berkode rekening 5.2.*).
+     * Kolom modal dipertahankan nol + RVR: seluruh sampel resmi bernilai
+     * nol sehingga belum ada aturan populasi terverifikasi.
+     *
+     * @return array{rows:array<int,array{no:int,program:string,pegawai:float,barang_jasa:float,modal_mesin:float,modal_aset:float,modal_jumlah:float,total:float}>,totals:array{pegawai:float,barang_jasa:float,modal_mesin:float,modal_aset:float,modal_jumlah:float,grand:float},unmapped:float,unmappedCount:int}
+     */
+    private function bosA1Data(Collection $transactions): array
+    {
+        $rows = [];
+        foreach (BospRekapStandardMapper::a1Programs() as $index => $program) {
+            $rows[$index] = [
+                'no' => $index,
+                'program' => $program,
+                'pegawai' => 0.0,
+                'barang_jasa' => 0.0,
+                'modal_mesin' => 0.0,
+                'modal_aset' => 0.0,
+                'modal_jumlah' => 0.0,
+                'total' => 0.0,
+            ];
+        }
+
+        $unmapped = 0.0;
+        $unmappedCount = 0;
+        foreach ($transactions as $transaction) {
+            $code = $transaction->sourceValue('activity_code');
+            $row = BospRekapStandardMapper::a1RowForActivity($code);
+            $gross = (float) $transaction->sourceValue('gross_amount');
+            if ($row === null) {
+                $unmapped += $gross;
+                $unmappedCount++;
+
+                continue;
+            }
+            if (BospRekapStandardMapper::a1IsHonor($code)) {
+                $rows[$row]['pegawai'] += $gross;
+            } else {
+                $rows[$row]['barang_jasa'] += $gross;
+            }
+            $rows[$row]['total'] += $gross;
+        }
+
+        $totals = ['pegawai' => 0.0, 'barang_jasa' => 0.0, 'modal_mesin' => 0.0, 'modal_aset' => 0.0, 'modal_jumlah' => 0.0, 'grand' => 0.0];
+        foreach ($rows as $row) {
+            $totals['pegawai'] += $row['pegawai'];
+            $totals['barang_jasa'] += $row['barang_jasa'];
+            $totals['grand'] += $row['total'];
+        }
+
+        return ['rows' => $rows, 'totals' => $totals, 'unmapped' => $unmapped, 'unmappedCount' => $unmappedCount];
+    }
+
+    /**
+     * Rentang periode gaya kop resmi: "01 JANUARI - 31 MARET 2024".
+     *
+     * @return array{range:string,place:string,signed_date:string}
+     */
+    private function bosA1Title(array $summary): array
+    {
+        $range = '-';
+        $signedDate = '-';
+        try {
+            $from = filled($summary['date_from'] ?? null) ? Carbon::parse((string) $summary['date_from']) : null;
+            $to = filled($summary['date_to'] ?? null) ? Carbon::parse((string) $summary['date_to']) : null;
+            if ($from && $to) {
+                $range = mb_strtoupper($from->translatedFormat('d F')).' - '.mb_strtoupper($to->translatedFormat('d F Y'));
+                $signedDate = $to->translatedFormat('d F Y');
+            }
+        } catch (\Throwable) {
+            $range = '-';
+            $signedDate = '-';
+        }
+
+        $school = $this->context->school();
+        $place = trim((string) ($school->desa ?? '')) ?: trim((string) ($school->district ?? '')) ?: '-';
+
+        return ['range' => $range, 'place' => $place, 'signed_date' => $signedDate];
+    }
+
+    /**
+     * Data REGISTER PENUTUPAN KAS Formulir BOS-K7B.
+     *
+     * D = total penerimaan ledger (termasuk saldo awal), K = total
+     * pengeluaran, A = saldo buku, B = saldo kas fisik (bank + tunai dari
+     * BKU; rincian pecahan uang kertas/logam diisi manual saat opname
+     * karena tidak tersedia di mirror).
+     *
+     * @param  array<string,mixed>  $summary
+     * @return array{closing_date:string,weekday_date:string,prev_closing:string,total_in:float,total_out:float,book:float,bank:float,cash:float,securities:float,diff:float,paper:list<array{label:string,denom:float}>,coins:list<array{label:string,denom:float}>}
+     */
+    private function k7bData(string $scope, ?int $period, array $summary): array
+    {
+        $rows = $this->bkuLedgerRows($scope, $period);
+        $total = end($rows);
+        $totalIn = (float) (is_array($total) ? ($total['incoming'] ?? 0) : 0);
+        $totalOut = (float) (is_array($total) ? ($total['outgoing'] ?? 0) : 0);
+        $bank = (float) $this->bkuClosing['bank'];
+        $cash = (float) $this->bkuClosing['cash'];
+        $book = (float) (is_array($total) ? ($total['balance'] ?? $bank + $cash) : $bank + $cash);
+
+        $closingDate = '-';
+        $weekdayDate = '-';
+        $prevClosing = '-';
+        try {
+            if (filled($summary['date_to'] ?? null)) {
+                $end = Carbon::parse((string) $summary['date_to']);
+                $closingDate = $end->translatedFormat('d F Y');
+                $weekdayDate = $end->translatedFormat('l, d F Y');
+            }
+            if (filled($summary['date_from'] ?? null)) {
+                $prevClosing = Carbon::parse((string) $summary['date_from'])->subDay()->translatedFormat('d F Y');
+            }
+        } catch (\Throwable) {
+            $closingDate = '-';
+            $weekdayDate = '-';
+        }
+
+        return [
+            'closing_date' => $closingDate,
+            'weekday_date' => $weekdayDate,
+            'prev_closing' => $prevClosing,
+            'total_in' => $totalIn,
+            'total_out' => $totalOut,
+            'book' => $book,
+            'bank' => $bank,
+            'cash' => $cash,
+            'securities' => 0.0,
+            'diff' => $book - ($bank + $cash),
+            'paper' => [
+                ['label' => 'Rp 100.000', 'denom' => 100000],
+                ['label' => 'Rp 50.000', 'denom' => 50000],
+                ['label' => 'Rp 20.000', 'denom' => 20000],
+                ['label' => 'Rp 10.000', 'denom' => 10000],
+                ['label' => 'Rp 5.000', 'denom' => 5000],
+                ['label' => 'Rp 2.000', 'denom' => 2000],
+                ['label' => 'Rp 1.000', 'denom' => 1000],
+            ],
+            'coins' => [
+                ['label' => 'Rp 1.000', 'denom' => 1000],
+                ['label' => 'Rp 500', 'denom' => 500],
+                ['label' => 'Rp 200', 'denom' => 200],
+                ['label' => 'Rp 100', 'denom' => 100],
+            ],
+        ];
+    }
+
+    /**
+     * Data BERITA ACARA PEMERIKSAAN KAS Formulir BOS-K7C.
+     *
+     * Angka mengikuti K7B/BKU periode yang sama; nomor SK tidak tersedia
+     * di skema sehingga memakai placeholder untuk diisi manual.
+     *
+     * @param  array<string,mixed>  $summary
+     * @return array{weekday_date:string,closing_date:string,cash:float,bank:float,securities:float,total:float,book:float,diff:float}
+     */
+    private function k7cData(string $scope, ?int $period, array $summary): array
+    {
+        $k7b = $this->k7bData($scope, $period, $summary);
+
+        return [
+            'weekday_date' => $k7b['weekday_date'],
+            'closing_date' => $k7b['closing_date'],
+            'cash' => $k7b['cash'],
+            'bank' => $k7b['bank'],
+            'securities' => 0.0,
+            'total' => $k7b['cash'] + $k7b['bank'],
+            'book' => $k7b['book'],
+            'diff' => $k7b['diff'],
+        ];
+    }
+
     /** @return list<array{key:string,label:string,type:string}> */
     private function recapColumns(): array
     {
@@ -1672,17 +1866,17 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1'], true)
             ? 'landscape'
             : 'portrait';
     }
 
     /**
-     BKU resmi memakai kertas F4/Folio; laporan lain tetap A4.
+     * BKU resmi memakai kertas F4/Folio; A-1 yang lebar ikut folio; laporan lain tetap A4.
      */
     private function paper(string $presentation): string
     {
-        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos'], true) ? 'folio' : 'a4';
+        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1'], true) ? 'folio' : 'a4';
     }
 
     /**
