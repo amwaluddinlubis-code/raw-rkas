@@ -213,6 +213,36 @@ class DocumentStoragePathService
     }
 
     /**
+     * Hapus folder arsip {base}/{tahun}/{nomor-dokumen} beserta isinya.
+     * Dipakai saat rollback penomoran: nomor yang dicabut tidak boleh
+     * meninggalkan arsip basi. Aman dari path traversal karena folder
+     * dihitung ulang dari nomor dokumen dan diverifikasi berada di dalam
+     * base path terkonfigurasi.
+     */
+    public function deletePackageArchive(string $year, string $documentNumber): void
+    {
+        $segment = $this->safeSegment($documentNumber);
+        $basePath = $this->configuredPath();
+        $realBase = $basePath !== null ? realpath($basePath) : false;
+        if ($realBase === false) {
+            return;
+        }
+
+        $directory = $realBase.DIRECTORY_SEPARATOR.$this->safeSegment($year).DIRECTORY_SEPARATOR.$segment;
+        $realDirectory = realpath($directory);
+        if ($realDirectory === false || ! str_starts_with($realDirectory, $realBase.DIRECTORY_SEPARATOR)) {
+            return;
+        }
+
+        foreach ((array) glob($realDirectory.DIRECTORY_SEPARATOR.'*') as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+        @rmdir($realDirectory);
+    }
+
+    /**
      * Salin file dengan percobaan ulang singkat. Di Windows, file tujuan
      * dapat terkunci sesaat (PDF sedang terbuka, antivirus/IDM memindai,
      * atau dua klik unduh bersamaan) sehingga copy() pertama gagal dengan
