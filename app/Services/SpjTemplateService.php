@@ -837,14 +837,16 @@ class SpjTemplateService
             if (trim((string) $sheet->getCell($coordinate)->getValue()) !== '{{KOP_SURAT}}') {
                 continue;
             }
+            // Periksa keterbacaan gambar SEBELUM cell dikosongkan agar kop
+            // tidak hilang diam-diam bila file gambar rusak.
+            $dimensions = @getimagesize($path);
+            if (! is_array($dimensions) || ($dimensions[0] ?? 0) < 1 || ($dimensions[1] ?? 0) < 1) {
+                throw new \RuntimeException('Kop surat sekolah tidak dapat dibaca sebagai gambar: '.$path);
+            }
             $sheet->setCellValue($coordinate, '');
             $drawing = new Drawing;
             $drawing->setPath($path);
             $drawing->setCoordinates($coordinate);
-            $dimensions = @getimagesize($path);
-            if (! is_array($dimensions) || ($dimensions[0] ?? 0) < 1 || ($dimensions[1] ?? 0) < 1) {
-                return;
-            }
 
             $targetWidth = $this->excelPrintAreaWidth($sheet);
             $targetHeight = max(1, (int) round($targetWidth * $dimensions[1] / $dimensions[0]));
