@@ -9,6 +9,7 @@ use App\Models\SpjDocument;
 use App\Models\SpjPackage;
 use App\Services\ArkasMirrorResolver;
 use App\Services\OperationalAuditService;
+use App\Services\SpjDocumentNumberService;
 use App\Support\ActiveSpjContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -251,6 +252,13 @@ class SpjNumberingRollbackUseCase
     {
         $yearId = $this->context->fiscalYearId();
         $fundSourceId = $this->context->fundSourceId();
+        // Kolom sequence kini NOT NULL; NULL konteks dinormalisasi ke sentinel
+        // agar baris sequence tetap satu grup canonical (K2). Filter transaksi
+        // di bawah tetap memakai NULL asli karena kolom transactions
+        // .fund_source_id memang nullable.
+        $sequenceFundSourceId = $fundSourceId === null
+            ? SpjDocumentNumberService::NULL_FUND_SOURCE_SENTINEL
+            : (int) $fundSourceId;
         $formats = DocumentNumberFormat::query()->where('fiscal_year_id', $yearId)->get()->keyBy('document_type');
         $documents = SpjDocument::query()
             ->whereNotNull('sequence_number')
@@ -261,7 +269,7 @@ class SpjNumberingRollbackUseCase
 
         DB::connection('school')->table('document_number_sequences')
             ->where('fiscal_year_id', $yearId)
-            ->where('fund_source_id', $fundSourceId)
+            ->where('fund_source_id', $sequenceFundSourceId)
             ->delete();
 
         $groups = $documents->groupBy(function (SpjDocument $document) use ($formats): string {
@@ -276,7 +284,7 @@ class SpjNumberingRollbackUseCase
             [$documentType, $periodKey] = explode('|', $key, 2);
             DB::connection('school')->table('document_number_sequences')->insert([
                 'fiscal_year_id' => $yearId,
-                'fund_source_id' => $fundSourceId,
+                'fund_source_id' => $sequenceFundSourceId,
                 'format_name' => $documentType,
                 'period_key' => $periodKey,
                 'last_number' => (int) $group->max('sequence_number'),

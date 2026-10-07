@@ -15,6 +15,16 @@ use InvalidArgumentException;
 
 class SpjDocumentNumberService
 {
+    /**
+     * Sentinel fund_source_id untuk sequence tanpa sumber dana (NULL legacy).
+     * Seluruh pembaca/penulis tabel document_number_sequences wajib memakai
+     * sentinel ini agar unique index (fiscal_year_id, fund_source_id,
+     * format_name, period_key) benar-benar melindungi grupnya di SQLite,
+     * yang menganggap NULL sebagai nilai distinct. Nilai 0 aman karena id
+     * fund_sources selalu positif.
+     */
+    public const NULL_FUND_SOURCE_SENTINEL = 0;
+
     public function __construct(private readonly SpjNumberingPolicyService $policy) {}
 
     /**
@@ -228,7 +238,11 @@ class SpjDocumentNumberService
 
             $document = $activeDocument ?? new SpjDocument($identity);
             $yearId = (int) $package->transaction->fiscal_year_id;
-            $fundSourceId = $package->transaction->fund_source_id === null ? null : (int) $package->transaction->fund_source_id;
+            // NULL fund_source_id dinormalisasi ke sentinel agar unique index
+            // sequence melindungi grup tanpa sumber dana (K2).
+            $fundSourceId = $package->transaction->fund_source_id === null
+                ? self::NULL_FUND_SOURCE_SENTINEL
+                : (int) $package->transaction->fund_source_id;
             $format = $this->policy->formatFor($yearId, $documentType);
             $periodKey = $this->periodKey($format->reset_period, $documentDate);
             $sequenceKey = [
