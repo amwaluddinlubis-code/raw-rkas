@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-07** (unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-07** (sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
@@ -27,6 +27,25 @@ dilengkapi + ekspektasi diselaraskan API baru), Pint passed,
 23 transaksi, legacy `?month=6` → mode bulan Juni benar, Paket TW1
 23 paket, Atribut TW1 23 — tanpa console error.
 
+Perubahan lanjutan pada sesi yang sama (commit `28ba6cf`):
+
+- Menu **Rekap Triwulan** pindah dari bar filter Persiapan ke
+  sidebar di bawah **Laporan SPJ** (aktif saat rute
+  `spj.quarter-recap`); tombol di filter dihapus.
+- Radius trigger dropdown select disamakan ke token kontrol form
+  (pengecualian aturan blanket `main button` di `human-ui.css`
+  untuk `.ui-searchable-select-trigger`).
+- Tinggi tombol segmen filter periode disamakan ke token tinggi
+  kontrol (`--profile-control-height`).
+- Popup kalender input tanggal Indonesia ditambatkan ke kotak field
+  (input native menutupi wrapper, bukan 1px) agar tampil tepat di
+  bawah/atas field; dropdown daisy di-portal ke body dengan
+  penempatan dinamis + handler resize/scroll.
+- Evidence: `SidebarRoleVisibilityTest` 3 passed,
+  `GuiAudit09To13SourceReadinessTest` 23 passed, browser: menu
+  sidebar aktif benar, radius/tinggi seragam 8px/44px terukur,
+  popup kalender sejajar field (screenshot).
+
 ## Filter periode tab Paket/Atribut 500 + state Bulan/TW Persiapan (2026-10-06)
 
 Status: **FUNCTIONAL PASS (focused) / RVR tersisa pra-eksis**.
@@ -45,15 +64,15 @@ Persiapan TW1 23 transaksi; Laporan TW1 empty-state benar.
 
 Temuan kedua: filter Persiapan menampilkan Bulan=Juni +
 Triwulan=TW1 bersamaan (data ikut Bulan, backend month-precedence
-memang deliberate). `SpjPreparationFilter::updatedMonth/
-updatedQuarter` kini mereset pasangannya agar state tunggal.
+memang deliberate). Catatan 2026-10-07: pendekatan
+`updatedMonth/updatedQuarter` tersebut sudah digantikan migrasi
+`mode/periode` satu-scope (entri 2026-10-07 di atas) —
+`SpjTabFiltersLivewireTest` yang tadinya 7 failed kini 7 passed
+(fixture `sort_order` dilengkapi + ekspektasi diselaraskan API baru).
 
-Regression: `SpjPackagePeriodFilterTest` baru 4 passed / 13
-assertions (bulan/triwulan/semester/invalid + atribut +
-reset-coherence), `SpjPreparationFilterTest` 3 passed, Pint passed,
-`view:cache` + `git diff --check` bersih. `SpjTabFiltersLivewireTest`
-7 failed terbukti pra-eksis via stash (fixture `sort_order` hilang
-di `:memory:`, tak tersentuh perubahan ini).
+Regression saat itu: `SpjPackagePeriodFilterTest` baru 4 passed /
+13 assertions, `SpjPreparationFilterTest` 3 passed, Pint passed,
+`view:cache` + `git diff --check` bersih.
 
 ## Browser QA focused + 2 perbaikan mobile (2026-10-05)
 
