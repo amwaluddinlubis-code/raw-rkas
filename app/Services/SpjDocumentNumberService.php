@@ -8,10 +8,12 @@ use App\Models\SpjGoods;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use Carbon\CarbonInterface;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use PDOException;
 
 class SpjDocumentNumberService
 {
@@ -251,20 +253,7 @@ class SpjDocumentNumberService
                 'format_name' => $documentType,
                 'period_key' => $periodKey,
             ];
-            $sequence = DB::connection('school')->table('document_number_sequences')
-                ->where($sequenceKey)
-                ->lockForUpdate()->first();
-            $next = ((int) ($sequence->last_number ?? 0)) + 1;
-            if ($sequence) {
-                DB::connection('school')->table('document_number_sequences')->where('id', $sequence->id)
-                    ->update(['last_number' => $next, 'updated_at' => now()]);
-            } else {
-                DB::connection('school')->table('document_number_sequences')->insert($sequenceKey + [
-                    'last_number' => $next,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+            $next = $this->allocateSequenceNumber($sequenceKey);
 
             $number = $this->renderNumber($format, $documentType, $next, $documentDate, $schoolCode, $npsn);
             $document->fill([
@@ -300,6 +289,75 @@ class SpjDocumentNumberService
 
             return $document;
         });
+    }
+
+    /**
+     * Alokasikan nomor urut berikutnya untuk satu scope sequence.
+     *
+     * Idempoten terhadap race insert-pertama (S3): bila baris sequence
+     * dimenangkan proses lain di antara baca dan insert, duplicate-key
+     * exception ditangkap lalu alokasi diulang dengan membaca ulang baris
+     * pemenang — tidak pernah 500 dan tidak pernah nomor ganda.
+     *
+     * @param  array{fiscal_year_id:int,fund_source_id:int,format_name:string,period_key:string}  $sequenceKey
+     */
+    private function allocateSequenceNumber(array $sequenceKey): int
+    {
+        $sequence = DB::connection('school')->table('document_number_sequences')
+            ->where($sequenceKey)
+            ->lockForUpdate()->first();
+        if ($sequence) {
+            $next = ((int) $sequence->last_number) + 1;
+            DB::connection('school')->table('document_number_sequences')->where('id', $sequence->id)
+                ->update(['last_number' => $next, 'updated_at' => now()]);
+
+            return $next;
+        }
+
+        try {
+            $this->insertSequenceRow($sequenceKey, 1);
+        } catch (QueryException $exception) {
+            if (! $this->isDuplicateKeyException($exception)) {
+                throw $exception;
+            }
+            $sequence = DB::connection('school')->table('document_number_sequences')
+                ->where($sequenceKey)
+                ->lockForUpdate()->first();
+            if (! $sequence) {
+                throw $exception;
+            }
+            $next = ((int) $sequence->last_number) + 1;
+            DB::connection('school')->table('document_number_sequences')->where('id', $sequence->id)
+                ->update(['last_number' => $next, 'updated_at' => now()]);
+
+            return $next;
+        }
+
+        return 1;
+    }
+
+    /**
+     * @param  array{fiscal_year_id:int,fund_source_id:int,format_name:string,period_key:string}  $sequenceKey
+     */
+    protected function insertSequenceRow(array $sequenceKey, int $next): void
+    {
+        DB::connection('school')->table('document_number_sequences')->insert($sequenceKey + [
+            'last_number' => $next,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function isDuplicateKeyException(QueryException $exception): bool
+    {
+        $previous = $exception->getPrevious();
+        $code = $previous instanceof PDOException ? (string) $previous->getCode() : '';
+        $message = strtolower($exception->getMessage().' '.($previous?->getMessage() ?? ''));
+
+        return $code === '23000'
+            || str_contains($message, 'unique constraint failed')
+            || str_contains($message, 'duplicate entry')
+            || str_contains($message, 'duplicate key');
     }
 
     public function renderConfiguredNumber(

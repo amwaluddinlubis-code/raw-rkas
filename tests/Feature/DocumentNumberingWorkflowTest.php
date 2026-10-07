@@ -7,6 +7,7 @@ use App\Models\FundSource;
 use App\Models\SpjPackage;
 use App\Services\SpjDocumentLifecycleService;
 use App\Services\SpjDocumentNumberService;
+use App\Services\SpjNumberingPolicyService;
 use App\UseCases\Spj\SpjNumberingUseCase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
@@ -294,6 +295,40 @@ class DocumentNumberingWorkflowTest extends TestCase
 
         $this->assertCount(1, $rows, 'Transaksi tanpa sumber dana harus berbagi satu baris sequence sentinel, bukan baris NULL ganda.');
         $this->assertSame(0, (int) $rows->first()->fund_source_id);
+        $this->assertSame(2, (int) $rows->first()->last_number);
+    }
+
+    public function test_concurrent_first_sequence_insert_retries_instead_of_throwing_duplicate_key(): void
+    {
+        $year = $this->year();
+        $package = $this->package($year, 'B-001', '2026-01-05', '101');
+
+        $service = new class(app(SpjNumberingPolicyService::class)) extends SpjDocumentNumberService
+        {
+            protected function insertSequenceRow(array $sequenceKey, int $next): void
+            {
+                // Simulasi pemenang race: baris sequence disisipkan proses lain
+                // tepat sebelum insert kita dieksekusi.
+                DB::connection('school')->table('document_number_sequences')->insert($sequenceKey + [
+                    'last_number' => $next,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                parent::insertSequenceRow($sequenceKey, $next);
+            }
+        };
+
+        $document = $service->assign($package, 'SPJ', Carbon::parse('2026-01-05'), '10200001');
+
+        $this->assertSame(2, $document->sequence_number);
+
+        $rows = DB::connection('school')->table('document_number_sequences')
+            ->where('fiscal_year_id', $year->id)
+            ->where('fund_source_id', 1)
+            ->where('format_name', 'SPJ')
+            ->get();
+
+        $this->assertCount(1, $rows, 'Retry duplicate-key tidak boleh meninggalkan baris sequence ganda.');
         $this->assertSame(2, (int) $rows->first()->last_number);
     }
 
