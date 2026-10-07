@@ -82,11 +82,9 @@ return new class extends Migration
             $table->string('period_key', 40);
             $table->unsignedInteger('last_number')->default(0);
             $table->timestamps();
-            $table->unique(
-                ['fiscal_year_id', 'fund_source_id', 'format_name', 'period_key'],
-                'document_number_sequences_context_unique',
-            );
-            $table->index(['fiscal_year_id', 'fund_source_id'], 'document_number_sequences_context_index');
+            // Indeks TIDAK dibuat di sini: nama indeks harus unik se-database
+            // di SQLite, sehingga membuatnya di tabel staging akan bertabrakan
+            // dengan indeks tabel asli. Indeks kanonis dibuat setelah rename.
         });
 
         $connection->table($staging)->insertUsing(
@@ -105,5 +103,16 @@ return new class extends Migration
 
         Schema::connection('school')->drop($table);
         Schema::connection('school')->rename($staging, $table);
+
+        // Indeks kanonis dibuat setelah tabel asli di-drop agar namanya
+        // tidak bertabrakan selama staging ada (SQLite: nama indeks unik
+        // se-database).
+        Schema::connection('school')->table($table, function (Blueprint $table): void {
+            $table->unique(
+                ['fiscal_year_id', 'fund_source_id', 'format_name', 'period_key'],
+                'document_number_sequences_context_unique',
+            );
+            $table->index(['fiscal_year_id', 'fund_source_id'], 'document_number_sequences_context_index');
+        });
     }
 };
