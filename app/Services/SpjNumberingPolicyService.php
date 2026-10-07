@@ -180,8 +180,9 @@ class SpjNumberingPolicyService
 
     /**
      * Event date for staged goods letters: the tahap's own letter date,
-     * falling back to the receipt date. Used for TAHAP:n scopes of
-     * PESANAN/BAP/BAST; MAIN keeps the legacy goods-row behavior.
+     * falling back to the receipt date. The letter field comes from the
+     * canonical registry (event_date_rule) so PESANAN/BAP/BAST stay in sync
+     * with numbering definitions instead of a hardcoded map.
      */
     private function receiptEventDateValue(Transaction $transaction, string $documentType, int $sequence): mixed
     {
@@ -190,12 +191,7 @@ class SpjNumberingPolicyService
             return null;
         }
 
-        $field = match ($documentType) {
-            'PESANAN' => 'order_date',
-            'BAP' => 'bap_date',
-            'BAST' => 'bast_date',
-            default => null,
-        };
+        $field = $this->numberingDefinition($documentType)['event_date_rule']['field'] ?? null;
 
         return ($field ? $receipt->{$field} : null) ?: $receipt->receipt_date;
     }
