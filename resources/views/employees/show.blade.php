@@ -88,7 +88,7 @@
                                 <x-ui.field label="Tanggal terbit"><x-ui.input type="date" name="issued_date" value="{{ old('issued_date', $cert?->issued_date?->format('Y-m-d') ?? '') }}" /></x-ui.field>
                                 <x-ui.field label="Berlaku s.d."><x-ui.input type="date" name="valid_until" value="{{ old('valid_until', $cert?->valid_until?->format('Y-m-d') ?? '') }}" /></x-ui.field>
                                 <x-ui.field label="Catatan"><x-ui.input name="notes" value="{{ old('notes', $cert->notes ?? '') }}" maxlength="2000" /></x-ui.field>
-                                <x-ui.field label="Pindaian SK (PDF/JPG/PNG, maks 10 MB)" hint="Tersimpan di folder dokumen: SK\Nama Pegawai"><x-ui.input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" /></x-ui.field>
+                                <x-ui.field label="Pindaian SK (PDF/JPG/PNG, maks 10 MB)" hint="Tersimpan di folder dokumen: SK\Nama Pegawai"><x-ui.file-input name="file" accept=".pdf,.jpg,.jpeg,.png" /></x-ui.field>
                                 <div class="sm:col-span-2"><x-ui.button type="submit" variant="secondary" class="text-xs">Simpan SK</x-ui.button></div>
                             </form>
                             @if($cert)

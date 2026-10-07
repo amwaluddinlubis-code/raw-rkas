@@ -488,7 +488,7 @@ final class ArkasMirrorBudgetService
         $eligible = [];
         foreach ($monthPagu as $months) {
             foreach ($months as $month => $pagu) {
-                $quarter = (int) ceil($month / 3);
+                $quarter = ArkasMirrorResolver::quarterOfMonth((int) $month);
                 $eligible[$quarter] = ($eligible[$quarter] ?? 0.0) + $pagu;
             }
         }
@@ -513,10 +513,10 @@ final class ArkasMirrorBudgetService
             // baris tanpa bulan itu mendapat nol agar tidak ganda.
             return $mine > 0 ? $value * $mine / $eligible : 0.0;
         }
-        $quarter = (int) ceil($month / 3);
+        $quarter = ArkasMirrorResolver::quarterOfMonth((int) $month);
         $quarterPagu = 0.0;
         foreach ($monthPagu[$rid] ?? [] as $rowMonth => $pagu) {
-            if ((int) ceil($rowMonth / 3) === $quarter) {
+            if (ArkasMirrorResolver::quarterOfMonth((int) $rowMonth) === $quarter) {
                 $quarterPagu += $pagu;
             }
         }
@@ -629,7 +629,7 @@ final class ArkasMirrorBudgetService
             }
         }
         if ($quarter === null && $month !== null) {
-            $quarter = (int) ceil($month / 3);
+            $quarter = ArkasMirrorResolver::quarterOfMonth((int) $month);
         }
         if ($semester === null && $month !== null) {
             $semester = (int) ceil($month / 6);

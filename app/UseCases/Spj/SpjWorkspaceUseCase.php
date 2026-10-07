@@ -15,7 +15,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
@@ -340,7 +339,7 @@ class SpjWorkspaceUseCase
 
                     return [
                         'id' => $row->id,
-                        'label' => ($row->transaction->sourceValue('no_bukti') ?: 'Tanpa bukti').' · '.((($d = $row->transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->translatedFormat('d M Y') : null) ?: '-').' · '.$participants->count().' peserta',
+                        'label' => ($row->transaction->sourceValue('no_bukti') ?: 'Tanpa bukti').' · '.($row->transaction->sourceCarbon()?->translatedFormat('d M Y') ?: '-').' · '.$participants->count().' peserta',
                         'names' => $participants->map(fn ($participant) => $participant->name)->filter()->values()->all(),
                         'participants' => $participants->map(fn ($participant) => [
                             'name' => $participant->name,
@@ -369,7 +368,7 @@ class SpjWorkspaceUseCase
 
                     return [
                         'id' => $row->id,
-                        'label' => ($row->transaction->sourceValue('no_bukti') ?: 'Tanpa bukti').' · '.((($d = $row->transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->translatedFormat('d M Y') : null) ?: '-').' · '.$recipients->count().' penerima',
+                        'label' => ($row->transaction->sourceValue('no_bukti') ?: 'Tanpa bukti').' · '.($row->transaction->sourceCarbon()?->translatedFormat('d M Y') ?: '-').' · '.$recipients->count().' penerima',
                         'names' => $recipients->pluck('name')->filter()->values()->all(),
                         'recipients' => $recipients->map(fn ($recipient): array => [
                             ...$recipient->only(['name', 'npwp', 'service_type', 'service_description', 'quantity', 'unit', 'rental_days', 'daily_rate', 'receipt_number', 'payment_reference', 'agreement_number', 'notes']),

@@ -10,7 +10,6 @@ use App\Models\SpjGoods;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -188,7 +187,7 @@ class SpjTemplateService
         $items = $renderItems->map(fn ($item, $index) => ($index + 1).'. '.($item->item_description ?: $item->sourceValue('description')).' | '.$item->sourceValue('quantity').' '.($item->sourceValue('unit') ?: '—').' | '.app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('amount')))->implode("\n");
         $services = $transaction->serviceRecipients->map(fn ($recipient, $index) => ($index + 1).'. '.$recipient->name.' | '.$recipient->service_type.' | '.$recipient->quantity.' '.$recipient->unit.' × '.$recipient->rental_days.' hari | '.app(SpjPlaceholderValueFormatter::class)->amount($recipient->amount))->implode("\n");
 
-        $transactionDate = (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->translatedFormat('d F Y') : null) ?: '';
+        $transactionDate = $transaction->sourceCarbon()?->translatedFormat('d F Y') ?: '';
         $orderDate = $receipt?->order_date?->translatedFormat('d F Y') ?: $goods?->order_date?->translatedFormat('d F Y') ?: '';
         $bapDate = $receipt?->bap_date?->translatedFormat('d F Y') ?: $goods?->bap_date?->translatedFormat('d F Y') ?: '';
         $bastDate = $receipt?->bast_date?->translatedFormat('d F Y') ?: $goods?->bast_date?->translatedFormat('d F Y') ?: '';

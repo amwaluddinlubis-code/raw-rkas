@@ -28,7 +28,7 @@ Alias terdaftar di `bootstrap/app.php`:
 
 Peran aplikasi: **VIEWER** read-only, **OPERATOR** workflow operasional, **ADMINISTRATOR** lifecycle/maintenance/sensitive action.
 
-Grup `web` dan `MeasureRequestPerformance` sengaja tidak ditampilkan pada tabel karena berlaku ke seluruh route. Route yang tidak memakai `auth` maupun `guest` ditandai `(tanpa middleware)` — perhatikan `/setup` dan `GET /asisten/status/{token}`.
+Grup `web` dan `MeasureRequestPerformance` sengaja tidak ditampilkan pada tabel karena berlaku ke seluruh route. Route yang tidak memakai `auth` maupun `guest` ditandai `(tanpa middleware)` — perhatikan `/setup` (bootstrap awal).
 
 > Route Generic ARKAS Importer (`arkas.importer*`) dan `arkas.import-monitor` dihapus pada 2026-10-04 dan tidak lagi terdaftar. Audit mirror ARKAS berada di `/penganggaran-rkas/audit-mirror`.
 

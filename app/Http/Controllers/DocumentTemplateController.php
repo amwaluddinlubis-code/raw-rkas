@@ -136,7 +136,7 @@ class DocumentTemplateController extends Controller
     }
 
     /** Mengimpor workbook master menjadi seluruh template canonical XLSX. */
-    public function importPackage(Request $request): RedirectResponse
+    private function importPackage(Request $request): RedirectResponse
     {
         $this->ensurePostBodyWithinLimit($request, 'template_package', 'templatePackageUpload');
 

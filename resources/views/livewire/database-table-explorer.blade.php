@@ -11,7 +11,7 @@
         </div>
         <label class="w-full sm:max-w-xs">
             <span class="sr-only">Cari tabel</span>
-            <input type="search" wire:model.live.debounce.250ms="search" placeholder="Cari nama atau kelompok…" class="ui-input w-full">
+            <x-ui.input type="search" wire:model.live.debounce.250ms="search" placeholder="Cari nama atau kelompok…" class="w-full" />
         </label>
     </div>
 

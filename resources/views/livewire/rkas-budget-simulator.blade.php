@@ -20,7 +20,7 @@
                     <tr class="border-t border-[var(--ui-line)]">
                         <td class="px-2 py-1">{{ $activity['code'] }} · {{ $activity['name'] }}</td>
                         <td class="px-2 py-1 text-right tabular-nums">{{ number_format($activity['current'], 0, ',', '.') }}</td>
-                        <td class="px-2 py-1 text-right"><input type="number" min="0" wire:model.live.debounce.300ms="overrides.{{ str_replace('.', '_', $activity['code']) }}" placeholder="{{ number_format($activity['current'], 0, ',', '.') }}" class="w-36 rounded border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2 py-1 text-right"></td>
+                        <td class="px-2 py-1 text-right"><x-ui.input type="number" min="0" wire:model.live.debounce.300ms="overrides.{{ str_replace('.', '_', $activity['code']) }}" placeholder="{{ number_format($activity['current'], 0, ',', '.') }}" class="w-36 text-right" /></td>
                     </tr>
                 @endforeach
             </tbody>

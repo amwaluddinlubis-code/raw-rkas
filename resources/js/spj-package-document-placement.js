@@ -1,3 +1,5 @@
+import { onSpjUiReady } from './spj-ui-boot';
+
 const placePackageDocumentsInDetailsTab = () => {
     const workspace = document.querySelector('.spj-semantic-workspace');
     if (!workspace) return;
@@ -18,15 +20,4 @@ const placePackageDocumentsInDetailsTab = () => {
     detailsPanel.appendChild(documentSection);
 };
 
-const schedulePlacement = () => window.requestAnimationFrame(placePackageDocumentsInDetailsTab);
-
-document.addEventListener('DOMContentLoaded', schedulePlacement);
-document.addEventListener('livewire:navigated', schedulePlacement);
-
-const observer = new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.addedNodes.length > 0)) {
-        schedulePlacement();
-    }
-});
-
-observer.observe(document.documentElement, { childList: true, subtree: true });
+onSpjUiReady(placePackageDocumentsInDetailsTab);

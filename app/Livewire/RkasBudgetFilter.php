@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\FiscalYear;
 use App\Services\ArkasMirrorBudgetService;
 use App\Services\ArkasMirrorResolver;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -214,12 +215,12 @@ class RkasBudgetFilter extends Component
     {
         $counts = $this->periodCounts('month_number');
 
-        $names = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-        return collect($names)->map(fn (string $name, int $index): array => [
-            'id' => $index + 1,
-            'nama' => $name,
-            'n' => (int) ($counts[$index + 1] ?? 0),
+        // Nama bulan via Carbon locale aktif (id), sama seperti dropdown
+        // periode SPJ — bukan daftar hard-code kedua.
+        return collect(range(1, 12))->map(fn (int $month): array => [
+            'id' => $month,
+            'nama' => Carbon::create()->month($month)->translatedFormat('F'),
+            'n' => (int) ($counts[$month] ?? 0),
         ])->values();
     }
 

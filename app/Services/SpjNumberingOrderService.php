@@ -62,9 +62,8 @@ class SpjNumberingOrderService
         }
 
         $month = (int) Carbon::parse($transactionDate)->format('n');
-        $quarter = (int) ceil($month / 3);
-        $startMonth = (($quarter - 1) * 3) + 1;
-        $endMonth = $quarter * 3;
+        $quarter = ArkasMirrorResolver::quarterOfMonth($month);
+        [$startMonth, $endMonth] = ArkasMirrorResolver::quarterMonthRange($quarter);
         $candidates = SpjPackage::query()->with([
             'documents', 'transaction.items', 'transaction.goods', 'transaction.goodsReceipts', 'transaction.workOrder',
             'transaction.honors', 'transaction.travels', 'transaction.payments', 'transaction.workers',

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ArkasMirrorResolver;
 use App\UseCases\Spj\SpjQuarterRecapUseCase;
 use Illuminate\View\View;
 
@@ -11,7 +12,7 @@ class SpjQuarterRecapController extends Controller
     {
         $quarter = request()->integer('quarter');
         if ($quarter < 1 || $quarter > 4) {
-            $quarter = (int) ceil((int) now()->format('n') / 3);
+            $quarter = ArkasMirrorResolver::quarterOfMonth((int) now()->format('n'));
         }
 
         return view('spj.quarter-recap', [

@@ -154,14 +154,14 @@
                         <p class="text-xs text-[var(--ui-fg-muted)]">Rincian tiga bulan dalam triwulan terpilih.</p>
                     </div>
                     <label class="sr-only" for="rkas-report-triwulan-bulanan">Triwulan laporan</label>
-                    <select id="rkas-report-triwulan-bulanan" x-ref="reportQuarter" required
-                        class="ui-select w-full min-w-0 px-3 py-2 text-sm">
+                    <x-ui.select id="rkas-report-triwulan-bulanan" x-ref="reportQuarter" required
+                        class="w-full min-w-0 px-3 py-2 text-sm">
                         <option value="">Pilih triwulan</option>
                         <option value="1">Triwulan I</option>
                         <option value="2">Triwulan II</option>
                         <option value="3">Triwulan III</option>
                         <option value="4">Triwulan IV</option>
-                    </select>
+                    </x-ui.select>
                     <div class="flex items-center justify-end gap-2">
                         <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Pratinjau Triwulan per Bulan" aria-label="Pratinjau Triwulan per Bulan"
@@ -184,13 +184,11 @@
                         <p class="text-xs text-[var(--ui-fg-muted)]">Rincian per bulan terpilih.</p>
                     </div>
                     <label class="sr-only" for="rkas-report-bulan">Bulan laporan</label>
-                    <select id="rkas-report-bulan" x-ref="reportMonth" required
-                        class="ui-select w-full min-w-0 px-3 py-2 text-sm">
+                    <x-ui.select id="rkas-report-bulan" x-ref="reportMonth" required
+                        class="w-full min-w-0 px-3 py-2 text-sm">
                         <option value="">Pilih bulan…</option>
-                        @foreach (['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $monthIndex => $monthName)
-                            <option value="{{ $monthIndex + 1 }}">{{ $monthName }}</option>
-                        @endforeach
-                    </select>
+                        @foreach(range(1,12) as $month)<option value="{{ $month }}">{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach
+                    </x-ui.select>
                     <div class="flex items-center justify-end gap-2">
                         <button type="button" class="ui-btn ui-btn-primary !min-h-10 !min-w-10 !px-2 !py-2 text-sm"
                             title="Pratinjau Bulanan" aria-label="Pratinjau Bulanan"

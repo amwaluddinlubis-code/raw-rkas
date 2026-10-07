@@ -6,7 +6,6 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Support\ActiveSpjContext;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentTemplatePlaceholderInspectorService
@@ -76,7 +75,7 @@ class DocumentTemplatePlaceholderInspectorService
                 'no_bukti' => $this->displayValue((string) $transaction->sourceValue('no_bukti')),
                 'status' => $this->displayValue((string) $package->status),
                 'category' => $this->displayValue((string) $transaction->spj_category),
-                'transaction_date' => (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null) ?: SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE,
+                'transaction_date' => $transaction->sourceDateString('transaction_date', 'd-m-Y') ?: SpjDocumentTypeRegistry::EMPTY_SCALAR_VALUE,
             ],
             'groups' => $groups,
             'total' => $total,

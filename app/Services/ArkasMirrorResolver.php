@@ -549,6 +549,15 @@ class ArkasMirrorResolver
     }
 
     /**
+     * Triwulan kanonis untuk satu bulan (1-12). Menggantikan
+     * `(int) ceil($bulan / 3)` yang tersebar di belasan call site.
+     */
+    public static function quarterOfMonth(int $month): int
+    {
+        return (int) ceil($month / 3);
+    }
+
+    /**
      * Rentang bulan kanonis untuk satu triwulan (1-4).
      *
      * @return array{0: int, 1: int}

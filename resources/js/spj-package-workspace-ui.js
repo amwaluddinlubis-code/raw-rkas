@@ -1,3 +1,5 @@
+import { onSpjUiReady } from './spj-ui-boot';
+
 const notify = (type, message) => {
     window.dispatchEvent(new CustomEvent('app-notify', { detail: { type, message } }));
 };
@@ -125,11 +127,7 @@ const initializeSpjPackageWorkspaceUi = () => {
     window.requestAnimationFrame(initializeAutomaticNumberStrip);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSpjPackageWorkspaceUi, { once: true });
-} else {
-    initializeSpjPackageWorkspaceUi();
-}
-
-document.addEventListener('livewire:navigated', initializeSpjPackageWorkspaceUi);
+// observe:false — modul ini memakai pemicu persis DOMContentLoaded +
+// navigated (plus listener spj:category-context-ready di bawah).
+onSpjUiReady(initializeSpjPackageWorkspaceUi, { observe: false });
 document.addEventListener('spj:category-context-ready', () => window.requestAnimationFrame(initializeAutomaticNumberStrip));

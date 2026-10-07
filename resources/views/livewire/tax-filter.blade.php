@@ -104,13 +104,13 @@
                 <div class="flex items-center gap-2 text-xs">
                     <label for="tax-filter-per-page" class="font-semibold"
                         style="color: var(--ui-fg-muted)">Baris</label>
-                    <select id="tax-filter-per-page" wire:model.live="perPage" aria-label="Baris per halaman"
-                        class="ui-select !min-h-9 !w-auto !py-1.5 !text-xs">
+                    <x-ui.select id="tax-filter-per-page" wire:model.live="perPage" aria-label="Baris per halaman"
+                        class="!min-h-9 !w-auto !py-1.5 !text-xs">
                         <option value="15">15 baris</option>
                         <option value="25">25 baris</option>
                         <option value="50">50 baris</option>
                         <option value="100">100 baris</option>
-                    </select>
+                    </x-ui.select>
                     <span class="hidden xl:inline" style="color: var(--ui-fg-muted)">•
                         {{ number_format($transactions?->total() ?? 0, 0, ',', '.') }} data</span>
                 </div>

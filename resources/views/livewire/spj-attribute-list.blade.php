@@ -27,12 +27,12 @@
         <x-ui.table pagination="server">
             <thead class="bg-[var(--ui-surface-soft)]">
                 <tr>
-                    <th class="px-5 py-2 text-left text-xs font-bold uppercase text-slate-500">Bukti / Tanggal</th>
-                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-slate-500">Kategori</th>
-                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-slate-500">Data Umum Dokumen</th>
-                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-slate-500">Data Pengadaan / Kategori</th>
-                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-slate-500">Status</th>
-                    <th class="px-5 py-2 text-right text-xs font-bold uppercase text-slate-500">Aksi</th>
+                    <th class="px-5 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Bukti / Tanggal</th>
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Kategori</th>
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Data Umum Dokumen</th>
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Data Pengadaan / Kategori</th>
+                    <th class="px-4 py-2 text-left text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Status</th>
+                    <th class="px-5 py-2 text-right text-xs font-bold uppercase text-[var(--ui-fg-muted)]">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[var(--ui-line)]">
@@ -41,7 +41,7 @@
                         $category = strtoupper((string) $listedPackage->transaction->spj_category);
                         $transaction = $listedPackage->transaction;
                     @endphp
-                    <tr wire:key="spj-attribute-{{ $listedPackage->id }}" class="hover:bg-slate-50">
+                    <tr wire:key="spj-attribute-{{ $listedPackage->id }}" class="hover:bg-[var(--ui-surface-soft)]">
                         <td class="px-5 py-2.5">
                             <p class="font-mono font-bold theme-text">{{ $transaction->sourceValue('no_bukti') }}</p>
                             <p class="mt-1 text-xs" style="color: var(--ui-fg-muted)">{{ $transaction->sourceCarbon()?->translatedFormat('d F Y') }}</p>

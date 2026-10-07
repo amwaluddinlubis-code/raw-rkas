@@ -1,6 +1,6 @@
 # SPJ BOSP — Pola Lampiran Bukti Dukung Operasional (Referensi Poster 10 Pola)
 
-Terakhir diperbarui: **2026-10-05**
+Terakhir diperbarui: **2026-10-07**
 
 Status: **ACTIVE REFERENCE / FASE 1 IMPLEMENTED + AMBANG DETEKSI NON-BLOCKING** —
 checklist manual tersedia di halaman checklist paket; deteksi ambang sudah
@@ -118,6 +118,22 @@ Dokumen eksternal di bawah ini: checklist manual operator (sebagian tidak dapat 
 4. Berita Acara Serah Terima Barang dari penyedia
 5. Foto Barang
 6. Bukti Setor Pajak PPN jika belanja di atas 2 Jt
+
+### 8a. Dokumen proses PBJ hulu (referensi, non-blocking)
+
+Untuk pengadaan barang/jasa non-SiPlah, tabel referensi operator berikut
+(ref. BP Hal.149–151 sesuai sumber pengguna) menjadi acuan kelengkapan
+manual di samping daftar di atas:
+
+1. Dokumen perencanaan PBJ Satuan Pendidikan (ref. BP Hal.149)
+2. Dokumen Survei Harga Material
+3. Dokumen hasil perbandingan (ref. BP Hal.150)
+4. Dokumen hasil negosiasi (ref. BP Hal.151)
+
+Status: referensi manual operator saja — tidak ada validasi otomatis dan
+tidak memblokir penomoran (konsisten dengan posture Fase 1 dokumen ini).
+Tidak mengubah kategori canonical, lifecycle/numbering, sync, maupun
+tenant boundary.
 
 ## 9. Ekstrakurikuler
 

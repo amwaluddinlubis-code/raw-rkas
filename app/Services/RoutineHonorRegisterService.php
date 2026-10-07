@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\SpjHonor;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -41,7 +40,7 @@ class RoutineHonorRegisterService
                 $proofReferences = $transactions->map(fn ($transaction): string => trim((string) $transaction->sourceValue('no_bukti')))->filter()->unique()->values();
                 $spjReferences = $transactions->map(fn ($transaction): string => trim((string) $transaction->spjPackage?->document_number))->filter()->unique()->values();
                 $periods = $transactions
-                    ->map(fn ($transaction) => ($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->translatedFormat('F Y') : null)
+                    ->map(fn ($transaction) => $transaction->sourceCarbon()?->translatedFormat('F Y'))
                     ->filter()
                     ->unique()
                     ->values();

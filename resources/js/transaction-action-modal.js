@@ -1,3 +1,5 @@
+import { createModalShell, openModalShell, closeModalShell, wireModalDismiss } from './ui-modal';
+
 const ACTION_CELL_SELECTOR = '.transaction-action-cell';
 const MODAL_ID = 'transaction-action-modal';
 let modalTrigger = null;
@@ -11,13 +13,7 @@ const ensureModal = () => {
     let modal = document.getElementById(MODAL_ID);
     if (modal) return modal;
 
-    modal = document.createElement('div');
-    modal.id = MODAL_ID;
-    modal.hidden = true;
-    modal.className = 'fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
-    modal.setAttribute('aria-labelledby', 'transaction-action-modal-title');
+    modal = createModalShell({ id: MODAL_ID, labelledby: 'transaction-action-modal-title', overlayClass: 'z-[80]' });
     modal.innerHTML = `
         <div data-transaction-action-panel class="w-full max-w-md rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-5 shadow-2xl">
             <div class="flex items-start justify-between gap-4">
@@ -55,45 +51,14 @@ const ensureModal = () => {
     document.body.appendChild(modal);
 
     const close = () => {
-        modal.hidden = true;
-        document.body.classList.remove('overflow-hidden');
+        closeModalShell(modal);
         modalTrigger?.focus();
         modalTrigger = null;
     };
 
-    modal.querySelectorAll('[data-transaction-action-close]').forEach((button) => {
-        button.addEventListener('click', close);
-    });
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) close();
-    });
+    wireModalDismiss(modal, { closeSelector: '[data-transaction-action-close]', onClose: close, trapFocus: true });
     modal.querySelectorAll('[data-transaction-action-detail], [data-transaction-action-package]').forEach((link) => {
         link.addEventListener('click', close);
-    });
-    document.addEventListener('keydown', (event) => {
-        if (modal.hidden) return;
-
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            close();
-            return;
-        }
-
-        if (event.key !== 'Tab') return;
-
-        const focusableElements = Array.from(modal.querySelectorAll('a[href]:not([hidden]), button:not([hidden])'));
-        if (focusableElements.length === 0) return;
-
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        if (event.shiftKey && document.activeElement === firstElement) {
-            event.preventDefault();
-            lastElement.focus();
-        } else if (!event.shiftKey && document.activeElement === lastElement) {
-            event.preventDefault();
-            firstElement.focus();
-        }
     });
 
     return modal;
@@ -116,9 +81,7 @@ const openModalForCell = (cell) => {
     }
 
     modalTrigger = cell.querySelector('[data-transaction-action-trigger]');
-    modal.hidden = false;
-    document.body.classList.add('overflow-hidden');
-    window.requestAnimationFrame(() => modal.querySelector('[data-transaction-action-close]')?.focus());
+    openModalShell(modal, '[data-transaction-action-close]');
 };
 
 const bindTrigger = (button, cell) => {

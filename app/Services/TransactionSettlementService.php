@@ -34,7 +34,7 @@ class TransactionSettlementService
                 throw new \RuntimeException('Total pembayaran tidak boleh melebihi nilai transaksi.');
             }
             $sequence = ((int) $transaction->payments()->max('payment_sequence')) + 1;
-            $quarter = (int) ceil((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n') / 3);
+            $quarter = ArkasMirrorResolver::quarterOfMonth((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n'));
 
             return $transaction->payments()->create([
                 ...$data,
@@ -89,7 +89,7 @@ class TransactionSettlementService
                 $items[$index]['amount_received'] = $this->receivedAmount($ordered, (float) $item['quantity_received']);
             }
             $sequence = ((int) $transaction->goodsReceipts()->max('receipt_sequence')) + 1;
-            $quarter = (int) ceil((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n') / 3);
+            $quarter = ArkasMirrorResolver::quarterOfMonth((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n'));
             $receipt = $transaction->goodsReceipts()->create([
                 ...$data,
                 'scope_key' => 'RECEIPT:'.$sequence,

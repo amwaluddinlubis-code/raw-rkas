@@ -420,7 +420,7 @@ class ArkasSynchronizationServiceV2
         }
 
         if ($month !== null) {
-            $quarter = (int) ceil($month / 3);
+            $quarter = ArkasMirrorResolver::quarterOfMonth((int) $month);
 
             return [$month, $quarter, (int) ceil($month / 6)];
         }

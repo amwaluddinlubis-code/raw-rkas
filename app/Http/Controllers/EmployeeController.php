@@ -10,7 +10,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -26,7 +25,7 @@ class EmployeeController extends Controller
     {
         $employee = Employee::with('certificates')->findOrFail($employeeId);
         $honors = $this->honorsFor([$employee])->get($this->identityKey($employee), collect())
-            ->sortByDesc(fn (SpjHonor $honor) => (($d = $honor->item?->transaction?->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null));
+            ->sortByDesc(fn (SpjHonor $honor) => $honor->item?->transaction?->sourceDateString());
 
         return view('employees.show', compact('employee', 'honors'));
     }

@@ -11,7 +11,6 @@ use App\Support\ActiveSpjContext;
 use App\Support\SpjDisplay;
 use DomainException;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -277,8 +276,7 @@ class TransactionDetailWorkspace extends Component
         $query = Transaction::query()->activeContext();
         ArkasMirrorResolver::joinKasUmum($query);
         $query->select('transactions.*');
-        $rawDate = $transaction->sourceValue('transaction_date');
-        $date = $rawDate ? Carbon::parse($rawDate)->format('Y-m-d') : null;
+        $date = $transaction->sourceDateString();
         $mirrorDate = ArkasMirrorResolver::mirrorDate();
         if ($next) {
             return $query->where(function ($query) use ($transaction, $date, $mirrorDate): void {

@@ -6,7 +6,6 @@ use App\Models\School;
 use App\Services\AuditReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -53,7 +52,7 @@ class AuditReportController extends Controller
         $this->addSheet($book->createSheet()->setTitle('Buku Kas'), [
             ['No', 'No Bukti', 'Tanggal', 'Uraian', 'Penerima', 'Kegiatan', 'Rekening', 'Bruto', 'Pajak', 'Dibayarkan', 'SPJ'],
             ...$report['register']->values()->map(fn ($transaction, int $index): array => [
-                $index + 1, $transaction->sourceValue('no_bukti'), (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null),
+                $index + 1, $transaction->sourceValue('no_bukti'), $transaction->sourceDateString('transaction_date', 'd-m-Y'),
                 $transaction->sourceValue('description'), $transaction->sourceValue('recipient_name'), $transaction->sourceValue('activity_name'),
                 $transaction->sourceValue('account_code'), (float) $transaction->sourceValue('gross_amount'), (float) $transaction->sourceValue('tax_total'),
                 (float) $transaction->sourceValue('net_amount'), $transaction->spjPackage?->document_number ?: ($transaction->spjPackage ? 'DRAFT' : 'BELUM ADA'),

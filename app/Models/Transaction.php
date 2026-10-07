@@ -386,6 +386,24 @@ class Transaction extends Model
     }
 
     /**
+     * Jumlahkan satu fakta sumber mirror pada sekumpulan transaksi.
+     *
+     * Menggantikan closure `$transactions->sum(fn ($t): float => (float)
+     * $t->sourceValue($field))` yang tersebar di use case laporan.
+     *
+     * @param  iterable<Transaction>  $transactions
+     */
+    public static function sumSource(iterable $transactions, string $field): float
+    {
+        $total = 0.0;
+        foreach ($transactions as $transaction) {
+            $total += (float) $transaction->sourceValue($field);
+        }
+
+        return $total;
+    }
+
+    /**
      * Klon read-only dengan fakta sumber diganti nilai mirror.
      * Overlay operator tidak disentuh. Bila mirror belum ada,
      * kembalikan instance ini (tidak ada perubahan perilaku).

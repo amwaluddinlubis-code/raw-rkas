@@ -1,3 +1,5 @@
+import { createModalShell, openModalShell, closeModalShell, wireModalDismiss } from './ui-modal';
+
 const NUMBERING_FORM_SELECTOR = [
     'form[data-confirm][action*="/spj/paket/"][action$="/nomor"]',
     'form[data-confirm][action*="/spj/dokumen/"][action$="/ganti"]',
@@ -44,13 +46,7 @@ const ensureModal = () => {
     let modal = document.getElementById('spj-numbering-confirmation-modal');
     if (modal) return modal;
 
-    modal = document.createElement('div');
-    modal.id = 'spj-numbering-confirmation-modal';
-    modal.hidden = true;
-    modal.className = 'fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
-    modal.setAttribute('aria-labelledby', 'spj-numbering-confirmation-title');
+    modal = createModalShell({ id: 'spj-numbering-confirmation-modal', labelledby: 'spj-numbering-confirmation-title', overlayClass: 'z-[110]' });
     modal.innerHTML = `
         <div data-numbering-confirmation-panel class="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-2xl">
             <div class="flex items-start justify-between gap-4 border-b border-[var(--ui-line)] px-5 py-4">
@@ -100,27 +96,14 @@ const ensureModal = () => {
         }
 
         delete pendingForm.dataset.confirmed;
-        modal.hidden = true;
-        document.body.classList.remove('overflow-hidden');
+        closeModalShell(modal);
         pendingTrigger?.focus?.();
         pendingForm = null;
         pendingSubmitter = null;
         pendingTrigger = null;
     };
 
-    modal.querySelectorAll('[data-numbering-confirmation-close]').forEach((button) => {
-        button.addEventListener('click', close);
-    });
-
-    modal.addEventListener('click', (event) => {
-        if (event.target === modal) close();
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (modal.hidden || event.key !== 'Escape') return;
-        event.preventDefault();
-        close();
-    });
+    wireModalDismiss(modal, { closeSelector: '[data-numbering-confirmation-close]', onClose: close });
 
     modal.querySelector('[data-numbering-confirmation-accept]')?.addEventListener('click', () => {
         if (!pendingForm) return;
@@ -129,8 +112,7 @@ const ensureModal = () => {
         const submitter = pendingSubmitter;
         form.dataset.numberingConfirmationApproved = 'true';
         form.dataset.confirmed = 'true';
-        modal.hidden = true;
-        document.body.classList.remove('overflow-hidden');
+        closeModalShell(modal);
         form.requestSubmit(submitter || undefined);
         delete form.dataset.numberingConfirmationApproved;
     });
@@ -164,9 +146,7 @@ const openModal = (form, submitter) => {
     reasonWrapper.hidden = !reason;
     reasonValue.textContent = reason || '—';
 
-    modal.hidden = false;
-    document.body.classList.add('overflow-hidden');
-    window.requestAnimationFrame(() => modal.querySelector('[data-numbering-confirmation-close]')?.focus());
+    openModalShell(modal, '[data-numbering-confirmation-close]');
 };
 
 document.addEventListener('submit', (event) => {

@@ -6,7 +6,6 @@ use App\Models\FiscalPeriodClosure;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Support\ActiveSpjContext;
-use Illuminate\Support\Carbon;
 
 class SpjNumberingGateService
 {
@@ -55,7 +54,7 @@ class SpjNumberingGateService
             return 'Penomoran ditolak karena tanggal transaksi BKU belum tersedia.';
         }
 
-        $quarter = (int) ceil((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n') / 3);
+        $quarter = ArkasMirrorResolver::quarterOfMonth((int) ($transaction->sourceCarbon()?->format('n') ?? 0));
         if ($blocker = $this->previousQuarterFinalBlocker($quarter)) {
             return $blocker;
         }

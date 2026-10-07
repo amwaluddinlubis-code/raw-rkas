@@ -178,12 +178,12 @@ Icon dekoratif di dalam tombol berlabel dibiarkan tanpa `label`. Icon standalone
 `x-ui.select` merender class `select ui-select`. Class `select` mengikuti
 kontrak visual DaisyUI-compatible (ukuran `select-xs` hingga `select-xl`,
 `select-ghost`, dan modifier warna semantic) tetapi tetap memakai token tema
-project dan tidak menambah dependency DaisyUI. Initializer per halaman
-(`initializeSpjSelectDropdowns()`, `initializeTransactionsSelectDropdowns()`,
-dan initializer page lain yang sesuai) mengubah single-select menjadi dropdown
-custom berbasis JavaScript dengan opsi searchable, hover, keyboard focus, dan
-tanda centang; nilai tetap disimpan pada select asli untuk kompatibilitas form
-dan Livewire. Multi-select tetap memakai kontrol khusus.
+project dan tidak menambah dependency DaisyUI. Initializer tunggal
+(`initializePageSelectDropdowns()` pada scope `main[data-page]` aktif)
+mengubah single-select menjadi dropdown custom berbasis JavaScript dengan
+opsi searchable, hover, keyboard focus, dan tanda centang; nilai tetap
+disimpan pada select asli untuk kompatibilitas form dan Livewire.
+Multi-select tetap memakai kontrol khusus.
 
 Untuk single-select yang membutuhkan pencarian, gunakan komponen Blade
 `<x-ui.searchable-select>` agar trigger, pencarian, opsi, keyboard focus, dan

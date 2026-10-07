@@ -362,7 +362,7 @@ final class SpjPeriodicReportPrintService
     {
         return $transactions->values()->map(fn (Transaction $transaction, int $index): array => [
             'no' => $index + 1,
-            'date' => (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null) ?? '-',
+            'date' => $transaction->sourceDateString('transaction_date', 'd-m-Y') ?? '-',
             'evidence' => $transaction->sourceValue('no_bukti') ?: '-',
             'description' => $transaction->sourceValue('description') ?: '-',
             'account' => trim(($transaction->sourceValue('account_code') ?: '').' '.($transaction->sourceValue('account_name') ?: '')) ?: '-',
@@ -1276,7 +1276,7 @@ final class SpjPeriodicReportPrintService
             ->values()
             ->map(fn (Transaction $transaction, int $index): array => [
                 'no' => $index + 1,
-                'date' => (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null) ?? '-',
+                'date' => $transaction->sourceDateString('transaction_date', 'd-m-Y') ?? '-',
                 'evidence' => $transaction->sourceValue('no_bukti') ?: '-',
                 'description' => ($transaction->payment_description ?: null) ?? $transaction->sourceValue('description') ?: '-',
                 'siplah' => $transaction->sourceValue('is_siplah') ? 'Ya' : 'Tidak',
@@ -1626,7 +1626,7 @@ final class SpjPeriodicReportPrintService
     {
         return $transactions->values()->map(fn (Transaction $transaction, int $index): array => [
             'no' => $index + 1,
-            'date' => (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('d-m-Y') : null) ?? '-',
+            'date' => $transaction->sourceDateString('transaction_date', 'd-m-Y') ?? '-',
             'evidence' => $transaction->sourceValue('no_bukti') ?: '-',
             'activity' => trim(($transaction->sourceValue('activity_code') ?: '').' '.($transaction->sourceValue('activity_name') ?: '')) ?: '-',
             'account' => trim(($transaction->sourceValue('account_code') ?: '').' '.($transaction->sourceValue('account_name') ?: '')) ?: '-',

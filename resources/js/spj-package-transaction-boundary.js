@@ -1,3 +1,5 @@
+import { onSpjUiReady } from './spj-ui-boot';
+
 const packageForm = () => document.querySelector('#spj-manual-form');
 
 const addOwnershipNotice = (form) => {
@@ -43,15 +45,4 @@ const applyPackageTransactionBoundary = () => {
     normalizeValidationLinks();
 };
 
-const schedule = () => window.requestAnimationFrame(applyPackageTransactionBoundary);
-
-document.addEventListener('DOMContentLoaded', schedule);
-document.addEventListener('livewire:navigated', schedule);
-
-const observer = new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.addedNodes.length > 0)) {
-        schedule();
-    }
-});
-
-observer.observe(document.documentElement, { childList: true, subtree: true });
+onSpjUiReady(applyPackageTransactionBoundary);

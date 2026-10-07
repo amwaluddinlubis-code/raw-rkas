@@ -1,3 +1,5 @@
+import { onSpjUiReady } from './spj-ui-boot';
+
 const packageManualForm = () => document.querySelector('#spj-manual-form');
 
 const notify = (type, message) => {
@@ -304,13 +306,4 @@ const bindPackageManualCategory = () => {
     });
 };
 
-const schedulePackageManualCategory = () => window.requestAnimationFrame(bindPackageManualCategory);
-
-document.addEventListener('DOMContentLoaded', schedulePackageManualCategory);
-document.addEventListener('livewire:navigated', schedulePackageManualCategory);
-
-const observer = new MutationObserver((mutations) => {
-    if (mutations.some((mutation) => mutation.addedNodes.length > 0)) schedulePackageManualCategory();
-});
-
-observer.observe(document.documentElement, { childList: true, subtree: true });
+onSpjUiReady(bindPackageManualCategory);

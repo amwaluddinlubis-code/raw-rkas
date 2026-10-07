@@ -4,6 +4,7 @@ namespace App\UseCases\Spj;
 
 use App\Models\SpjPackage;
 use App\Models\Transaction;
+use App\Services\ArkasMirrorResolver;
 use App\Services\FiscalPeriodWorkflowService;
 use App\Services\OperationalAuditService;
 use App\Support\ActiveSpjContext;
@@ -70,7 +71,7 @@ class CreateSpjDraftUseCase
         );
 
         if ($package->wasRecentlyCreated) {
-            $quarter = (int) ceil((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n') / 3);
+            $quarter = ArkasMirrorResolver::quarterOfMonth((int) Carbon::parse($transaction->sourceValue('transaction_date'))->format('n'));
             if ($this->periods->isLateEntry($transaction->fiscal_year_id, $quarter)) {
                 $package->forceFill(['is_late_entry' => true])->save();
             }
@@ -93,13 +94,13 @@ class CreateSpjDraftUseCase
 
     private function quarter(Transaction $transaction): string
     {
-        $month = (int) (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('n') : 0);
+        $month = (int) ($transaction->sourceCarbon()?->format('n') ?? 0);
 
         return 'TW-'.(int) ceil(max(1, $month) / 3);
     }
 
     private function semester(Transaction $transaction): string
     {
-        return ((int) (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('n') : 0) <= 6) ? 'SEM-I' : 'SEM-II';
+        return ((int) ($transaction->sourceCarbon()?->format('n') ?? 0) <= 6) ? 'SEM-I' : 'SEM-II';
     }
 }

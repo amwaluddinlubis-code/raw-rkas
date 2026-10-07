@@ -10,4 +10,16 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    // Vendor pihak-ketiga (axios/alpine) jarang berubah: dipisah agar cache
+    // browser antar deploy tetap kena. Tanpa mengubah urutan eksekusi modul
+    // (tidak ada dependency sirkular dengan kode aplikasi).
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['axios', 'alpinejs', '@alpinejs/persist', '@alpinejs/collapse'],
+                },
+            },
+        },
+    },
 });

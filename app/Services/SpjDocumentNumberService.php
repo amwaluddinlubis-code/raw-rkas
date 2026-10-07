@@ -312,7 +312,7 @@ class SpjDocumentNumberService
     {
         return match (strtoupper($resetPeriod)) {
             'MONTH' => $date->format('Y-m'),
-            'QUARTER' => $date->format('Y').'-Q'.(int) ceil((int) $date->format('n') / 3),
+            'QUARTER' => $date->format('Y').'-Q'.ArkasMirrorResolver::quarterOfMonth((int) $date->format('n')),
             'NONE' => 'ALL',
             default => $date->format('Y'),
         };
@@ -334,7 +334,7 @@ class SpjDocumentNumberService
 
     private function quarterToken(CarbonInterface $date): string
     {
-        $quarter = (int) ceil((int) $date->format('n') / 3);
+        $quarter = ArkasMirrorResolver::quarterOfMonth((int) $date->format('n'));
 
         return [1 => 'I', 'II', 'III', 'IV'][$quarter];
     }

@@ -20,8 +20,6 @@
             ->count();
         $packageErrors = $errors->getBag('templatePackageUpload');
         $templateErrors = $errors->getBag('templateUpload');
-        $fileInputClass =
-            'block w-full rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-base)] px-3 py-2 text-sm text-[var(--ui-fg)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--theme-accent-soft)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--theme-content-accent)]';
     @endphp
 
     <div class="space-y-6">
@@ -68,8 +66,7 @@
                     <x-ui.field label="File workbook master (XLSX)" for="template_package"
                         hint="Pilih workbook master {{ $canonicalTemplateCount }} template. Maksimal 20 MB dan tetap mengikuti batas efektif server."
                         :error="$packageErrors->first('template_package')" required>
-                        <input id="template_package" type="file" name="template_package" accept=".xlsx"
-                            class="{{ $fileInputClass }}" required>
+                        <x-ui.file-input id="template_package" name="template_package" accept=".xlsx" required />
                     </x-ui.field>
 
                     <div class="rounded-xl border border-[var(--ui-line)] bg-amber-50/70 p-4">
@@ -147,8 +144,7 @@
                     <x-ui.field label="File template (DOCX/XLSX)" for="template_file"
                         hint="Maksimal 10 MB dan tetap mengikuti batas efektif server yang ditampilkan di atas."
                         :error="$templateErrors->first('template')" required>
-                        <input id="template_file" type="file" name="template" accept=".docx,.xlsx"
-                            class="{{ $fileInputClass }}" required>
+                        <x-ui.file-input id="template_file" name="template" accept=".docx,.xlsx" required />
                     </x-ui.field>
 
                     <fieldset class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-4">

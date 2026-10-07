@@ -216,7 +216,7 @@ class TestIsolatedSpjNumbering extends Command
                     'package_id' => $first->id,
                     'transaction_id' => $first->transaction->id,
                     'no_bukti' => $first->transaction->sourceValue('no_bukti'),
-                    'transaction_date' => (($d = $first->transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null),
+                    'transaction_date' => $first->transaction->sourceDateString(),
                     'document_number' => $document->document_number,
                     'sequence_number' => (int) $document->sequence_number,
                     'package_status' => $first->status,

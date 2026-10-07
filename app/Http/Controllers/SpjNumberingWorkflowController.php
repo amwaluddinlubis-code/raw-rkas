@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FiscalPeriodClosure;
 use App\Models\QuarterNumberingRun;
 use App\Models\SpjPackage;
-use App\Models\Transaction;
 use App\Services\ArkasMirrorResolver;
 use App\Services\SpjNumberingPolicyService;
+use App\UseCases\Spj\SpjQuarterRecapUseCase;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -21,40 +20,13 @@ class SpjNumberingWorkflowController extends Controller
         ]);
 
         $yearId = (int) session('active_fiscal_year_id');
-        $selectedQuarter = (int) ($data['quarter'] ?? min(4, max(1, (int) ceil(now()->month / 3))));
-        $closures = FiscalPeriodClosure::query()
-            ->where('fiscal_year_id', $yearId)
-            ->orderBy('quarter')
-            ->get()
-            ->keyBy('quarter');
+        $selectedQuarter = (int) ($data['quarter'] ?? min(4, max(1, ArkasMirrorResolver::quarterOfMonth((int) now()->month))));
+        $recap = app(SpjQuarterRecapUseCase::class);
 
-        $quarterSummaries = collect(range(1, 4))->mapWithKeys(function (int $quarter) use ($closures): array {
-            $transactionQuery = $this->quarterTransactions($quarter);
-            $packageQuery = SpjPackage::query()
-                ->whereHas('transaction', fn (Builder $query): Builder => $this->applyQuarterScope($query->activeContext(), $quarter));
-
-            $transactionsWithItems = (clone $transactionQuery)->has('items')->count();
-            $withoutPackage = (clone $transactionQuery)->has('items')->doesntHave('spjPackage')->count();
-            $draft = (clone $packageQuery)->where('status', 'DRAFT')->count();
-            $ready = (clone $packageQuery)->where('status', 'READY')->count();
-            $numbered = (clone $packageQuery)->where('status', 'NUMBERED')->count();
-            $final = (clone $packageQuery)->where('status', 'FINAL')->count();
-
-            return [$quarter => [
-                'quarter' => $quarter,
-                'transactions' => $transactionsWithItems,
-                'without_package' => $withoutPackage,
-                'draft' => $draft,
-                'ready' => $ready,
-                'numbered' => $numbered,
-                'final' => $final,
-                'blocked' => $withoutPackage + $draft,
-                'closure' => $closures->get($quarter),
-            ]];
-        });
+        $quarterSummaries = $recap->quarterSummaries();
 
         $packageQuery = SpjPackage::query()
-            ->whereHas('transaction', fn (Builder $query): Builder => $this->applyQuarterScope($query->activeContext(), $selectedQuarter))
+            ->whereHas('transaction', fn (Builder $query): Builder => $recap->summaryScope($query->activeContext(), $selectedQuarter))
             ->whereIn('status', ['READY', 'NUMBERED', 'FINAL'])
             ->orderByRaw("CASE status WHEN 'READY' THEN 0 WHEN 'NUMBERED' THEN 1 ELSE 2 END")
             ->orderBy('id');
@@ -86,20 +58,5 @@ class SpjNumberingWorkflowController extends Controller
             'recentRuns' => $recentRuns,
             'selectedSummary' => $quarterSummaries->get($selectedQuarter),
         ]);
-    }
-
-    private function quarterTransactions(int $quarter): Builder
-    {
-        return $this->applyQuarterScope(Transaction::query()->activeContext(), $quarter);
-    }
-
-    private function applyQuarterScope(Builder $query, int $quarter): Builder
-    {
-        [$startMonth, $endMonth] = ArkasMirrorResolver::quarterMonthRange($quarter);
-        ArkasMirrorResolver::joinKasUmum($query);
-
-        return $query->select('transactions.*')
-            ->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$startMonth])
-            ->whereRaw(ArkasMirrorResolver::mirrorMonth().' <= ?', [$endMonth]);
     }
 }

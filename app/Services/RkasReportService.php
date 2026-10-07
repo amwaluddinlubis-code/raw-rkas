@@ -483,7 +483,7 @@ final class RkasReportService
             if ($quarter >= 1 && $quarter <= 4) {
                 $quarters[$quarter] += $amount;
             } elseif ($month >= 1 && $month <= 12) {
-                $quarters[(int) ceil($month / 3)] += $amount;
+                $quarters[ArkasMirrorResolver::quarterOfMonth((int) $month)] += $amount;
             }
         }
 

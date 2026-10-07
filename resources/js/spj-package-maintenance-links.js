@@ -1,3 +1,5 @@
+import { onSpjUiReady } from './spj-ui-boot';
+
 const maintenanceBlocks = () => document.querySelectorAll('[data-spj-maintenance-links]');
 
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -183,10 +185,4 @@ const initializeMaintenanceLinks = () => {
     window.requestAnimationFrame(() => maintenanceBlocks().forEach(initializeMaintenanceBlock));
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeMaintenanceLinks, { once: true });
-} else {
-    initializeMaintenanceLinks();
-}
-
-document.addEventListener('livewire:navigated', initializeMaintenanceLinks);
+onSpjUiReady(initializeMaintenanceLinks);

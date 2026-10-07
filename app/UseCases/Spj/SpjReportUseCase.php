@@ -23,13 +23,8 @@ class SpjReportUseCase
 
     public function tabLaporan(Request $request): View
     {
-        $perPageRaw = $request->input('perPage', 15);
-        $perPage = $perPageRaw === 'all' ? 10000 : (int) $perPageRaw;
-        $perPage = in_array($perPage, [15, 25, 50, 100, 10000]) ? $perPage : 15;
-
-        $pendingPerPageRaw = $request->input('pendingPerPage', 15);
-        $pendingPerPage = $pendingPerPageRaw === 'all' ? 10000 : (int) $pendingPerPageRaw;
-        $pendingPerPage = in_array($pendingPerPage, [15, 25, 50, 100, 10000]) ? $pendingPerPage : 15;
+        $perPage = self::normalizeReportPerPage($request->input('perPage', 15));
+        $pendingPerPage = self::normalizeReportPerPage($request->input('pendingPerPage', 15));
 
         [$packages, $summary] = $this->report($request, $perPage, $pendingPerPage);
         $pendingPaginator = $summary['pending_transactions'];
@@ -48,9 +43,7 @@ class SpjReportUseCase
 
     public function tabMonitoring(Request $request): View
     {
-        $pendingPerPageRaw = $request->input('pendingPerPage', 15);
-        $pendingPerPage = $pendingPerPageRaw === 'all' ? 10000 : (int) $pendingPerPageRaw;
-        $pendingPerPage = in_array($pendingPerPage, [15, 25, 50, 100, 10000]) ? $pendingPerPage : 15;
+        $pendingPerPage = self::normalizeReportPerPage($request->input('pendingPerPage', 15));
         [, $summary] = $this->report($request, 15, $pendingPerPage);
         $pendingPaginator = $summary['pending_transactions'];
 
@@ -64,6 +57,16 @@ class SpjReportUseCase
             'spjTypes' => [],
             'filters' => [],
         ]);
+    }
+
+    /**
+     * Normalisasi perPage tab Laporan/Monitoring (mendukung 'all' = 10000).
+     */
+    private static function normalizeReportPerPage(mixed $raw): int
+    {
+        $perPage = $raw === 'all' ? 10000 : (int) $raw;
+
+        return in_array($perPage, [15, 25, 50, 100, 10000], true) ? $perPage : 15;
     }
 
     /**
@@ -261,15 +264,15 @@ class SpjReportUseCase
         Transaction::preloadMirrorSource($successfulTransactions);
         $successfulSummary = (object) [
             'aggregate_count' => $successfulTransactions->count(),
-            'gross' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('gross_amount')),
-            'tax' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('tax_total')),
-            'net' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('net_amount')),
-            'ppn' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('ppn')),
-            'pph21' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('pph21')),
-            'pph22' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('pph22')),
-            'pph23' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('pph23')),
-            'pph4' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('pph4')),
-            'sspd' => $successfulTransactions->sum(fn (Transaction $transaction): float => (float) $transaction->sourceValue('sspd')),
+            'gross' => Transaction::sumSource($successfulTransactions, 'gross_amount'),
+            'tax' => Transaction::sumSource($successfulTransactions, 'tax_total'),
+            'net' => Transaction::sumSource($successfulTransactions, 'net_amount'),
+            'ppn' => Transaction::sumSource($successfulTransactions, 'ppn'),
+            'pph21' => Transaction::sumSource($successfulTransactions, 'pph21'),
+            'pph22' => Transaction::sumSource($successfulTransactions, 'pph22'),
+            'pph23' => Transaction::sumSource($successfulTransactions, 'pph23'),
+            'pph4' => Transaction::sumSource($successfulTransactions, 'pph4'),
+            'sspd' => Transaction::sumSource($successfulTransactions, 'sspd'),
         ];
         $cancelledCount = SpjPackage::query()
             ->whereHas('transaction', $transactionFilter)
@@ -298,14 +301,11 @@ class SpjReportUseCase
 
     private function applyReportTransactionFilters($query, Request $request, FiscalYear $year)
     {
-        $mode = (string) $request->input('mode', '');
-        $periode = $request->integer('periode') ?: null;
-
-        // Compatibility for bookmarked URLs that used the previous three filters.
-        if ($mode === '') {
-            $mode = $request->filled('month') ? 'bulan' : ($request->filled('quarter') ? 'triwulan' : ($request->filled('semester') ? 'semester' : 'semua'));
-            $periode = $mode === 'bulan' ? $request->integer('month') : ($mode === 'triwulan' ? $request->integer('quarter') : ($mode === 'semester' ? $request->integer('semester') : null));
-        }
+        // Termasuk kompatibilitas URL bookmark lama (?month=/?quarter=/
+        // ?semester=) — resolveModePeriode() satu-satunya penerjemahnya.
+        // Catatan: periode=0 dan null sama-sama lolos guard mode di bawah
+        // sehingga tidak memfilter; perilaku tidak berubah.
+        [$mode, $periode] = self::resolveModePeriode($request->all());
 
         ArkasMirrorResolver::joinKasUmum($query);
 

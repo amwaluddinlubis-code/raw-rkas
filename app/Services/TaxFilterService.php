@@ -52,8 +52,9 @@ class TaxFilterService
                 fn (Transaction $transaction): bool => (int) ($transaction->sourceCarbon()?->format('n') ?? 0) === (int) $month
             )->values())
             ->when(! $month && $quarter, function (Collection $rows) use ($quarter, $year): Collection {
-                $from = Carbon::create($year->year, (($quarter - 1) * 3) + 1, 1)->startOfMonth();
-                $to = Carbon::create($year->year, $quarter * 3, 1)->endOfMonth();
+                [$fromMonth, $toMonth] = ArkasMirrorResolver::quarterMonthRange((int) $quarter);
+                $from = Carbon::create($year->year, $fromMonth, 1)->startOfMonth();
+                $to = Carbon::create($year->year, $toMonth, 1)->endOfMonth();
 
                 return $rows->filter(function (Transaction $transaction) use ($from, $to): bool {
                     $date = $transaction->sourceCarbon();
@@ -62,8 +63,9 @@ class TaxFilterService
                 })->values();
             })
             ->when(! $month && ! $quarter && $semester, function (Collection $rows) use ($semester, $year): Collection {
-                $from = Carbon::create($year->year, $semester === 1 ? 1 : 7, 1)->startOfMonth();
-                $to = Carbon::create($year->year, $semester === 1 ? 6 : 12, 1)->endOfMonth();
+                [$fromMonth, $toMonth] = ArkasMirrorResolver::semesterMonthRange((int) $semester);
+                $from = Carbon::create($year->year, $fromMonth, 1)->startOfMonth();
+                $to = Carbon::create($year->year, $toMonth, 1)->endOfMonth();
 
                 return $rows->filter(function (Transaction $transaction) use ($from, $to): bool {
                     $date = $transaction->sourceCarbon();

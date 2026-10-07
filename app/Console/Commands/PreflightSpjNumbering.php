@@ -140,7 +140,7 @@ class PreflightSpjNumbering extends Command
                 ->map(fn (Transaction $transaction): array => [
                     'transaction_id' => $transaction->id,
                     'no_bukti' => $transaction->sourceValue('no_bukti'),
-                    'transaction_date' => (($d = $transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null),
+                    'transaction_date' => $transaction->sourceDateString(),
                     'package_id' => $transaction->spjPackage?->id,
                     'package_status' => $transaction->spjPackage?->status ?? 'NONE',
                     'message' => $transaction->spjPackage ? 'Paket masih DRAFT.' : 'Transaksi belum memiliki Paket SPJ.',
@@ -202,7 +202,7 @@ class PreflightSpjNumbering extends Command
                     'package_id' => $package->id,
                     'transaction_id' => $package->transaction->id,
                     'no_bukti' => $package->transaction->sourceValue('no_bukti'),
-                    'transaction_date' => (($d = $package->transaction->sourceValue('transaction_date')) ? Carbon::parse($d)->format('Y-m-d') : null),
+                    'transaction_date' => $package->transaction->sourceDateString(),
                     'event_date' => optional($order->documentEventDate($package, $documentType))->format('Y-m-d'),
                     'source_order_key' => $order->sourceOrderKey($package->transaction),
                     'status' => $package->status,
