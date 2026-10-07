@@ -13,7 +13,18 @@ final class DocumentTemplateStoragePathService
     {
         $directory = 'document-templates/'.$this->schoolKey().'/'.$fiscalYearId;
 
-        return $suffix === '' ? $directory : $directory.'/'.trim($suffix, '/\\');
+        if ($suffix === '') {
+            return $directory;
+        }
+
+        $clean = trim($suffix, '/\\');
+        foreach (preg_split('#[/\\\\]#', $clean) ?: [] as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..') {
+                throw new \InvalidArgumentException('Suffix folder template dokumen tidak valid.');
+            }
+        }
+
+        return $directory.'/'.$clean;
     }
 
     private function schoolKey(): string
