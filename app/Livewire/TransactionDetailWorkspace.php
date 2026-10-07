@@ -48,6 +48,12 @@ class TransactionDetailWorkspace extends Component
 
     public function saveDescriptions(SpjDescriptionService $descriptions, ActiveSpjContext $context): void
     {
+        abort_unless(
+            auth()->user()?->isOperatorOrAdministrator(),
+            403,
+            'Aksi ini hanya dapat dilakukan administrator atau operator.'
+        );
+
         $transaction = $this->transaction();
         if (! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
@@ -96,6 +102,12 @@ class TransactionDetailWorkspace extends Component
 
     public function resolveReconciliation(?string $requestedResolution, SpjSourceReconciliationService $service, ActiveSpjContext $context, OperationalAuditService $audit): void
     {
+        abort_unless(
+            auth()->user()?->isOperatorOrAdministrator(),
+            403,
+            'Aksi ini hanya dapat dilakukan administrator atau operator.'
+        );
+
         if ($requestedResolution !== null) {
             $this->resolution = $requestedResolution;
         }
@@ -172,6 +184,12 @@ class TransactionDetailWorkspace extends Component
 
     public function dismissArtifacts(SpjSourceReconciliationService $service, ActiveSpjContext $context, OperationalAuditService $audit): void
     {
+        abort_unless(
+            auth()->user()?->isOperatorOrAdministrator(),
+            403,
+            'Aksi ini hanya dapat dilakukan administrator atau operator.'
+        );
+
         $transaction = $this->transaction();
         if (! $context->matchesTransaction($transaction)) {
             $this->redirectRoute('transactions.index');
@@ -220,6 +238,12 @@ class TransactionDetailWorkspace extends Component
 
     public function moveItem(int $itemId, string $direction): void
     {
+        abort_unless(
+            auth()->user()?->isOperatorOrAdministrator(),
+            403,
+            'Aksi ini hanya dapat dilakukan administrator atau operator.'
+        );
+
         $transaction = $this->transaction();
         if ($transaction->spjPackage?->status === 'FINAL') {
             $this->addError('form', 'Urutan rincian tidak dapat diubah karena paket sudah FINAL.');

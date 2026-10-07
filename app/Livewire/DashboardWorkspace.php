@@ -11,6 +11,12 @@ class DashboardWorkspace extends Component
 {
     public function markReady(string $packageId, SpjPackageLifecycleUseCase $lifecycle): void
     {
+        abort_unless(
+            auth()->user()?->isOperatorOrAdministrator(),
+            403,
+            'Aksi ini hanya dapat dilakukan administrator atau operator.'
+        );
+
         $result = $lifecycle->markReadyResult($packageId);
         $type = $result['success'] ? 'success' : 'error';
 
