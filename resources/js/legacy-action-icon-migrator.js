@@ -144,3 +144,9 @@ new MutationObserver((mutations) => {
         mutation.addedNodes.forEach(migrateAddedNode);
     });
 }).observe(document.body, { childList: true, subtree: true });
+
+// Satu-satunya implementasi dedupe ikon aksi. Modul
+// action-icon-deduplicator mengimpor fungsi ini agar aturan
+// "canonical SVG menang, maksimal satu icon per aksi" tidak
+// didefinisikan di dua tempat.
+export { reconcileActionIcons };

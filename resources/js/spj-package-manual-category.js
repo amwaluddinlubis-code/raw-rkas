@@ -34,16 +34,17 @@ const updateProcurementVisibility = (form) => {
         if ('disabled' in section) section.disabled = !active;
     });
 
-    // app.js menyembunyikan wrapper tiap field pesanan/BAP/BAST berdasarkan
-    // payment_method backend. Karena radio kini UI-only, radio ikut mengendalikan
-    // wrapper tersebut agar tidak menimpa show/hide di atas. Di luar BARANG,
-    // wrapper tetap mengikuti aturan backend (app.js).
-    if (category === 'BARANG') {
-        ['order_number', 'order_date', 'bap_number', 'bap_date', 'bast_number', 'bast_date'].forEach((name) => {
-            const wrapper = form.querySelector(`[name="${name}"]`)?.closest('div');
-            if (wrapper instanceof HTMLElement) wrapper.hidden = uiSiplah;
-        });
-    }
+    // Visibilitas wrapper pesanan/BAP/BAST dimiliki modul ini untuk semua
+    // kategori (BARANG mengikuti radio UI-only, kategori lain mengikuti
+    // backend seperti handler generik di app.js) agar dua handler tidak
+    // balapan menulis atribut hidden yang sama.
+    const backendHidden = paymentMethod instanceof HTMLSelectElement
+        && paymentMethod.value.toLowerCase() === 'siplah';
+    const internalHidden = category === 'BARANG' ? uiSiplah : backendHidden;
+    ['order_number', 'order_date', 'bap_number', 'bap_date', 'bast_number', 'bast_date'].forEach((name) => {
+        const wrapper = form.querySelector(`[name="${name}"]`)?.closest('div');
+        if (wrapper instanceof HTMLElement) wrapper.hidden = internalHidden;
+    });
 };
 
 const ensureCategoryContext = (form, categorySelect) => {

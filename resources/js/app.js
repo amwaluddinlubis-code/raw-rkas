@@ -211,104 +211,6 @@ new MutationObserver((mutations) => {
 }).observe(document.body, { childList: true, subtree: true });
 document.addEventListener('livewire:navigated', () => normalizePageHeaders());
 
-const initializeClientTablePagination = (root = document) => {
-    root.querySelectorAll('table').forEach((table) => {
-        if (table.dataset.paginationInitialized === 'true') return;
-        if (table.dataset.pagination === 'none' || table.dataset.pagination === 'server') return;
-        if (table.closest('[wire\\:id]')) return;
-
-        const body = table.tBodies[0];
-        if (!body) return;
-        const rows = Array.from(body.rows);
-        if (rows.length <= 10) return;
-
-        table.dataset.paginationInitialized = 'true';
-        let page = 1;
-        let perPage = Number(table.dataset.perPage || 10);
-
-        const pagination = document.createElement('div');
-        pagination.className = 'app-table-pagination';
-        pagination.innerHTML = `
-            <div class="app-table-pagination-summary"></div>
-            <select aria-label="Baris per halaman">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
-            <div class="ui-pagination-group">
-                <button type="button" data-action="prev" class="ui-pagination-control">Sebelumnya</button>
-                <span data-page-nav></span>
-                <button type="button" data-action="next" class="ui-pagination-control">Berikutnya</button>
-            </div>
-        `;
-
-        table.parentElement?.insertAdjacentElement('afterend', pagination);
-        const summary = pagination.querySelector('.app-table-pagination-summary');
-        const select = pagination.querySelector('select');
-        const previous = pagination.querySelector('[data-action="prev"]');
-        const next = pagination.querySelector('[data-action="next"]');
-        const pageNav = pagination.querySelector('[data-page-nav]');
-        select.value = String(perPage);
-
-        const render = () => {
-            const totalPages = Math.max(1, Math.ceil(rows.length / perPage));
-            page = Math.min(page, totalPages);
-            const start = (page - 1) * perPage;
-            const end = Math.min(start + perPage, rows.length);
-
-            rows.forEach((row, index) => {
-                row.hidden = index < start || index >= end;
-            });
-
-            summary.textContent = `Menampilkan ${start + 1}–${end} dari ${rows.length} baris`;
-            previous.disabled = page <= 1;
-            next.disabled = page >= totalPages;
-            pageNav.replaceChildren();
-            const visiblePages = [...new Set([
-                ...Array.from({ length: Math.min(3, totalPages) }, (_, index) => index + 1),
-                ...Array.from({ length: Math.min(3, totalPages) }, (_, index) => totalPages - Math.min(3, totalPages) + index + 1),
-            ])].sort((left, right) => left - right);
-            let previousPage = null;
-            visiblePages.forEach((number) => {
-                if (previousPage !== null && number > previousPage + 1) {
-                    const ellipsis = document.createElement('span');
-                    ellipsis.className = 'ui-pagination-control ui-pagination-ellipsis';
-                    ellipsis.textContent = '…';
-                    pageNav.appendChild(ellipsis);
-                }
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = `ui-pagination-control${number === page ? ' is-active' : ''}`;
-                button.textContent = String(number);
-                button.setAttribute('aria-current', number === page ? 'page' : 'false');
-                button.addEventListener('click', () => { page = number; render(); });
-                pageNav.appendChild(button);
-                previousPage = number;
-            });
-        };
-
-        previous.addEventListener('click', () => {
-            page -= 1;
-            render();
-        });
-        next.addEventListener('click', () => {
-            page += 1;
-            render();
-        });
-        select.addEventListener('change', () => {
-            perPage = Number(select.value);
-            page = 1;
-            render();
-        });
-
-        render();
-    });
-};
-
-initializeClientTablePagination();
-document.addEventListener('livewire:navigated', () => initializeClientTablePagination());
-
 const removeDeprecatedTransactionSignatoryFields = (root = document) => {
     ['signatory_name', 'signatory_role'].forEach((name) => {
         const field = root.querySelector?.(`[name="${name}"]`) || document.querySelector(`[name="${name}"]`);
@@ -387,9 +289,16 @@ const initializeSiplahPurchaseUi = (root = document) => {
     const render = () => {
         const isSiplah = paymentMethod.value.toLowerCase() === 'siplah';
 
-        internalWrappers.forEach((wrapper) => {
-            wrapper.hidden = isSiplah;
-        });
+        // Visibilitas wrapper pesanan/BAP/BAST pada form manual paket
+        // dimiliki spj-package-manual-category (radio UI-only untuk BARANG,
+        // backend untuk kategori lain); modul ini hanya mengatur form lain
+        // agar tidak balapan menulis atribut hidden yang sama.
+        const ownedByCategoryUi = form.querySelector('#spj-type') instanceof HTMLSelectElement;
+        if (!ownedByCategoryUi) {
+            internalWrappers.forEach((wrapper) => {
+                wrapper.hidden = isSiplah;
+            });
+        }
 
         if (isSiplah && vendorNameField instanceof HTMLInputElement && !vendorNameField.value.trim()
             && receiptRecipientField instanceof HTMLInputElement && receiptRecipientField.value.trim()) {
