@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\OperationalAuditService;
 use App\Services\SpjDescriptionService;
 use App\Services\VendorHistoryService;
 use App\Support\ActiveSpjContext;
@@ -46,6 +47,14 @@ class TransactionController extends Controller
                 'item_description' => trim($itemData['item_description']),
             ]);
         }
+
+        app(OperationalAuditService::class)->record(
+            $transaction->fiscal_year_id,
+            'TRANSACTION',
+            $transaction->id,
+            'KOREKSI_URAIAN_SPJ',
+            'Uraian pembayaran dan rincian barang/jasa untuk SPJ diperbarui tanpa mengubah data sumber ARKAS/BKU atau penomoran.',
+        );
 
         return back()->with('success', 'Uraian pembayaran dan barang/jasa untuk SPJ berhasil disimpan tanpa mengubah data sumber ARKAS/BKU atau penomoran.');
     }
