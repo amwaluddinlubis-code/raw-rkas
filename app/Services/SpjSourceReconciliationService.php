@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Transaction;
+use App\Models\User;
 use DomainException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -149,6 +150,14 @@ class SpjSourceReconciliationService
             throw new DomainException('Keputusan rekonsiliasi tidak valid.');
         }
 
+        // Defense-in-depth: pemanggil wajib sudah memverifikasi env jalur
+        // sementara + peran administrator, tetapi service memverifikasi ulang
+        // agar parameter $allowLockedResolution tidak bisa disalahgunakan
+        // untuk membuka paket bernomor/final.
+        if ($allowLockedResolution && ! $this->lockedResolutionAllowed($resolvedBy)) {
+            throw new DomainException('Penyelesaian paket bernomor/final tanpa pembatalan memerlukan jalur sementara yang aktif dan akun administrator.');
+        }
+
         return DB::connection('school')->transaction(function () use ($transaction, $resolution, $notes, $resolvedBy, $sourceEventId, $allowLockedResolution): array {
             DB::connection('school')->table('transactions')->where('id', $transaction->id)->lockForUpdate()->first();
             $transaction->refresh()->load('spjPackage');
@@ -293,6 +302,19 @@ class SpjSourceReconciliationService
     public function temporaryUnlockEnabled(): bool
     {
         return filter_var(env('SPJ_TEMP_UNLOCK_RECONCILIATION', false), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Verifikasi ulang syarat $allowLockedResolution di dalam service.
+     * Fail-closed: env mati atau penyelesai bukan administrator berarti ditolak.
+     */
+    private function lockedResolutionAllowed(?int $resolvedBy): bool
+    {
+        if (! $this->temporaryUnlockEnabled()) {
+            return false;
+        }
+
+        return $resolvedBy !== null && (bool) User::query()->find($resolvedBy)?->isAdministrator();
     }
 
     /**
