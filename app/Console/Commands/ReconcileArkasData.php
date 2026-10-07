@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\School;
+use App\Services\SchoolDatabaseManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -9,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 class ReconcileArkasData extends Command
 {
     protected $signature = 'arkas:reconcile
+        {--npsn= : NPSN sekolah yang diaudit (wajib bila lebih dari satu sekolah terdaftar)}
         {--json : Tampilkan laporan dalam JSON}
         {--year= : Batasi audit pada fiscal_year_id tertentu}';
 
@@ -31,11 +34,26 @@ class ReconcileArkasData extends Command
         'import_rows' => ['table' => 'arkas_import_rows', 'columns' => ['profile_id', 'fiscal_year_id', 'source_key'], 'label' => 'Baris importer'],
     ];
 
-    public function handle(): int
+    public function handle(SchoolDatabaseManager $manager): int
     {
+        $school = $this->resolveSchool();
+        if (! $school) {
+            return self::FAILURE;
+        }
+
+        // Tanpa aktivasi tenant, koneksi `school` menunjuk ke _unselected.sqlite
+        // sehingga audit berjalan di atas database kosong yang salah.
+        try {
+            $manager->activate($school);
+        } catch (\Throwable $exception) {
+            $this->error('Aktivasi database sekolah gagal: '.$exception->getMessage());
+
+            return self::FAILURE;
+        }
+
         $db = DB::connection('school');
         $yearId = trim((string) ($this->option('year') ?? ''));
-        $report = ['status' => 'PASS', 'scope' => $yearId === '' ? 'all' : $yearId, 'duplicates' => [], 'orphans' => 0];
+        $report = ['status' => 'PASS', 'school' => $school->npsn, 'scope' => $yearId === '' ? 'all' : $yearId, 'duplicates' => [], 'orphans' => 0];
 
         foreach (self::UNIQUE_SCOPES as $name => $scope) {
             if (! Schema::connection('school')->hasTable($scope['table'])) {
@@ -78,5 +96,27 @@ class ReconcileArkasData extends Command
         }
 
         return $report['status'] === 'PASS' ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function resolveSchool(): ?School
+    {
+        $npsn = trim((string) ($this->option('npsn') ?? ''));
+        if ($npsn !== '') {
+            $school = School::query()->where('npsn', $npsn)->first();
+            if (! $school) {
+                $this->error('Sekolah dengan NPSN '.$npsn.' tidak ditemukan.');
+            }
+
+            return $school;
+        }
+
+        $schools = School::query()->orderBy('npsn')->get();
+        if ($schools->count() === 1) {
+            return $schools->first();
+        }
+
+        $this->error('Tentukan sekolah yang diaudit dengan --npsn=NPSN.');
+
+        return null;
     }
 }
