@@ -264,6 +264,39 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame(2, $package->documents()->where('document_type', 'SPJ')->where('scope_key', 'MAIN')->count());
     }
 
+    public function test_document_number_sequences_fund_source_id_is_not_nullable(): void
+    {
+        $columns = DB::connection('school')->select("PRAGMA table_info('document_number_sequences')");
+        $column = collect($columns)->firstWhere('name', 'fund_source_id');
+
+        $this->assertNotNull($column, 'Kolom fund_source_id harus ada pada document_number_sequences.');
+        $this->assertSame(1, (int) $column->notnull, 'fund_source_id harus NOT NULL agar unique index melindungi grup NULL di SQLite (K2).');
+    }
+
+    public function test_sequence_scope_uses_zero_sentinel_when_fund_source_is_null(): void
+    {
+        $year = $this->year();
+        $first = $this->packageWithoutFundSource($year, 'B-001', '2026-01-05', '101');
+        $second = $this->packageWithoutFundSource($year, 'B-002', '2026-01-10', '102');
+
+        $numbers = app(SpjDocumentNumberService::class);
+        $firstDocument = $numbers->assign($first, 'SPJ', Carbon::parse('2026-01-05'), '10200001');
+        $secondDocument = $numbers->assign($second, 'SPJ', Carbon::parse('2026-01-10'), '10200001');
+
+        $this->assertSame(1, $firstDocument->sequence_number);
+        $this->assertSame(2, $secondDocument->sequence_number);
+        $this->assertNotSame($firstDocument->document_number, $secondDocument->document_number);
+
+        $rows = DB::connection('school')->table('document_number_sequences')
+            ->where('fiscal_year_id', $year->id)
+            ->where('format_name', 'SPJ')
+            ->get();
+
+        $this->assertCount(1, $rows, 'Transaksi tanpa sumber dana harus berbagi satu baris sequence sentinel, bukan baris NULL ganda.');
+        $this->assertSame(0, (int) $rows->first()->fund_source_id);
+        $this->assertSame(2, (int) $rows->first()->last_number);
+    }
+
     private function year(): FiscalYear
     {
         FundSource::query()->firstOrCreate(['id' => 1], ['code' => 'BOSP', 'name' => 'BOSP']);
@@ -274,6 +307,25 @@ class DocumentNumberingWorkflowTest extends TestCase
     private function package(FiscalYear $year, string $proofNumber, string $date, ?string $sourceId = null): SpjPackage
     {
         return $this->packageWithSourceItems($year, $proofNumber, $date, $sourceId, [$sourceId]);
+    }
+
+    private function packageWithoutFundSource(FiscalYear $year, string $proofNumber, string $date, ?string $sourceId = null): SpjPackage
+    {
+        $transaction = $this->mirrorTransaction([
+            'fiscal_year_id' => $year->id,
+            'fund_source_id' => null,
+            'id_kas_umum' => $sourceId,
+            'no_bukti' => $proofNumber,
+            'transaction_date' => $date,
+            'source_key' => hash('sha256', (string) $sourceId),
+        ]);
+        $this->mirrorItem($transaction, [
+            'source_item_id' => $sourceId,
+            'description' => 'Barang',
+            'amount' => 1000,
+        ]);
+
+        return $transaction->spjPackage()->create(['status' => 'READY']);
     }
 
     /** @param array<int, string|null> $sourceItemIds */
