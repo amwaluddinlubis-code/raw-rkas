@@ -1,5 +1,4 @@
 @php
-    $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $isFiltered = $q !== '' || $mode !== 'semua' || $periode || $siplah !== '' || $jenisPajak !== '';
     $display = $isFiltered ? $filteredSummary : $summary;
 @endphp
@@ -9,11 +8,11 @@
         <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
             <x-stat-item label="Transaksi Pajak" :value="number_format($display->count, 0, ',', '.')"
                 hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Tahun ' . $year->year }}" value-class="text-[var(--ui-fg-strong)]" icon="report" icon-class="text-[var(--ui-fg-muted)]" />
-            <x-stat-item label="PPN" :value="$rupiah($display->ppn)"
+            <x-stat-item label="PPN" :value="\App\Support\SpjDisplay::rupiah($display->ppn)"
                 hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Total PPN tahunan' }}" value-class="text-[var(--theme-content-accent)]" icon="tax" icon-class="text-[var(--theme-content-accent)]" />
-            <x-stat-item label="PPh" :value="$rupiah($display->pph21 + $display->pph22 + $display->pph23 + $display->pph4)"
+            <x-stat-item label="PPh" :value="\App\Support\SpjDisplay::rupiah($display->pph21 + $display->pph22 + $display->pph23 + $display->pph4)"
                 hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Gabungan PPh' }}" value-class="text-rose-700" icon="document" icon-class="text-rose-700" />
-            <x-stat-item label="Total Pajak" :value="$rupiah($display->total)"
+            <x-stat-item label="Total Pajak" :value="\App\Support\SpjDisplay::rupiah($display->total)"
                 hint="{{ $isFiltered ? 'Sesuai filter aktif' : 'Total seluruh pajak' }}" value-class="text-amber-700" icon="balance" icon-class="text-amber-700" />
         </div>
     </x-page-header>
@@ -167,18 +166,18 @@
                                 @endif
                             </td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right">
-                                {{ $rupiah($transaction->sourceValue('ppn')) }}</td>
+                                {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('ppn')) }}</td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right">
-                                {{ $rupiah($transaction->sourceValue('pph21')) }}</td>
+                                {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('pph21')) }}</td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right">
-                                {{ $rupiah($transaction->sourceValue('pph22')) }}</td>
+                                {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('pph22')) }}</td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right">
-                                {{ $rupiah($transaction->sourceValue('pph23')) }}</td>
+                                {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('pph23')) }}</td>
                             <td class="whitespace-nowrap px-4 py-2.5 text-right">
-                                {{ $rupiah($transaction->sourceValue('pph4') + $transaction->sourceValue('sspd')) }}
+                                {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('pph4') + $transaction->sourceValue('sspd')) }}
                             </td>
                             <td class="whitespace-nowrap px-5 py-2.5 text-right font-bold text-amber-700">
-                                {{ $rupiah($transaction->sourceValue('tax_total')) }}</td>
+                                {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('tax_total')) }}</td>
                         </tr>
                     @empty
                         <tr>

@@ -5,7 +5,7 @@
     <div class="mt-3 grid gap-3 sm:grid-cols-3">
         <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
             <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Kategori</p>
-            <p class="mt-1 font-bold text-[var(--ui-fg-strong)]">{{ $spjTypeLabel($packageCategory) }}</p>
+            <p class="mt-1 font-bold text-[var(--ui-fg-strong)]">{{ \App\Support\SpjDisplay::typeLabel($packageCategory) }}</p>
         </div>
         <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3">
             <p class="text-[11px] font-bold uppercase text-[var(--ui-fg-muted)]">Tanggal sumber</p>
@@ -126,7 +126,7 @@
                                             <b class="text-amber-700">Susulan</b>
                                         @endif
                                     </span>
-                                    <b>{{ $rupiah($payment->gross_amount) }}</b>
+                                    <b>{{ \App\Support\SpjDisplay::rupiah($payment->gross_amount) }}</b>
                             </div>@empty<p class="text-xs text-[var(--ui-fg-muted)]">Belum ada pembayaran.</p>
                             @endforelse
                         </div>

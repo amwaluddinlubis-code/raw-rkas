@@ -222,11 +222,25 @@ class SpjReportLayoutTest extends TestCase
 
     public function test_spj_category_labels_are_title_case_in_display_surfaces(): void
     {
+        // Peta label kanonis hidup di SpjDisplay agar belasan view tidak
+        // menduplikasi match arm (sumber divergensi: arm legacy hilang di
+        // satu view tetapi ada di view lain).
+        $helper = file_get_contents(base_path('app/Support/SpjDisplay.php'));
+
+        $this->assertIsString($helper);
+        $this->assertStringContainsString("'BARANG' => 'Barang'", $helper);
+        $this->assertStringContainsString("'KONSUMSI' => 'Konsumsi'", $helper);
+        $this->assertStringContainsString("'PEMELIHARAAN' => 'Pemeliharaan'", $helper);
+        $this->assertStringContainsString("'JASA_LAINNYA' => 'Jasa Lainnya'", $helper);
+        $this->assertStringContainsString("'JASA_HONORARIUM' => 'Honor Pegawai'", $helper);
+        $this->assertStringNotContainsString("default => str_replace('_', ' ', (string) \$value)", $helper);
+
         $displayFiles = [
             resource_path('views/livewire/spj-preparation-filter.blade.php'),
             resource_path('views/spj/index.blade.php'),
             resource_path('views/livewire/transactions-table.blade.php'),
             resource_path('views/livewire/spj-package-list.blade.php'),
+            resource_path('views/livewire/spj-attribute-list.blade.php'),
             resource_path('views/spj/checklist.blade.php'),
             resource_path('views/spj/numbering.blade.php'),
             resource_path('views/livewire/reconciliation-list.blade.php'),
@@ -236,10 +250,8 @@ class SpjReportLayoutTest extends TestCase
             $blade = file_get_contents($file);
 
             $this->assertIsString($blade);
-            $this->assertStringContainsString("'BARANG' => 'Barang'", $blade);
-            $this->assertStringContainsString("'KONSUMSI' => 'Konsumsi'", $blade);
-            $this->assertStringContainsString("'PEMELIHARAAN' => 'Pemeliharaan'", $blade);
-            $this->assertStringContainsString("'JASA_LAINNYA' => 'Jasa Lainnya'", $blade);
+            $this->assertStringContainsString('SpjDisplay::typeLabel', $blade);
+            $this->assertStringNotContainsString('$spjTypeLabel = fn', $blade);
             $this->assertStringNotContainsString("default => str_replace('_', ' ', (string) \$value)", $blade);
         }
 

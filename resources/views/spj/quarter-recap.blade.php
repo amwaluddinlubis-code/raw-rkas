@@ -1,6 +1,5 @@
 <x-layouts.tailwind-app>
     @php
-        $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
         $counts = $recap['counts'];
         $totals = $recap['totals'];
     @endphp
@@ -19,7 +18,7 @@
                 <x-stat-item label="Transaksi triwulan" :value="$counts['transactions']" :hint="'Tanpa paket: '.$counts['without_package']" value-class="text-[var(--theme-content-accent)]" icon="archive" icon-class="text-[var(--theme-content-accent)]" />
                 <x-stat-item label="Perlu dilengkapi (DRAFT)" :value="$counts['draft']" :hint="'Siap dinomori (READY): '.$counts['ready']" value-class="text-amber-700" icon="warning" icon-class="text-amber-700" />
                 <x-stat-item label="Bernomor + Final" :value="$counts['numbered'] + $counts['final']" :hint="'Dibatalkan: '.$counts['cancelled']" value-class="text-emerald-700" icon="document" icon-class="text-emerald-700" />
-                <x-stat-item label="Total bruto sumber" :value="$rupiah($totals['gross'])" :hint="'Pajak '.$rupiah($totals['tax']).' · Netto '.$rupiah($totals['net'])" value-class="text-slate-800" icon="work" icon-class="text-slate-800" />
+                <x-stat-item label="Total bruto sumber" :value="\App\Support\SpjDisplay::rupiah($totals['gross'])" :hint="'Pajak '.\App\Support\SpjDisplay::rupiah($totals['tax']).' · Netto '.\App\Support\SpjDisplay::rupiah($totals['net'])" value-class="text-slate-800" icon="work" icon-class="text-slate-800" />
             </div>
         </x-page-header>
 
@@ -65,7 +64,7 @@
                                 <td class="max-w-sm px-4 py-2">
                                     <p class="truncate font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: $transaction->sourceValue('description') ?: 'Tanpa uraian' }}</p>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->sourceValue('gross_amount')) }}</td>
+                                <td class="whitespace-nowrap px-4 py-2 text-right font-semibold text-[var(--ui-fg-strong)]">{{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</td>
                                 <td class="px-5 py-2 text-center print:hidden"><x-ui.button variant="secondary" :href="route('spj.checklist', $transaction->spjPackage->id)" class="text-xs">Checklist →</x-ui.button></td>
                             </tr>
                         @empty<tr><td colspan="4" class="px-5 py-10 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada paket READY pada triwulan ini.</td></tr>
@@ -100,7 +99,7 @@
                                 <td class="max-w-sm px-4 py-2">
                                     <p class="truncate font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: $transaction->sourceValue('description') ?: 'Tanpa uraian' }}</p>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-2 text-right font-semibold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->sourceValue('gross_amount')) }}</td>
+                                <td class="whitespace-nowrap px-4 py-2 text-right font-semibold text-[var(--ui-fg-strong)]">{{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</td>
                                 <td class="px-5 py-2 text-center print:hidden"><x-ui.button variant="secondary" :href="route('spj.checklist', $transaction->spjPackage->id)" class="text-xs">Checklist →</x-ui.button></td>
                             </tr>
                         @empty<tr><td colspan="4" class="px-5 py-10 text-center text-sm text-[var(--ui-fg-muted)]">Tidak ada paket DRAFT pada triwulan ini.</td></tr>

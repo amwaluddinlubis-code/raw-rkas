@@ -5,7 +5,7 @@
                                         {{ $transaction->items->count() }} item yang akan dipakai dokumen SPJ.</p>
                                 </div>
                                 <span
-                                    class="hidden sm:inline-flex rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-[var(--ui-fg)]">{{ $rupiah($transaction->items->sum('amount')) }}</span>
+                                    class="hidden sm:inline-flex rounded-full bg-[var(--ui-surface-muted)] px-2.5 py-1 text-xs font-bold text-[var(--ui-fg)]">{{ \App\Support\SpjDisplay::rupiah($transaction->items->sum('amount')) }}</span>
                             </div>
                             <div class="divide-y divide-[var(--ui-line)]">
                                 @forelse($transaction->items as $index => $item)
@@ -25,14 +25,14 @@
                                                 <span class="font-semibold text-[var(--ui-fg)]">Satuan</span>
                                                 {{ $item->sourceValue('unit') ?: '—' }}
                                                 <span class="font-semibold text-[var(--ui-fg)]">Harga</span>
-                                                {{ $rupiah($item->sourceValue('unit_price')) }}
+                                                {{ \App\Support\SpjDisplay::rupiah($item->sourceValue('unit_price')) }}
                                                 <span class="font-semibold text-[var(--ui-fg)]">Rek</span>
                                                 {{ $item->sourceValue('account_code') ?: $transaction->sourceValue('account_code') ?: '—' }}
                                             </p>
                                         </div>
                                         <p
                                             class="shrink-0 border-l border-[var(--ui-line)] pl-3 text-right text-sm font-semibold text-[var(--ui-fg-strong)]">
-                                            {{ $rupiah($item->sourceValue('amount')) }}</p>
+                                            {{ \App\Support\SpjDisplay::rupiah($item->sourceValue('amount')) }}</p>
                                     </div>
                                 @empty
                                     <p class="px-4 py-8 text-center text-base text-[var(--ui-fg-muted)]">Tidak ada

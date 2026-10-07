@@ -1,15 +1,3 @@
-@php
-    $rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-    $spjTypeLabel = fn($value) => match (strtoupper((string) $value)) {
-        'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-        'JASA_LAINNYA' => 'Jasa Lainnya',
-        'BARANG' => 'Barang',
-        'KONSUMSI' => 'Konsumsi',
-        'PEMELIHARAAN' => 'Pemeliharaan',
-        'SPPD' => 'SPPD',
-        default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
-    };
-@endphp
 <div>
     <div class="border-b border-[var(--ui-line)] px-5 py-5 sm:px-6">
         <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -68,7 +56,7 @@
                     <x-ui.searchable-select id="spj-preparation-category" wire-model="spj_category"
                         :options="array_merge(
                             [['value' => '', 'label' => 'Semua kategori']],
-                            collect($spjTypes ?? [])->map(fn ($type) => ['value' => $type, 'label' => $spjTypeLabel($type)])->all()
+                            collect($spjTypes ?? [])->map(fn ($type) => ['value' => $type, 'label' => \App\Support\SpjDisplay::typeLabel($type)])->all()
                         )" placeholder="Semua kategori" search-placeholder="Cari kategori..." />
                 </x-ui.field>
                 <x-ui.field label="Periode" for="spj-preparation-period" class="min-w-0 md:col-span-2 lg:col-span-1">
@@ -170,12 +158,12 @@
                         </td>
                         <td class="px-4 py-2.5">
                             <p class="text-xs font-bold text-[var(--theme-content-accent)]">
-                                {{ $spjTypeLabel($transaction->spj_category) }}</p>
+                                {{ \App\Support\SpjDisplay::typeLabel($transaction->spj_category) }}</p>
                             <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }} rincian
                             </p>
                         </td>
                         <td class="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-[var(--ui-fg-strong)]">
-                            {{ $rupiah($transaction->sourceValue('gross_amount')) }}</td>
+                            {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</td>
                         <td class="transaction-action-column px-5 py-2.5">
                             @if ($transaction->spjPackage || $transaction->items_count)
                                 <div class="transaction-action-cell flex items-center justify-center"

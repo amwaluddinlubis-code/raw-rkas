@@ -8,6 +8,7 @@ use App\Services\OperationalAuditService;
 use App\Services\SpjDescriptionService;
 use App\Services\SpjSourceReconciliationService;
 use App\Support\ActiveSpjContext;
+use App\Support\SpjDisplay;
 use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
@@ -199,7 +200,7 @@ class TransactionDetailWorkspace extends Component
     {
         $transaction = $this->transaction();
         $reconciliation = app(SpjSourceReconciliationService::class)->forTransaction($transaction);
-        $rupiah = fn ($value): string => 'Rp '.number_format((float) $value, 0, ',', '.');
+        $rupiah = fn ($value): string => SpjDisplay::rupiah($value);
 
         return view('livewire.transaction-detail-workspace', [
             'transaction' => $transaction,
@@ -211,15 +212,7 @@ class TransactionDetailWorkspace extends Component
             'totalItems' => $transaction->items->sum(fn ($item): float => (float) $item->sourceValue('amount')),
             'descriptionsFilled' => $transaction->items->filter(fn ($item): bool => filled($item->item_description))->count(),
             'descriptionsComplete' => $transaction->items->isNotEmpty() && $transaction->items->every(fn ($item): bool => filled($item->item_description)),
-            'spjTypeLabel' => fn ($value): string => match (strtoupper((string) $value)) {
-                'JASA_LAINNYA' => 'Jasa Lainnya',
-                'SPPD' => 'SPPD',
-                'HONOR_PEGAWAI' => 'Honor Pegawai',
-                'BARANG' => 'Barang',
-                'KONSUMSI' => 'Konsumsi',
-                'PEMELIHARAAN' => 'Pemeliharaan',
-                default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
-            },
+            'spjTypeLabel' => fn ($value): string => SpjDisplay::typeLabel($value),
             'sourceStatus' => strtoupper((string) ($transaction->source_status ?: 'ACTIVE')),
             'needsAttention' => $reconciliation['needs_attention'],
             'needsReconciliation' => $reconciliation['requires_reconciliation'],

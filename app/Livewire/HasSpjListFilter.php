@@ -19,9 +19,39 @@ trait HasSpjListFilter
 
     protected function resolvePerPage(int $default = 15): int
     {
-        $perPage = request()->integer($this->perPageQueryParam(), $default);
+        return (int) self::normalizePerPageValue(
+            request()->input($this->perPageQueryParam(), $default),
+            [10, 15, 25, 50, 100],
+            false,
+            $default
+        );
+    }
 
-        return in_array($perPage, [10, 15, 25, 50, 100], true) ? $perPage : $default;
+    /**
+     * Normalisasi perPage mentah dipakai ulang semua filter Livewire.
+     * allowAll=true mempertahankan sentinel 'all' (10000 saat resolved).
+     *
+     * @param  array<int, int>  $allowed
+     */
+    public static function normalizePerPageValue(mixed $raw, array $allowed = [10, 15, 25, 50, 100], bool $allowAll = false, int $default = 15): int|string
+    {
+        if ($allowAll && $raw === 'all') {
+            return 'all';
+        }
+
+        $perPage = (int) $raw;
+
+        return in_array($perPage, $allowed, true) ? $perPage : $default;
+    }
+
+    /**
+     * @param  array<int, int>  $allowed
+     */
+    public static function resolvedPerPageValue(int|string $perPage, array $allowed = [15, 25, 50, 100, 10000], int $default = 15): int
+    {
+        $resolved = $perPage === 'all' ? 10000 : (int) $perPage;
+
+        return in_array($resolved, $allowed, true) ? $resolved : $default;
     }
 
     public function updating($property): void

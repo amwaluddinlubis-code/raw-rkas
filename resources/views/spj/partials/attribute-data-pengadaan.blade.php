@@ -1,7 +1,6 @@
 @php
     $transaction = $transaction ?? $package->transaction;
     $category = $category ?? strtoupper((string) $transaction->spj_category);
-    $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
 @endphp
 <div class="space-y-1.5 text-sm">
     @switch($category)
@@ -10,75 +9,43 @@
                 @php $goods = $transaction->goods->first(); @endphp
                 <div class="font-medium text-[var(--ui-fg)]">Nomor Pesanan</div>
                 <div class="font-mono text-[var(--theme-content-accent)]">
-                    @if($goods->order_number)
-                        {{ $goods->order_number }}
-                    @else
-                        <span class="text-rose-500">Belum diterbitkan</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($goods->order_number, 'Belum diterbitkan') !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Tanggal Pesanan</div>
                 <div class="text-[var(--ui-fg-muted)]">
-                    @if($goods->order_date)
-                        {{ $goods->order_date->translatedFormat('d F Y') }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($goods->order_date?->translatedFormat('d F Y')) !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Nomor BAP</div>
                 <div class="font-mono text-[var(--theme-content-accent)]">
-                    @if($goods->bap_number)
-                        {{ $goods->bap_number }}
-                    @else
-                        <span class="text-rose-500">Belum diterbitkan</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($goods->bap_number, 'Belum diterbitkan') !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Tanggal BAP</div>
                 <div class="text-[var(--ui-fg-muted)]">
-                    @if($goods->bap_date)
-                        {{ $goods->bap_date->translatedFormat('d F Y') }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($goods->bap_date?->translatedFormat('d F Y')) !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Nomor BAST</div>
                 <div class="font-mono text-[var(--theme-content-accent)]">
-                    @if($goods->bast_number)
-                        {{ $goods->bast_number }}
-                    @else
-                        <span class="text-rose-500">Belum diterbitkan</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($goods->bast_number, 'Belum diterbitkan') !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Tanggal BAST</div>
                 <div class="text-[var(--ui-fg-muted)]">
-                    @if($goods->bast_date)
-                        {{ $goods->bast_date->translatedFormat('d F Y') }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($goods->bast_date?->translatedFormat('d F Y')) !!}
                 </div>
 
                 @if($transaction->is_siplah || strtolower((string) $transaction->payment_method) === 'siplah')
                     <div class="mt-2 font-medium text-[var(--ui-fg)]">Nomor Pesanan SiPLah</div>
                     <div class="font-mono text-[var(--theme-content-accent)]">
-                        @if($transaction->siplah_order_number)
-                            {{ $transaction->siplah_order_number }}
-                        @else
-                            <span class="text-rose-500">Belum diisi</span>
-                        @endif
+                        {!! \App\Support\SpjDisplay::presenceHtml($transaction->siplah_order_number) !!}
                     </div>
 
                     <div class="mt-2 font-medium text-[var(--ui-fg)]">Status Invoice</div>
                     <div class="text-[var(--ui-fg-muted)]">
-                        @if($transaction->invoice_status)
-                            {{ $transaction->invoice_status }}
-                        @else
-                            <span class="text-rose-500">Belum diisi</span>
-                        @endif
+                        {!! \App\Support\SpjDisplay::presenceHtml($transaction->invoice_status) !!}
                     </div>
                 @endif
             @else
@@ -96,13 +63,7 @@
 
             <div class="mt-2 font-medium text-[var(--ui-fg)]">Penerima Konsumsi (Utama)</div>
             <div class="text-[var(--ui-fg-muted)] truncate">
-                @if($participants->firstWhere('is_primary', true)?->name)
-                    {{ $participants->firstWhere('is_primary', true)->name }}
-                @elseif($participants->first()?->name)
-                    {{ $participants->first()->name }}
-                @else
-                    <span class="text-rose-500">Belum ditentukan</span>
-                @endif
+                {!! \App\Support\SpjDisplay::presenceHtml($participants->firstWhere('is_primary', true)?->name ?? $participants->first()?->name, 'Belum ditentukan') !!}
             </div>
 
             @if($participants->count())
@@ -124,32 +85,20 @@
 
         @case('PEMELIHARAAN')
             @if($transaction->workOrder)
-                <div class="font-medium text-[var(--ui-fg)]">Jenis Biaya</div>
-                <div class="text-[var(--ui-fg-muted)]">
-                    @if($transaction->workOrder->expense_type)
-                        {{ $transaction->workOrder->expense_type }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
-                </div>
+            <div class="font-medium text-[var(--ui-fg)]">Jenis Biaya</div>
+            <div class="text-[var(--ui-fg-muted)]">
+                {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->expense_type) !!}
+            </div>
 
-                <div class="mt-2 font-medium text-[var(--ui-fg)]">Uraian Pekerjaan</div>
-                <div class="text-[var(--ui-fg-muted)] truncate">
-                    @if($transaction->workOrder->work_description)
-                        {{ $transaction->workOrder->work_description }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
-                </div>
+            <div class="mt-2 font-medium text-[var(--ui-fg)]">Uraian Pekerjaan</div>
+            <div class="text-[var(--ui-fg-muted)] truncate">
+                {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->work_description) !!}
+            </div>
 
-                <div class="mt-2 font-medium text-[var(--ui-fg)]">Lokasi Pekerjaan</div>
-                <div class="text-[var(--ui-fg-muted)] truncate">
-                    @if($transaction->workOrder->work_location)
-                        {{ $transaction->workOrder->work_location }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
-                </div>
+            <div class="mt-2 font-medium text-[var(--ui-fg)]">Lokasi Pekerjaan</div>
+            <div class="text-[var(--ui-fg-muted)] truncate">
+                {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->work_location) !!}
+            </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Periode Pekerjaan</div>
                 <div class="text-[var(--ui-fg-muted)]">
@@ -163,38 +112,22 @@
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Nomor SPK</div>
                 <div class="font-mono text-[var(--theme-content-accent)]">
-                    @if($transaction->workOrder->spk_number)
-                        {{ $transaction->workOrder->spk_number }}
-                    @else
-                        <span class="text-rose-500">Belum diterbitkan</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->spk_number, 'Belum diterbitkan') !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Tanggal SPK</div>
                 <div class="text-[var(--ui-fg-muted)]">
-                    @if($transaction->workOrder->spk_date)
-                        {{ $transaction->workOrder->spk_date->translatedFormat('d F Y') }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->spk_date?->translatedFormat('d F Y')) !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Nomor RAB</div>
                 <div class="font-mono text-[var(--theme-content-accent)]">
-                    @if($transaction->workOrder->rab_number)
-                        {{ $transaction->workOrder->rab_number }}
-                    @else
-                        <span class="text-rose-500">Belum diterbitkan</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->rab_number, 'Belum diterbitkan') !!}
                 </div>
 
                 <div class="mt-2 font-medium text-[var(--ui-fg)]">Tanggal RAB</div>
                 <div class="text-[var(--ui-fg-muted)]">
-                    @if($transaction->workOrder->rab_date)
-                        {{ $transaction->workOrder->rab_date->translatedFormat('d F Y') }}
-                    @else
-                        <span class="text-rose-500">Belum diisi</span>
-                    @endif
+                    {!! \App\Support\SpjDisplay::presenceHtml($transaction->workOrder->rab_date?->translatedFormat('d F Y')) !!}
                 </div>
 
                 @php $workers = $transaction->workers; @endphp
@@ -206,7 +139,7 @@
                                 <span class="font-medium">{{ $worker->name }}</span>
                                 <span class="text-[var(--ui-fg-muted)]">({{ $worker->job_description ?? '-' }})</span>
                                 <span class="px-1.5 py-0.5 rounded text-[10px] bg-[var(--ui-surface-muted)]">{{ $worker->work_days }} hari</span>
-                                <span class="text-[var(--ui-fg-muted)]">{{ $rupiah($worker->daily_rate) }}/hari</span>
+                                <span class="text-[var(--ui-fg-muted)]">{{ \App\Support\SpjDisplay::rupiah($worker->daily_rate) }}/hari</span>
                                 @if($worker->is_receipt_recipient)
                                     <x-ui.badge variant="success" size="xs">Penerima</x-ui.badge>
                                 @endif
@@ -231,20 +164,12 @@
                             <span class="font-medium">Periode:</span> {{ $travel->departure_date?->translatedFormat('d F Y') }} s.d. {{ $travel->return_date?->translatedFormat('d F Y') }}<br>
                             <span class="font-medium">Transportasi:</span> {{ $travel->transport_mode ?? '-' }}<br>
                             <span class="font-medium">Nomor ST:</span>
-                            @if($travel->assignment_letter_number)
-                                {{ $travel->assignment_letter_number }}
-                            @else
-                                <span class="text-rose-500">Belum diterbitkan</span>
-                            @endif
+                            {!! \App\Support\SpjDisplay::presenceHtml($travel->assignment_letter_number, 'Belum diterbitkan') !!}
                             <br>
                             <span class="font-medium">Tgl ST:</span>
-                            @if($travel->assignment_letter_date)
-                                {{ $travel->assignment_letter_date->translatedFormat('d F Y') }}
-                            @else
-                                <span class="text-rose-500">Belum diisi</span>
-                            @endif
+                            {!! \App\Support\SpjDisplay::presenceHtml($travel->assignment_letter_date?->translatedFormat('d F Y')) !!}
                             <br>
-                            <span class="font-medium">Nominal:</span> {{ $travel->amount ? $rupiah($travel->amount) : '-' }}
+                            <span class="font-medium">Nominal:</span> {{ $travel->amount ? \App\Support\SpjDisplay::rupiah($travel->amount) : '-' }}
                         </div>
                     </div>
                 @endforeach
@@ -265,10 +190,10 @@
                             <span class="font-medium">NIP/NIK:</span> {{ $honor->nip ?? $honor->nik ?? '-' }}<br>
                             <span class="font-medium">NPWP:</span> {{ $honor->npwp ?? '-' }}<br>
                             <span class="font-medium">Periode:</span> {{ $honor->honor_months }} bulan<br>
-                            <span class="font-medium">Tarif:</span> {{ $rupiah($honor->rate_per_unit) }}/bulan<br>
-                            <span class="font-medium">Bruto:</span> {{ $rupiah($honor->gross_amount) }}<br>
-                            <span class="font-medium">Pajak:</span> {{ $rupiah($honor->tax_amount) }} ({{ $honor->tax_rate * 100 }}%)<br>
-                            <span class="font-medium">Netto:</span> {{ $rupiah($honor->net_amount) }}<br>
+                            <span class="font-medium">Tarif:</span> {{ \App\Support\SpjDisplay::rupiah($honor->rate_per_unit) }}/bulan<br>
+                            <span class="font-medium">Bruto:</span> {{ \App\Support\SpjDisplay::rupiah($honor->gross_amount) }}<br>
+                            <span class="font-medium">Pajak:</span> {{ \App\Support\SpjDisplay::rupiah($honor->tax_amount) }} ({{ $honor->tax_rate * 100 }}%)<br>
+                            <span class="font-medium">Netto:</span> {{ \App\Support\SpjDisplay::rupiah($honor->net_amount) }}<br>
                             <span class="font-medium">Rekening:</span> {{ $honor->bank_name ?? '-' }} - {{ $honor->bank_account ?? '-' }}
                         </div>
                     </div>
@@ -291,11 +216,11 @@
                             <span class="font-medium">Volume:</span> {{ $recipient->quantity }} {{ $recipient->unit }}<br>
                             @if($recipient->rental_days)
                                 <span class="font-medium">Hari Sewa:</span> {{ $recipient->rental_days }}<br>
-                                <span class="font-medium">Tarif Harian:</span> {{ $rupiah($recipient->daily_rate) }}<br>
+                                <span class="font-medium">Tarif Harian:</span> {{ \App\Support\SpjDisplay::rupiah($recipient->daily_rate) }}<br>
                             @endif
-                            <span class="font-medium">Jumlah:</span> {{ $rupiah($recipient->amount) }}<br>
-                            <span class="font-medium">Pajak:</span> {{ $rupiah($recipient->tax_amount) }}<br>
-                            <span class="font-medium">Netto:</span> {{ $rupiah($recipient->net_amount) }}<br>
+                            <span class="font-medium">Jumlah:</span> {{ \App\Support\SpjDisplay::rupiah($recipient->amount) }}<br>
+                            <span class="font-medium">Pajak:</span> {{ \App\Support\SpjDisplay::rupiah($recipient->tax_amount) }}<br>
+                            <span class="font-medium">Netto:</span> {{ \App\Support\SpjDisplay::rupiah($recipient->net_amount) }}<br>
                             <span class="font-medium">No Kuitansi:</span> {{ $recipient->receipt_number ?? '-' }}<br>
                             <span class="font-medium">Ref Pembayaran:</span> {{ $recipient->payment_reference ?? '-' }}<br>
                             <span class="font-medium">No Perjanjian:</span> {{ $recipient->agreement_number ?? '-' }}<br>

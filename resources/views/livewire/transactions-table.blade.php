@@ -1,16 +1,4 @@
 <div class="space-y-6">
-    @php($rupiah = fn($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
-    @php(
-    $spjTypeLabel = fn($value) => match (strtoupper((string) $value)) {
-        'HONOR_PEGAWAI' => 'Honor Pegawai',
-        'JASA_LAINNYA' => 'Jasa Lainnya',
-        'BARANG' => 'Barang',
-        'KONSUMSI' => 'Konsumsi',
-        'PEMELIHARAAN' => 'Pemeliharaan',
-        'SPPD' => 'SPPD',
-        default => ucwords(strtolower(str_replace('_', ' ', (string) $value)))
-    }
-)
 
     <x-page-header title="Transaksi & SPJ"
         subtitle="Mulai dari transaksi, lengkapi data SPJ, lalu lanjutkan ke paket dokumen tanpa berpindah alur."
@@ -27,11 +15,11 @@
         <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 lg:grid-cols-4 sm:divide-x sm:divide-y-0">
             <x-stat-item label="Transaksi" :value="number_format($filteredStats->count, 0, ',', '.')" hint="Hasil filter aktif" value-class="text-[var(--ui-fg-strong)]"
                 icon="transaction" icon-class="text-[var(--ui-fg-strong)]" />
-            <x-stat-item label="Nilai Bruto" :value="$rupiah($filteredStats->gross)" hint="Total nilai hasil filter"
+            <x-stat-item label="Nilai Bruto" :value="\App\Support\SpjDisplay::rupiah($filteredStats->gross)" hint="Total nilai hasil filter"
                 value-class="text-[var(--theme-content-accent)]" icon="budget" icon-class="text-[var(--theme-content-accent)]" />
-            <x-stat-item label="Pajak" :value="$rupiah($filteredStats->tax)" hint="Total pajak hasil filter" value-class="text-amber-600"
+            <x-stat-item label="Pajak" :value="\App\Support\SpjDisplay::rupiah($filteredStats->tax)" hint="Total pajak hasil filter" value-class="text-amber-600"
                 icon="tax" icon-class="text-amber-600" />
-            <x-stat-item label="Dibayarkan" :value="$rupiah($filteredStats->net)" hint="Nilai bersih hasil filter"
+            <x-stat-item label="Dibayarkan" :value="\App\Support\SpjDisplay::rupiah($filteredStats->net)" hint="Nilai bersih hasil filter"
                 value-class="text-emerald-700" icon="balance" icon-class="text-emerald-700" />
         </div>
     </x-page-header>
@@ -164,14 +152,14 @@
                         <div class="mt-1 flex items-start justify-between gap-3 text-[13px]"
                             style="color: var(--ui-fg-muted)">
                             <span
-                                class="min-w-0 truncate">{{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category) . ' · ' : '' }}{{ $transaction->items_count }}
+                                class="min-w-0 truncate">{{ $transaction->spj_category ? \App\Support\SpjDisplay::typeLabel($transaction->spj_category) . ' · ' : '' }}{{ $transaction->items_count }}
                                 item ·
                                 {{ $transaction->effective_receipt_recipient_name ?: $transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}</span>
                             <div class="shrink-0 text-right">
                                 <p class="font-semibold" style="color: var(--ui-fg)">Total Transaksi:
-                                    {{ $rupiah($transaction->sourceValue('gross_amount')) }}</p>
+                                    {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</p>
                                 <p class="mt-0.5 font-semibold text-amber-700">Pajak:
-                                    {{ $rupiah($transaction->sourceValue('tax_total')) }}</p>
+                                    {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('tax_total')) }}</p>
                             </div>
                         </div>
                         <div
@@ -250,18 +238,18 @@
                                     <p class="mt-1 truncate text-[13px]" style="color: var(--ui-fg-muted)">
                                         {{ $transaction->sourceValue('activity_code') ?: '—' }} ·
                                         {{ $transaction->sourceValue('account_code') ?: 'Rekening belum tersedia' }} ·
-                                        {{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category) . ' · ' : '' }}{{ $transaction->items_count }}
+                                        {{ $transaction->spj_category ? \App\Support\SpjDisplay::typeLabel($transaction->spj_category) . ' · ' : '' }}{{ $transaction->items_count }}
                                         item ·
                                         {{ $transaction->effective_receipt_recipient_name ?: $transaction->sourceValue('recipient_name') ?: 'Penerima belum diisi' }}{{ $transaction->requires_reconciliation ? ' · Rekonsiliasi' : '' }}
                                     </p>
                                 </td>
                                 <td class="break-words px-3 py-2 text-right align-middle">
                                     <p class="text-sm font-semibold" style="color: var(--ui-fg)"><span
-                                            class="font-medium" style="color: var(--ui-fg-muted)">Total:</span> {{ $rupiah($transaction->sourceValue('gross_amount')) }}
+                                            class="font-medium" style="color: var(--ui-fg-muted)">Total:</span> {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}
                                     </p>
                                     <p class="mt-1 text-[13px] font-semibold text-amber-700"><span
                                             class="font-medium">Pajak:</span>
-                                        {{ $rupiah($transaction->sourceValue('tax_total')) }}</p>
+                                        {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('tax_total')) }}</p>
                                 </td>
                                 <td class="transaction-action-column px-3 py-2 align-middle">
                                     <div class="transaction-action-cell flex items-center justify-center"

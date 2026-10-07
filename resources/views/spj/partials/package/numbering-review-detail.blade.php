@@ -33,7 +33,7 @@
         <div><p class="font-semibold uppercase tracking-wide text-[var(--ui-fg-muted)]">Penerima jasa</p><p class="mt-1 leading-5 text-[var(--ui-fg)]">{{ $reviewTransaction->serviceRecipients->map(fn ($recipient) => $recipient->name)->implode(', ') ?: 'Belum ada penerima.' }}</p></div>
     @endif
     <div class="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--ui-line)] pt-2">
-        <p class="font-semibold text-[var(--ui-fg-muted)]">Bruto {{ $rupiah($reviewTransaction->sourceValue('gross_amount')) }}</p>
+        <p class="font-semibold text-[var(--ui-fg-muted)]">Bruto {{ \App\Support\SpjDisplay::rupiah($reviewTransaction->sourceValue('gross_amount')) }}</p>
         <a href="{{ route('spj.checklist', $package->id) }}" class="text-xs font-bold text-[var(--theme-content-accent)] hover:underline">Buka checklist paket →</a>
     </div>
 </div>

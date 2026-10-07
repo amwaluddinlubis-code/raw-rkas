@@ -1,5 +1,4 @@
 @php
-    $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
     $periodQuery = match ($mode) {
         'bulan' => ['month' => $periode],
         'triwulan' => ['quarter' => $periode],
@@ -62,7 +61,7 @@
                 </div>
             </section>
             <section aria-label="Ringkasan laporan" class="grid grid-cols-2 content-center gap-3 xl:col-span-2">
-                @foreach([['Paket sukses',$summary['count'] ?? 0,'text-[var(--theme-content-accent)]'],['Paket dibatalkan',$summary['cancelled_count'] ?? 0,'text-rose-700'],['Nilai bruto',$rupiah($summary['gross'] ?? 0),'text-[var(--ui-fg-strong)]'],['Nilai dibayarkan',$rupiah($summary['net'] ?? 0),'text-emerald-700']] as [$label,$value,$color])
+                @foreach([['Paket sukses',$summary['count'] ?? 0,'text-[var(--theme-content-accent)]'],['Paket dibatalkan',$summary['cancelled_count'] ?? 0,'text-rose-700'],['Nilai bruto',\App\Support\SpjDisplay::rupiah($summary['gross'] ?? 0),'text-[var(--ui-fg-strong)]'],['Nilai dibayarkan',\App\Support\SpjDisplay::rupiah($summary['net'] ?? 0),'text-emerald-700']] as [$label,$value,$color])
                     <div class="flex min-h-[4.25rem] h-full flex-row items-center justify-between gap-2 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-3 py-2">
                         <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">{{ $label }}</p><p class="text-right text-xl font-extrabold {{ $color }} [overflow-wrap:anywhere]">{{ $value }}</p>
                     </div>
@@ -101,9 +100,9 @@
                         <p class="font-semibold">{{ $vendorName ?: '-' }}</p>
                         <p class="text-xs text-[var(--ui-fg-muted)]">{{ $recipientName ?: '-' }}</p>
                     </td>
-                    <td class="px-4 py-2 text-right">{{ $rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
-                    <td class="px-4 py-2 text-right {{ $isCancelled ? 'text-[var(--ui-fg-muted)]' : 'text-amber-700' }}">{{ $rupiah($package->transaction->sourceValue('tax_total')) }}</td>
-                    <td class="px-4 py-2 text-right font-bold {{ $isCancelled ? 'text-[var(--ui-fg-muted)]' : 'text-emerald-700' }}">{{ $rupiah($package->transaction->sourceValue('net_amount')) }}</td>
+                    <td class="px-4 py-2 text-right">{{ \App\Support\SpjDisplay::rupiah($package->transaction->sourceValue('gross_amount')) }}</td>
+                    <td class="px-4 py-2 text-right {{ $isCancelled ? 'text-[var(--ui-fg-muted)]' : 'text-amber-700' }}">{{ \App\Support\SpjDisplay::rupiah($package->transaction->sourceValue('tax_total')) }}</td>
+                    <td class="px-4 py-2 text-right font-bold {{ $isCancelled ? 'text-[var(--ui-fg-muted)]' : 'text-emerald-700' }}">{{ \App\Support\SpjDisplay::rupiah($package->transaction->sourceValue('net_amount')) }}</td>
                     <td class="px-4 py-2 text-right">
                         <x-ui.action-menu label="Aksi" :drop-up="(($packages?->count() ?? 0) - $packageIndex) <= 3">
                             <button type="button" class="ui-action-menu-item w-full text-left" data-template-preview="{{ route('spj.preview-package', $package->id) }}" data-template-preview-pdf="{{ route('spj.preview-package-pdf', $package->id) }}" @if (! $isCancelled) data-template-download-pdf="{{ route('spj.preview-package-pdf', [$package->id, 'download' => 1]) }}" data-template-download-excel="{{ route('spj.preview-package-excel', $package->id) }}" @endif data-template-name="Pratinjau {{ $package->report_document_number }}">Preview dokumen</button>

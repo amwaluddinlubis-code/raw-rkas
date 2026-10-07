@@ -1,14 +1,4 @@
 <div class="space-y-6">
-    @php($rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.'))
-    @php($spjTypeLabel = fn ($value): string => match (strtoupper((string) $value)) {
-        'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-        'JASA_LAINNYA' => 'Jasa Lainnya',
-        'BARANG' => 'Barang',
-        'KONSUMSI' => 'Konsumsi',
-        'PEMELIHARAAN' => 'Pemeliharaan',
-        'SPPD' => 'SPPD',
-        default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
-    })
 
     <x-page-header
         title="Rekonsiliasi Data"
@@ -92,7 +82,7 @@
                         <div><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Data ARKAS / BKU</p><p class="mt-1 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->sourceValue('description') ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Penerima: {{ $transaction->sourceValue('recipient_name') ?: 'Belum tersedia' }}</p></div>
                         <div class="border-t border-[var(--ui-line)] pt-3"><p class="text-[11px] font-bold uppercase tracking-wide text-[var(--theme-content-accent)]">Data SPJ Operator</p><p class="mt-1 text-sm font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p></div>
                     </div>
-                    <div class="mt-3 flex items-center justify-between gap-3 border-t border-[var(--ui-line)] pt-3"><div><p class="text-xs text-[var(--ui-fg-muted)]">Nilai bruto</p><p class="font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->sourceValue('gross_amount')) }}</p></div><a href="{{ route('transactions.show', $transaction->id) }}" class="rounded-lg bg-[var(--theme-action-bg)] px-3 py-2 text-xs font-bold text-white hover:bg-[var(--theme-action-hover-bg)]">Tinjau detail →</a></div>
+                    <div class="mt-3 flex items-center justify-between gap-3 border-t border-[var(--ui-line)] pt-3"><div><p class="text-xs text-[var(--ui-fg-muted)]">Nilai bruto</p><p class="font-bold text-[var(--ui-fg-strong)]">{{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</p></div><a href="{{ route('transactions.show', $transaction->id) }}" class="rounded-lg bg-[var(--theme-action-bg)] px-3 py-2 text-xs font-bold text-white hover:bg-[var(--theme-action-hover-bg)]">Tinjau detail →</a></div>
                 </article>
             @empty
                 <div class="rounded-xl border border-dashed border-emerald-200 bg-emerald-50 p-8 text-center"><p class="font-bold text-emerald-800">Tidak ada transaksi yang perlu direkonsiliasi.</p><p class="mt-1 text-sm text-emerald-700">Semua transaksi pada konteks aktif saat ini tidak memiliki tanda perubahan sumber.</p></div>
@@ -108,8 +98,8 @@
                             <td class="px-5 py-2.5"><p class="font-mono font-bold text-[var(--theme-content-accent)]">{{ $transaction->sourceValue('no_bukti') }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->sourceCarbon()?->translatedFormat('d F Y') ?? 'Tanggal belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }} rincian</p></td>
                             <td class="px-4 py-2.5"><div class="flex max-w-48 flex-wrap gap-1.5">@if($transaction->requires_reconciliation)<x-ui.status-badge status="REQUIRES_RECONCILIATION" />@endif @if(strtoupper((string) $transaction->source_status) === 'SOURCE_MISSING')<x-ui.status-badge status="SOURCE_MISSING" />@endif @if($transaction->spjPackage)<x-ui.status-badge :status="$transaction->spjPackage->status" />@endif</div>@if($transaction->source_missing_since)<p class="mt-2 text-xs text-[var(--ui-fg-muted)]">Sejak {{ $transaction->source_missing_since->translatedFormat('d M Y H:i') }}</p>@endif</td>
                             <td class="max-w-sm px-4 py-2.5"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->sourceValue('description') ?: 'Uraian sumber tidak tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Penerima: {{ $transaction->sourceValue('recipient_name') ?: 'Belum tersedia' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->sourceValue('activity_code') ?: 'Tanpa kode kegiatan' }} · {{ $transaction->sourceValue('account_code') ?: 'Tanpa kode rekening' }}</p></td>
-                            <td class="max-w-sm px-4 py-2.5"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kategori: {{ $transaction->spj_category ? $spjTypeLabel($transaction->spj_category) : 'Belum dipilih' }}</p></td>
-                            <td class="whitespace-nowrap px-4 py-2.5 text-right font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($transaction->sourceValue('gross_amount')) }}</td>
+                            <td class="max-w-sm px-4 py-2.5"><p class="font-semibold text-[var(--ui-fg-strong)]">{{ $transaction->payment_description ?: 'Uraian SPJ belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kuitansi: {{ $transaction->effective_receipt_recipient_name ?: 'Belum diisi' }}</p><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kategori: {{ $transaction->spj_category ? \App\Support\SpjDisplay::typeLabel($transaction->spj_category) : 'Belum dipilih' }}</p></td>
+                            <td class="whitespace-nowrap px-4 py-2.5 text-right font-bold text-[var(--ui-fg-strong)]">{{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</td>
                             <td class="px-5 py-2.5 text-right"><a href="{{ route('transactions.show', $transaction->id) }}" class="inline-flex rounded-lg border border-[var(--theme-accent-soft)] bg-[var(--theme-accent-soft)] px-3 py-1.5 text-xs font-bold text-[var(--theme-content-accent)] hover:bg-[var(--theme-accent-soft)]">Tinjau detail →</a></td>
                         </tr>
                     @empty

@@ -1,7 +1,3 @@
-@php
-    $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-@endphp
-
 <section aria-labelledby="periodic-report-heading" class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-5 py-5 sm:px-6">
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div class="min-w-0">
@@ -124,15 +120,15 @@
                 <dl class="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
                     <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2.5">
                         <dt class="text-xs font-semibold text-[var(--ui-fg-muted)]">Nilai bruto</dt>
-                        <dd class="mt-0.5 text-base font-bold text-[var(--ui-fg-strong)]">{{ $rupiah($summary['gross']) }}</dd>
+                        <dd class="mt-0.5 text-base font-bold text-[var(--ui-fg-strong)]">{{ \App\Support\SpjDisplay::rupiah($summary['gross']) }}</dd>
                     </div>
                     <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2.5">
                         <dt class="text-xs font-semibold text-[var(--ui-fg-muted)]">Total pajak</dt>
-                        <dd class="mt-0.5 text-base font-bold text-amber-700">{{ $rupiah($summary['tax']) }}</dd>
+                        <dd class="mt-0.5 text-base font-bold text-amber-700">{{ \App\Support\SpjDisplay::rupiah($summary['tax']) }}</dd>
                     </div>
                     <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-3 py-2.5">
                         <dt class="text-xs font-semibold text-[var(--ui-fg-muted)]">Nilai dibayarkan</dt>
-                        <dd class="mt-0.5 text-base font-bold text-emerald-700">{{ $rupiah($summary['net']) }}</dd>
+                        <dd class="mt-0.5 text-base font-bold text-emerald-700">{{ \App\Support\SpjDisplay::rupiah($summary['net']) }}</dd>
                     </div>
                 </dl>
 

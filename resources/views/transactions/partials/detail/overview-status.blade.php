@@ -6,7 +6,7 @@
                 <div class="mt-2 flex flex-wrap items-center gap-2">
                     <x-ui.status-badge :status="$transaction->spjPackage->status" />
                     @if ($transaction->spj_category)
-                        <x-ui.badge variant="theme">{{ $spjTypeLabel($transaction->spj_category) }}</x-ui.badge>
+                        <x-ui.badge variant="theme">{{ \App\Support\SpjDisplay::typeLabel($transaction->spj_category) }}</x-ui.badge>
                     @endif
                     @if ($transaction->spjPackage->document_number)
                         <span class="font-mono text-sm font-bold text-[var(--ui-fg-strong)]">{{ $transaction->spjPackage->document_number }}</span>

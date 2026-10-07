@@ -52,7 +52,7 @@
                     'TGL_RKAS' => $transaction->rkas_date?->format('d-m-Y'),
                     'TGL_TRANSAKSI' => $transaction->sourceCarbon()?->format('d-m-Y'),
                     'NO_BUKTI' => $transaction->sourceValue('no_bukti'),
-                    'BRUTO' => $rupiah($transaction->sourceValue('gross_amount')),
+                    'BRUTO' => \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')),
                     'TGL_PESANAN' => $preflightOrderDate?->format('d-m-Y'),
                     'TGL_BAP' => $preflightBapDate?->format('d-m-Y'),
                     'TGL_BAST' => $preflightBastDate?->format('d-m-Y'),

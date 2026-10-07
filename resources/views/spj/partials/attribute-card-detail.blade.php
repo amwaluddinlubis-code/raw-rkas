@@ -101,7 +101,7 @@
                 @php $honors = $transaction->honors; @endphp
                 @if($honors->count())
                     @foreach($honors->take(3) as $honor)
-                        <div><span class="font-medium">{{ $honor->name }}:</span> {{ $honor->position }} - {{ $rupiah($honor->gross_amount) }} ({{ $honor->honor_months }} bln)</div>
+                        <div><span class="font-medium">{{ $honor->name }}:</span> {{ $honor->position }} - {{ \App\Support\SpjDisplay::rupiah($honor->gross_amount) }} ({{ $honor->honor_months }} bln)</div>
                     @endforeach
                     @if($honors->count() > 3)
                         <div class="text-[10px]">+ {{ $honors->count() - 3 }} penerima lain...</div>
@@ -115,7 +115,7 @@
                 @php $recipients = $transaction->serviceRecipients; @endphp
                 @if($recipients->count())
                     @foreach($recipients->take(3) as $recipient)
-                        <div><span class="font-medium">{{ $recipient->name }}:</span> {{ $recipient->service_type }} - {{ $rupiah($recipient->amount) }}</div>
+                        <div><span class="font-medium">{{ $recipient->name }}:</span> {{ $recipient->service_type }} - {{ \App\Support\SpjDisplay::rupiah($recipient->amount) }}</div>
                     @endforeach
                     @if($recipients->count() > 3)
                         <div class="text-[10px]">+ {{ $recipients->count() - 3 }} penerima lain...</div>

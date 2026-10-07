@@ -64,20 +64,12 @@ class SpjReportFilter extends Component
 
     private function resolvedPerPage(): int
     {
-        $perPage = $this->perPage === 'all' ? 10000 : (int) $this->perPage;
-
-        return in_array($perPage, [10, 15, 25, 50, 100, 10000], true) ? $perPage : 15;
+        return HasSpjListFilter::resolvedPerPageValue($this->perPage, [10, 15, 25, 50, 100, 10000]);
     }
 
     private function normalizePerPage(mixed $raw): int|string
     {
-        if ($raw === 'all') {
-            return 'all';
-        }
-
-        $perPage = (int) $raw;
-
-        return in_array($perPage, [10, 15, 25, 50, 100], true) ? $perPage : 15;
+        return HasSpjListFilter::normalizePerPageValue($raw, [10, 15, 25, 50, 100], true);
     }
 
     /** @return list<string> */

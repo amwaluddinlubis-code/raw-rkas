@@ -1,15 +1,5 @@
 <x-layouts.tailwind-app>
     @php
-        $rupiah = fn ($value) => 'Rp ' . number_format((float) $value, 0, ',', '.');
-        $spjTypeLabel = fn ($value) => match (strtoupper((string) $value)) {
-            'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-            'JASA_LAINNYA' => 'Jasa Lainnya',
-            'BARANG' => 'Barang',
-            'KONSUMSI' => 'Konsumsi',
-            'PEMELIHARAAN' => 'Pemeliharaan',
-            'SPPD' => 'SPPD',
-            default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
-        };
         $spjProgress = ($totalPackages ?? 0) > 0 ? min(100, (int) round((($numberedPackages ?? 0) / $totalPackages) * 100)) : 0;
         $packagesAwaitingNumber = max(0, ($totalPackages ?? 0) - ($numberedPackages ?? 0));
         $transactionsWithoutPackage = max(0, ($readyTransactions ?? 0) - ($totalPackages ?? 0));
@@ -165,7 +155,7 @@
                                             <x-ui.select id="spj-type" name="spj_category" class="mt-1">
                                                 <option value="">Pilih kategori</option>
                                                 @foreach(['BARANG','KONSUMSI','PEMELIHARAAN','JASA_LAINNYA','SPPD','HONOR_PEGAWAI'] as $value)
-                                                    <option value="{{ $value }}" @selected(in_array($selectedSpjType, ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) && in_array(strtoupper((string) $value), ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) || old('spj_category', $transaction->spj_category ?: $transaction->spj_category) === $value)>{{ $spjTypeLabel($value) }}</option>
+                                                    <option value="{{ $value }}" @selected(in_array($selectedSpjType, ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) && in_array(strtoupper((string) $value), ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) || old('spj_category', $transaction->spj_category ?: $transaction->spj_category) === $value)>{{ \App\Support\SpjDisplay::typeLabel($value) }}</option>
                                                 @endforeach
                                             </x-ui.select>
                                         </div>

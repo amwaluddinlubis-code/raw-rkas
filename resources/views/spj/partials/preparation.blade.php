@@ -56,7 +56,7 @@
                         <option value="">Semua jenis SPJ</option>
                         @foreach ($spjTypes ?? [] as $type)
                             <option value="{{ $type }}" @selected(($filters['spj_category'] ?? null) === $type)>
-                                {{ $spjTypeLabel($type) }}</option>
+                                {{ \App\Support\SpjDisplay::typeLabel($type) }}</option>
                         @endforeach
                     </x-ui.select>
                 </x-ui.field>
@@ -125,12 +125,12 @@
                         </td>
                         <td class="px-4 py-2.5">
                             <p class="text-xs font-bold text-[var(--theme-content-accent)]">
-                                {{ $spjTypeLabel($transaction->spj_category) }}</p>
+                                {{ \App\Support\SpjDisplay::typeLabel($transaction->spj_category) }}</p>
                             <p class="mt-1 text-xs text-[var(--ui-fg-muted)]">{{ $transaction->items_count }} rincian
                             </p>
                         </td>
                         <td class="whitespace-nowrap px-4 py-2.5 text-right font-semibold text-[var(--ui-fg-strong)]">
-                            {{ $rupiah($transaction->sourceValue('gross_amount')) }}</td>
+                            {{ \App\Support\SpjDisplay::rupiah($transaction->sourceValue('gross_amount')) }}</td>
                         <td class="px-5 py-2.5 text-right">
                             @if ($transaction->spjPackage)
                                 <x-ui.button variant="secondary" :href="route('spj.index', [

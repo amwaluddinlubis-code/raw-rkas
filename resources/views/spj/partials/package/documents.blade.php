@@ -126,6 +126,6 @@
         @endforeach
     @else
         <div class="px-4 py-6 text-center text-sm" style="color: var(--ui-fg-muted)">Belum ada template aktif yang
-            sesuai dengan kategori {{ $spjTypeLabel($packageCategory) }}.</div>
+            sesuai dengan kategori {{ \App\Support\SpjDisplay::typeLabel($packageCategory) }}.</div>
     @endif
 </section>

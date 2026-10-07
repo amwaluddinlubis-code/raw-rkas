@@ -12,15 +12,6 @@
         $notApplicable = $documentRequirements->filter(fn ($item) => ! $item['applicable'])->values();
         $doneCount = $passedChecks->count() + $readyRequirements->count();
         $isTransactionUrl = fn ($url) => str_starts_with((string) $url, $transactionUrl);
-        $spjTypeLabel = fn ($value): string => match (strtoupper((string) $value)) {
-            'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-            'JASA_LAINNYA' => 'Jasa Lainnya',
-            'BARANG' => 'Barang',
-            'KONSUMSI' => 'Konsumsi',
-            'PEMELIHARAAN' => 'Pemeliharaan',
-            'SPPD' => 'SPPD',
-            default => ucwords(strtolower(str_replace('_', ' ', (string) $value))),
-        };
     @endphp
     <div class="spj-semantic-workspace space-y-6">
         <x-page-header
@@ -34,7 +25,7 @@
             </x-slot:actions>
 
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-                <x-stat-item label="Jalur pengadaan" :value="$requirementSummary['channel']" :hint="$transaction->spj_category ? $spjTypeLabel($transaction->spj_category) : 'Tanpa kategori'" value-class="text-[var(--theme-content-accent)]" icon="work" icon-class="text-[var(--theme-content-accent)]" />
+                <x-stat-item label="Jalur pengadaan" :value="$requirementSummary['channel']" :hint="$transaction->spj_category ? \App\Support\SpjDisplay::typeLabel($transaction->spj_category) : 'Tanpa kategori'" value-class="text-[var(--theme-content-accent)]" icon="work" icon-class="text-[var(--theme-content-accent)]" />
                 <x-stat-item label="Dokumen wajib siap" :value="$requirementSummary['required_ready'].' / '.$requirementSummary['required_total']" :hint="$progress.'% lengkap'" value-class="text-slate-800" icon="document" icon-class="text-slate-800" />
                 <x-stat-item label="Masih menghalangi" :value="$blockingCount" :hint="$completedChecks.'/'.$totalChecks.' pemeriksaan lolos'" :value-class="$blockingCount > 0 ? 'text-amber-700' : 'text-emerald-700'" icon="warning" :icon-class="$blockingCount > 0 ? 'text-amber-700' : 'text-emerald-700'" />
                 <x-stat-item label="Status paket" :value="$package->status" :hint="$transaction->sourceCarbon()?->translatedFormat('d F Y') ?: 'Tanggal belum tersedia'" value-class="text-indigo-700" icon="archive" icon-class="text-indigo-700" />
