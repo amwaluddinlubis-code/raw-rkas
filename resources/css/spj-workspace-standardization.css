@@ -471,6 +471,32 @@ main[data-page="spj"] .spj-semantic-workspace div[x-show="tab === 'persiapan'"]>
     padding: .875rem !important;
 }
 
+/* Package and attribute filters share one compact operator toolbar. The
+   period mode and value stay on one line when the desktop width allows it. */
+.spj-semantic-workspace :is(.spj-package-filter-bar, .spj-attribute-filter-bar) {
+    align-items: end;
+}
+
+.spj-semantic-workspace :is(.spj-package-filter-bar, .spj-attribute-filter-bar) .ui-field {
+    min-width: 0;
+}
+
+.spj-semantic-workspace .spj-period-filter .ui-segment-group {
+    max-width: 100%;
+}
+
+@media (max-width: 1023px) {
+    .spj-semantic-workspace .spj-period-filter {
+        align-items: stretch;
+    }
+
+    .spj-semantic-workspace .spj-period-filter .ui-segment-group,
+    .spj-semantic-workspace .spj-period-filter .ui-daisy-select,
+    .spj-semantic-workspace .spj-period-filter .ui-select {
+        min-width: 0;
+    }
+}
+
 /* The preparation page is an operator queue: each summary link narrows the
    current filter context to the next kind of work without changing any data. */
 .spj-semantic-workspace .spj-work-queue-item {

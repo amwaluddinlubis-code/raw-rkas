@@ -24,6 +24,12 @@ class SpjPackageList extends Component
     #[Url(as: 'package_category', except: '')]
     public string $category = '';
 
+    #[Url(as: 'package_mode', except: 'semua')]
+    public string $mode = 'semua';
+
+    #[Url(as: 'package_period', except: '')]
+    public ?int $periode = null;
+
     public function mount(): void
     {
         $perPage = request()->integer('package_perPage', 15);
@@ -32,14 +38,31 @@ class SpjPackageList extends Component
 
     public function updating($property): void
     {
-        if (in_array($property, ['perPage', 'search', 'status', 'category'], true)) {
+        if (in_array($property, ['perPage', 'search', 'status', 'category', 'mode', 'periode'], true)) {
             $this->resetPage('package_page');
         }
     }
 
     public function clearFilters(): void
     {
-        $this->reset(['search', 'status', 'category']);
+        $this->reset(['search', 'status', 'category', 'mode', 'periode']);
+        $this->resetPage('package_page');
+    }
+
+    public function modes(): array
+    {
+        return [
+            'bulan' => 'Bulan',
+            'triwulan' => 'Triwulan',
+            'semester' => 'Semester',
+            'semua' => 'Semua',
+        ];
+    }
+
+    public function setMode(string $modeOption): void
+    {
+        $this->mode = $modeOption;
+        $this->periode = null;
         $this->resetPage('package_page');
     }
 
@@ -50,6 +73,8 @@ class SpjPackageList extends Component
                 'search' => $this->search,
                 'status' => $this->status,
                 'category' => $this->category,
+                'mode' => $this->mode,
+                'periode' => $this->periode,
             ]),
         ]);
     }

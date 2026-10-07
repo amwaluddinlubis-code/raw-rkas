@@ -16,6 +16,12 @@
     <span class="nav-label">Laporan SPJ</span>
 </a>
 
+<a class="app-nav {{ request()->routeIs('spj.quarter-recap') ? 'app-nav-active' : '' }}"
+    href="{{ route('spj.quarter-recap') }}" title="Rekap Triwulan">
+    <x-ui.icon name="budget" />
+    <span class="nav-label">Rekap Triwulan</span>
+</a>
+
 <div x-data="{ reportMenuOpen: {{ $isPeriodicReportRoute ? 'true' : 'false' }} }">
     <button type="button"
         @click="reportMenuOpen = !reportMenuOpen"

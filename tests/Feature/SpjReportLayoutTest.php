@@ -212,9 +212,12 @@ class SpjReportLayoutTest extends TestCase
         $blade = file_get_contents(resource_path('views/livewire/spj-preparation-filter.blade.php'));
 
         $this->assertIsString($blade);
-        $this->assertStringContainsString('sm:grid-cols-2 lg:grid-cols-6 lg:items-end', $blade);
+        $this->assertStringContainsString('sm:grid-cols-2 md:grid-cols-6', $blade);
+        $this->assertStringContainsString('lg:grid-cols-[minmax(10rem,1fr)_minmax(7rem,0.8fr)_minmax(7rem,0.8fr)_minmax(26rem,2fr)_auto_auto]', $blade);
+        $this->assertStringContainsString('wire:click="setMode(', $blade);
+        $this->assertStringContainsString('id="spj-preparation-per-page"', $blade);
         $this->assertStringContainsString('icon="refresh"', $blade);
-        $this->assertStringContainsString('>Reset Filter</x-ui.button>', $blade);
+        $this->assertStringContainsString('>Bersihkan</x-ui.button>', $blade);
     }
 
     public function test_spj_category_labels_are_title_case_in_display_surfaces(): void

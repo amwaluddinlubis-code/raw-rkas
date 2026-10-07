@@ -55,6 +55,15 @@ const enhanceSelect = (select) => {
     menu.append(searchWrap, options);
     wrapper.append(trigger, menu);
 
+    const positionMenu = () => {
+        const bounds = trigger.getBoundingClientRect();
+        const availableHeight = Math.max(180, window.innerHeight - bounds.bottom - 16);
+        menu.style.top = `${Math.round(bounds.bottom + 6)}px`;
+        menu.style.left = `${Math.round(bounds.left)}px`;
+        menu.style.width = `${Math.round(bounds.width)}px`;
+        menu.style.maxHeight = `${Math.round(availableHeight)}px`;
+    };
+
     const optionButtons = [];
     const renderLabel = () => {
         const selected = select.options[select.selectedIndex];
@@ -99,10 +108,21 @@ const enhanceSelect = (select) => {
         trigger.setAttribute('aria-expanded', 'false');
         search.value = '';
         optionButtons.forEach(({ button }) => { button.hidden = false; });
+        if (menu.parentNode !== wrapper) {
+            wrapper.appendChild(menu);
+            menu.classList.remove('ui-daisy-select-menu-portal');
+            menu.style.top = '';
+            menu.style.left = '';
+            menu.style.width = '';
+            menu.style.maxHeight = '';
+        }
     };
 
     const open = () => {
         if (select.disabled) return;
+        document.body.appendChild(menu);
+        menu.classList.add('ui-daisy-select-menu-portal');
+        positionMenu();
         menu.hidden = false;
         trigger.setAttribute('aria-expanded', 'true');
         search.focus();
@@ -124,8 +144,14 @@ const enhanceSelect = (select) => {
     });
     select.addEventListener('change', renderLabel);
     document.addEventListener('click', (event) => {
-        if (!wrapper.contains(event.target)) close();
+        if (!wrapper.contains(event.target) && !menu.contains(event.target)) close();
     });
+    window.addEventListener('resize', () => {
+        if (!menu.hidden) positionMenu();
+    });
+    window.addEventListener('scroll', () => {
+        if (!menu.hidden) positionMenu();
+    }, true);
 
     renderOptions();
     new MutationObserver(renderOptions).observe(select, { childList: true });

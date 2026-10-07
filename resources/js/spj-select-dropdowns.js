@@ -27,6 +27,7 @@ export const initializeAuditSelectDropdowns = () => initializeSelectDropdownsFor
 export const initializeDocumentsSelectDropdowns = () => initializeSelectDropdownsForPage('documents');
 export const initializeSyncedDataSelectDropdowns = () => initializeSelectDropdownsForPage('synced-data');
 export const initializeApplicationSelectDropdowns = () => initializeSelectDropdownsForPage('application');
+export const initializePublicSelectDropdowns = () => initializeDaisySelectDropdowns(document);
 
 export const initializePageSelectDropdowns = () => {
     const pageKey = document.querySelector('main[data-page]')?.dataset.page;
@@ -45,5 +46,10 @@ export const initializePageSelectDropdowns = () => {
         application: initializeApplicationSelectDropdowns,
     };
 
-    initializers[pageKey]?.();
+    if (pageKey) {
+        initializers[pageKey]?.();
+        return;
+    }
+
+    initializePublicSelectDropdowns();
 };

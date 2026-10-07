@@ -24,6 +24,12 @@ class SpjAttributeList extends Component
     #[Url(as: 'attribute_category', except: '')]
     public string $category = '';
 
+    #[Url(as: 'attribute_mode', except: 'semua')]
+    public string $mode = 'semua';
+
+    #[Url(as: 'attribute_period', except: '')]
+    public ?int $periode = null;
+
     public function mount(): void
     {
         $perPage = request()->integer('attribute_perPage', 15);
@@ -32,14 +38,31 @@ class SpjAttributeList extends Component
 
     public function updating($property): void
     {
-        if (in_array($property, ['perPage', 'search', 'status', 'category'], true)) {
+        if (in_array($property, ['perPage', 'search', 'status', 'category', 'mode', 'periode'], true)) {
             $this->resetPage('attribute_page');
         }
     }
 
     public function clearFilters(): void
     {
-        $this->reset(['search', 'status', 'category']);
+        $this->reset(['search', 'status', 'category', 'mode', 'periode']);
+        $this->resetPage('attribute_page');
+    }
+
+    public function modes(): array
+    {
+        return [
+            'bulan' => 'Bulan',
+            'triwulan' => 'Triwulan',
+            'semester' => 'Semester',
+            'semua' => 'Semua',
+        ];
+    }
+
+    public function setMode(string $modeOption): void
+    {
+        $this->mode = $modeOption;
+        $this->periode = null;
         $this->resetPage('attribute_page');
     }
 
@@ -50,6 +73,8 @@ class SpjAttributeList extends Component
                 'search' => $this->search,
                 'status' => $this->status,
                 'category' => $this->category,
+                'mode' => $this->mode,
+                'periode' => $this->periode,
             ]),
         ]);
     }

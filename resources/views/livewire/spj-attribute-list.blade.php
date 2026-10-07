@@ -16,8 +16,8 @@
         <h2 class="font-bold" style="color: var(--ui-fg)">Attribut SPJ</h2>
         <p class="mt-1 text-sm" style="color: var(--ui-fg-muted)">Pemeriksaan atribut Data Umum Dokumen dan Data Pengadaan per kategori SPJ.</p>
     </div>
-    <div class="spj-attribute-filter-bar grid gap-3 border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4 sm:grid-cols-2 lg:grid-cols-[minmax(16rem,1.5fr)_minmax(12rem,1fr)_minmax(12rem,1fr)_auto] lg:items-end">
-        <x-ui.field label="Cari paket" for="spj-attribute-search">
+    <div class="spj-attribute-filter-bar grid gap-2 border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-4 py-3 sm:grid-cols-2 md:grid-cols-6 lg:grid-cols-[minmax(10rem,1fr)_minmax(7rem,0.8fr)_minmax(7rem,0.8fr)_minmax(26rem,2fr)_auto_auto] lg:items-end">
+        <x-ui.field label="Cari paket" for="spj-attribute-search" class="md:col-span-6 lg:col-span-1">
             <div class="relative">
                 <x-ui.icon name="search" size="sm" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2" />
                 <x-ui.input id="spj-attribute-search" wire:model.live.debounce.300ms="search" placeholder="No. bukti, uraian, atau penerima..." class="!pl-9" />
@@ -46,8 +46,42 @@
                     ['value' => 'JASA_LAINNYA', 'label' => 'Jasa Lainnya'],
                 ]" placeholder="Semua kategori" search-placeholder="Cari kategori..." />
         </x-ui.field>
+        <x-ui.field label="Periode" for="spj-attribute-period" class="min-w-0 md:col-span-2 lg:col-span-1">
+            <div class="spj-period-filter flex min-w-0 flex-wrap items-end gap-2">
+                <div class="ui-segment-group flex shrink-0 max-w-full overflow-x-auto" role="group" aria-label="Mode periode">
+                @foreach($this->modes() as $modeOption => $label)
+                    <button type="button" wire:click="setMode('{{ $modeOption }}')"
+                        aria-pressed="{{ $mode === $modeOption ? 'true' : 'false' }}"
+                        class="whitespace-nowrap border border-[var(--ui-line)] bg-[var(--ui-surface-base)] px-2.5 py-1.5 text-xs transition {{ $loop->first ? '' : '-ml-px' }} {{ $mode === $modeOption ? 'font-bold text-[var(--theme-content-accent)]' : 'font-medium text-[var(--ui-fg-muted)] hover:text-[var(--ui-fg-strong)]' }}"
+                        style="{{ $mode === $modeOption ? 'box-shadow: inset 0 -3px 0 var(--theme-action-bg);' : '' }}">{{ $label }}</button>
+                @endforeach
+                </div>
+                {{-- Mode Semua tidak butuh dropdown (satu-satunya opsi "Semua
+                    periode" hanya menambah baris visual). --}}
+                @if($mode !== 'semua')
+                <x-ui.select id="spj-attribute-period" wire:model.live="periode" class="w-full min-w-0 flex-1 !py-1.5 !text-sm"
+                    style="width: auto;">
+                    <option value="">{{ 'Pilih '.$mode }}</option>
+                    @if($mode === 'semester')
+                        @foreach(range(1,2) as $semester)<option value="{{ $semester }}">Semester {{ $semester }}</option>@endforeach
+                    @elseif($mode === 'triwulan')
+                        @foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach
+                    @elseif($mode === 'bulan')
+                        @foreach(range(1,12) as $month)<option value="{{ $month }}">{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</option>@endforeach
+                @endif
+                </x-ui.select>
+                @endif
+            </div>
+        </x-ui.field>
+        <x-ui.field label="Baris" for="spj-attribute-per-page">
+            <x-ui.select id="spj-attribute-per-page" wire:model.live="perPage" aria-label="Baris per halaman"
+                class="!w-auto !py-1.5 !text-sm">
+                @foreach ([10, 15, 25, 50, 100] as $perPageOption)<option value="{{ $perPageOption }}"
+                    @selected($perPage == $perPageOption)>{{ $perPageOption }} baris</option>@endforeach
+            </x-ui.select>
+        </x-ui.field>
         <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="clearFilters" wire:loading.attr="disabled"
-            wire:target="clearFilters" class="w-full justify-center lg:w-auto">Bersihkan</x-ui.button>
+            wire:target="clearFilters" class="w-full justify-center md:self-end lg:w-auto">Bersihkan</x-ui.button>
     </div>
     <div class="grid gap-3 p-4 lg:hidden">
         @forelse($listedPackages as $listedPackage)

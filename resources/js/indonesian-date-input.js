@@ -37,17 +37,21 @@ export const parseIndonesianDate = (value) => {
 const visuallyHideNativeDateInput = (input) => {
     input.tabIndex = -1;
     input.setAttribute('aria-hidden', 'true');
+    // Input menutupi penuh wrapper (bukan kotak 1px): Chrome menambatkan
+    // popup showPicker() ke kotak elemen, sehingga kalender tampil tepat
+    // di bawah/atas field yang terlihat. pointer-events none + opacity 0
+    // menjaganya tak terlihat dan tak menghalangi klik.
     Object.assign(input.style, {
         position: 'absolute',
-        width: '1px',
-        height: '1px',
+        top: '0',
+        left: '0',
+        width: '100%',
+        height: '100%',
         padding: '0',
-        margin: '-1px',
-        overflow: 'hidden',
-        clip: 'rect(0, 0, 0, 0)',
-        whiteSpace: 'nowrap',
+        margin: '0',
         border: '0',
         opacity: '0',
+        pointerEvents: 'none',
     });
 };
 

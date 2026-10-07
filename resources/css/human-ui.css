@@ -129,6 +129,20 @@ main .ui-btn:hover {
     transform: translateY(-1px);
 }
 
+/* Tombol segmen filter periode setinggi kontrol form lain
+   (token --profile-control-height, mis. 44px) dengan label
+   terpusat vertikal — sebelumnya 40px sehingga tampak lebih
+   pendek dari input/select di sebelahnya.
+   Selektor html+main menaikkan spesifisitas di atas aturan
+   blanket `main button` agar token selalu menang. */
+html main .ui-segment-group > button,
+html main .ui-segment-group > a {
+    min-height: var(--profile-control-height) !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
 main button:not(.app-nav):focus-visible,
 main a:focus-visible,
 main input:focus-visible,

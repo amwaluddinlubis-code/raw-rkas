@@ -227,6 +227,8 @@ class GuiAudit09To13SourceReadinessTest extends TestCase
 
         $this->assertIsString($humanUi);
         $this->assertStringContainsString('main button:not(.app-nav):not(.ui-searchable-select-trigger)', $humanUi);
+        $this->assertStringContainsString('html main .ui-segment-group > button', $humanUi);
+        $this->assertStringContainsString('min-height: var(--profile-control-height) !important;', $humanUi);
     }
 
     public function test_mobile_cards_and_document_rows_can_shrink_below_min_content(): void
