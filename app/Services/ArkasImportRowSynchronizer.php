@@ -29,7 +29,6 @@ final class ArkasImportRowSynchronizer
     ): array {
         $db = DB::connection('school');
         $existing = $this->existingRows($db, $profile, $year);
-        $incomingKeys = [];
         $metrics = [
             'new' => 0,
             'changed' => 0,
@@ -41,7 +40,6 @@ final class ArkasImportRowSynchronizer
 
         foreach ($records as $record) {
             $sourceKey = $this->sourceKeys->resolve($record, $sourceKeyColumn);
-            $incomingKeys[$sourceKey] = true;
             $payload = json_encode($record, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE);
             $payloadHash = hash('sha256', $payload);
             $existingRow = $existing->get($sourceKey);
@@ -83,20 +81,6 @@ final class ArkasImportRowSynchronizer
                 ]);
             $metrics['changed']++;
             $metrics['written']++;
-        }
-
-        if ($profile->sync_mode === 'full_refresh') {
-            $removedKeys = $existing->keys()
-                ->reject(static fn (string $sourceKey): bool => isset($incomingKeys[$sourceKey]))
-                ->values();
-
-            if ($removedKeys->isNotEmpty()) {
-                $metrics['removed'] = $db->table('arkas_import_rows')
-                    ->where('profile_id', $profile->id)
-                    ->where('fiscal_year_id', $year->id)
-                    ->whereIn('source_key', $removedKeys->all())
-                    ->delete();
-            }
         }
 
         return $metrics;
