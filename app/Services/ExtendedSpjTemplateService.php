@@ -145,6 +145,12 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         try {
             IOFactory::createWriter($spreadsheet, 'Xlsx')->save($output);
             (new SpjUnresolvedPlaceholderGuard)->assertResolved((string) $template->document_type, $output, 'xlsx');
+
+            // Samakan dengan unduhan DOCX: arsipkan salinan ke folder dokumen.
+            // Berkas sementara tetap dipakai untuk respon unduhan agar pemanggil
+            // yang menghapus path respon (mis. pratinjau PDF) tidak menghapus arsip.
+            $fileName = $this->safeDownloadName($template->document_type.'-'.$package->document_number.'.xlsx');
+            app(DocumentStoragePathService::class)->persist($output, $package, $fileName);
         } catch (\Throwable $exception) {
             @unlink($output);
             throw $exception;
