@@ -9,9 +9,9 @@
             <h3 class="text-base font-bold text-[var(--ui-fg-strong)]">Daftar tabel database</h3>
             <p class="mt-1 max-w-2xl text-xs leading-5 text-[var(--ui-fg-muted)]">Pilih <strong>Buka</strong> untuk melihat struktur kolom dan contoh data. Semua data bersifat baca-saja.{{ $scope === 'central' ? ' Tabel kredensial, sesi, dan antrean disembunyikan.' : '' }}</p>
         </div>
-        <label class="w-full sm:max-w-xs">
+        <label class="w-full sm:max-w-xs" for="explorer-search">
             <span class="sr-only">Cari tabel</span>
-            <x-ui.input type="search" wire:model.live.debounce.250ms="search" placeholder="Cari nama atau kelompok…" class="w-full" />
+            <x-ui.input id="explorer-search" type="search" wire:model.live.debounce.250ms="search" placeholder="Cari nama atau kelompok…" class="w-full" />
         </label>
     </div>
 
