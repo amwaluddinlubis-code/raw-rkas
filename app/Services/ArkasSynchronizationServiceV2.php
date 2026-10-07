@@ -53,6 +53,7 @@ class ArkasSynchronizationServiceV2
      *
      * @param  array<string, mixed>|null  $beforeAggregate
      * @param  array<string, mixed>  $afterSnapshot
+     * @return bool  true bila sebuah event benar-benar dicatat
      */
     private function recordSourceChangedEvent(
         int $transactionId,
@@ -61,16 +62,16 @@ class ArkasSynchronizationServiceV2
         string $afterHash,
         ?array $beforeAggregate,
         array $afterSnapshot,
-    ): void {
+    ): bool {
         if ($beforeHash === null || $beforeHash === $afterHash || $beforeAggregate === null) {
-            return;
+            return false;
         }
 
         if (DB::connection('school')->table('transaction_source_reconciliations')
             ->where('transaction_id', $transactionId)
             ->where('source_hash', $afterHash)
             ->exists()) {
-            return;
+            return false;
         }
 
         $before = [
@@ -94,7 +95,7 @@ class ArkasSynchronizationServiceV2
         ];
 
         if ($this->snapshotsEqual($before, $afterSnapshot)) {
-            return;
+            return false;
         }
 
         DB::connection('school')->table('transaction_source_events')->insert([
@@ -107,6 +108,8 @@ class ArkasSynchronizationServiceV2
             'after_snapshot' => json_encode($afterSnapshot, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE),
             'created_at' => now(),
         ]);
+
+        return true;
     }
 
     /**
@@ -639,7 +642,22 @@ class ArkasSynchronizationServiceV2
                 : DB::connection('school')->table('transactions')->insertGetId($data + ['fiscal_year_id' => $year->id, 'status' => 'DRAFT', 'created_at' => now()]);
             $processedTransactionIds[] = $transactionId;
 
-            $this->recordSourceChangedEvent($transactionId, $runId, $existing->source_hash ?? null, $sourceHash, $mirrorBefore[$noBukti] ?? null, $afterSnapshot);
+            $sourceChangedEventRecorded = $this->recordSourceChangedEvent($transactionId, $runId, $existing->source_hash ?? null, $sourceHash, $mirrorBefore[$noBukti] ?? null, $afterSnapshot);
+
+            if (! $sourceChangedEventRecorded
+                && ! (bool) ($existing->requires_reconciliation ?? false)
+                && (bool) ($data['requires_reconciliation'] ?? false)
+            ) {
+                // Flag baru tanpa event perubahan sumber tidak bisa
+                // diselesaikan: resolve() butuh event terbaru dan
+                // dismissCrossYearArtifacts() menolak bila tak ada artefak,
+                // sehingga flag akan macet di UI. Koreksi: hanya perubahan
+                // yang tercatat sebagai event yang boleh menaikkan flag.
+                DB::connection('school')->table('transactions')->where('id', $transactionId)->update([
+                    'requires_reconciliation' => false,
+                    'updated_at' => now(),
+                ]);
+            }
 
             $itemQuery = DB::connection('school')->table('transaction_items')->where('transaction_id', $transactionId);
             $sourceItemIds
