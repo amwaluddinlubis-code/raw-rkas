@@ -197,6 +197,32 @@ class SpjQuarterNumberingUseCase
         return back()->with('success', "Penomoran triwulan selesai: {$numbered} nomor baru; {$skipped} dokumen dilewati karena sudah bernomor.");
     }
 
+    /** @return array{created:int,skipped:int} */
+    private function assignQuarterSingleGoodsNumbers(SpjPackage $package, string $documentType, string $schoolCode, ?string $npsn): array
+    {
+        $transaction = $package->transaction;
+        $targetField = $this->numberingPolicy->numberingDefinition($documentType)['number_target']['field'] ?? null;
+        $eventDate = $this->numberingPolicy->documentEventDateValue($transaction, $documentType);
+        if (! $eventDate || ! $targetField) {
+            return ['created' => 0, 'skipped' => 0];
+        }
+        $existing = $transaction->goods->pluck($targetField)->filter()->first();
+        if ($existing) {
+            $transaction->goods()->whereNull($targetField)->update([$targetField => $existing]);
+
+            return ['created' => 0, 'skipped' => 1];
+        }
+        $before = $package->documents()
+            ->where(['document_type' => $documentType, 'scope_key' => 'MAIN'])
+            ->where('status', '!=', 'CANCELLED')
+            ->whereNotNull('document_number')
+            ->exists();
+        $document = $this->numbers->assign($package, $documentType, Carbon::parse($eventDate), $schoolCode, 'MAIN', npsn: $npsn);
+        $transaction->goods()->whereNull($targetField)->update([$targetField => $document->document_number]);
+
+        return $before ? ['created' => 0, 'skipped' => 1] : ['created' => 1, 'skipped' => 0];
+    }
+
     /** @param Collection<int, SpjPackage> $packages @return array{created:int,skipped:int} */
     private function assignQuarterScopedNumbers(Collection $packages, string $documentType, string $schoolCode, ?string $npsn): array
     {
@@ -264,9 +290,18 @@ class SpjQuarterNumberingUseCase
 
         $targetField = $definition['number_target']['field'];
         $entries = collect();
+        $created = 0;
+        $skipped = 0;
         foreach ($packages as $package) {
             $receipts = $package->transaction->goodsReceipts->where('status', '!==', 'CANCELLED');
             if ($receipts->count() < 2) {
+                // Single-delivery fallback: satu nomor scope MAIN dari tanggal
+                // barang, sama seperti jalur tunggal assignAutomaticNumbers.
+                // Tanpa ini paket sekali-antar tidak pernah bernomor turunan.
+                $single = $this->assignQuarterSingleGoodsNumbers($package, $documentType, $schoolCode, $npsn);
+                $created += $single['created'];
+                $skipped += $single['skipped'];
+
                 continue;
             }
             foreach ($receipts as $receipt) {
@@ -286,8 +321,6 @@ class SpjQuarterNumberingUseCase
             }
         }
 
-        $created = 0;
-        $skipped = 0;
         foreach ($entries->sortBy('key')->values() as $entry) {
             $package = $entry['package'];
             $itemIds = $entry['receipt']->items->pluck('transaction_item_id')->all();
