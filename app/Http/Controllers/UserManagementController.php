@@ -79,7 +79,7 @@ class UserManagementController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user?->id)],
             'school_id' => ['nullable', 'exists:schools,id'],
             'role' => ['required', Rule::in(array_keys(User::roleOptions()))],
-            'password' => [$user ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
+            'password' => [$user ? 'nullable' : 'required', 'string', 'min:12', 'confirmed'],
         ]);
     }
 

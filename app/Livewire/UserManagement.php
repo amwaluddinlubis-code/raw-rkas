@@ -51,7 +51,7 @@ class UserManagement extends Component
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in(array_keys(User::roleOptions()))],
             'schoolId' => ['nullable', 'exists:schools,id'],
-            'password' => ['nullable', 'string', 'min:8', 'same:passwordConfirmation'],
+            'password' => ['nullable', 'string', 'min:12', 'same:passwordConfirmation'],
         ], [], [
             'schoolId' => 'sekolah',
             'passwordConfirmation' => 'ulangan kata sandi',
@@ -122,7 +122,7 @@ class UserManagement extends Component
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'role' => ['required', Rule::in(array_keys(User::roleOptions()))],
             'schoolId' => ['nullable', 'exists:schools,id'],
-            'password' => ['required', 'string', 'min:8', 'same:passwordConfirmation'],
+            'password' => ['required', 'string', 'min:12', 'same:passwordConfirmation'],
             'passwordConfirmation' => ['required', 'string'],
         ];
     }
