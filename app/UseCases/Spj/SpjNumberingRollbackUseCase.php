@@ -286,19 +286,26 @@ class SpjNumberingRollbackUseCase
             ->whereHas('package.transaction', fn ($query) => $query
                 ->where('fiscal_year_id', $yearId)
                 ->where('fund_source_id', $fundSourceId))
-            ->get(['document_type', 'sequence_number', 'document_date']);
+            ->get(['document_type', 'sequence_number', 'document_date', 'numbering_period_key']);
 
         DB::connection('school')->table('document_number_sequences')
             ->where('fiscal_year_id', $yearId)
             ->where('fund_source_id', $sequenceFundSourceId)
             ->delete();
 
+        // R6: grup memakai period_key yang tersimpan saat nomor diterbitkan,
+        // bukan reset_period format yang berlaku saat ini. Baris lama tanpa
+        // nilai tersimpan memakai perhitungan current sebagai fallback.
         $groups = $documents->groupBy(function (SpjDocument $document) use ($formats): string {
-            $format = $formats->get($document->document_type);
-            $period = $format?->reset_period ?? 'YEAR';
-            $date = $document->document_date ? Carbon::parse($document->document_date) : Carbon::now();
+            $periodKey = $document->numbering_period_key;
+            if (blank($periodKey)) {
+                $format = $formats->get($document->document_type);
+                $period = $format?->reset_period ?? 'YEAR';
+                $date = $document->document_date ? Carbon::parse($document->document_date) : Carbon::now();
+                $periodKey = $this->periodKey($period, $date);
+            }
 
-            return $document->document_type.'|'.$this->periodKey($period, $date);
+            return $document->document_type.'|'.$periodKey;
         });
 
         foreach ($groups as $key => $group) {
