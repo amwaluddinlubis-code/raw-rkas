@@ -21,7 +21,7 @@ class ReconcileArkasData extends Command
     private const UNIQUE_SCOPES = [
         'fiscal_years' => ['table' => 'fiscal_years', 'columns' => ['year', 'fund_source'], 'label' => 'Konteks tahun anggaran'],
         'account_references' => ['table' => 'account_references', 'columns' => ['fiscal_year_id', 'account_code'], 'label' => 'Referensi rekening'],
-        'activity_references' => ['table' => 'activity_references', 'columns' => ['fiscal_year_id', 'activity_code'], 'label' => 'Referensi kegiatan'],
+        'activity_references' => ['table' => 'activity_references', 'columns' => ['fiscal_year_id', 'fund_source_id', 'activity_code'], 'label' => 'Referensi kegiatan'],
         'arkas_periods' => ['table' => 'arkas_periods', 'columns' => ['source_period_id'], 'label' => 'Referensi periode'],
         'rkas' => ['table' => 'arkas_rkas_items', 'columns' => ['fiscal_year_id', 'source_rapbs_id'], 'label' => 'RKAS'],
         'bku' => ['table' => 'arkas_bku_rows', 'columns' => ['fiscal_year_id', 'source_kas_id'], 'label' => 'BKU'],
@@ -30,7 +30,7 @@ class ReconcileArkasData extends Command
         'transactions_source_key' => ['table' => 'transactions', 'columns' => ['fiscal_year_id', 'source_key'], 'label' => 'Identitas sumber transaksi'],
         'transaction_items' => ['table' => 'transaction_items', 'columns' => ['transaction_id', 'source_item_id'], 'label' => 'Item transaksi'],
         'employees' => ['table' => 'employees', 'columns' => ['source_type', 'source_key'], 'label' => 'Pegawai sumber'],
-        'business_partners' => ['table' => 'business_partners', 'columns' => ['name', 'npwp'], 'label' => 'Rekanan'],
+        'business_partners' => ['table' => 'business_partners', 'columns' => ['fund_source_id', 'name', 'npwp'], 'label' => 'Rekanan'],
         'import_rows' => ['table' => 'arkas_import_rows', 'columns' => ['profile_id', 'fiscal_year_id', 'source_key'], 'label' => 'Baris importer'],
     ];
 
