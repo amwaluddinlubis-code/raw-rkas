@@ -11,7 +11,7 @@ class SpjDocument extends Model
 
     protected $fillable = [
         'spj_package_id', 'document_template_id', 'replaces_document_id', 'document_type', 'scope_key',
-        'document_number', 'sequence_number', 'document_date', 'event_date', 'status',
+        'document_number', 'sequence_number', 'numbering_period_key', 'document_date', 'event_date', 'status',
         'is_late_entry', 'snapshot', 'template_snapshot', 'template_hash', 'rendered_hash', 'numbered_at', 'finalized_at', 'finalized_by',
         'cancelled_at', 'cancelled_by', 'cancellation_reason',
     ];
