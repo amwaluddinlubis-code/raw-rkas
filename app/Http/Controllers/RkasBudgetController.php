@@ -35,7 +35,12 @@ class RkasBudgetController extends Controller
                 ...app(ArkasMirrorBudgetService::class)->render($request, $yearId, $fundSourceId),
             ];
         }
-        $activityNames = $db->table('activity_references')->where('fiscal_year_id', $yearId)->get(['activity_code', 'activity_name'])->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
+        $activityNames = $db->table('activity_references')
+            ->where('fiscal_year_id', $yearId)
+            ->where(fn ($query) => $query->where('fund_source_id', $fundSourceId)->orWhereNull('fund_source_id'))
+            ->orderByRaw('fund_source_id IS NULL DESC')
+            ->get(['activity_code', 'activity_name', 'fund_source_id'])
+            ->mapWithKeys(fn ($row): array => [trim((string) $row->activity_code, '.') => $row->activity_name])->all();
         $stagedActivityNames = $db->table('arkas_import_rows as rows')
             ->join('arkas_import_profiles as profiles', 'profiles.id', '=', 'rows.profile_id')
             ->whereRaw("lower(profiles.source_table) = 'ref_kode'")

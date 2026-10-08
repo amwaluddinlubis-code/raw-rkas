@@ -260,6 +260,7 @@ class SpjDocumentNumberService
                 'document_template_id' => $templateId,
                 'document_number' => $number,
                 'sequence_number' => $next,
+                'numbering_period_key' => $periodKey,
                 'document_date' => $documentDate,
                 'event_date' => $documentDate,
                 'status' => 'NUMBERED',
