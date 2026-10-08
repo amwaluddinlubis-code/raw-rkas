@@ -306,8 +306,11 @@ class RkasBudgetFilter extends Component
         }
 
         $db = DB::connection('school');
+        $fundSourceId = $this->effectiveFundSourceId();
         $names = $db->table('activity_references')
             ->where('fiscal_year_id', $fiscalYearId)
+            ->where(fn ($query) => $query->where('fund_source_id', $fundSourceId)->orWhereNull('fund_source_id'))
+            ->orderByRaw('fund_source_id IS NULL DESC')
             ->pluck('activity_name', 'activity_code')
             ->mapWithKeys(fn ($name, $code): array => [trim((string) $code, '.') => (string) $name])
             ->all();

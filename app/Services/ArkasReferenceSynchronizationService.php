@@ -185,7 +185,7 @@ class ArkasReferenceSynchronizationService
             if (blank($item->activity_code)) {
                 continue;
             }
-            $db->table('activity_references')->updateOrInsert(['fiscal_year_id' => $year->id, 'activity_code' => $item->activity_code], [
+            $db->table('activity_references')->updateOrInsert(['fiscal_year_id' => $year->id, 'fund_source_id' => $item->fund_source_id, 'activity_code' => $item->activity_code], [
                 'source_ref_code' => $payload['ID_REF_KODE'] ?? null, 'activity_name' => $item->activity_name,
                 'updated_at' => $now, 'created_at' => $now,
             ]);
@@ -198,7 +198,7 @@ class ArkasReferenceSynchronizationService
                 continue;
             }
             $npwp = trim((string) ($payload['NPWP_REKANAN'] ?? ''));
-            $db->table('business_partners')->updateOrInsert(['name' => $name, 'npwp' => $npwp], [
+            $db->table('business_partners')->updateOrInsert(['fund_source_id' => $row->fund_source_id, 'name' => $name, 'npwp' => $npwp], [
                 'phone' => $payload['NO_TELP_TOKO'] ?? null, 'address' => $payload['ALAMAT_TOKO'] ?? null,
                 'is_business_entity' => $this->flag($payload['IS_BADAN_USAHA'] ?? false), 'is_arkas_synced' => true,
                 'payload' => json_encode($payload, JSON_THROW_ON_ERROR | JSON_INVALID_UTF8_SUBSTITUTE), 'updated_at' => $now, 'created_at' => $now,
