@@ -10,6 +10,9 @@
     $isA1 = $presentation === 'bos_a1' && isset($bosA1);
     $isK7b = $presentation === 'k7b' && isset($k7b);
     $isK7c = $presentation === 'k7c' && isset($k7c);
+    $isK7a = $presentation === 'k7a' && isset($k7a);
+    $isK7 = $presentation === 'k7' && isset($k7);
+    $isSptjm = $presentation === 'sptjm_doc' && isset($sptjm);
     $ledgerTitle = $presentation === 'cash_ledger' ? 'BUKU PEMBANTU KAS' : 'BUKU KAS UMUM (BKU)';
     $closingSubject = $presentation === 'cash_ledger' ? 'Buku Pembantu Kas' : 'Buku Kas Umum';
 @endphp
@@ -114,7 +117,79 @@
     <h1 class="doc-title">BERITA ACARA PEMERIKSAAN KAS</h1>
     <div class="doc-subtitle">Formulir BOS-K7C</div>
     @endif
-    @if(! $isRekap && ! $isA1 && ! $isK7b && ! $isK7c)
+    @if($isK7a)
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="flex:1;text-align:center;">
+            <h1 class="doc-title">REKAPITULASI REALISASI PENGGUNAAN DANA BOS</h1>
+            <div class="doc-subtitle">PERIODE {{ $summary['period_label'] }}</div>
+        </div>
+        <table style="border-collapse:collapse;font-size:11px;white-space:nowrap;">
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">BOS K7A</td></tr>
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Diisi oleh sekolah</td></tr>
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Dikirim ke TIM Manajemen BOS Kab/Kota</td></tr>
+        </table>
+    </div>
+    <table class="bku-identity-block page-break-avoid">
+        <tr>
+            <td>NPSN</td>
+            <td>: {{ $school->npsn ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td>Nama Sekolah</td>
+            <td>: {{ $school->name }}</td>
+        </tr>
+        <tr>
+            <td>Kecamatan</td>
+            <td>: {{ $school->district ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Kabupaten/Kota</td>
+            <td>: {{ $school->regency ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Provinsi</td>
+            <td>: {{ $school->province ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Sumber Dana</td>
+            <td>: {{ $fundSource }}</td>
+        </tr>
+    </table>
+    @endif
+    @if($isK7)
+    <h1 class="doc-title">REALISASI PENGGUNAAN DANA TIAP JENIS ANGGARAN</h1>
+    <div class="doc-subtitle">Format K7 — PERIODE {{ $summary['period_label'] }}</div>
+    <table class="bku-identity-block page-break-avoid">
+        <tr>
+            <td>Nama Sekolah</td>
+            <td>: {{ $school->name }}</td>
+        </tr>
+        <tr>
+            <td>NPSN</td>
+            <td>: {{ $school->npsn ?? '-' }}</td>
+        </tr>
+        <tr>
+            <td>Sumber Dana</td>
+            <td>: {{ $fundSource }}</td>
+        </tr>
+    </table>
+    @endif
+    @if($isSptjm)
+    <header class="doc-header">
+        <div class="school">{{ $school->name }}</div>
+        <div class="address">
+            {{ $school->address ?: '-' }}
+            @if($school->district || $school->regency)
+                · {{ collect([$school->district, $school->regency, $school->province])->filter()->implode(', ') }}
+            @endif
+        </div>
+        @if($school->npsn)
+            <div class="address">NPSN {{ $school->npsn }}</div>
+        @endif
+    </header>
+    <h1 class="doc-title">SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK</h1>
+    @endif
+    @if(! $isRekap && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
     <header class="doc-header">
         <div class="school">{{ $school->name }}</div>
         <div class="address">
@@ -416,7 +491,120 @@
     </table>
     @endif
 
-    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c)
+    @if($isK7a)
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Komponen Penggunaan Dana BOS</th>
+                <th>Jumlah (Rp)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($k7a['rows'] as $k7arow)
+                <tr>
+                    <td class="integer">{{ $k7arow['no'] }}</td>
+                    <td>{{ $k7arow['label'] }}</td>
+                    <td class="money">{{ $rupiah($k7arow['amount']) }}</td>
+                </tr>
+            @endforeach
+            <tr>
+                <td class="integer"></td>
+                <td><strong>JUMLAH</strong></td>
+                <td class="money"><strong>{{ $rupiah($k7a['total']) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    @if($k7a['unmapped'] > 0)
+    <div class="note">
+        Belanja Rp. {{ $rupiah($k7a['unmapped']) }} ({{ $k7a['unmappedCount'] }} baris kas) belum terpetakan ke komponen di atas dan tidak masuk JUMLAH — cocokkan manual dengan keluaran K7A resmi sebelum ditandatangani.
+    </div>
+    @endif
+    @endif
+
+    @if($isK7)
+    @php
+        $k7months = array_keys($k7['months']);
+    @endphp
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Jenis Anggaran</th>
+                @foreach($k7months as $k7month)
+                    <th>{{ $k7['months'][$k7month] }}</th>
+                @endforeach
+                <th>Jumlah (Rp)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @php $k7no = 0; @endphp
+            @foreach($k7['rows'] as $k7row)
+                @php $k7no++; @endphp
+                <tr>
+                    <td class="integer">{{ $k7no }}</td>
+                    <td>{{ $k7row['label'] }}</td>
+                    @foreach($k7months as $k7month)
+                        <td class="money">{{ $rupiah($k7row['months'][$k7month] ?? 0) }}</td>
+                    @endforeach
+                    <td class="money"><strong>{{ $rupiah($k7row['total']) }}</strong></td>
+                </tr>
+            @endforeach
+            <tr>
+                <td class="integer"></td>
+                <td><strong>JUMLAH</strong></td>
+                @foreach($k7months as $k7month)
+                    <td class="money"><strong>{{ $rupiah($k7['colTotals'][$k7month] ?? 0) }}</strong></td>
+                @endforeach
+                <td class="money"><strong>{{ $rupiah($k7['grand']) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    @if($k7['unmapped'] > 0)
+    <div class="note">
+        Belanja Rp. {{ $rupiah($k7['unmapped']) }} ({{ $k7['unmappedCount'] }} baris kas) berkode rekening di luar 5.1.01/5.1.02/5.2 dan tidak masuk JUMLAH — cocokkan manual dengan pembukuan sebelum ditandatangani.
+    </div>
+    @endif
+    <div class="statement">
+        <p>Lampiran Format K7 ini dibuat oleh sekolah sebagai pernyataan tanggung jawab atas realisasi penggunaan dana pada {{ $summary['period_label'] }} sebesar Rp. {{ $rupiah($k7['grand']) }} dan dikirim kepada Tim Manajemen BOS Kabupaten/Kota bersama administrasi BOS lainnya setiap triwulan.</p>
+        <p>Dokumen ini ditandatangani oleh Kepala Sekolah di atas materai dan disimpan di sekolah untuk diperlihatkan kepada pengawas, Tim Manajemen BOS Kabupaten/Kota, dan para pemeriksa lainnya apabila diperlukan.</p>
+    </div>
+    @endif
+
+    @if($isSptjm)
+    <table class="meta-table page-break-avoid">
+        <tr>
+            <td>Nama</td>
+            <td>: {{ $principalName }}</td>
+        </tr>
+        <tr>
+            <td>NIK</td>
+            <td>: .................................... (diisi manual)</td>
+        </tr>
+        <tr>
+            <td>Jabatan</td>
+            <td>: Kepala {{ $school->name }}</td>
+        </tr>
+        <tr>
+            <td>Alamat</td>
+            <td>: {{ $school->address ?: '-' }}</td>
+        </tr>
+    </table>
+    <div class="statement">
+        <p>Dengan ini menyatakan dengan sesungguhnya bahwa saya bertanggung jawab penuh atas penggunaan dana Bantuan Operasional Sekolah (BOS) Tahun Anggaran {{ $sptjm['year'] }} pada {{ $sptjm['period_label'] }} (penerimaan Rp. {{ $rupiah($sptjm['received']) }}, penggunaan Rp. {{ $rupiah($sptjm['used']) }}).</p>
+        <p>Apabila di kemudian hari, atas penggunaan dana dimaksud mengakibatkan kerugian negara, maka saya bersedia dituntut penggantian kerugian negara dimaksud sesuai dengan ketentuan peraturan perundang-undangan.</p>
+        <p>Bukti-bukti pengeluaran terkait penggunaan dana dimaksud saya simpan sesuai dengan ketentuan untuk kelengkapan administrasi dan keperluan pemeriksaan aparat pengawas fungsional dan/atau lainnya.</p>
+        <p>Demikian surat pernyataan ini dibuat dengan sesungguhnya.</p>
+    </div>
+    <table class="meta-table page-break-avoid">
+        <tr>
+            <td>Tempat / Tanggal</td>
+            <td>: {{ $sptjm['place'] }}, {{ $sptjm['signed_date'] }}</td>
+        </tr>
+    </table>
+    @endif
+
+    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
     <table class="meta-table page-break-avoid">
         <tr>
             <td>Tahun Anggaran</td>
@@ -446,7 +634,7 @@
         </div>
     @endif
 
-    @if(! $isLedger && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c)
+    @if(! $isLedger && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
     <table class="summary-table page-break-avoid">
         <thead>
             <tr>
@@ -600,8 +788,8 @@
         </tr>
     </table>
     {{-- Blok generik hanya bila belum ada blok khusus (BKU/pajak, rekap,
-        A-1, K7B/K7C, atau BPK Dinas yang membawa bloknya sendiri) agar tanda tangan
-        tidak tampil ganda. --}}
+        A-1, K7A/K7/K7B/K7C/SPTJM, atau BPK Dinas yang membawa bloknya sendiri)
+        agar tanda tangan tidak tampil ganda. --}}
     @elseif($isA1)
     <table class="signature-table">
         <tr>
@@ -670,7 +858,76 @@
             </td>
         </tr>
     </table>
-    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk && ! $isK7b && ! $isK7c)
+    @elseif($isK7a)
+    <table class="signature-table">
+        <tr>
+            <td>
+                Bendahara BOS
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+            <td>
+                Mengetahui,<br>
+                Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+            <td>
+                Komite Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">........................................</div>
+            </td>
+        </tr>
+    </table>
+    @elseif($isK7)
+    <table class="signature-table">
+        <tr>
+            <td>
+                Bendahara BOS
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+            <td>
+                Mengetahui,<br>
+                Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+            <td>
+                Komite Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">........................................</div>
+            </td>
+        </tr>
+    </table>
+    @elseif($isSptjm)
+    <table class="signature-table">
+        <tr>
+            <td>
+                {{ $sptjm['place'] }}, {{ $sptjm['signed_date'] }}<br>
+                Kepala {{ $school->name }}
+                <div class="signature-space"></div>
+                <div>Materai 10.000</div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
     <table class="signature-table">
         <tr>
             <td>

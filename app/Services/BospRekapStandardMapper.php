@@ -126,4 +126,128 @@ final class BospRekapStandardMapper
 
         return isset($parts[1]) && (int) $parts[1] === 12;
     }
+
+    /**
+     * Komponen BOS K7A (12 baris ARKAS resmi; 2 khusus SMK ditandai).
+     * Sumber label: arkas.kemendikdasmen.go.id/komponenbos + Juknis BOSP
+     * 2025 (12 komponen BOS Reguler). Sekolah SD/SMP memakai 10 baris
+     * non-SMK; baris SMK tetap tampil bernilai nol agar formulir utuh.
+     *
+     * @return array<int,array{no:int,label:string,smk:bool}>
+     */
+    public static function k7aComponents(): array
+    {
+        return [
+            1 => ['no' => 1, 'label' => 'Penerimaan Peserta Didik Baru (PPDB)', 'smk' => false],
+            2 => ['no' => 2, 'label' => 'Pengembangan Perpustakaan', 'smk' => false],
+            3 => ['no' => 3, 'label' => 'Kegiatan Pembelajaran dan Ekstrakurikuler', 'smk' => false],
+            4 => ['no' => 4, 'label' => 'Kegiatan Asesmen/Evaluasi Pembelajaran', 'smk' => false],
+            5 => ['no' => 5, 'label' => 'Administrasi Kegiatan Sekolah', 'smk' => false],
+            6 => ['no' => 6, 'label' => 'Pengembangan Profesi Guru dan Tenaga Kependidikan', 'smk' => false],
+            7 => ['no' => 7, 'label' => 'Langganan Daya dan Jasa', 'smk' => false],
+            8 => ['no' => 8, 'label' => 'Pemeliharaan Sarana dan Prasarana Sekolah', 'smk' => false],
+            9 => ['no' => 9, 'label' => 'Penyediaan Alat Multi Media Pembelajaran', 'smk' => false],
+            10 => ['no' => 10, 'label' => 'Bursa Kerja / Prakerin / PKL (khusus SMK)', 'smk' => true],
+            11 => ['no' => 11, 'label' => 'Uji Kompetensi dan Sertifikasi (khusus SMK)', 'smk' => true],
+            12 => ['no' => 12, 'label' => 'Pembayaran Honor', 'smk' => false],
+        ];
+    }
+
+    /**
+     * Komponen K7A untuk satu baris belanja, atau null bila tak terpetakan.
+     *
+     * Mirror tidak membawa field komponen, sehingga pemetaan memakai kata
+     * kunci NAMA_KEGIATAN/uraian dari data nyata (contoh: "Pelaksanaan
+     * Pendaftaran Murid Baru (PMB)", "Pengadaan buku pengayaan dan
+     * referensi"). Urutan pemeriksaan disengaja: honor dan administrasi
+     * didahulukan agar "honor Tenaga Kependidikan" tidak jatuh ke
+     * Pengembangan Profesi GTK dan "bahan habis pakai ... administrasi
+     * (termasuk ATK)" tidak jatuh ke Pembelajaran. Frasa penafian
+     * "diluar komponen ..." menonaktifkan kata kunci komponen tersebut
+     * (kasus nyata: perlengkapan "diluar komponen penyediaan alat
+     * multimedia"). Aturan ini RVR sampai dibandingkan dengan keluaran
+     * K7A resmi ARKAS/dinas; baris tak terpetakan selalu dilaporkan
+     * eksplisit pada payload agar JUMLAH dapat direkonsiliasi.
+     */
+    public static function k7aComponentForActivity(?string $activityName, ?string $uraian = null, ?string $accountCode = null): ?int
+    {
+        $haystack = mb_strtolower(trim((string) $activityName).' '.trim((string) $uraian));
+        if ($haystack === '') {
+            return null;
+        }
+
+        $denies = str_contains($haystack, 'diluar komponen') || str_contains($haystack, 'di luar komponen');
+
+        $has = static function (array $needles) use ($haystack): bool {
+            foreach ($needles as $needle) {
+                if (str_contains($haystack, $needle)) {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
+        // 12. Honor didahulukan (mengalahkan kata "guru"/"tenaga kependidikan").
+        if ($has(['honor', 'honorarium', 'gaji ', 'gaji/', 'insentif', 'tunjangan '])) {
+            return 12;
+        }
+
+        // 1. PPDB.
+        if ($has(['ppdb', 'pendaftaran murid baru', 'penerimaan murid baru', 'penerimaan peserta didik', 'penerimaan siswa baru', 'mpls', 'masa pengenalan lingkungan'])) {
+            return 1;
+        }
+
+        // 2. Perpustakaan.
+        if ($has(['perpustakaan', 'buku teks', 'buku pengayaan', 'buku referensi', 'buku bacaan', 'pojok baca', 'minat baca'])) {
+            return 2;
+        }
+
+        // 4. Asesmen sebelum pembelajaran generik (kata "penilaian" ambigu).
+        if ($has(['asesmen', 'penilaian sumatif', 'ulangan tengah semester', 'ulangan akhir semester', 'ulangan dan ujian', 'kisi-kisi', 'penyusunan soal', 'ijazah'])) {
+            return 4;
+        }
+
+        // 5. Administrasi sebelum pembelajaran generik (kasus "mendukung pembelajaran dan administrasi").
+        if ($has(['administrasi', 'tata kelola', 'rkjm', 'rkt ', 'rkas', 'visi misi', 'perencanaan program', 'surat-menyurat', 'surat menyurat', 'penggandaan', 'stempel', 'atk', 'laporan keuangan', 'laporan bos', 'laporan dan/', 'ketatausahaan'])) {
+            return 5;
+        }
+
+        // 6. Profesi GTK.
+        if ($has(['pelatihan', 'bimbingan teknis', 'bimtek', 'workshop', 'in house training', 'komunitas belajar', 'kkg', 'mgmp', 'pengembangan profesi', 'peningkatan kompetensi pendidik', 'penguatan kompetensi guru'])) {
+            return 6;
+        }
+
+        // 7. Daya dan jasa.
+        if ($has(['langganan', 'internet', 'wifi', 'listrik', 'telepon', 'rekening air', 'daya dan jasa'])) {
+            return 7;
+        }
+
+        // 8. Pemeliharaan.
+        if ($has(['pemeliharaan', 'perawatan sekolah', 'rehab', 'renovasi', 'sanitasi', 'kebersihan', 'perbaikan sarana', 'perbaikan prasarana', 'pengecatan', 'lahan, bangunan'])) {
+            return 8;
+        }
+
+        // 9. Multimedia (dangkal bila ada penafian eksplisit).
+        if (! $denies && $has(['multimedia', 'komputer', 'laptop', 'notebook', 'printer', 'proyektor', 'cctv', 'chromebook', 'tablet pembelajaran'])) {
+            return 9;
+        }
+
+        // 10. BKK/Prakerin (SMK).
+        if ($has(['prakerin', 'praktik kerja', 'pkl ', 'bursa kerja', 'pemagangan', 'kebekerjaan'])) {
+            return 10;
+        }
+
+        // 11. Uji kompetensi (SMK).
+        if ($has(['uji kompetensi', 'sertifikasi', 'toeic', 'uji kemahiran'])) {
+            return 11;
+        }
+
+        // 3. Pembelajaran & ekstrakurikuler (generik, terakhir).
+        if ($has(['pembelajaran', 'ekstrakurikuler', 'ekskul', 'pesantren kilat', 'lomba', 'keagamaan', 'pramuka', 'peringatan hari', 'hari besar', 'pentas seni', 'olahraga siswa', 'bahan habis pakai'])) {
+            return 3;
+        }
+
+        return null;
+    }
 }

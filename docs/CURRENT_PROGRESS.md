@@ -1,9 +1,32 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-07** (K7B+K7C resmi; generator Format BOS A-1; sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-08** (K7A + Format K7 + SPTJM resmi; K7B+K7C resmi; generator Format BOS A-1; sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
+
+## BOS K7A + Format K7 + SPTJM resmi (2026-10-08)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR, AKURASI PER-KOMPONEN K7A RVR**.
+
+Tahap 2–4 perbaikan bertahap K7 & SPTJM. `bos_k7a` keluar dari
+`activity_summary` generik menjadi presenter 12 komponen ARKAS resmi
+(2 baris SMK ditandai) dengan pemetaan kata kunci NAMA_KEGIATAN
+(`BospRekapStandardMapper::k7aComponentForActivity`) — mirror terbukti
+tidak membawa field komponen (audit read-only payload tenant 10208183)
+— plus rekonsiliasi `total + unmapped = belanja` yang selalu eksplisit.
+`format_k7` menjadi tabel realisasi per jenis anggaran (prefix rekening
+5.1.01/5.1.02/5.2) per bulan scope + JUMLAH + blok Lampiran + TTD
+3 pihak. `sptjm` menjadi dokumen redaksi resmi dengan nominal
+penerimaan/penggunaan periode + TTD tunggal Kepsek + materai. Tidak ada
+perubahan registry/scope/tenant/numbering/sync.
+
+Regression: `K7aFormatK7SptjmReportTest` 8 passed / 71 assertions
+(mapper, data + rekonsiliasi, print route K7A/K7/SPTJM, excel),
+Printable + guard presenter baru, K7bK7c 5 passed, BosA1 4 passed,
+filter PeriodicReport 13 passed, BkuOfficialLedger 12 passed; Pint
+passed; `view:cache` + `git diff --check` bersih. Browser/PDF aktual
+tetap RVR; per-komponen K7A menunggu pembanding keluaran resmi.
 
 ## Register Penutupan Kas K7B + Berita Acara K7C resmi (2026-10-07)
 

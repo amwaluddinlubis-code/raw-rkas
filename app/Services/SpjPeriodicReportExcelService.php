@@ -27,6 +27,12 @@ final class SpjPeriodicReportExcelService
             $this->writeK7b($report, $payload);
         } elseif (($payload['presentation'] ?? '') === 'k7c') {
             $this->writeK7c($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'k7a') {
+            $this->writeK7a($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'k7') {
+            $this->writeK7($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'sptjm_doc') {
+            $this->writeSptjm($report, $payload);
         } else {
             $this->writeTable($report, $payload);
         }
@@ -238,6 +244,81 @@ final class SpjPeriodicReportExcelService
         $this->styleHeader($sheet, 'A1:B1');
         $this->formatMoneyRange($sheet, 'B4:B9');
         $sheet->getStyle('A1:B'.count($rows))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $this->autoSize($sheet, 2);
+    }
+
+    private function writeK7a(object $sheet, array $payload): void
+    {
+        $data = $payload['k7a'];
+        $sheet->fromArray([['No', 'Komponen Penggunaan Dana BOS', 'Jumlah (Rp)']], null, 'A1');
+
+        $rowNumber = 2;
+        foreach ($data['rows'] as $row) {
+            $sheet->fromArray([[$row['no'], $row['label'], (float) $row['amount']]], null, 'A'.$rowNumber++);
+        }
+
+        $sheet->fromArray([['', 'JUMLAH', (float) $data['total']]], null, 'A'.$rowNumber);
+        $this->styleHeader($sheet, 'A1:C1');
+        $this->formatMoneyRange($sheet, 'C2:C'.$rowNumber);
+        $sheet->getStyle('A'.$rowNumber.':C'.$rowNumber)->getFont()->setBold(true);
+        $sheet->freezePane('A2');
+        $this->autoSize($sheet, 3);
+    }
+
+    private function writeK7(object $sheet, array $payload): void
+    {
+        $data = $payload['k7'];
+        $months = array_keys($data['months']);
+        $headers = ['No', 'Jenis Anggaran'];
+        foreach ($months as $month) {
+            $headers[] = $data['months'][$month];
+        }
+        $headers[] = 'Jumlah (Rp)';
+        $sheet->fromArray([$headers], null, 'A1');
+
+        $rowNumber = 2;
+        $no = 0;
+        foreach ($data['rows'] as $row) {
+            $no++;
+            $values = [$no, $row['label']];
+            foreach ($months as $month) {
+                $values[] = (float) ($row['months'][$month] ?? 0);
+            }
+            $values[] = (float) $row['total'];
+            $sheet->fromArray([$values], null, 'A'.$rowNumber++);
+        }
+
+        $totals = ['', 'JUMLAH'];
+        foreach ($months as $month) {
+            $totals[] = (float) ($data['colTotals'][$month] ?? 0);
+        }
+        $totals[] = (float) $data['grand'];
+        $sheet->fromArray([$totals], null, 'A'.$rowNumber);
+
+        $lastColumn = $this->columnLetter(count($headers));
+        $this->styleHeader($sheet, 'A1:'.$lastColumn.'1');
+        $this->formatMoneyRange($sheet, 'C2:'.$lastColumn.$rowNumber);
+        $sheet->getStyle('A'.$rowNumber.':'.$lastColumn.$rowNumber)->getFont()->setBold(true);
+        $sheet->freezePane('A2');
+        $this->autoSize($sheet, count($headers));
+    }
+
+    private function writeSptjm(object $sheet, array $payload): void
+    {
+        $data = $payload['sptjm'];
+        $rows = [
+            ['SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK'],
+            ['Tahun Anggaran', $data['year']],
+            ['Periode', $data['period_label']],
+            [],
+            ['Penerimaan dana BOS periode ini', (float) $data['received']],
+            ['Penggunaan dana BOS periode ini', (float) $data['used']],
+            ['Tempat / Tanggal', $data['place'].', '.$data['signed_date']],
+        ];
+
+        $sheet->fromArray($rows, null, 'A1');
+        $this->styleHeader($sheet, 'A1:B1');
+        $this->formatMoneyRange($sheet, 'B5:B6');
         $this->autoSize($sheet, 2);
     }
 
