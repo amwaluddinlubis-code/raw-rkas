@@ -31,6 +31,15 @@ fiscal_year_id
 + period_key
 ```
 
+> **Sentinel fund_source_id = 0 (2026-10-08, K2).** Kolom
+> `document_number_sequences.fund_source_id` adalah NOT NULL; transaksi
+> tanpa sumber dana (NULL legacy) dinormalisasi ke sentinel `0` oleh
+> `SpjDocumentNumberService::NULL_FUND_SOURCE_SENTINEL` di seluruh
+> pembaca/penulis tabel sequence. SQLite menganggap NULL sebagai nilai
+> distinct dalam unique index sehingga grup NULL tidak terlindungi dari
+> race tanpa sentinel ini. Nilai 0 aman karena id `fund_sources` selalu
+> positif; kolom `transactions.fund_source_id` tetap nullable.
+
 Preview/download tidak boleh mengalokasikan nomor atau sequence.
 
 ---
