@@ -31,7 +31,7 @@ fiscal_year_id
 + period_key
 ```
 
-> **Sentinel fund_source_id = 0 (2026-10-07, K2).** Kolom
+> **Sentinel fund_source_id = 0 (2026-10-08, K2).** Kolom
 > `document_number_sequences.fund_source_id` adalah NOT NULL; transaksi
 > tanpa sumber dana (NULL legacy) dinormalisasi ke sentinel `0` oleh
 > `SpjDocumentNumberService::NULL_FUND_SOURCE_SENTINEL` di seluruh

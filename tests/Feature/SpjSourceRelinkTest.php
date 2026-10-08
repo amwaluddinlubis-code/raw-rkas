@@ -213,15 +213,15 @@ class SpjSourceRelinkTest extends TestCase
                 'year' => 2026, 'fund_source' => 'BOSP', 'created_at' => now(), 'updated_at' => now(),
             ]);
             $transactionId = DB::connection('school')->table('transactions')->insertGetId([
-                'fiscal_year_id' => $yearId, 'no_bukti' => 'BKU-1', 'transaction_date' => '2026-01-05',
+                'fiscal_year_id' => $yearId, 'id_kas_umum' => 'BKU-1',
                 'source_status' => 'SOURCE_MISSING', 'created_at' => now(), 'updated_at' => now(),
             ]);
             $itemA = DB::connection('school')->table('transaction_items')->insertGetId([
-                'transaction_id' => $transactionId, 'source_item_id' => 'OLD-A', 'description' => 'ATK',
+                'transaction_id' => $transactionId, 'source_item_id' => 'OLD-A', 'item_description' => 'ATK',
                 'source_status' => 'SOURCE_MISSING', 'created_at' => now(), 'updated_at' => now(),
             ]);
             $itemB = DB::connection('school')->table('transaction_items')->insertGetId([
-                'transaction_id' => $transactionId, 'source_item_id' => 'OLD-B', 'description' => 'Tinta',
+                'transaction_id' => $transactionId, 'source_item_id' => 'OLD-B', 'item_description' => 'Tinta',
                 'source_status' => 'SOURCE_MISSING', 'created_at' => now(), 'updated_at' => now(),
             ]);
 

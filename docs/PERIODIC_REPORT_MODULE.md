@@ -189,7 +189,66 @@ Implementasi: `SpjPeriodicReportPrintService::k7bData/k7cData`, cabang
 writeK7b/writeK7c`. Status visual/runtime: RVR sampai QA browser/PDF
 aktual dijalankan.
 
-## Status verifikasi (2026-10-07)
+## BOS K7A (rekapitulasi per komponen BOS, 2026-10-08)
+
+Presentasi `k7a` (`bos_k7a`, semua scope berperiode + tahunan) mengikuti
+daftar 12 komponen ARKAS resmi (`arkas.kemendikdasmen.go.id/komponenbos`;
+2 baris khusus SMK ditandai dan tetap tampil bernilai nol agar formulir
+utuh): tabel No/Komponen/Jumlah + JUMLAH, kop BOS K7A, identitas
+sekolah + sumber dana, dan tanda tangan Bendahara + Kepsek + Komite
+Sekolah (nama komite isian manual).
+
+Aturan nilai: baris BELANJA mirror per NAMA_KEGIATAN RKAS via
+`BospRekapStandardMapper::k7aComponentForActivity` (mirror tidak membawa
+field komponen — diverifikasi tidak ada kunci KOMPONEN pada payload
+`kas_umum`/`rapbs`/`rapbs_periode` tenant nyata 10208183). Prioritas kata
+kunci disengaja: honor didahulukan (agar "honor Tenaga Kependidikan"
+tidak jatuh ke Profesi GTK), administrasi didahulukan atas
+"pembelajaran" generik, dan frasa penafian "diluar komponen ..."
+menonaktifkan kata kunci komponen tersebut. Baris tak terpetakan
+dilaporkan eksplisit (`unmapped` + jumlah baris) sehingga
+`total + unmapped = belanja` selalu dapat direkonsiliasi.
+
+Status: **bentuk formulir mengikuti acuan resmi; akurasi per-komponen
+RVR** sampai dibandingkan dengan keluaran K7A resmi ARKAS/dinas.
+
+Implementasi: `SpjPeriodicReportPrintService::k7aData/k7aActivityMap`,
+cabang `k7a` di `document.blade.php`,
+`SpjPeriodicReportExcelService::writeK7a`.
+
+## Format K7 (realisasi per jenis anggaran + lampiran, 2026-10-08)
+
+Presentasi `k7` (`format_k7`, triwulan/semester/tahunan):
+"REALISASI PENGGUNAAN DANA TIAP JENIS ANGGARAN" per jenis
+(Belanja Pegawai 5.1.01 | Barang dan Jasa 5.1.02 | Modal 5.2.*) dengan
+kolom per bulan dalam scope + Jumlah, JUMLAH, blok Lampiran Format K7
+(pernyataan tanggung jawab + pengiriman ke Tim Manajemen BOS Kab/Kota +
+materai), dan tanda tangan Bendahara + Kepsek + Komite Sekolah.
+
+Aturan jenis dari prefix KODE_REKENING klasifikasi APBD baku; rekening
+di luar ketiga prefix dilaporkan sebagai unmapped, bukan dipaksakan.
+Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
+
+Implementasi: `SpjPeriodicReportPrintService::k7Data/k7JenisForAccount`,
+cabang `k7` di `document.blade.php`,
+`SpjPeriodicReportExcelService::writeK7`.
+
+## SPTJM (2026-10-08)
+
+Presentasi `sptjm_doc` (`sptjm`, semua scope): kop sekolah, judul
+SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK, identitas penanda tangan
+(Kepsek; NIK isian manual), redaksi resmi (tanggung jawab penuh atas
+penggunaan dana + nominal penerimaan/penggunaan periode dari mirror,
+kesediaan ganti rugi kerugian negara, penyimpanan bukti untuk aparat
+pengawas), tempat/tanggal, dan tanda tangan tunggal Kepsek +
+"Materai 10.000". Status visual/runtime: RVR sampai QA browser/PDF
+aktual dijalankan.
+
+Implementasi: `SpjPeriodicReportPrintService::sptjmData`, cabang
+`sptjm_doc` di `document.blade.php`,
+`SpjPeriodicReportExcelService::writeSptjm`.
+
+## Status verifikasi (2026-10-08)
 
 Perubahan pada `SpjPeriodicReportPrintService` (dedup bayangan backfill pajak,
 normalisasi `REK_BKU` varian `Sisa`, perhitungan bunga/pajak sisi bank, dan
@@ -199,6 +258,7 @@ fallback uraian BKU) sudah tercakup regression:
 BkuOfficialLedgerTest              : 12 passed / 124 assertions
 filter PeriodicReport              : 13 passed / 152 assertions
 K7bK7cReportTest                   : 5 passed / 45 assertions
+K7aFormatK7SptjmReportTest         : 8 passed / 71 assertions
 ```
 
 Artinya kontrak **source/data** terverifikasi; tampilan cetaknya tetap **RVR**

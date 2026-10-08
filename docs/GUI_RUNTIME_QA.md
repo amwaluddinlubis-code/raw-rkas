@@ -188,6 +188,10 @@ label di semua rute**. Guard:
 `test_package_form_fields_expose_ids_matching_their_labels`,
 `test_ui_field_component_can_bind_generated_label_to_its_control`.
 
+Susulan 2026-10-08: label pencarian explorer
+(`livewire/database-table-explorer`) memakai `for` + `id` eksplisit
+(temuan GuiAudit09To13 yang sama kelasnya dengan T2).
+
 **T3 (rendah) — SUDAH DIPERBAIKAN: dekorasi header meluber pada mobile.**
 `.page-header-decoration-top` sebelumnya memakai `right: -4rem; width: 14rem`
 sehingga pada 375px tepi kanan dekorasi mencapai 403px vs viewport 360px. Tidak

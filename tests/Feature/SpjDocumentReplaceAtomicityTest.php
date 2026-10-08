@@ -12,6 +12,7 @@ use App\Services\SpjNumberingPolicyService;
 use App\Support\ActiveSpjContext;
 use App\UseCases\Spj\SpjDocumentLifecycleUseCase;
 use Carbon\CarbonInterface;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -29,6 +30,7 @@ use Tests\TestCase;
  */
 class SpjDocumentReplaceAtomicityTest extends TestCase
 {
+    use RefreshDatabase;
     use SeedsArkasMirror;
 
     protected function setUp(): void

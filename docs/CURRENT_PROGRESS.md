@@ -1,49 +1,72 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-07** (K7B+K7C resmi; generator Format BOS A-1; sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-08** (cluster penomoran + lifecycle dokumen via patch-spj-bosp; K7A + Format K7 + SPTJM resmi; K7B+K7C resmi; generator Format BOS A-1; sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
 
-## Perbaikan cluster penomoran K2/S3/T1/S2 (2026-10-07)
+## Perbaikan cluster penomoran + lifecycle dokumen (2026-10-08)
 
-Status: **CODE+TEST WRITTEN / UNVERIFIED — PHP tidak tersedia di VM kerja ini.**
+Status: **FUNCTIONAL PASS (focused)**.
 
-Empat bug penomoran diperbaiki, satu bug satu commit `fix:` terpisah (tanpa push):
+Patch `patch-spj-bosp` 29 commit diterapkan via `git am` (seluruh isi zip
+kecuali 0011 docs: batch pertama 0001–0006, 0008–0010, 0012, 0014–0026,
+0028–0030, disusul 0007, 0013, 0017, 0027, 0030 setelah basisnya tersedia;
+hanya 0011 docs yang diterapkan manual karena konteksnya bergeser). Sorotan:
 
-1. **K2** — `document_number_sequences.fund_source_id` nullable membuat unique
-   index tidak melindungi grup NULL di SQLite (NULL = distinct) → race dapat
-   menyisipkan dua baris → nomor ganda. Dipilih opsi (a): migrasi
-   `2026_10_07_000001_backfill_document_number_sequences_fund_source_sentinel`
-   (dedupe per grup canonical — pertahankan `last_number` tertinggi, backfill
-   NULL → sentinel 0, rebuild tabel jadi NOT NULL), normalisasi NULL →
-   `SpjDocumentNumberService::NULL_FUND_SOURCE_SENTINEL` di `assign()` dan
-   `SpjNumberingRollbackUseCase::rebuildSequences()`. Opsi (b) ditolak karena
-   baris NULL tetap dapat terduplikasi di SQLite tanpa perubahan skema.
-2. **S3** — race insert-pertama sequence → duplicate-key → HTTP 500.
-   `SpjDocumentNumberService::allocateSequenceNumber()` menangkap duplicate-key
-   (SQLSTATE 23000 + pesan khas SQLite/MySQL/Postgres) lalu retry idempoten:
-   baca ulang baris pemenang di bawah lock, increment.
-3. **T1** — paket CANCELLED (terminal, tak pernah bisa FINAL) dihitung
-   `!= FINAL` sehingga memblokir penomoran triwulan berikutnya & penutupan
-   triwulan selamanya. Dikecualikan di `singleNumberingBlocker()`,
-   `previousQuarterFinalBlocker()`, `FiscalPeriodWorkflowService::close()`.
-   `finalizePackage()` tidak diubah — tetap hanya menerima NUMBERED.
-4. **S2** — `SpjDocumentLifecycleUseCase::replaceDocument()`: cancel + assign +
-   sync kini satu transaksi `school` (savepoint bersarang); kegagalan assign
-   me-rollback cancel.
+1. **K2** — race duplikat sequence saat `fund_source_id` NULL (SQLite
+   menganggap NULL distinct): sentinel `0`
+   (`SpjDocumentNumberService::NULL_FUND_SOURCE_SENTINEL`) + migrasi
+   backfill + kolom NOT NULL.
+2. **S3** — race insert-pertama sequence → retry idempoten
+   (`allocateSequenceNumber` menangkap duplicate-key 23000).
+3. **T1** — paket CANCELLED terminal dikecualikan dari blocker
+   penomoran/penutupan triwulan; `finalizePackage` tetap NUMBERED-only.
+4. **S2** — `replaceDocument` (cancel + assign + sync) satu transaksi
+   `school`; kegagalan assign me-rollback cancel.
+5. **S4/R5** — ubah urutan rincian diblokir pada paket NUMBERED;
+   rollback membersihkan arsip folder dokumen.
+6. Penguatan lain: otorisasi mutasi Livewire K1, relink fingerprint T2,
+   safe-sync S1/S6/S7, guard PDF T3, arsip XLSX S8, audit S5,
+   reconcile R2/R4/R8 (dengan penyesuaian 2 test), hapus V1 R15,
+   path traversal R10, password min-12 R11, audit impersonasi R12,
+   kop surat R13, warning document_date R14, a11y explorer, Pint R15/30.
 
-Test baru (belum dijalankan di sini): 3 test K2/S3 di
-`DocumentNumberingWorkflowTest` (invariansi NOT NULL, sentinel 0, simulasi
-race deterministik), `SpjCancelledNumberingBlockerTest` (4 test),
-`SpjDocumentReplaceAtomicityTest` (2 test). Docs: catatan sentinel di
-`docs/NUMBERING_CORRECTION_AND_ROLLBACK.md`, klarifikasi CANCELLED di
-`docs/SPJ_DESIGN_DECISIONS.md` §16.
+Regression yang dijalankan di sini: `DocumentNumberingWorkflowTest`
+15 passed / 63 assertions, `SpjCancelledNumberingBlockerTest` 4 passed,
+`SpjDocumentReplaceAtomicityTest` 2 passed (ditambah `RefreshDatabase`
+agar deterministik — test patch gagal isolasi tanpa itu),
+`SpjNumberingRollbackTest` 5 passed, `SpjSourceRelinkTest` 13 passed
+(fixture disesuaikan ke skema pasca-drop kolom duplikat),
+`LivewireMutationAuthorizationTest` 6 passed,
+`SpjSourceReconciliationResolutionTest` 11 passed; Pint passed;
+`view:cache` + `git diff --check` bersih.
 
-**Butuh verifikasi pemilik repo sebelum merge/push:** `vendor/bin/pint`,
-`php artisan test --compact` untuk file test di atas, `php artisan migrate`
-(pastikan migrasi sentinel jalan di DB sekolah), dan `php artisan spj:verify`.
-Klaim PASS apa pun di atas belum ada evidence-nya sampai langkah itu jalan.
+RVR tersisa: `php artisan migrate` untuk migrasi sentinel di DB
+sekolah nyata dan `php artisan spj:verify` penuh.
+
+## BOS K7A + Format K7 + SPTJM resmi (2026-10-08)
+
+Status: **FUNCTIONAL PASS (focused) / BROWSER RVR, AKURASI PER-KOMPONEN K7A RVR**.
+
+Tahap 2–4 perbaikan bertahap K7 & SPTJM. `bos_k7a` keluar dari
+`activity_summary` generik menjadi presenter 12 komponen ARKAS resmi
+(2 baris SMK ditandai) dengan pemetaan kata kunci NAMA_KEGIATAN
+(`BospRekapStandardMapper::k7aComponentForActivity`) — mirror terbukti
+tidak membawa field komponen (audit read-only payload tenant 10208183)
+— plus rekonsiliasi `total + unmapped = belanja` yang selalu eksplisit.
+`format_k7` menjadi tabel realisasi per jenis anggaran (prefix rekening
+5.1.01/5.1.02/5.2) per bulan scope + JUMLAH + blok Lampiran + TTD
+3 pihak. `sptjm` menjadi dokumen redaksi resmi dengan nominal
+penerimaan/penggunaan periode + TTD tunggal Kepsek + materai. Tidak ada
+perubahan registry/scope/tenant/numbering/sync.
+
+Regression: `K7aFormatK7SptjmReportTest` 8 passed / 71 assertions
+(mapper, data + rekonsiliasi, print route K7A/K7/SPTJM, excel),
+Printable + guard presenter baru, K7bK7c 5 passed, BosA1 4 passed,
+filter PeriodicReport 13 passed, BkuOfficialLedger 12 passed; Pint
+passed; `view:cache` + `git diff --check` bersih. Browser/PDF aktual
+tetap RVR; per-komponen K7A menunggu pembanding keluaran resmi.
 
 ## Register Penutupan Kas K7B + Berita Acara K7C resmi (2026-10-07)
 

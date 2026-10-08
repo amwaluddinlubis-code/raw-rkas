@@ -372,6 +372,18 @@ pertahankan overlay) + alasan tertulis + centang pemahaman, terekam audit
 `RESOLUSI_TERBUKA_{STATUS}`. Dokumen bernomor/final TIDAK berubah otomatis.
 Menutup kembali: hapus/nol-kan env (fail-closed bila config di-cache).
 
+Resolusi terkunci diverifikasi ulang di dalam service (R8, 2026-10-08):
+`resolve(..., $allowLockedResolution)` menolak flag tersebut kecuali
+`lockedResolutionAllowed($resolvedBy)` — env masih true DAN resolver
+adalah administrator — sehingga parameter itu tidak bisa disalahgunakan
+dari jalur pemanggil lain.
+
+Relink rincian memakai sidik konten, bukan posisi (T2, 2026-10-08):
+`repointItems` memasangkan baris lama–baru berdasarkan fingerprint isi;
+baris tanpa pasangan TIDAK dipasangkan diam-diam melainkan dilewati
+dengan alasan; duplikat identik dipasangkan deterministik; hanya baris
+tanpa sidik (snapshot/perbaikan manual) yang memakai fallback urutan.
+
 ---
 
 ## 10. Employee identity lintas ARKAS dan Dapodik

@@ -59,7 +59,6 @@ Komponen berikut tidak ditemukan melakukan persistence/domain mutation pada audi
 - `DatabaseStatusSummary`
 - `DatabaseTableExplorer`
 - `EmployeeDirectory`
-- `TransactionDetailWorkspace`
 - `RkasBudgetFilter`
 - `SpjMonitoringList`
 - `SpjPackageList`
@@ -68,6 +67,11 @@ Komponen berikut tidak ditemukan melakukan persistence/domain mutation pada audi
 - `SyncedDataNavigation`
 - `TaxFilter`
 - `TransactionsTable`
+
+`TransactionDetailWorkspace` dikeluarkan dari daftar ini pada 2026-10-08
+(K1): komponen tersebut memegang aksi koreksi uraian/rekonsiliasi yang
+kini di-guard `isOperatorOrAdministrator()` 403 pada setiap action
+mutasi, sehingga tergolong komponen mutasi guarded, bukan read-only.
 
 Catatan:
 
@@ -92,6 +96,8 @@ DatabaseSchoolList::{activate,migrate}
 
 OPERATOR/ADMIN mutation:
 DocumentStorageSettings::save
+DashboardWorkspace::{mutation actions} (K1, 2026-10-08)
+TransactionDetailWorkspace::{correction/reconciliation actions} (K1, 2026-10-08)
 ```
 
 Implementasi memakai helper role canonical dari `App\Models\User`:
