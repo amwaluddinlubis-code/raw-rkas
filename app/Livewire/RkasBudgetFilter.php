@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\FiscalYear;
 use App\Services\ArkasMirrorBudgetService;
 use App\Services\ArkasMirrorResolver;
+use App\Support\HierarchyCode;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
@@ -351,7 +352,7 @@ class RkasBudgetFilter extends Component
 
         if ($this->mirrorEnabled()) {
             return $this->mirrorSnapshot()['rows']->pluck('activity_code')->map(fn ($code): string => trim((string) $code, '.'))->filter()->unique()->sort(function (string $left, string $right): int {
-                return $this->compareHierarchyCodes($left, $right);
+                return HierarchyCode::compare($left, $right);
             })->values();
         }
 
@@ -365,7 +366,7 @@ class RkasBudgetFilter extends Component
             ->map(fn ($code): string => trim((string) $code, '.'))
             ->filter()
             ->values()
-            ->sort(fn (string $left, string $right): int => $this->compareHierarchyCodes($left, $right))
+            ->sort(fn (string $left, string $right): int => HierarchyCode::compare($left, $right))
             ->values();
     }
 
@@ -377,7 +378,7 @@ class RkasBudgetFilter extends Component
                 ->map(fn (array $row): array => ['kode' => trim((string) ($row['program_code'] ?? ''), '.'), 'nama' => (string) ($row['program_name'] ?? '')])
                 ->filter(fn (array $option): bool => $option['kode'] !== '')
                 ->unique('kode')
-                ->sort(fn (array $left, array $right): int => $this->compareHierarchyCodes($left['kode'], $right['kode']))
+                ->sort(fn (array $left, array $right): int => HierarchyCode::compare($left['kode'], $right['kode']))
                 ->values();
         }
 
@@ -388,7 +389,7 @@ class RkasBudgetFilter extends Component
             ->unique()
             ->values()
             ->map(fn (string $code): array => ['kode' => $code, 'nama' => $names[$code] ?? 'Program'])
-            ->sort(fn (array $left, array $right): int => $this->compareHierarchyCodes($left['kode'], $right['kode']))
+            ->sort(fn (array $left, array $right): int => HierarchyCode::compare($left['kode'], $right['kode']))
             ->values();
     }
 
@@ -405,7 +406,7 @@ class RkasBudgetFilter extends Component
                 ->map(fn (array $row): array => ['kode' => trim((string) ($row['subprogram_code'] ?? ''), '.'), 'nama' => (string) ($row['subprogram_name'] ?? '')])
                 ->filter(fn (array $option): bool => $option['kode'] !== '')
                 ->unique('kode')
-                ->sort(fn (array $left, array $right): int => $this->compareHierarchyCodes($left['kode'], $right['kode']))
+                ->sort(fn (array $left, array $right): int => HierarchyCode::compare($left['kode'], $right['kode']))
                 ->values();
         }
 
@@ -422,7 +423,7 @@ class RkasBudgetFilter extends Component
             ->unique()
             ->values()
             ->map(fn (string $code): array => ['kode' => $code, 'nama' => $names[$code] ?? 'Subprogram'])
-            ->sort(fn (array $left, array $right): int => $this->compareHierarchyCodes($left['kode'], $right['kode']))
+            ->sort(fn (array $left, array $right): int => HierarchyCode::compare($left['kode'], $right['kode']))
             ->values();
     }
 
@@ -446,7 +447,7 @@ class RkasBudgetFilter extends Component
                 return collect();
             }
 
-            return $query->filter(fn (array $row): bool => $row['kode'] !== '')->unique('kode')->sort(fn (array $left, array $right): int => $this->compareHierarchyCodes($left['kode'], $right['kode']))->values();
+            return $query->filter(fn (array $row): bool => $row['kode'] !== '')->unique('kode')->sort(fn (array $left, array $right): int => HierarchyCode::compare($left['kode'], $right['kode']))->values();
         }
 
         $query = DB::connection('school')->table('arkas_rkas_items')
@@ -513,33 +514,6 @@ class RkasBudgetFilter extends Component
             $this->program = $parts[0];
             $this->sub = count($parts) >= 2 ? implode('.', array_slice($parts, 0, 2)) : '';
         }
-    }
-
-    protected function compareHierarchyCodes(string $left, string $right): int
-    {
-        $leftParts = array_values(array_filter(explode('.', trim($left, '.')), static fn (string $part): bool => $part !== ''));
-        $rightParts = array_values(array_filter(explode('.', trim($right, '.')), static fn (string $part): bool => $part !== ''));
-
-        foreach (range(0, max(count($leftParts), count($rightParts)) - 1) as $index) {
-            $leftPart = $leftParts[$index] ?? '';
-            $rightPart = $rightParts[$index] ?? '';
-            if ($leftPart === $rightPart) {
-                continue;
-            }
-            if ($leftPart === '') {
-                return -1;
-            }
-            if ($rightPart === '') {
-                return 1;
-            }
-            if (ctype_digit($leftPart) && ctype_digit($rightPart)) {
-                return (int) $leftPart <=> (int) $rightPart;
-            }
-
-            return strnatcasecmp($leftPart, $rightPart);
-        }
-
-        return 0;
     }
 
     protected static function isWithin(string $code, string $parent): bool

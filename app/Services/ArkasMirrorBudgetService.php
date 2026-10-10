@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FiscalYear;
+use App\Support\HierarchyCode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -97,14 +98,14 @@ final class ArkasMirrorBudgetService
             $tree[$programCode]['subs'][$subCode]['activities'][$activityKey]['remaining'] += $row->variance;
             $tree[$programCode]['subs'][$subCode]['activities'][$activityKey]['items'][] = $row;
         }
-        uksort($tree, fn (string $left, string $right): int => $this->compareHierarchyCodes($left, $right));
+        uksort($tree, fn (string $left, string $right): int => HierarchyCode::compare($left, $right));
         foreach ($tree as &$programNode) {
-            uksort($programNode['subs'], fn (string $left, string $right): int => $this->compareHierarchyCodes($left, $right));
+            uksort($programNode['subs'], fn (string $left, string $right): int => HierarchyCode::compare($left, $right));
             foreach ($programNode['subs'] as &$subNode) {
-                uksort($subNode['activities'], fn (string $left, string $right): int => $this->compareHierarchyCodes($left, $right));
+                uksort($subNode['activities'], fn (string $left, string $right): int => HierarchyCode::compare($left, $right));
                 foreach ($subNode['activities'] as &$activityNode) {
                     usort($activityNode['items'], function (object $left, object $right): int {
-                        return $this->compareHierarchyCodes((string) $left->activity_code, (string) $right->activity_code)
+                        return HierarchyCode::compare((string) $left->activity_code, (string) $right->activity_code)
                             ?: strnatcasecmp((string) $left->account_code, (string) $right->account_code);
                     });
                 }
@@ -818,33 +819,6 @@ final class ArkasMirrorBudgetService
         $timestamp = strtotime((string) $value);
 
         return $timestamp === false ? 0 : $timestamp;
-    }
-
-    private function compareHierarchyCodes(string $left, string $right): int
-    {
-        $leftParts = array_values(array_filter(explode('.', trim($left, '.')), static fn (string $part): bool => $part !== ''));
-        $rightParts = array_values(array_filter(explode('.', trim($right, '.')), static fn (string $part): bool => $part !== ''));
-
-        foreach (range(0, max(count($leftParts), count($rightParts)) - 1) as $index) {
-            $leftPart = $leftParts[$index] ?? '';
-            $rightPart = $rightParts[$index] ?? '';
-            if ($leftPart === $rightPart) {
-                continue;
-            }
-            if ($leftPart === '') {
-                return -1;
-            }
-            if ($rightPart === '') {
-                return 1;
-            }
-            if (ctype_digit($leftPart) && ctype_digit($rightPart)) {
-                return (int) $leftPart <=> (int) $rightPart;
-            }
-
-            return strnatcasecmp($leftPart, $rightPart);
-        }
-
-        return 0;
     }
 
     private function fundMatches(array $payload, int $fundSourceId): bool
