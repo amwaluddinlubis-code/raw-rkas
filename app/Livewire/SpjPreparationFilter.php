@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\SpjDisplay;
 use App\UseCases\Spj\SpjWorkspaceUseCase;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
@@ -69,12 +70,7 @@ class SpjPreparationFilter extends Component
 
     public function modes(): array
     {
-        return [
-            'bulan' => 'Bulan',
-            'triwulan' => 'Triwulan',
-            'semester' => 'Semester',
-            'semua' => 'Semua',
-        ];
+        return SpjDisplay::periodModes();
     }
 
     public function setMode(string $modeOption): void

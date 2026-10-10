@@ -72,12 +72,7 @@ trait HasSpjListFilter
      */
     public function modes(): array
     {
-        return [
-            'bulan' => 'Bulan',
-            'triwulan' => 'Triwulan',
-            'semester' => 'Semester',
-            'semua' => 'Semua',
-        ];
+        return SpjDisplay::periodModes();
     }
 
     public function setMode(string $modeOption): void

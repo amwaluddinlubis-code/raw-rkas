@@ -6,6 +6,7 @@ use App\Models\FiscalYear;
 use App\Models\Transaction;
 use App\Services\ArkasMirrorResolver;
 use App\Services\SpjWorkflowFilterService;
+use App\Support\SpjDisplay;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -90,7 +91,7 @@ class TransactionsTable extends Component
 
     private function allowedModes(): array
     {
-        return ['semua', 'semester', 'triwulan', 'bulan'];
+        return SpjDisplay::periodModeKeys();
     }
 
     public function clearFilters(): void

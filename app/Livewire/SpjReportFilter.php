@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\SpjDisplay;
 use App\UseCases\Spj\SpjReportUseCase;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
@@ -75,7 +76,7 @@ class SpjReportFilter extends Component
     /** @return list<string> */
     public function allowedModes(): array
     {
-        return ['semua', 'semester', 'triwulan', 'bulan'];
+        return SpjDisplay::periodModeKeys();
     }
 
     /** @return list<array{0: string, 1: string}> */

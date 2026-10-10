@@ -42,6 +42,31 @@ final class SpjDisplay
     }
 
     /**
+     * Mode periode kanonis (bulan/triwulan/semester/semua) + label Indonesia.
+     *
+     * @return array<string, string>
+     */
+    public static function periodModes(): array
+    {
+        return [
+            'bulan' => 'Bulan',
+            'triwulan' => 'Triwulan',
+            'semester' => 'Semester',
+            'semua' => 'Semua',
+        ];
+    }
+
+    /**
+     * Kunci mode periode kanonis untuk validasi in_array.
+     *
+     * @return list<string>
+     */
+    public static function periodModeKeys(): array
+    {
+        return ['semua', 'semester', 'triwulan', 'bulan'];
+    }
+
+    /**
      * Format ukuran byte (B/KB/MB) untuk panel diagnostik database.
      */
     public static function bytes(int $bytes): string
