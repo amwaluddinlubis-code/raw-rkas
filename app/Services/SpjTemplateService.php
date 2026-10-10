@@ -218,15 +218,7 @@ class SpjTemplateService
             : ((bool) $transaction->siplah_budget_mapping_rejected
                 ? 'Pemetaan anggaran ditolak'
                 : ((bool) $transaction->siplah_partially_mapped ? 'Pemetaan sebagian' : 'Pemetaan lengkap'));
-        $spjCategoryLabel = match (strtoupper((string) $transaction->spj_category)) {
-            'JASA_HONORARIUM', 'HONOR_PEGAWAI' => 'Honor Pegawai',
-            'JASA_LAINNYA' => 'Jasa Lainnya',
-            'BARANG' => 'Barang',
-            'KONSUMSI' => 'Konsumsi',
-            'PEMELIHARAAN' => 'Pemeliharaan',
-            'SPPD' => 'SPPD',
-            default => ucwords(strtolower(str_replace('_', ' ', (string) $transaction->spj_category))),
-        };
+        $spjCategoryLabel = \\App\\Support\\SpjDisplay::typeLabel($transaction->spj_category);
         $maintenanceSplit = $this->maintenanceValueSplit($package, (float) $transaction->sourceValue('gross_amount'));
 
         $values = [
