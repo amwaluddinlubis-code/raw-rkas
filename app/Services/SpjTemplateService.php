@@ -10,6 +10,7 @@ use App\Models\SpjGoods;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Support\SpjDisplay;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -218,7 +219,7 @@ class SpjTemplateService
             : ((bool) $transaction->siplah_budget_mapping_rejected
                 ? 'Pemetaan anggaran ditolak'
                 : ((bool) $transaction->siplah_partially_mapped ? 'Pemetaan sebagian' : 'Pemetaan lengkap'));
-        $spjCategoryLabel = \\App\\Support\\SpjDisplay::typeLabel($transaction->spj_category);
+        $spjCategoryLabel = SpjDisplay::typeLabel($transaction->spj_category);
         $maintenanceSplit = $this->maintenanceValueSplit($package, (float) $transaction->sourceValue('gross_amount'));
 
         $values = [
