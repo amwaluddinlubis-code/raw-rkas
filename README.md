@@ -2,7 +2,7 @@
 
 Aplikasi web penyusunan Surat Pertanggungjawaban (SPJ) BOSP berbasis Laravel. Repository menggunakan satu branch aktif: `main`.
 
-Terakhir diverifikasi terhadap source repository: **2026-09-25**.
+Terakhir diaudit terhadap source repository: **2026-10-11**. Audit ini belum berarti regression suite atau CI telah lulus; lihat `docs/CURRENT_PROGRESS.md` untuk status verifikasi.
 
 ## Status branch saat ini
 
