@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\\Unit;
+namespace Tests\Unit;
 
-use App\\Support\\SpjDisplay;
-use PHPUnit\\Framework\\Attributes\\Test;
-use Tests\\TestCase;
+use App\Support\SpjDisplay;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class SpjDisplayTest extends TestCase
 {
