@@ -6,7 +6,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
-use ZipArchive;
 
 final class SpjUnresolvedPlaceholderGuard
 {
@@ -143,27 +142,7 @@ final class SpjUnresolvedPlaceholderGuard
     /** @return array<int,string> */
     private function findInWord(string $path): array
     {
-        $zip = new ZipArchive;
-        if ($zip->open($path) !== true) {
-            throw new RuntimeException('Dokumen DOCX hasil generate tidak dapat dibuka.');
-        }
-
-        $content = '';
-        try {
-            for ($index = 0; $index < $zip->numFiles; $index++) {
-                $name = $zip->getNameIndex($index);
-                if (! is_string($name) || ! preg_match('#^word/(document|header\d*|footer\d*)\.xml$#', $name)) {
-                    continue;
-                }
-
-                $xml = $zip->getFromIndex($index);
-                if (is_string($xml)) {
-                    $content .= ' '.html_entity_decode((string) preg_replace('/<[^>]+>/', '', $xml), ENT_QUOTES | ENT_XML1, 'UTF-8');
-                }
-            }
-        } finally {
-            $zip->close();
-        }
+        $content = WordDocumentTextExtractor::extract($path, 'Dokumen DOCX hasil generate tidak dapat dibuka.');
 
         return $this->extractMarkers($content);
     }

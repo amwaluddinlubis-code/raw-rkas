@@ -8,7 +8,6 @@ use App\Models\SpjPackage;
 use Illuminate\Support\Collection;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx as XlsxReader;
 use RuntimeException;
-use ZipArchive;
 
 /**
  * Preflight murah sebelum download: gagal-cepat bila template tidak aktif,
@@ -112,27 +111,7 @@ final class SpjTemplateRenderPreflight
     {
         $label = 'Dokumen '.(string) $template->document_type;
 
-        $zip = new ZipArchive;
-        if ($zip->open($source) !== true) {
-            throw new RuntimeException($label.' tidak dapat dibuka sebagai dokumen Word.');
-        }
-
-        $content = '';
-        try {
-            for ($index = 0; $index < $zip->numFiles; $index++) {
-                $name = $zip->getNameIndex($index);
-                if (! is_string($name) || ! preg_match('#^word/(document|header\d*|footer\d*)\.xml$#', $name)) {
-                    continue;
-                }
-
-                $xml = $zip->getFromIndex($index);
-                if (is_string($xml)) {
-                    $content .= ' '.html_entity_decode((string) preg_replace('/<[^>]+>/', '', $xml), ENT_QUOTES | ENT_XML1, 'UTF-8');
-                }
-            }
-        } finally {
-            $zip->close();
-        }
+        $content = WordDocumentTextExtractor::extract($source, $label.' tidak dapat dibuka sebagai dokumen Word.');
 
         $this->assertNoUnknownMarkers($label, $this->extractMarkers($content), $values);
     }

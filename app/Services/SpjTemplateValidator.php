@@ -5,7 +5,6 @@ namespace App\Services;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use RuntimeException;
-use ZipArchive;
 
 final class SpjTemplateValidator
 {
@@ -256,28 +255,7 @@ final class SpjTemplateValidator
     /** @param array<string,mixed> $definition */
     private function validateWord(string $canonical, array $definition, string $path): array
     {
-        $zip = new ZipArchive;
-        if ($zip->open($path) !== true) {
-            throw new RuntimeException('Template DOCX tidak dapat dibuka.');
-        }
-
-        $content = '';
-        try {
-            for ($index = 0; $index < $zip->numFiles; $index++) {
-                $name = $zip->getNameIndex($index);
-                if (! is_string($name) || ! preg_match('#^word/(document|header\d*|footer\d*)\.xml$#', $name)) {
-                    continue;
-                }
-
-                $xml = $zip->getFromIndex($index);
-                if (is_string($xml)) {
-                    // Strip XML tags so macros split across Word runs can still be detected.
-                    $content .= ' '.html_entity_decode((string) preg_replace('/<[^>]+>/', '', $xml), ENT_QUOTES | ENT_XML1, 'UTF-8');
-                }
-            }
-        } finally {
-            $zip->close();
-        }
+        $content = WordDocumentTextExtractor::extract($path, 'Template DOCX tidak dapat dibuka.');
 
         return $this->validateMarkers($canonical, $this->extractMarkers($content));
     }
