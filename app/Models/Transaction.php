@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\LazyCollection;
 
 class Transaction extends Model
@@ -131,7 +132,15 @@ class Transaction extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(TransactionItem::class)->orderByRaw('COALESCE(NULLIF(sort_order, 0), id)');
+        $items = $this->hasMany(TransactionItem::class);
+
+        // Keep older/partial tenant schemas usable during migration rollout.
+        // Fully migrated databases retain the operator-defined item order.
+        if (Schema::connection('school')->hasColumn('transaction_items', 'sort_order')) {
+            return $items->orderByRaw('COALESCE(NULLIF(sort_order, 0), id)');
+        }
+
+        return $items->orderBy('id');
     }
 
     public function goods(): HasManyThrough
