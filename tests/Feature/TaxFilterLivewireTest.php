@@ -46,12 +46,13 @@ class TaxFilterLivewireTest extends TestCase
         $this->seedTaxes();
 
         Livewire::test(TaxFilter::class)
-            ->assertSee('Total Tahunan 2026', false)
-            ->assertDontSee('Subtotal Periode Terpilih', false)
+            ->assertSee('Transaksi Pajak', false)
+            ->assertSee('Tahun 2026', false)
+            ->assertDontSee('Sesuai filter aktif', false)
             ->call('setMode', 'bulan')
             ->set('periode', 2)
-            ->assertSee('Subtotal Periode Terpilih', false)
-            ->assertDontSee('Total Tahunan 2026', false);
+            ->assertSee('Sesuai filter aktif', false)
+            ->assertDontSee('Tahun 2026', false);
     }
 
     public function test_tax_reset_restores_full_list(): void
@@ -73,7 +74,8 @@ class TaxFilterLivewireTest extends TestCase
 
         $this->withoutMiddleware()->get(route('taxes.index'))
             ->assertOk()
-            ->assertSee('Total Tahunan 2026', false)
+            ->assertSee('Transaksi Pajak', false)
+            ->assertSee('Tahun 2026', false)
             ->assertSee('Daftar Pajak Tersinkron', false)
             ->assertSee('BKU-PJK-001', false);
     }
