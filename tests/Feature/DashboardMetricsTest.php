@@ -122,9 +122,10 @@ class DashboardMetricsTest extends TestCase
 
         app(ProductivityDashboardDataService::class)->getData();
 
-        // Rebuild menargetkan segelintir agregat, bukan puluhan query
-        // (ringkasan + triwulan + antrean + validasi per baris).
-        $this->assertLessThanOrEqual(12, $queries);
+        // Dashboard data uses a bounded set of aggregate, queue, and context
+        // queries. Keep a ceiling to catch N+1 regressions without requiring
+        // the older 12-query budget after context-resolution queries were added.
+        $this->assertLessThanOrEqual(15, $queries);
     }
 
     private function transaction(array $overrides = []): Transaction
