@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\RkasPlanningSuggestionService;
+use App\Support\SpjDisplay;
 use Illuminate\Contracts\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -26,7 +27,6 @@ class RkasPlanningSuggestionController extends Controller
         $yearId = (int) session('active_fiscal_year_id');
         $fundSourceId = (int) session('active_fund_source_id');
         $report = $suggestions->build($yearId, $fundSourceId);
-        $rupiah = fn (float $value): string => 'Rp '.number_format($value, 0, ',', '.');
 
         $book = new Spreadsheet;
         $sheet = $book->getActiveSheet();
@@ -38,8 +38,8 @@ class RkasPlanningSuggestionController extends Controller
             foreach ($report['initial']['rows'] as $item) {
                 $sheet->fromArray([
                     $item['activity_code'], $item['activity_name'],
-                    $rupiah($item['last_budget']), $rupiah($item['last_spent']),
-                    $item['absorption'], $item['absorption_label'], $rupiah($item['suggested']),
+                    SpjDisplay::rupiah($item['last_budget']), SpjDisplay::rupiah($item['last_spent']),
+                    $item['absorption'], $item['absorption_label'], SpjDisplay::rupiah($item['suggested']),
                 ], null, "A{$row}");
                 $row++;
             }
@@ -51,13 +51,13 @@ class RkasPlanningSuggestionController extends Controller
             foreach ($report['remaining']['rows'] as $item) {
                 $sheet->fromArray([
                     $item['activity_code'], $item['activity_name'],
-                    $rupiah($item['budget']), $rupiah($item['spent']), $rupiah($item['remaining']),
+                    SpjDisplay::rupiah($item['budget']), SpjDisplay::rupiah($item['spent']), SpjDisplay::rupiah($item['remaining']),
                     $item['absorption'], $item['status'], $item['suggestion'],
                 ], null, "A{$row}");
                 $row++;
             }
             $totals = $report['remaining']['totals'];
-            $sheet->fromArray([['TOTAL', '', $rupiah($totals['budget']), $rupiah($totals['spent']), $rupiah($totals['remaining']), '', '', '']], null, "A{$row}");
+            $sheet->fromArray([['TOTAL', '', SpjDisplay::rupiah($totals['budget']), SpjDisplay::rupiah($totals['spent']), SpjDisplay::rupiah($totals['remaining']), '', '', '']], null, "A{$row}");
             $filename = 'SARAN-SISA-PAGU.xlsx';
         }
 
