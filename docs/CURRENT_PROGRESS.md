@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-08** (cluster penomoran + lifecycle dokumen via patch-spj-bosp; K7A + Format K7 + SPTJM resmi; K7B+K7C resmi; generator Format BOS A-1; sidebar Rekap + radius/tinggi kontrol + anchor date + portal dropdown; unifikasi filter Persiapan + Paket ikut Atribut; fix filter periode Paket/Atribut + state Persiapan; tab Attribut SPJ; browser QA focused + 2 fix mobile; SPJ report bulk preview, `raw-rkas`)
+Terakhir diperbarui: **2026-10-11** (audit source refaktor helper tampilan; regression/CI masih RVR — lihat bagian audit terbaru di bawah).
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
