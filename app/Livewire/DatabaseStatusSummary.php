@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Services\SchoolDatabaseManager;
+use App\Support\SpjDisplay;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -41,11 +42,10 @@ class DatabaseStatusSummary extends Component
         }
 
         if ($activeStatus) {
-            $formatBytes = static fn (int $bytes): string => $bytes < 1024 ? $bytes.' B' : ($bytes < 1048576 ? number_format($bytes / 1024, 1).' KB' : number_format($bytes / 1048576, 2).' MB');
             $this->tableCount = count($activeStatus['tableCounts'] ?? []);
-            $this->storage = $formatBytes((int) ($activeStatus['totalSize'] ?? 0));
-            $this->databaseSize = $formatBytes((int) ($activeStatus['size'] ?? 0));
-            $this->walSize = $formatBytes((int) ($activeStatus['walSize'] ?? 0));
+            $this->storage = SpjDisplay::bytes((int) ($activeStatus['totalSize'] ?? 0));
+            $this->databaseSize = SpjDisplay::bytes((int) ($activeStatus['size'] ?? 0));
+            $this->walSize = SpjDisplay::bytes((int) ($activeStatus['walSize'] ?? 0));
             $this->tableRows = number_format((int) collect($activeStatus['tableCounts'] ?? [])->sum(), 0, ',', '.');
         }
     }

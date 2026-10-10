@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Support\SpjDisplay;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
@@ -37,15 +38,14 @@ class DatabaseDiagnostics extends Component
             return;
         }
 
-        $formatBytes = static fn (int $bytes): string => $bytes < 1024 ? $bytes.' B' : ($bytes < 1048576 ? number_format($bytes / 1024, 1).' KB' : number_format($bytes / 1048576, 2).' MB');
         $this->hasDatabase = true;
         $this->exists = (bool) ($activeStatus['exists'] ?? false);
         $this->writable = (bool) ($activeStatus['isWritable'] ?? false);
         $this->integrity = (string) ($activeStatus['integrity'] ?? '—');
         $this->status = (string) ($activeStatus['status'] ?? '—');
-        $this->size = $formatBytes((int) ($activeStatus['size'] ?? 0));
-        $this->walSize = $formatBytes((int) ($activeStatus['walSize'] ?? 0));
-        $this->shmSize = $formatBytes((int) ($activeStatus['shmSize'] ?? 0));
+        $this->size = SpjDisplay::bytes((int) ($activeStatus['size'] ?? 0));
+        $this->walSize = SpjDisplay::bytes((int) ($activeStatus['walSize'] ?? 0));
+        $this->shmSize = SpjDisplay::bytes((int) ($activeStatus['shmSize'] ?? 0));
         $this->path = (string) ($activeStatus['path'] ?? '—');
         $this->connectionError = (string) ($activeStatus['connectionError'] ?? '');
         $this->tableCounts = $activeStatus['tableCounts'] ?? [];

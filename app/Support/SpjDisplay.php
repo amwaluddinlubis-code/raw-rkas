@@ -42,6 +42,18 @@ final class SpjDisplay
     }
 
     /**
+     * Format ukuran byte (B/KB/MB) untuk panel diagnostik database.
+     */
+    public static function bytes(int $bytes): string
+    {
+        return $bytes < 1024
+            ? $bytes.' B'
+            : ($bytes < 1048576
+                ? number_format($bytes / 1024, 1).' KB'
+                : number_format($bytes / 1048576, 2).' MB');
+    }
+
+    /**
      * Nilai yang sudah diformat (string) atau teks kosong kanonis.
      * Untuk tanggal/relasi yang belum diformat, format dulu di pemanggil.
      */
