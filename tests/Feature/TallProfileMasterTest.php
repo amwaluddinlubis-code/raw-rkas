@@ -25,8 +25,8 @@ class TallProfileMasterTest extends TestCase
             ->set('email', 'operator-tall@example.test')
             ->set('role', User::ROLE_OPERATOR)
             ->set('schoolId', $school->id)
-            ->set('password', 'password123')
-            ->set('passwordConfirmation', 'password123')
+            ->set('password', 'password1234')
+            ->set('passwordConfirmation', 'password1234')
             ->call('createUser')
             ->assertHasNoErrors();
 
