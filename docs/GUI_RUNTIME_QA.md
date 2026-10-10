@@ -267,6 +267,39 @@ source untuk temuan itu.
 
 ### RVR yang masih terbuka
 
+Sesi 2026-10-11 (Playwright Chromium headless, DB scratch, commit `73f31c9`):
+
+- **RVR1 modal Pratinjau Massal — PASS (parsial).** Dengan 20 paket NUMBERED:
+  modal terbuka dengan judul benar ("Pratinjau Massal 3 Paket SPJ"), tombol
+  Tutup/Escape berfungsi, submit >20 paket diblokir client-side, 0 JS error.
+  Isi pratinjau (iframe) mengembalikan 422 "Belum ada template Excel aktif" —
+  bukan bug, melainkan data uji tanpa document_templates. Bukti:
+  `/tmp/qa-shots/rvr1-modal-3.png`.
+- **RVR2 eksekusi penomoran triwulan — BLOCKED (data).** Alur UI lengkap
+  berfungsi: halaman `/spj/penomoran?quarter=3` menampilkan ringkasan per
+  triwulan, tombol "Periksa & Buat Nomor" disabled saat ada paket terhambat
+  (benar), modal review terbuka dengan 5 paket, tombol konfirmasi submit
+  (302). Namun eksekusi tidak menghasilkan nomor karena
+  `document_number_formats` kosong (0 format aktif) pada DB uji. Perlu data
+  uji dengan format penomoran aktif. Bukti: `/tmp/qa-shots/rvr2-review.png`.
+- **RVR3 eksekusi sinkronisasi — BLOCKED.** Membutuhkan ARKAS bridge
+  eksternal; tidak diuji pada sesi ini.
+- **RVR4 output biner PDF/Excel — BLOCKED (data).** Endpoint
+  `spj.preview-packages` mengembalikan 422 yang benar saat template kosong;
+  unduhan biner sesungguhnya butuh document_templates aktif (sama seperti
+  RVR1).
+- **RVR5 kontras 29 profil tema — PASS (parsial).** 29 profil terkonfirmasi
+  ada. Tema gelap yang diuji visual (Dark Professional, ARKAS Dark) tampil
+  dengan kontras baik, teks terbaca jelas, 0 JS error. Bukti:
+  `/tmp/qa-shots/theme-dark2.png`, `theme-arkas_dark.png`. Audit kontras
+  penuh 29/29 belum dilakukan.
+- **RVR6 dokumen cetak folio layar kecil — FAIL (non-blocking).**
+  Halaman cetak BKU triwulan pada viewport 375px mengalami overflow
+  horizontal (scrollWidth 635px > 375px); header kolom "Uraian" terpotong
+  vertikal. Dokumen tetap terbaca via scroll horizontal; jalur resmi
+  cetak/PDF via desktop tidak terdampak. Bukti:
+  `/tmp/qa-shots/rvr6-folio-375.png`.
+
 Tidak berubah dari sesi sebelumnya: modal Pratinjau Massal + batas 20 paket
 (butuh paket NUMBERED; data aktif masih 0 bernomor), eksekusi penomoran
 triwulan, eksekusi sinkronisasi, output biner PDF/Excel, kontras seluruh 29
