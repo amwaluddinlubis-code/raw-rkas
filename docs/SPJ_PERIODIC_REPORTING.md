@@ -6,6 +6,8 @@ Status: **REGISTRY + DATA ENGINE + INTERNAL PRINT/PDF IMPLEMENTED / VISUAL RUNTI
 
 Dokumen ini adalah kontrak teknis modul **Laporan Pertanggungjawaban Periodik** pada workspace SPJ. Modul dipisahkan dari workbook/template dokumen agar daftar laporan, filter periode, dan boundary data dapat stabil walaupun template resmi masih diperbaiki.
 
+Panduan fitur per-format laporan (aturan nilai, mapping sel, batasan presenter) ada di `PERIODIC_REPORT_MODULE.md`.
+
 ## Prinsip
 
 1. Semua sumber data wajib dibatasi oleh `ActiveSpjContext`: sekolah aktif, tahun anggaran aktif, dan sumber dana aktif.

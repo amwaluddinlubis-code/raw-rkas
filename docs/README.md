@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-10-05**
+Terakhir diperbarui: **2026-10-11** (reorganisasi: `CURRENT_PROGRESS.md` dipecah per fungsi; `MOBILE_VISUAL_QA_TODO.md` digabung ke `GUI_RUNTIME_QA.md`)
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
@@ -75,8 +75,24 @@ Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk number
 | Dokumen | Status |
 |---|---|
 | `SIPLAH_MVP_PLAN.md` | **LEGACY FILENAME / ACTIVE VERIFICATION GUIDE** — core SiPlah baseline functional; generated-document/official-template output tetap RVR. |
-| `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — desktop/laptop dan mobile/tablet runtime checks. |
-| `MOBILE_VISUAL_QA_TODO.md` | **LEGACY/ADDITIONAL MOBILE QA TODO** — jangan mengubah source readiness menjadi browser PASS. |
+| `GUI_RUNTIME_QA.md` | **RVR ACTIVE** — desktop/laptop dan mobile/tablet runtime checks (termasuk checklist tambahan mobile yang digabung dari `MOBILE_VISUAL_QA_TODO.md` pada 2026-10-11). |
+
+## Log kemajuan per fungsi (dipecah dari CURRENT_PROGRESS.md, 2026-10-11)
+
+`CURRENT_PROGRESS.md` tetap menjadi sumber kebenaran status terbaru (indeks + 7 seksi status/governance). Riwayat kronologis per fungsi dipindah ke file berikut agar tiap file < 128KB:
+
+| Dokumen | Isi |
+|---|---|
+| `PROGRESS_NUMBERING_LIFECYCLE.md` | Penomoran & lifecycle dokumen (R1/R6, cluster penomoran, filter periode, P0-03). |
+| `PROGRESS_OFFICIAL_REPORTS.md` | Laporan resmi & format BOS (K7A/K7B/K7C, Format K7, SPTJM, BOS A-1, Bulk Preview). |
+| `PROGRESS_SYNCHRONIZATION.md` | Sinkronisasi ARKAS (mirror kas, safe sync, reconciliation, importer, P0-05, P0-08). |
+| `PROGRESS_UI_UX.md` | UI/UX (workspace Paket, tab atribut, navigasi, density token, standardisasi GUI). |
+| `PROGRESS_QA_BROWSER.md` | QA browser (sesi QA + temuan perbaikan). Checklist canonical: `GUI_RUNTIME_QA.md`. |
+| `PROGRESS_RKAS.md` | RKAS (simulasi pagu, perbandingan revisi, kertas kerja, laporan). |
+| `PROGRESS_REGRESSION_CI.md` | Regression & CI (recovery, hardening, checkpoint, audit commit). |
+| `PROGRESS_AUDIT_REALDATA.md` | Audit & verifikasi real-data (3 tenant, kepatuhan coding, pola bukti dukung). |
+| `PROGRESS_P0_WORKSTREAMS.md` | Ringkas status workstream P0 (six-category, generator, auth, tenant, backup). |
+| `PROGRESS_DOCUMENTATION.md` | Audit dan cleanup dokumentasi. |
 
 ## Kontrak aktif lintas dokumentasi
 

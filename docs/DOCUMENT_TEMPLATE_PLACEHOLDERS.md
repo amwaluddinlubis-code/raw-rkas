@@ -10,6 +10,8 @@ Dokumen ini adalah referensi placeholder canonical untuk template dokumen SPJ Wo
 
 Daftar pada **Pengaturan → Template Dokumen** harus memakai katalog yang sama dengan `SpjTemplateService::placeholderGroups()` agar UI, template master, dan generator tidak berbeda.
 
+Lifecycle master template (import, update, download, preview, unduh master terbaru) didokumentasikan di `TEMPLATE_MASTER_WORKFLOW.md`.
+
 Dokumen ini menjelaskan contract placeholder, bukan status release generator. Status functional/RVR generator tetap mengikuti `CURRENT_PROGRESS.md`.
 
 ---

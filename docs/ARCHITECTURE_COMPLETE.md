@@ -27,121 +27,29 @@ Stack utama: PHP 8.3+, Laravel 13, Livewire 3, Alpine.js 3, Tailwind CSS 4, Vite
 
 ## 2. Multi-database
 
-### Database utama
+Kontrak bisnis (isi DB utama vs tenant, path NPSN, boundary `School + Fiscal Year + Fund Source`, aturan reset tenant): lihat `SPJ_DESIGN_DECISIONS.md` §2.
 
-Menyimpan user, sekolah, konfigurasi tenant, sumber ARKAS, backup/setup, dan metadata global.
+Catatan implementasi arsitektur:
 
-### Database tenant/sekolah
-
-Menyimpan fiscal year, fund source, source RKAS/BKU, transaksi, item, detail kategori SPJ, Paket, nomor dokumen, audit, employee, serta data kerja sekolah. Tabel staging importer (`arkas_import_profiles`, `arkas_import_runs`, `arkas_import_rows`) masih ada sebagai infra pipeline canonical sync, bukan sebagai workspace operator.
-
-Boundary operasi tenant:
-
-```text
-School + Fiscal Year + Fund Source
-```
-
-Model connection `school` tidak boleh dibaca/ditulis sebelum tenant aktif benar. Request yang bergantung tahun/sumber dana harus memvalidasi context aktif.
-
-### Reset tenant
-
-Reset hanya membangun ulang database sekolah target:
-
-```text
-purge connection
-→ hapus tenant sqlite + wal/shm
-→ provision ulang tenant
-→ migration tenant
-→ reset sqlite_sequence
-→ bersihkan context session terkait
-```
-
-Database utama tidak boleh ikut terhapus.
+- Tabel staging importer (`arkas_import_profiles`, `arkas_import_runs`, `arkas_import_rows`) masih ada sebagai infra pipeline canonical sync, bukan sebagai workspace operator.
+- Model connection `school` tidak boleh dibaca/ditulis sebelum tenant aktif benar. Request yang bergantung tahun/sumber dana harus memvalidasi context aktif.
+- Urutan reset tenant: purge connection → hapus tenant sqlite + wal/shm → provision ulang tenant → migration tenant → reset sqlite_sequence → bersihkan context session terkait. Database utama tidak boleh ikut terhapus.
 
 ## 3. Source vs operator overlay
 
-### Source ARKAS/BKU
-
-Contoh source: nomor bukti, tanggal, uraian sumber, rekening, kegiatan, nilai bruto/pajak/neto, penerima source, dan payload sinkronisasi.
-
-Source tidak diedit dari workspace operator.
-
-### Overlay operator
-
-Contoh:
-
-- `item_description`;
-- kategori SPJ;
-- uraian pembayaran;
-- payment method/reference;
-- penerima utama;
-- vendor/procurement fields;
-- detail kategori;
-- Paket/lifecycle;
-- numbering;
-- template/generated document metadata.
-
-Safe sync tidak boleh menghapus overlay manual tanpa rule eksplisit.
+Kontrak bisnis (source ARKAS/BKU readonly, overlay operator, safe sync): lihat `SPJ_DESIGN_DECISIONS.md` §3.
 
 ## 4. Ownership workspace
 
-### Detail Transaksi
-
-Workspace source/context. Mutation item yang diizinkan hanya:
-
-```text
-item_description
-```
-
-`description`, quantity, unit, unit price, amount, dan source tax tetap readonly.
-
-Gateway Paket memblokir create/open Paket bila `item_description` belum tersimpan.
-
-### Paket SPJ
-
-Workspace mutation dokumen SPJ:
-
-- kategori;
-- procurement/payment channel;
-- penerima/vendor;
-- data kategori;
-- document requirements;
-- numbering;
-- preview/download;
-- lifecycle/finalization.
-
-Paket tidak boleh menulis ulang source tax atau `item_description`.
+Kontrak bisnis (Detail Transaksi vs Paket SPJ, field yang boleh dikoreksi setelah NUMBERED): lihat `SPJ_DESIGN_DECISIONS.md` §4.
 
 ## 5. Kategori canonical
 
-```text
-BARANG
-KONSUMSI
-PEMELIHARAAN
-JASA_LAINNYA
-SPPD
-HONOR_PEGAWAI
-```
-
-SiPLah bukan kategori. SiPLah adalah procurement/payment channel.
+Daftar kategori canonical dan aturan SiPLah-sebagai-channel: lihat `SPJ_DESIGN_DECISIONS.md` §6–§7.
 
 ## 6. Lifecycle Paket
 
-```text
-DRAFT
-READY
-NUMBERED
-FINAL
-CANCELLED
-```
-
-Aturan utama:
-
-- READY hanya setelah validation applicable terpenuhi;
-- category change pada READY mengembalikan Paket ke DRAFT hanya jika kategori benar-benar berubah;
-- NUMBERED/FINAL terkunci dari mutation normal;
-- cancel/reissue/reopen menyimpan history;
-- preview/download tidak mengalokasikan nomor baru.
+State lifecycle dan aturan transisinya: lihat `SPJ_DESIGN_DECISIONS.md` §16.
 
 ## 7. Layer aplikasi
 
@@ -521,7 +429,16 @@ docs/PERIODIC_REPORT_MODULE.md
 docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md
 docs/P0_01_SOURCE_AUDIT.md
 docs/SIPLAH_MVP_PLAN.md
-docs/MOBILE_VISUAL_QA_TODO.md
+docs/PROGRESS_NUMBERING_LIFECYCLE.md
+docs/PROGRESS_OFFICIAL_REPORTS.md
+docs/PROGRESS_SYNCHRONIZATION.md
+docs/PROGRESS_UI_UX.md
+docs/PROGRESS_QA_BROWSER.md
+docs/PROGRESS_RKAS.md
+docs/PROGRESS_REGRESSION_CI.md
+docs/PROGRESS_AUDIT_REALDATA.md
+docs/PROGRESS_P0_WORKSTREAMS.md
+docs/PROGRESS_DOCUMENTATION.md
 ```
 
 `docs/ARKAS_IMPORTER.md` pernah menjadi acuan Generic Importer, tetapi sudah

@@ -230,7 +230,7 @@ Preserve the decisions documented there.
 - After frontend changes, run `npm run build` or instruct the user to do so.
 - After backend changes, run the narrowest relevant Laravel tests.
 - Browser-check representative desktop and mobile pages after structural UI changes.
-- Do not claim mobile verification while `docs/MOBILE_VISUAL_QA_TODO.md` remains open.
+- Do not claim mobile verification while open RVR items remain in `docs/GUI_RUNTIME_QA.md`.
 
 === project/strict rules ===
 

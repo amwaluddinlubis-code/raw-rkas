@@ -488,3 +488,82 @@ source-readiness PASS + runtime evidence lengkap tanpa blocker = PASS
 ```
 
 Jangan mengubah aturan ini hanya untuk menutup checklist lebih cepat.
+
+## 8. Checklist tambahan mobile (digabung dari MOBILE_VISUAL_QA_TODO.md, 2026-10-11)
+
+`MOBILE_VISUAL_QA_TODO.md` berstatus LEGACY dan telah digabungkan ke file ini. Bila ada perbedaan viewport atau status, seksi 1–7 di atas yang berlaku.
+
+### Viewport tambahan (legacy)
+
+Selain matrix canonical §3, viewport berikut boleh dipakai sebagai regression tambahan:
+
+```text
+390 × 844
+```
+
+### Theme minimum
+
+- Dark Professional
+- Yellow Bright
+- Violet Premium
+
+Bila memungkinkan tambahkan Slate Minimal dan Indigo Executive.
+
+### Checklist khusus Detail Transaksi
+
+- panel ARKAS/BKU vs SPJ tetap jelas;
+- uraian item compact tidak memotong informasi penting;
+- form kategori `KONSUMSI` usable;
+- tombol `Ambil Pegawai` (auto-fill roster) dan `＋ Peserta` tidak overlap;
+- daftar participant dapat discroll bila perlu;
+- validation tanggal pengadaan tetap terlihat;
+- dark form control readable.
+
+### Checklist khusus SPJ Paket
+
+Perubahan workspace/package yang sudah masuk wajib tetap tercakup dalam regression runtime:
+
+#### Checklist Paket (`/spj/paket/{id}/checklist`)
+
+- daftar blocking bernomor terbaca tanpa scroll horizontal yang tidak disengaja;
+- badge Paket/Transaksi tidak overflow;
+- `details` Sudah lengkap/Opsional dapat dibuka via touch;
+- stat cards tidak bertumpuk atau kehilangan informasi pada viewport sempit.
+
+#### Strip ringkasan `/spj` dan tabel persiapan
+
+- stat `x-stat-item` tetap terbaca pada viewport canonical;
+- tabel persiapan dapat di-scroll horizontal bila memang diperlukan tanpa memotong kolom Aksi secara permanen.
+
+#### Tab Rincian
+
+- **Panel Rincian Transaksi** dan **Panel Dokumen & Template** terlihat sebagai dua card berbeda;
+- header masing-masing mengikuti theme dan tetap readable;
+- gap antar panel cukup jelas;
+- compact document rows tidak terlalu padat untuk touch;
+- tombol Preview/Unduh wrap dengan benar;
+- group header/status badge tidak menyebabkan overflow.
+
+#### Tab Isian Manual
+
+- background panel mengikuti theme;
+- label/hint/control readable;
+- panel pajak tidak memaksa dark/light surface yang salah;
+- gap antar panel konsisten;
+- select/input tidak terpotong.
+
+#### Tab Penomoran
+
+- normal/hover/active quarter card tetap readable;
+- card tidak melebar keluar viewport;
+- badge status tidak overlap.
+
+### Aturan pelaporan mobile
+
+Jika halaman/theme belum benar-benar diuji pada matrix canonical, gunakan status:
+
+```text
+RVR
+```
+
+Source-level responsive guard atau observation pada satu viewport tambahan tidak boleh dipromosikan menjadi mobile/tablet PASS. Sebaliknya, status mobile `RVR` tidak boleh digunakan untuk menurunkan functional PASS desktop/laptop yang mempunyai evidence terpisah.

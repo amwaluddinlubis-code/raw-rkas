@@ -66,7 +66,7 @@ Dokumen lain yang aktif di indeks `docs/README.md` tetapi tidak cocok dengan
 baris matriks di atas dan tetap harus diperiksa berdasarkan dampak:
 `docs/PERIODIC_REPORT_MODULE.md`, `docs/SPJ_PERIODIC_REPORTING.md`,
 `docs/TEMPLATE_MASTER_WORKFLOW.md`, `docs/LIVEWIRE_MIGRATION_PLAN.md`,
-`docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md`, `docs/MOBILE_VISUAL_QA_TODO.md`,
+`docs/SPJ_SUPPORTING_DOCUMENT_PATTERNS.md`,
 `docs/P0_VERIFICATION_KIT.md`, dan `docs/P0_01_SOURCE_AUDIT.md`.
 
 Tidak semua file harus diubah pada setiap pekerjaan; semuanya **harus diperiksa berdasarkan dampak**.
