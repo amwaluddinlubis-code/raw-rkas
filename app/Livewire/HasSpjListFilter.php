@@ -2,6 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Support\SpjDisplay;
+
 /**
  * Filter daftar SPJ yang dipakai ulang tab Paket dan Atribut.
  *
