@@ -305,23 +305,4 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
             }
         }
     }
-
-    private function pdfResponse(string $contents, string $fileName, SpjPackage $package)
-    {
-        $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
-        if ($temporaryFile === false || file_put_contents($temporaryFile, $contents) === false) {
-            throw new \RuntimeException('File sementara PDF tidak dapat disimpan.');
-        }
-
-        $downloadName = $this->safeDownloadName($fileName);
-        $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $downloadName);
-        @unlink($temporaryFile);
-
-        return response($contents, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
-            'Content-Length' => (string) strlen($contents),
-            'Cache-Control' => 'private, no-store, max-age=0',
-        ]);
-    }
 }

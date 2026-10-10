@@ -190,7 +190,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         $spreadsheet = $this->canonicalSpreadsheet($template, $package, $school, $receipt);
         (new SpjUnresolvedPlaceholderGuard)->assertSpreadsheetResolved((string) $template->document_type, $spreadsheet);
         try {
-            return $this->pdfResponseExtended(
+            return $this->pdfResponse(
                 $this->spreadsheetPdfContentsExtended($spreadsheet, false),
                 $template->document_type.'-'.$package->document_number.'.pdf', $package,
             );
@@ -230,7 +230,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     {
         $spreadsheet = $this->canonicalPackageSpreadsheet($templates, $package, $school);
         try {
-            return $this->pdfResponseExtended(
+            return $this->pdfResponse(
                 $this->spreadsheetPdfContentsExtended($spreadsheet, true),
                 'PAKET-SPJ-'.$package->document_number.'.pdf', $package,
             );
@@ -470,23 +470,6 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         }
     }
 
-    private function itemValuesExtended(SpjPackage $package, int $index, ?Collection $renderItems = null): array
-    {
-        $item = ($renderItems ?? $package->transaction->items)[$index - 1];
-
-        return [
-            'ITEM_NO' => (string) $index,
-            'ITEM_URAIAN' => (string) ($item->item_description ?: $item->sourceValue('description')),
-            'JENIS_RAB' => $this->rabItemKind($package, $item),
-            'ITEM_VOLUME' => app(SpjPlaceholderValueFormatter::class)->quantity($item->sourceValue('quantity')),
-            'ITEM_SATUAN' => (string) ($item->sourceValue('unit') ?: '—'),
-            'ITEM_HARGA_SATUAN' => app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('unit_price')),
-            'ITEM_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($item->sourceValue('amount')),
-            'ITEM_KODE_REKENING' => (string) ($item->sourceValue('account_code') ?: $package->transaction->sourceValue('account_code')),
-            'ITEM_NAMA_REKENING' => (string) ($item->sourceValue('account_name') ?: $package->transaction->sourceValue('account_name')),
-        ];
-    }
-
     private function fillExcelItemsExtended(Worksheet $sheet, SpjPackage $package, ?DocumentTemplate $template = null, ?GoodsReceipt $receipt = null): void
     {
         $this->withRabItemsForTemplate($package, $template, function () use ($sheet, $package, $receipt): void {
@@ -497,25 +480,10 @@ class ExtendedSpjTemplateService extends SpjTemplateService
                 '{{ITEM_NO}}',
                 'ITEM_',
                 $items->count(),
-                fn (int $index): array => $this->itemValuesExtended($package, $index, $items),
+                fn (int $index): array => $this->itemValues($package, $index, $items),
                 ['JENIS_RAB'],
             );
         });
-    }
-
-    private function workerValuesExtended(SpjPackage $package, int $index): array
-    {
-        $worker = $package->transaction->workers[$index - 1];
-
-        return [
-            'UPAH_NO' => (string) $index,
-            'UPAH_NAMA' => (string) $worker->name,
-            'UPAH_PEKERJAAN' => (string) $worker->job_description,
-            'UPAH_HARI' => (string) $worker->work_days,
-            'UPAH_TARIF_HARI' => app(SpjPlaceholderValueFormatter::class)->amount($worker->daily_rate),
-            'UPAH_JUMLAH' => app(SpjPlaceholderValueFormatter::class)->amount($worker->amount),
-            'UPAH_PENERIMA_KUITANSI' => $worker->is_receipt_recipient ? 'YA' : 'TIDAK',
-        ];
     }
 
     private function fillExcelWorkersExtended(Worksheet $sheet, SpjPackage $package): void
@@ -527,7 +495,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             '{{UPAH_NO}}',
             'UPAH_',
             $workers->count(),
-            fn (int $index): array => $this->workerValuesExtended($package, $index),
+            fn (int $index): array => $this->workerValues($package, $index),
         );
     }
 
@@ -556,33 +524,6 @@ class ExtendedSpjTemplateService extends SpjTemplateService
         } finally {
             @unlink($temporaryFile);
         }
-    }
-
-    private function pdfResponseExtended(string $contents, string $fileName, ?SpjPackage $package = null)
-    {
-        if ($package) {
-            $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
-            if ($temporaryFile === false || file_put_contents($temporaryFile, $contents) === false) {
-                throw new \RuntimeException('File sementara PDF tidak dapat disimpan.');
-            }
-            $downloadName = $this->safeDownloadName($fileName);
-            $stored = app(DocumentStoragePathService::class)->persist($temporaryFile, $package, $downloadName);
-            @unlink($temporaryFile);
-
-            return response($contents, 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="'.$downloadName.'"',
-                'Content-Length' => (string) strlen($contents),
-                'Cache-Control' => 'private, no-store, max-age=0',
-            ]);
-        }
-
-        return response($contents, 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$this->safeDownloadName($fileName).'"',
-            'Content-Length' => (string) strlen($contents),
-            'Cache-Control' => 'private, no-store, max-age=0',
-        ]);
     }
 
     private function templateSourcePathExtended(DocumentTemplate $template): string

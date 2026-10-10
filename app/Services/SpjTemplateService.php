@@ -761,7 +761,7 @@ class SpjTemplateService
         }
     }
 
-    private function pdfResponse(string $contents, string $fileName, ?SpjPackage $package = null)
+    protected function pdfResponse(string $contents, string $fileName, ?SpjPackage $package = null)
     {
         if ($package) {
             $temporaryFile = tempnam(sys_get_temp_dir(), 'spj-pdf-');
@@ -965,7 +965,7 @@ class SpjTemplateService
         return $this->terbilangNumber(intdiv($number, 1000000000000)).' triliun '.$this->terbilangNumber($number % 1000000000000);
     }
 
-    private function itemValues(SpjPackage $package, int $index, ?Collection $renderItems = null): array
+    protected function itemValues(SpjPackage $package, int $index, ?Collection $renderItems = null): array
     {
         $item = ($renderItems ?? $package->transaction->items)[$index - 1];
 
@@ -1168,7 +1168,7 @@ class SpjTemplateService
         });
     }
 
-    private function workerValues(SpjPackage $package, int $index): array
+    protected function workerValues(SpjPackage $package, int $index): array
     {
         $worker = $package->transaction->workers[$index - 1];
 
