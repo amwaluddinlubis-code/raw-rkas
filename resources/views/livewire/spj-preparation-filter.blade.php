@@ -7,9 +7,12 @@
                     dokumennya.
                 </p>
             </div>
-            <p class="max-w-xl text-xs font-medium text-[var(--ui-fg-muted)]">Prioritas: perlu dilengkapi → belum
-                dikerjakan →
-                sudah bernomor. Dalam setiap kelompok, tanggal terlama tampil lebih dahulu.</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <p class="max-w-xl text-xs font-medium text-[var(--ui-fg-muted)]">Prioritas: perlu dilengkapi → belum
+                    dikerjakan →
+                    sudah bernomor. Dalam setiap kelompok, tanggal terlama tampil lebih dahulu.</p>
+                <x-ui.button variant="secondary" :href="route('spj.quarter-recap')" class="shrink-0">Rekap Triwulan</x-ui.button>
+            </div>
         </div>
         <nav class="spj-work-queue mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5" aria-label="Pilih pekerjaan SPJ">
             <button type="button" wire:click="setQueueState('all')"
