@@ -1,6 +1,6 @@
 # GUI Runtime QA — Desktop, Laptop, Mobile, dan Tablet
 
-Terakhir diperbarui: **2026-10-05**
+Terakhir diperbarui: **2026-10-11**
 
 Dokumen ini adalah checklist runtime untuk menutup **GUI-AUDIT-12** dan **GUI-AUDIT-13**. Source-level regression dan CI tidak boleh dipakai sebagai pengganti verifikasi visual/runtime di browser.
 
