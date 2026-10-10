@@ -26,8 +26,8 @@ class UserManagementTest extends TestCase
                 'email' => 'operator@example.test',
                 'school_id' => $school->id,
                 'role' => User::ROLE_OPERATOR,
-                'password' => 'password123',
-                'password_confirmation' => 'password123',
+                'password' => 'password1234',
+                'password_confirmation' => 'password1234',
             ])
             ->assertRedirect();
 
@@ -49,8 +49,8 @@ class UserManagementTest extends TestCase
                 'email' => 'viewer@example.test',
                 'school_id' => null,
                 'role' => User::ROLE_VIEWER,
-                'password' => 'password456',
-                'password_confirmation' => 'password456',
+                'password' => 'password45678',
+                'password_confirmation' => 'password45678',
             ])
             ->assertRedirect();
 
@@ -59,7 +59,7 @@ class UserManagementTest extends TestCase
         $this->assertSame('Viewer Sekolah', $user->name);
         $this->assertSame('viewer@example.test', $user->email);
         $this->assertSame(User::ROLE_VIEWER, $user->role);
-        $this->assertTrue(Hash::check('password456', $user->password));
+        $this->assertTrue(Hash::check('password45678', $user->password));
     }
 
     public function test_operator_cannot_manage_users(): void
