@@ -2798,3 +2798,24 @@ pertama kalinya di HEAD ini. Skenario bootstrap diuji langsung: berkas dihapus
 lalu suite hijau; berkas diisi `CORRUPT-GARBAGE` lalu suite memulih dengan
 NOTICE dan hijau. Tujuh test file lain tetap hijau. `vendor/bin/pint --test`
 passed, `git diff --check` bersih.
+
+
+## Audit mendalam commit terbaru dan tindak lanjut (2026-10-11)
+
+Status: **SOURCE FIX APPLIED / REGRESSION + CI RVR**.
+
+Audit rangkaian refaktor terbaru pada branch \`main\` meninjau commit helper tampilan, ekstraksi pembaca DOCX, sentralisasi eager-load paket, dan penghapusan method duplikat. Temuan yang dapat dibuktikan dari source:
+
+1. \`SpjTemplateService\` masih memiliki \`match\` kategori lokal yang menduplikasi pemetaan \`SpjDisplay::typeLabel()\`. Pemetaan lokal itu diganti dengan helper kanonis agar kategori lama \`JASA_HONORARIUM\` tetap mendapat label yang sama dan daftar label tidak bercabang.
+2. Ditambahkan \`tests/Unit/SpjDisplayTest.php\` untuk mengunci format Rupiah (termasuk pembulatan dan nilai negatif) serta label kategori canonical/legacy dan fallback kategori yang belum dikenal.
+3. Tanggal audit README diperbarui menjadi 2026-10-11, dengan peringatan eksplisit bahwa audit source tidak berarti regression suite atau CI telah lulus.
+
+Verifikasi GitHub: combined commit status untuk commit awal audit mengembalikan daftar status kosong, dan pencarian workflow terkait commit tidak menemukan run yang dapat dipastikan sebagai gate CI untuk HEAD terbaru. Ini **bukan** bukti CI gagal maupun lulus.
+
+RVR wajib sebelum menyatakan selesai:
+- Jalankan \`php artisan test --compact tests/Unit/SpjDisplayTest.php\` dan suite terkait template/export.
+- Jalankan Pint, \`php artisan view:cache --no-interaction\`, dan \`git diff --check\`.
+- Periksa workflow Actions yang berjalan pada HEAD setelah perubahan audit ini dan catat hasil setiap job.
+- Jalankan suite penuh dan \`php artisan spj:verify\` jika lingkungan serta koneksi tenant yang dibutuhkan tersedia.
+
+Tidak ada klaim bahwa pengujian lokal telah dijalankan dalam sesi audit ini. Browser QA tetap ditunda sampai pengguna melakukan uji UI sendiri.
