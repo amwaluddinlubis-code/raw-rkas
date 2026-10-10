@@ -158,20 +158,7 @@ class PreflightSpjNumbering extends Command
                 ->values();
 
             $packages = SpjPackage::query()
-                ->with([
-                    'documents',
-                    'transaction.items',
-                    'transaction.goods',
-                    'transaction.goodsReceipts',
-                    'transaction.workOrder',
-                    'transaction.honors',
-                    'transaction.travels',
-                    'transaction.payments',
-                    'transaction.workers',
-                    'transaction.participants',
-                    'transaction.serviceRecipients',
-                    'transaction.spjPackage',
-                ])
+                ->with(SpjPackage::FULL_EAGER_LOAD)
                 ->whereKey($readyPackageIds->all())
                 ->get();
 

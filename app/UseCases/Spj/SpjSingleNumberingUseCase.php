@@ -29,20 +29,7 @@ class SpjSingleNumberingUseCase
 
     public function assignNumber(string $packageId): RedirectResponse
     {
-        $package = SpjPackage::query()->with([
-            'transaction.items',
-            'transaction.goods',
-            'transaction.goodsReceipts',
-            'transaction.workOrder',
-            'transaction.honors',
-            'transaction.travels',
-            'transaction.payments',
-            'transaction.workers',
-            'transaction.participants',
-            'transaction.serviceRecipients',
-            'transaction.spjPackage',
-            'documents',
-        ])->find($packageId);
+        $package = SpjPackage::query()->with(SpjPackage::FULL_EAGER_LOAD)->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
         }
@@ -69,20 +56,7 @@ class SpjSingleNumberingUseCase
 
     public function assignDocumentNumber(Request $request, string $packageId, string $documentType): RedirectResponse
     {
-        $package = SpjPackage::query()->with([
-            'documents',
-            'transaction.items',
-            'transaction.goods',
-            'transaction.goodsReceipts',
-            'transaction.workOrder',
-            'transaction.honors',
-            'transaction.travels',
-            'transaction.payments',
-            'transaction.workers',
-            'transaction.participants',
-            'transaction.serviceRecipients',
-            'transaction.spjPackage',
-        ])->find($packageId);
+        $package = SpjPackage::query()->with(SpjPackage::FULL_EAGER_LOAD)->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return back()->with('error', 'Paket tidak ditemukan pada konteks sekolah, tahun anggaran, dan sumber dana aktif.');
         }

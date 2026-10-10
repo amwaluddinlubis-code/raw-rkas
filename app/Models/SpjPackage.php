@@ -10,6 +10,27 @@ class SpjPackage extends Model
 {
     protected $connection = 'school';
 
+    /**
+     * Daftar eager-load standar untuk paket + seluruh relasi transaksi.
+     * Dipakai di banyak use case/service — ubah di sini bila relasi berubah.
+     *
+     * @var list<string>
+     */
+    public const FULL_EAGER_LOAD = [
+        'transaction.items',
+        'transaction.goods',
+        'transaction.goodsReceipts',
+        'transaction.workOrder',
+        'transaction.honors',
+        'transaction.travels',
+        'transaction.payments',
+        'transaction.workers',
+        'transaction.participants',
+        'transaction.serviceRecipients',
+        'transaction.spjPackage',
+        'documents',
+    ];
+
     protected $fillable = ['transaction_id', 'document_number', 'quarter_code', 'semester_code', 'phase_code', 'status', 'is_late_entry', 'numbered_at', 'generated_at', 'snapshot', 'finalized_at', 'finalized_by', 'cancelled_at', 'cancelled_by', 'cancellation_reason', 'unlocked_at', 'unlocked_by', 'unlock_reason'];
 
     public function transaction(): BelongsTo

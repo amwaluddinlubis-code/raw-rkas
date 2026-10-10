@@ -110,20 +110,7 @@ class SpjQuarterNumberingUseCase
         ]);
 
         $packages = SpjPackage::query()
-            ->with([
-                'documents',
-                'transaction.items',
-                'transaction.goods',
-                'transaction.goodsReceipts',
-                'transaction.workOrder',
-                'transaction.honors',
-                'transaction.travels',
-                'transaction.payments',
-                'transaction.workers',
-                'transaction.participants',
-                'transaction.serviceRecipients',
-                'transaction.spjPackage',
-            ])
+            ->with(SpjPackage::FULL_EAGER_LOAD)
             ->whereIn('status', ['READY', 'NUMBERED'])
             ->whereHas('transaction', $quarterScope)
             ->get();

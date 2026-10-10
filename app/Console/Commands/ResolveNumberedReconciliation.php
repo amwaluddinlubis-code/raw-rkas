@@ -166,12 +166,7 @@ class ResolveNumberedReconciliation extends Command
             );
             $audit->record($package->transaction->fiscal_year_id, 'TRANSACTION', $package->transaction->id, 'RESOLUSI_REKONSILIASI', "Rekonsiliasi {$result['label']} untuk reissue {$oldNumber}.");
 
-            $package = SpjPackage::query()->with([
-                'transaction.items', 'transaction.goods', 'transaction.goodsReceipts',
-                'transaction.workOrder', 'transaction.honors', 'transaction.travels',
-                'transaction.payments', 'transaction.workers', 'transaction.participants',
-                'transaction.serviceRecipients', 'transaction.spjPackage', 'documents',
-            ])->find($packageId);
+            $package = SpjPackage::query()->with(SpjPackage::FULL_EAGER_LOAD)->find($packageId);
             if ($blocker = $gate->issuanceBlocker($package, 'SPJ')) {
                 $this->error("Issuance blocker: {$blocker}");
 

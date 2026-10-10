@@ -66,11 +66,7 @@ class SpjNumberingOrderService
         [$startMonth, $endMonth] = ArkasMirrorResolver::quarterMonthRange($quarter);
         // CANCELLED adalah status terminal: paket yang dibatalkan tidak pernah
         // bisa FINAL sehingga tidak boleh memblokir penomoran paket lain (T1).
-        $candidates = SpjPackage::query()->with([
-            'documents', 'transaction.items', 'transaction.goods', 'transaction.goodsReceipts', 'transaction.workOrder',
-            'transaction.honors', 'transaction.travels', 'transaction.payments', 'transaction.workers',
-            'transaction.participants', 'transaction.serviceRecipients', 'transaction.spjPackage',
-        ])->whereHas('transaction', function ($query) use ($startMonth, $endMonth): void {
+        $candidates = SpjPackage::query()->with(SpjPackage::FULL_EAGER_LOAD)->whereHas('transaction', function ($query) use ($startMonth, $endMonth): void {
             $query->forSpjContext($this->context);
             ArkasMirrorResolver::joinKasUmum($query);
             $query->whereRaw(ArkasMirrorResolver::mirrorMonth().' >= ?', [$startMonth])
