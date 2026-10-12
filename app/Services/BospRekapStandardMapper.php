@@ -26,6 +26,41 @@ final class BospRekapStandardMapper
         ];
     }
 
+    /**
+     * Taksonomi PROGRAM Formulir BOS-K7 "Realisasi Penggunaan Dana Tiap
+     * Jenis Anggaran" (8 program resmi). Redaksi mengikuti formulir resmi
+     * (terverifikasi terhadap contoh TW II 2025); BERBEDA redaksinya dari
+     * A-1 untuk program 4/5/6/7.
+     *
+     * @return array<int,string> nomor program => label
+     */
+    public static function k7Programs(): array
+    {
+        return [
+            1 => 'Pengembangan Kompetensi Lulusan',
+            2 => 'Pengembangan Standar Isi',
+            3 => 'Pengembangan Standar Proses',
+            4 => 'Pengembangan pendidik dan tenaga kependidikan',
+            5 => 'Pengembangan sarana dan prasarana sekolah',
+            6 => 'Pengembangan standar pengelolaan',
+            7 => 'Pengembangan standar pembiayaan',
+            8 => 'Pengembangan dan implementasi sistem penilaian',
+        ];
+    }
+
+    /**
+     * Label sub-program K7 dari segmen kedua kode kegiatan. Memakai label
+     * sub-program ARKAS yang sama dengan grid rekap (terverifikasi cocok
+     * dengan contoh resmi, mis. 03.03, 05.08, 06.05); sub 11 yang kosong
+     * di ARKAS diberi label generik agar baris tetap terbaca.
+     */
+    public static function k7SubProgramLabel(int $sub): string
+    {
+        $label = self::subPrograms()[$sub] ?? '';
+
+        return $label !== '' ? $label : 'Sub Program '.$sub;
+    }
+
     /** @return array<int,string> nomor sub program => label (11 kosong seperti ARKAS) */
     public static function subPrograms(): array
     {

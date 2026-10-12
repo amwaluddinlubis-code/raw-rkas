@@ -5,6 +5,27 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Format K7 ditulis ulang ke formulir resmi (2026-10-12)
+
+Format K7 lama (tabel per jenis anggaran 5.1.01/5.1.02/5.2 per bulan)
+diganti total mengikuti Formulir BOS-K7 resmi — contoh TW II 2025 dari
+pengguna: kop identitas + kotak Formulir Bos-K7, tabel 9 kolom bernomor
+1,2,3,4,5,8,9,10,11, hierarki A → B/I (8 program → sub → kegiatan) →
+II → C (sisa), warna baris resmi, TTD Komite/Kepsek/Bendahara,
+landscape folio; Excel mengikuti struktur yang sama.
+
+Temuan saat pengerjaan: `SpjPeriodicReportUseCase::applyPeriod` join
+mirror tanpa select eksplisit sehingga kolom `id` mirror menimpa `id`
+transaksi pada model (relasi items + agregat mirror bergeser bila
+urutan id kedua tabel tidak selaras — termask di test A1 lama karena
+id kebetulan selaras). Diperbaiki dengan `select('transactions.*')`.
+
+Regression: `K7aFormatK7SptjmReportTest` 8 passed / 105 assertions
+(data + struktur resmi, print route, excel); BkuOfficialLedger,
+BosA1, BpkDinas, K7bK7c, RekapBudgetRealization,
+SpjPeriodicReportPrintable 32 passed; Pint passed. Browser/PDF
+aktual tetap RVR.
+
 ## BOS K7A + Format K7 + SPTJM resmi (2026-10-08)
 
 Status: **FUNCTIONAL PASS (focused) / BROWSER RVR, AKURASI PER-KOMPONEN K7A RVR**.

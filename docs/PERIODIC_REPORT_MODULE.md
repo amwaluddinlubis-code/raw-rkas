@@ -216,22 +216,34 @@ Implementasi: `SpjPeriodicReportPrintService::k7aData/k7aActivityMap`,
 cabang `k7a` di `document.blade.php`,
 `SpjPeriodicReportExcelService::writeK7a`.
 
-## Format K7 (realisasi per jenis anggaran + lampiran, 2026-10-08)
+## Format K7 (Formulir BOS-K7 resmi, 2026-10-12)
 
-Presentasi `k7` (`format_k7`, triwulan/semester/tahunan):
-"REALISASI PENGGUNAAN DANA TIAP JENIS ANGGARAN" per jenis
-(Belanja Pegawai 5.1.01 | Barang dan Jasa 5.1.02 | Modal 5.2.*) dengan
-kolom per bulan dalam scope + Jumlah, JUMLAH, blok Lampiran Format K7
-(pernyataan tanggung jawab + pengiriman ke Tim Manajemen BOS Kab/Kota +
-materai), dan tanda tangan Bendahara + Kepsek + Komite Sekolah.
+Presentasi `k7` (`format_k7`, bulanan/triwulan/semester/tahunan):
+"Realisasi Penggunaan Dana Tiap Jenis Anggaran" mengikuti formulir
+resmi (terverifikasi terhadap contoh TW II 2025): kop identitas
+sekolah + kotak "Formulir Bos-K7", tabel 9 kolom (No. Kode |
+Uraian Kegiatan | Jumlah | Rutin | BOS Pusat/Provinsi/Kab-Kota |
+Bantuan Lain | Sumber Pendapatan Lainnya) dengan baris bernomor
+1,2,3,4,5,8,9,10,11, hierarki A (penerimaan: saldo awal, rutin,
+BOS, bantuan lain, sumber pendapatan lainnya, total) → B/I
+(Program Sekolah: 8 program → sub-program → kegiatan dari kode
+kegiatan transaksi) → II (total penggunaan) → C (sisa = I-II),
+dan tanda tangan Komite Sekolah + Kepsek + Bendahara (+ tempat/
+tanggal). Warna baris resmi: header krem `#f2f1eb`, baris
+A/B/I abu `#d9d9d9`, program pink `#ffd6d6`, sub-program hijau
+`#d4ffd4`; landscape folio.
 
-Aturan jenis dari prefix KODE_REKENING klasifikasi APBD baku; rekening
-di luar ketiga prefix dilaporkan sebagai unmapped, bukan dipaksakan.
+Nominal penggunaan memakai `gross_amount` seperti A-1; kolom sumber
+dana mengikuti nama fund source aktif (`k7FundColumn`, default
+Pusat untuk BOSP/BOS Reguler). Transaksi tanpa kode kegiatan 01–08
+dilaporkan sebagai unmapped (tidak masuk JUMLAH).
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
-Implementasi: `SpjPeriodicReportPrintService::k7Data/k7JenisForAccount`,
-cabang `k7` di `document.blade.php`,
-`SpjPeriodicReportExcelService::writeK7`.
+Implementasi: `SpjPeriodicReportPrintService::k7Data/k7Title/
+k7PeriodQualifier/k7FundColumn/k7Receipts/k7UsageHierarchy`,
+`BospRekapStandardMapper::k7Programs/k7SubProgramLabel`, cabang `k7`
+di `document.blade.php` + `document-styles.blade.php`,
+`SpjPeriodicReportExcelService::writeK7/styleK7Header`.
 
 ## SPTJM (2026-10-08)
 

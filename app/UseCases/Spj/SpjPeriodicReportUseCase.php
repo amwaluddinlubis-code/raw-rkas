@@ -156,6 +156,11 @@ final class SpjPeriodicReportUseCase
     {
         ArkasMirrorResolver::joinKasUmum($query);
 
+        // Join mirror membawa kolom id/created_at/updated_at ganda; tanpa
+        // select eksplisit, id milik mirror menimpa id transaksi pada model
+        // (terbukti menggeser relasi items dan agregat mirror per transaksi).
+        $query->select('transactions.*');
+
         if ($scope === SpjPeriodicReportRegistry::SCOPE_MONTHLY && $period) {
             ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) = ?", [$period]);
 
