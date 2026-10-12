@@ -211,6 +211,92 @@
         font-weight: 700;
     }
 
+    /* Formulir BOS-K7 resmi: kop + tabel berwarna sesuai formulir. */
+    .k7-title {
+        text-align: center;
+        font-weight: 700;
+        font-size: 11px;
+        line-height: 1.5;
+        margin: 8px 0;
+    }
+
+    .k7-ident {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin: 8px 0 4px;
+    }
+
+    .k7-ident-left {
+        border-collapse: collapse;
+        font-size: 10px;
+    }
+
+    .k7-ident-left td {
+        padding: 1px 4px;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .k7-ident-left td:first-child {
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .k7-formbox {
+        border-collapse: collapse;
+        font-size: 9px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .k7-formbox td {
+        border: 1px solid #000000;
+        padding: 3px 12px;
+    }
+
+    .report-table.k7-table thead th {
+        background: #f2f1eb;
+    }
+
+    .report-table.k7-table td {
+        font-size: 8px;
+    }
+
+    .report-table.k7-table .k7-code {
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .report-table.k7-table .k7-bold {
+        font-weight: 700;
+    }
+
+    .report-table.k7-table tr.k7-section td {
+        background: #d9d9d9;
+    }
+
+    .report-table.k7-table tr.k7-program td {
+        background: #ffd6d6;
+    }
+
+    .report-table.k7-table tr.k7-sub td {
+        background: #d4ffd4;
+    }
+
+    .report-table.k7-table tr.k7-section td,
+    .report-table.k7-table tr.k7-program td,
+    .report-table.k7-table tr.k7-sub td,
+    .report-table.k7-table thead th {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .signature-table.k7-sign td {
+        vertical-align: top;
+    }
+
     .bku-identity {
         margin: 6px auto 0;
         border-collapse: collapse;

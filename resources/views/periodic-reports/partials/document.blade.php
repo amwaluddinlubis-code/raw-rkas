@@ -157,22 +157,33 @@
     </table>
     @endif
     @if($isK7)
-    <h1 class="doc-title">REALISASI PENGGUNAAN DANA TIAP JENIS ANGGARAN</h1>
-    <div class="doc-subtitle">Format K7 — PERIODE {{ $summary['period_label'] }}</div>
-    <table class="bku-identity-block page-break-avoid">
-        <tr>
-            <td>Nama Sekolah</td>
-            <td>: {{ $school->name }}</td>
-        </tr>
-        <tr>
-            <td>NPSN</td>
-            <td>: {{ $school->npsn ?? '-' }}</td>
-        </tr>
-        <tr>
-            <td>Sumber Dana</td>
-            <td>: {{ $fundSource }}</td>
-        </tr>
-    </table>
+    @php
+        $k7District = trim((string) ($school->district ?? ''));
+        if ($k7District !== '' && ! str_starts_with($k7District, 'Kec.')) {
+            $k7District = 'Kec. '.$k7District;
+        }
+        $k7Desa = trim((string) ($school->desa ?? ''));
+        $k7DesaKec = trim($k7Desa.($k7District !== '' ? ' / '.$k7District : ''), ' /') ?: '-';
+    @endphp
+    <div class="k7-title">
+        <div>{{ $k7['title']['heading'] }}</div>
+        <div>{{ $k7['title']['year_line'] }}</div>
+        <div>{{ $k7['title']['range_line'] }}</div>
+    </div>
+    <div class="k7-ident page-break-avoid">
+        <table class="k7-ident-left">
+            <tr><td>NPSN</td><td>: {{ $school->npsn ?? '-' }}</td></tr>
+            <tr><td>Nama Sekolah</td><td>: {{ $school->name }}</td></tr>
+            <tr><td>Desa/Kecamatan</td><td>: {{ $k7DesaKec }}</td></tr>
+            <tr><td>Kabupaten</td><td>: {{ $school->regency ?: '-' }}</td></tr>
+            <tr><td>Provinsi</td><td>: {{ $school->province ?: '-' }}</td></tr>
+        </table>
+        <table class="k7-formbox">
+            <tr><td><strong>Formulir Bos-K7</strong></td></tr>
+            <tr><td>Diisi Oleh Sekolah</td></tr>
+            <tr><td>Dikirim Ke Tim Manajemen Bos Kab/Kota</td></tr>
+        </table>
+    </div>
     @endif
     @if($isSptjm)
     <header class="doc-header">
@@ -524,51 +535,63 @@
 
     @if($isK7)
     @php
-        $k7months = array_keys($k7['months']);
+        $k7cols = ['jumlah', 'rutin', 'pusat', 'provinsi', 'kab_kota', 'bantuan_lain', 'sumber_lainnya'];
+        $k7money = function (array $amounts, string $col, bool $zeroDash) use ($rupiah) {
+            $value = (float) ($amounts[$col] ?? 0);
+            if ($value == 0.0) {
+                return $zeroDash ? '-' : '';
+            }
+            return $rupiah($value);
+        };
     @endphp
-    <table class="report-table">
+    <table class="report-table k7-table">
         <thead>
             <tr>
-                <th>No</th>
-                <th>Jenis Anggaran</th>
-                @foreach($k7months as $k7month)
-                    <th>{{ $k7['months'][$k7month] }}</th>
-                @endforeach
-                <th>Jumlah (Rp)</th>
+                <th rowspan="3">No. Kode</th>
+                <th rowspan="3">Uraian Kegiatan</th>
+                <th rowspan="3">Jumlah</th>
+                <th colspan="6">Penggunaan Dana Per Sumber Dana</th>
+            </tr>
+            <tr>
+                <th rowspan="2">Rutin</th>
+                <th colspan="3">Bantuan Operasional Sekolah (BOS)</th>
+                <th rowspan="2">Bantuan Lain</th>
+                <th rowspan="2">Sumber Pendapatan Lainnya</th>
+            </tr>
+            <tr>
+                <th>Pusat</th>
+                <th>Provinsi</th>
+                <th>Kab/Kota</th>
+            </tr>
+            <tr>
+                <th class="integer">1</th>
+                <th class="integer">2</th>
+                <th class="integer">3</th>
+                <th class="integer">4</th>
+                <th class="integer">5</th>
+                <th class="integer">8</th>
+                <th class="integer">9</th>
+                <th class="integer">10</th>
+                <th class="integer">11</th>
             </tr>
         </thead>
         <tbody>
-            @php $k7no = 0; @endphp
             @foreach($k7['rows'] as $k7row)
-                @php $k7no++; @endphp
-                <tr>
-                    <td class="integer">{{ $k7no }}</td>
-                    <td>{{ $k7row['label'] }}</td>
-                    @foreach($k7months as $k7month)
-                        <td class="money">{{ $rupiah($k7row['months'][$k7month] ?? 0) }}</td>
+                <tr class="k7-{{ $k7row['kind'] }}">
+                    <td class="k7-code">{{ $k7row['code'] }}</td>
+                    <td @if($k7row['bold']) class="k7-bold" @endif>{{ $k7row['label'] }}</td>
+                    @foreach($k7cols as $k7col)
+                        <td class="money @if($k7row['bold']) k7-bold @endif">{{ $k7money($k7row['amounts'], $k7col, $k7row['zero_dash']) }}</td>
                     @endforeach
-                    <td class="money"><strong>{{ $rupiah($k7row['total']) }}</strong></td>
                 </tr>
             @endforeach
-            <tr>
-                <td class="integer"></td>
-                <td><strong>JUMLAH</strong></td>
-                @foreach($k7months as $k7month)
-                    <td class="money"><strong>{{ $rupiah($k7['colTotals'][$k7month] ?? 0) }}</strong></td>
-                @endforeach
-                <td class="money"><strong>{{ $rupiah($k7['grand']) }}</strong></td>
-            </tr>
         </tbody>
     </table>
     @if($k7['unmapped'] > 0)
     <div class="note">
-        Belanja Rp. {{ $rupiah($k7['unmapped']) }} ({{ $k7['unmappedCount'] }} baris kas) berkode rekening di luar 5.1.01/5.1.02/5.2 dan tidak masuk JUMLAH — cocokkan manual dengan pembukuan sebelum ditandatangani.
+        Belanja Rp. {{ $rupiah($k7['unmapped']) }} ({{ $k7['unmappedCount'] }} transaksi) tanpa kode kegiatan 01–08 dan tidak masuk JUMLAH — cocokkan manual dengan pembukuan sebelum ditandatangani.
     </div>
     @endif
-    <div class="statement">
-        <p>Lampiran Format K7 ini dibuat oleh sekolah sebagai pernyataan tanggung jawab atas realisasi penggunaan dana pada {{ $summary['period_label'] }} sebesar Rp. {{ $rupiah($k7['grand']) }} dan dikirim kepada Tim Manajemen BOS Kabupaten/Kota bersama administrasi BOS lainnya setiap triwulan.</p>
-        <p>Dokumen ini ditandatangani oleh Kepala Sekolah di atas materai dan disimpan di sekolah untuk diperlihatkan kepada pengawas, Tim Manajemen BOS Kabupaten/Kota, dan para pemeriksa lainnya apabila diperlukan.</p>
-    </div>
     @endif
 
     @if($isSptjm)
@@ -886,18 +909,15 @@
         </tr>
     </table>
     @elseif($isK7)
-    <table class="signature-table">
+    <table class="signature-table k7-sign">
         <tr>
             <td>
-                Bendahara BOS
+                Komite Sekolah
                 <div class="signature-space"></div>
-                <div class="signature-name">{{ $treasurerName }}</div>
-                @if($treasurerNip)
-                    <div>NIP. {{ $treasurerNip }}</div>
-                @endif
+                <div class="signature-name">........................................</div>
             </td>
             <td>
-                Mengetahui,<br>
+                Mengetahui<br>
                 Kepala Sekolah
                 <div class="signature-space"></div>
                 <div class="signature-name">{{ $principalName }}</div>
@@ -906,9 +926,13 @@
                 @endif
             </td>
             <td>
-                Komite Sekolah
+                {{ $k7['place'] }}, {{ $k7['signed_date'] }}<br>
+                Bendahara
                 <div class="signature-space"></div>
-                <div class="signature-name">........................................</div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
             </td>
         </tr>
     </table>

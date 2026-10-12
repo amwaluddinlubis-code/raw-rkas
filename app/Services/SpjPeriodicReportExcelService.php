@@ -265,42 +265,110 @@ final class SpjPeriodicReportExcelService
         $this->autoSize($sheet, 3);
     }
 
+    /**
+     * Lembar Excel Formulir BOS-K7 resmi: judul + identitas, header 4 baris
+     * (No. Kode | Uraian Kegiatan | Jumlah | Penggunaan Dana Per Sumber Dana
+     * -> Rutin | BOS Pusat/Provinsi/Kab-Kota | Bantuan Lain | Sumber
+     * Pendapatan Lainnya) + baris nomor 1,2,3,4,5,8,9,10,11, lalu hierarki
+     * baris dari payload dengan warna baris resmi formulir.
+     */
     private function writeK7(object $sheet, array $payload): void
     {
         $data = $payload['k7'];
-        $months = array_keys($data['months']);
-        $headers = ['No', 'Jenis Anggaran'];
-        foreach ($months as $month) {
-            $headers[] = $data['months'][$month];
-        }
-        $headers[] = 'Jumlah (Rp)';
-        $sheet->fromArray([$headers], null, 'A1');
+        $school = $payload['school'];
 
-        $rowNumber = 2;
-        $no = 0;
-        foreach ($data['rows'] as $row) {
-            $no++;
-            $values = [$no, $row['label']];
-            foreach ($months as $month) {
-                $values[] = (float) ($row['months'][$month] ?? 0);
+        $row = 1;
+        foreach ([$data['title']['heading'], $data['title']['year_line'], $data['title']['range_line']] as $line) {
+            $sheet->setCellValue('A'.$row, $line);
+            $sheet->mergeCells('A'.$row.':I'.$row);
+            $sheet->getStyle('A'.$row)->getFont()->setBold(true);
+            $sheet->getStyle('A'.$row)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $row++;
+        }
+
+        $row++;
+        $desaKec = trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /') ?: '-';
+        foreach ([['NPSN', $school->npsn ?? '-'], ['Nama Sekolah', $school->name], ['Desa/Kecamatan', $desaKec], ['Kabupaten', $school->regency ?: '-'], ['Provinsi', $school->province ?: '-']] as [$label, $value]) {
+            $sheet->setCellValue('A'.$row, $label);
+            $sheet->setCellValue('B'.$row, ': '.$value);
+            $row++;
+        }
+
+        $row++;
+        $headerRow = $row;
+        $sheet->setCellValue('A'.$row, 'No. Kode');
+        $sheet->mergeCells('A'.$row.':A'.($row + 2));
+        $sheet->setCellValue('B'.$row, 'Uraian Kegiatan');
+        $sheet->mergeCells('B'.$row.':B'.($row + 2));
+        $sheet->setCellValue('C'.$row, 'Jumlah');
+        $sheet->mergeCells('C'.$row.':C'.($row + 2));
+        $sheet->setCellValue('D'.$row, 'Penggunaan Dana Per Sumber Dana');
+        $sheet->mergeCells('D'.$row.':I'.$row);
+        $row++;
+        $sheet->setCellValue('D'.$row, 'Rutin');
+        $sheet->mergeCells('D'.$row.':D'.($row + 1));
+        $sheet->setCellValue('E'.$row, 'Bantuan Operasional Sekolah (BOS)');
+        $sheet->mergeCells('E'.$row.':G'.$row);
+        $sheet->setCellValue('H'.$row, 'Bantuan Lain');
+        $sheet->mergeCells('H'.$row.':H'.($row + 1));
+        $sheet->setCellValue('I'.$row, 'Sumber Pendapatan Lainnya');
+        $sheet->mergeCells('I'.$row.':I'.($row + 1));
+        $row++;
+        $sheet->setCellValue('E'.$row, 'Pusat');
+        $sheet->setCellValue('F'.$row, 'Provinsi');
+        $sheet->setCellValue('G'.$row, 'Kab/Kota');
+        $row++;
+        foreach (['1', '2', '3', '4', '5', '8', '9', '10', '11'] as $index => $number) {
+            $sheet->setCellValue($this->columnLetter($index + 1).$row, $number);
+        }
+        $headerEnd = $row;
+        $this->styleK7Header($sheet, 'A'.$headerRow.':I'.$headerEnd);
+        $row++;
+
+        $columns = ['C' => 'jumlah', 'D' => 'rutin', 'E' => 'pusat', 'F' => 'provinsi', 'G' => 'kab_kota', 'H' => 'bantuan_lain', 'I' => 'sumber_lainnya'];
+        $fills = ['section' => 'D9D9D9', 'program' => 'FFD6D6', 'sub' => 'D4FFD4'];
+        $firstData = $row;
+        foreach ($data['rows'] as $item) {
+            $sheet->setCellValue('A'.$row, $item['code']);
+            $sheet->setCellValue('B'.$row, $item['label']);
+            foreach ($columns as $letter => $key) {
+                $value = (float) ($item['amounts'][$key] ?? 0);
+                if ($value == 0.0) {
+                    $sheet->setCellValue($letter.$row, $item['zero_dash'] ? '-' : '');
+                } else {
+                    $sheet->setCellValue($letter.$row, $value);
+                }
             }
-            $values[] = (float) $row['total'];
-            $sheet->fromArray([$values], null, 'A'.$rowNumber++);
+            if ($item['bold']) {
+                $sheet->getStyle('A'.$row.':I'.$row)->getFont()->setBold(true);
+            }
+            if (isset($fills[$item['kind']])) {
+                $sheet->getStyle('A'.$row.':I'.$row)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($fills[$item['kind']]);
+            }
+            $row++;
+        }
+        $lastData = $row - 1;
+
+        if (($data['unmapped'] ?? 0) > 0) {
+            $row++;
+            $sheet->setCellValue('A'.$row, 'Catatan: Rp. '.number_format((float) $data['unmapped'], 0, ',', '.').' ('.(int) ($data['unmappedCount'] ?? 0).' transaksi) tanpa kode kegiatan 01-08 dan tidak masuk JUMLAH.');
+            $sheet->mergeCells('A'.$row.':I'.$row);
         }
 
-        $totals = ['', 'JUMLAH'];
-        foreach ($months as $month) {
-            $totals[] = (float) ($data['colTotals'][$month] ?? 0);
-        }
-        $totals[] = (float) $data['grand'];
-        $sheet->fromArray([$totals], null, 'A'.$rowNumber);
+        $sheet->getStyle('A'.$headerRow.':I'.$lastData)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+        $sheet->getStyle('A'.$headerRow.':I'.$headerEnd)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER)->setWrapText(true);
+        $this->formatMoneyRange($sheet, 'C'.$firstData.':I'.$lastData);
+        $sheet->getStyle('C'.$firstData.':I'.$lastData)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle('A'.$firstData.':A'.$lastData)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $this->autoSize($sheet, 9);
+    }
 
-        $lastColumn = $this->columnLetter(count($headers));
-        $this->styleHeader($sheet, 'A1:'.$lastColumn.'1');
-        $this->formatMoneyRange($sheet, 'C2:'.$lastColumn.$rowNumber);
-        $sheet->getStyle('A'.$rowNumber.':'.$lastColumn.$rowNumber)->getFont()->setBold(true);
-        $sheet->freezePane('A2');
-        $this->autoSize($sheet, count($headers));
+    private function styleK7Header(object $sheet, string $range): void
+    {
+        $sheet->getStyle($range)->getFont()->setBold(true);
+        $sheet->getStyle($range)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle($range)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('F2F1EB');
+        $sheet->getStyle($range)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
     }
 
     private function writeSptjm(object $sheet, array $payload): void

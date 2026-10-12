@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\BospRekapStandardMapper;
 use App\Services\SpjPeriodicReportExcelService;
@@ -115,6 +116,15 @@ class K7aFormatK7SptjmReportTest extends TestCase
                 'id_rapbs' => $kasId.'-RA', 'KODE_KEGIATAN' => $kode, 'NAMA_KEGIATAN' => $nama,
                 'kode_rekening' => $rekening, 'uraian' => $nama, 'jumlah' => $jumlah,
             ]);
+            $transaction = Transaction::query()->create([
+                'fiscal_year_id' => 1,
+                'fund_source_id' => 1,
+                'id_kas_umum' => $kasId,
+            ]);
+            $transaction->items()->create([
+                'source_item_id' => $kasId,
+                'item_description' => 'Item '.$kasId,
+            ]);
         }
     }
 
@@ -171,36 +181,78 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertSame(1, substr_count($html, '<table class="signature-table'));
     }
 
-    public function test_format_k7_groups_by_account_prefix_per_month(): void
+    public function test_format_k7_follows_official_form_structure(): void
     {
         $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'format_k7', 1);
 
         $this->assertSame('k7', $payload['presentation']);
+        $this->assertSame('landscape', $payload['orientation']);
+        $this->assertSame('folio', $payload['paper']);
 
         $k7 = $payload['k7'];
-        $this->assertSame([1, 2, 3], array_keys($k7['months']));
-        $this->assertSame(1500000.0, $k7['rows']['pegawai']['total']);
-        $this->assertSame(4900000.0, $k7['rows']['barang_jasa']['total']);
-        $this->assertSame(800000.0, $k7['rows']['modal']['total']);
-        $this->assertSame(7200000.0, $k7['grand']);
+        $this->assertSame('Realisasi Penggunaan Dana Tiap Jenis Anggaran', $k7['title']['heading']);
+        $this->assertSame('Tahun Anggaran 2026', $k7['title']['year_line']);
+        $this->assertStringContainsString('Triwulan I', $k7['title']['range_line']);
+        // BOSP Reguler (APBN) -> kolom Pusat.
+        $this->assertSame('pusat', $k7['fund_column']);
+
+        $rows = $k7['rows'];
+        $byLabel = [];
+        foreach ($rows as $row) {
+            $byLabel[$row['label']] = $row;
+        }
+
+        // A. Penerimaan: hanya Terima Dana BOS 10jt pada kolom Pusat.
+        $this->assertSame(10000000.0, $byLabel['Penerimaan Terdiri Dari']['amounts']['jumlah']);
+        $this->assertSame(10000000.0, $byLabel['Penerimaan Terdiri Dari']['amounts']['pusat']);
+        $this->assertSame(10000000.0, $byLabel['Bantuan Operasional Sekolah']['amounts']['jumlah']);
+        $this->assertSame(0.0, $byLabel['Saldo Awal']['amounts']['jumlah']);
+
+        // Hierarki 8 program selalu tampil; program tanpa data bernilai nol.
+        $this->assertSame(500000.0, $byLabel['Pengembangan Kompetensi Lulusan']['amounts']['jumlah']);
+        $this->assertSame(1000000.0, $byLabel['Pengembangan Standar Isi']['amounts']['jumlah']);
+        $this->assertSame(400000.0, $byLabel['Pengembangan Standar Proses']['amounts']['jumlah']);
+        $this->assertSame(0.0, $byLabel['Pengembangan pendidik dan tenaga kependidikan']['amounts']['jumlah']);
+        $this->assertSame(1100000.0, $byLabel['Pengembangan sarana dan prasarana sekolah']['amounts']['jumlah']);
+        $this->assertSame(700000.0, $byLabel['Pengembangan standar pengelolaan']['amounts']['jumlah']);
+        $this->assertSame(3500000.0, $byLabel['Pengembangan standar pembiayaan']['amounts']['jumlah']);
+        $this->assertSame(0.0, $byLabel['Pengembangan dan implementasi sistem penilaian']['amounts']['jumlah']);
+
+        // Sub-program dan kegiatan dari kode kegiatan transaksi.
+        $this->assertSame(500000.0, $byLabel['Penerimaan Murid baru']['amounts']['jumlah']);
+        $this->assertSame(500000.0, $byLabel['Pelaksanaan Pendaftaran Murid Baru (PMB)']['amounts']['jumlah']);
+        $this->assertSame(400000.0, $byLabel['Pelaksanaan Kegiatan Pembelajaran dan Ekstrakurikuler']['amounts']['jumlah']);
+
+        // II total penggunaan, C sisa = penerimaan - penggunaan.
+        $this->assertSame(7200000.0, $byLabel['Total Penggunaan Dana']['amounts']['jumlah']);
+        $this->assertSame(7200000.0, $byLabel['Total Penggunaan Dana']['amounts']['pusat']);
+        $this->assertSame(2800000.0, $byLabel['Sisa Dana = I - II (Pengembalian)']['amounts']['jumlah']);
+        $this->assertSame(2800000.0, $byLabel['Sisa Dana = I - II (Pengembalian)']['amounts']['pusat']);
+
         $this->assertSame(0.0, $k7['unmapped']);
-        $this->assertSame(1500000.0, $k7['rows']['pegawai']['months'][1]);
-        $this->assertSame(0.0, $k7['rows']['pegawai']['months'][2]);
+        $this->assertSame(0, $k7['unmappedCount']);
     }
 
-    public function test_format_k7_print_route_renders_statement_and_signatures(): void
+    public function test_format_k7_print_route_renders_official_layout(): void
     {
         $response = $this->get('/laporan-periode/triwulan/format_k7/cetak?periode_laporan=1');
 
         $response->assertOk();
         $html = (string) $response->getContent();
-        $this->assertStringContainsString('REALISASI PENGGUNAAN DANA TIAP JENIS ANGGARAN', $html);
-        $this->assertStringContainsString('Format K7', $html);
-        $this->assertStringContainsString('Belanja Pegawai', $html);
-        $this->assertStringContainsString('Belanja Barang dan Jasa', $html);
-        $this->assertStringContainsString('Belanja Modal', $html);
-        $this->assertStringContainsString('Lampiran Format K7', $html);
+        $this->assertStringContainsString('Realisasi Penggunaan Dana Tiap Jenis Anggaran', $html);
+        $this->assertStringContainsString('Tahun Anggaran 2026', $html);
+        $this->assertStringContainsString('Triwulan I', $html);
+        $this->assertStringContainsString('Formulir Bos-K7', $html);
+        $this->assertStringContainsString('Diisi Oleh Sekolah', $html);
+        $this->assertStringContainsString('Penggunaan Dana Per Sumber Dana', $html);
+        $this->assertStringContainsString('Bantuan Operasional Sekolah (BOS)', $html);
+        $this->assertStringContainsString('Sisa Dana = I - II (Pengembalian)', $html);
+        $this->assertStringContainsString('2.800.000', $html);
         $this->assertStringContainsString('Komite Sekolah', $html);
+        $this->assertStringContainsString('Mengetahui', $html);
+        $this->assertStringContainsString('Bendahara', $html);
+        $this->assertStringContainsString('Kepala Uji', $html);
+        $this->assertStringContainsString('Bendahara Uji', $html);
         $this->assertSame(1, substr_count($html, '<table class="signature-table'));
     }
 
@@ -250,8 +302,18 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $book = IOFactory::load($path);
         $sheet = $book->getSheetByName('Laporan');
         $this->assertNotNull($sheet);
-        $this->assertSame('Jenis Anggaran', $sheet->getCell('B1')->getValue());
-        $this->assertEquals(7200000, $sheet->getCell('F5')->getValue());
+        $this->assertSame('Realisasi Penggunaan Dana Tiap Jenis Anggaran', $sheet->getCell('A1')->getValue());
+        $this->assertSame('No. Kode', $sheet->getCell('A11')->getValue());
+        $this->assertSame('Penggunaan Dana Per Sumber Dana', $sheet->getCell('D11')->getValue());
+        $this->assertSame('Pusat', $sheet->getCell('E13')->getValue());
+        $this->assertEquals(10, $sheet->getCell('H14')->getValue());
+        // Baris A: penerimaan 10jt pada kolom Jumlah (C) dan Pusat (E).
+        $this->assertSame('Penerimaan Terdiri Dari', $sheet->getCell('B15')->getValue());
+        $this->assertEquals(10000000, $sheet->getCell('C15')->getValue());
+        $this->assertEquals(10000000, $sheet->getCell('E15')->getValue());
+        // Baris C: sisa 2,8jt.
+        $this->assertSame('Sisa Dana = I - II (Pengembalian)', $sheet->getCell('B48')->getValue());
+        $this->assertEquals(2800000, $sheet->getCell('C48')->getValue());
         $book->disconnectWorksheets();
 
         $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'sptjm', 1);
