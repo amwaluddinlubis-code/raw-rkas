@@ -85,8 +85,7 @@ final class SpjPeriodicReportPrintService
             $extra['k7aTitle'] = $this->bosA1Title($summary);
         }
         if ($presentation === 'k7') {
-            $extra['k7'] = $this->k7Data($scope, $period);
-            $extra['k7Title'] = $this->bosA1Title($summary);
+            $extra['k7'] = $this->k7Data($scope, $period, $transactions, $summary);
         }
         if ($presentation === 'sptjm_doc') {
             $extra['sptjm'] = $this->sptjmData($scope, $period, $summary);
@@ -1904,100 +1903,330 @@ final class SpjPeriodicReportPrintService
     }
 
     /**
-     * Data Format K7: realisasi BELANJA per jenis anggaran per bulan scope.
+     * Data Formulir BOS-K7: Realisasi Penggunaan Dana Tiap Jenis Anggaran.
      *
-     * Jenis dari prefix KODE_REKENING (klasifikasi APBD baku: 5.1.01
-     * pegawai, 5.1.02 barang dan jasa, 5.2 modal). Kolom per bulan dalam
-     * scope + Jumlah, sehingga berlaku untuk bulanan/triwulan/semester/
-     * tahunan tanpa mengubah kontrak scope.
+     * Struktur mengikuti formulir resmi (terverifikasi terhadap contoh
+     * TW II 2025): kop identitas sekolah + kotak "Formulir Bos-K7", tabel
+     * 9 kolom (No. Kode | Uraian Kegiatan | Jumlah | Rutin | BOS
+     * Pusat/Provinsi/Kab-Kota | Bantuan Lain | Sumber Pendapatan Lainnya)
+     * dengan baris bernomor 1,2,3,4,5,8,9,10,11, hierarki A (penerimaan:
+     * saldo awal, rutin, BOS, bantuan lain, sumber pendapatan lainnya,
+     * total) -> B/I (Program Sekolah: 8 program -> sub-program -> kegiatan
+     * dari kode kegiatan transaksi) -> II (total penggunaan) -> C
+     * (sisa = I-II), lalu blok tanda tangan Komite/Kepala Sekolah/
+     * Bendahara.
      *
-     * @return array{months:array<int,string>,rows:array<string,array{label:string,months:array<int,float>,total:float}>,colTotals:array<int,float>,grand:float,unmapped:float,unmappedCount:int}
+     * Nominal penggunaan memakai gross_amount seperti A-1 agar konsisten
+     * antar laporan. Transaksi tanpa kode kegiatan 01-08 dilaporkan
+     * sebagai unmapped (tidak masuk JUMLAH).
+     *
+     * @param  array<string,mixed>  $summary
+     * @return array{title:array{heading:string,year_line:string,range_line:string},fund_column:string,rows:list<array{kind:string,code:string,label:string,bold:bool,zero_dash:bool,amounts:array<string,float>}>,unmapped:float,unmappedCount:int,place:string,signed_date:string}
      */
-    private function k7Data(string $scope, ?int $period): array
+    private function k7Data(string $scope, ?int $period, Collection $transactions, array $summary): array
     {
         $months = $this->scopeMonths($scope, $period);
-        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+        $fiscalYear = FiscalYear::query()->find($this->context->fiscalYearId());
+        $year = (int) ($fiscalYear?->year ?: now()->year);
+        $fundName = (string) ($fiscalYear?->fundSource?->name ?? $fiscalYear?->fund_source ?? '');
+        $fundColumn = $this->k7FundColumn($fundName);
 
-        $labels = [];
-        foreach ($months as $month) {
-            $labels[$month] = Carbon::create($year, $month, 1)->translatedFormat('M Y');
-        }
-
-        $rows = [
-            'pegawai' => ['label' => 'Belanja Pegawai', 'months' => array_fill_keys($months, 0.0), 'total' => 0.0],
-            'barang_jasa' => ['label' => 'Belanja Barang dan Jasa', 'months' => array_fill_keys($months, 0.0), 'total' => 0.0],
-            'modal' => ['label' => 'Belanja Modal', 'months' => array_fill_keys($months, 0.0), 'total' => 0.0],
+        $zero = fn (): array => [
+            'jumlah' => 0.0, 'rutin' => 0.0, 'pusat' => 0.0, 'provinsi' => 0.0,
+            'kab_kota' => 0.0, 'bantuan_lain' => 0.0, 'sumber_lainnya' => 0.0,
         ];
-        $unmapped = 0.0;
-        $unmappedCount = 0;
 
-        if ($months !== []) {
-            $placeholders = implode(',', array_fill(0, count($months), '?'));
-            $records = DB::connection('school')->table('arkas_mirror_kas_umum')
-                ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
-                ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
-                ->orderByRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI')")
-                ->orderBy('id')
-                ->get(['payload'])
-                ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
-                ->values();
+        // ---- A. Penerimaan dari mirror kas umum ----
+        $receipts = $this->k7Receipts($months, $year);
+        $in = $zero();
+        $in['rutin'] += $receipts['rutin'];
+        $in['bantuan_lain'] += $receipts['bantuan_lain'];
+        $in['sumber_lainnya'] += $receipts['sumber_lainnya'];
+        $in[$fundColumn] += $receipts['saldo_awal'] + $receipts['bos'];
+        $in['jumlah'] = $in['rutin'] + $in['pusat'] + $in['provinsi'] + $in['kab_kota'] + $in['bantuan_lain'] + $in['sumber_lainnya'];
 
-            foreach ($records as $payload) {
-                if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
-                    continue;
-                }
-                $month = (int) substr((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), 5, 2);
-                if (! isset($labels[$month])) {
-                    continue;
-                }
-                $jenis = $this->k7JenisForAccount((string) ($payload['KODE_REKENING'] ?? ''));
-                $amount = (float) ($payload['JUMLAH'] ?? 0);
-                if ($jenis === null) {
-                    $unmapped += $amount;
-                    $unmappedCount++;
+        $rows = [];
+        $add = function (string $kind, string $code, string $label, array $amounts, bool $bold, bool $zeroDash = true) use (&$rows): void {
+            $rows[] = [
+                'kind' => $kind, 'code' => $code, 'label' => $label,
+                'amounts' => $amounts, 'bold' => $bold, 'zero_dash' => $zeroDash,
+            ];
+        };
 
-                    continue;
+        $add('section', 'A', 'Penerimaan Terdiri Dari', $in, true);
+        $detail = function (string $label, float $value, string $column) use ($add, $zero): void {
+            $amounts = $zero();
+            $amounts['jumlah'] = $value;
+            $amounts[$column] = $value;
+            $add('detail', '', $label, $amounts, false);
+        };
+        $detail('Saldo Awal', $receipts['saldo_awal'], $fundColumn);
+        $detail('Pendapatan Rutin', $receipts['rutin'], 'rutin');
+        $detail('Bantuan Operasional Sekolah', $receipts['bos'], $fundColumn);
+        $detail('Bantuan Lain', $receipts['bantuan_lain'], 'bantuan_lain');
+        $detail('Sumber Pendapatan Lainnya', $receipts['sumber_lainnya'], 'sumber_lainnya');
+        $add('detail', '', 'Total Penerimaan', $in, false);
+
+        // ---- B/I. Penggunaan dana per hierarki kegiatan ----
+        $add('section', 'B', 'Penggunaan Dana :', $zero(), true, false);
+        [$usage, $unmapped, $unmappedCount] = $this->k7UsageHierarchy($transactions);
+
+        $out = $zero();
+        $out[$fundColumn] = $usage['total'];
+        $out['jumlah'] = $usage['total'];
+        $add('section', 'I', 'Program Sekolah', $out, true);
+
+        foreach (BospRekapStandardMapper::k7Programs() as $programNo => $programLabel) {
+            $program = $usage['programs'][$programNo] ?? ['total' => 0.0, 'subs' => []];
+            $programAmounts = $zero();
+            $programAmounts[$fundColumn] = $program['total'];
+            $programAmounts['jumlah'] = $program['total'];
+            $add('program', sprintf('%02d.', $programNo), $programLabel, $programAmounts, true);
+            foreach ($program['subs'] as $subNo => $sub) {
+                $subAmounts = $zero();
+                $subAmounts[$fundColumn] = $sub['total'];
+                $subAmounts['jumlah'] = $sub['total'];
+                $add('sub', sprintf('%02d.%02d.', $programNo, $subNo), $sub['label'], $subAmounts, true);
+                foreach ($sub['activities'] as $activityCode => $activity) {
+                    $activityAmounts = $zero();
+                    $activityAmounts[$fundColumn] = $activity['total'];
+                    $activityAmounts['jumlah'] = $activity['total'];
+                    $add('activity', $activityCode.'.', $activity['label'], $activityAmounts, false);
                 }
-                $rows[$jenis]['months'][$month] += $amount;
-                $rows[$jenis]['total'] += $amount;
             }
         }
 
-        $colTotals = [];
-        foreach ($months as $month) {
-            $colTotals[$month] = $rows['pegawai']['months'][$month] + $rows['barang_jasa']['months'][$month] + $rows['modal']['months'][$month];
+        // ---- II. Total & C. Sisa ----
+        $add('section', 'II', 'Total Penggunaan Dana', $out, true);
+        $rest = $zero();
+        foreach (['rutin', 'pusat', 'provinsi', 'kab_kota', 'bantuan_lain', 'sumber_lainnya'] as $column) {
+            $rest[$column] = $in[$column] - $out[$column];
         }
+        $rest['jumlah'] = $in['jumlah'] - $out['jumlah'];
+        $add('section', 'C', 'Sisa Dana = I - II (Pengembalian)', $rest, true);
+
+        $signed = $this->bosA1Title($summary);
 
         return [
-            'months' => $labels,
+            'title' => $this->k7Title($summary, $scope, $period, $year),
+            'fund_column' => $fundColumn,
             'rows' => $rows,
-            'colTotals' => $colTotals,
-            'grand' => array_sum($colTotals),
             'unmapped' => $unmapped,
             'unmappedCount' => $unmappedCount,
+            'place' => $signed['place'],
+            'signed_date' => $signed['signed_date'],
         ];
     }
 
     /**
-     * Jenis anggaran K7 dari prefix rekening. Baris tanpa prefix yang
-     * dikenal dilaporkan sebagai unmapped, bukan dipaksakan ke salah
-     * satu jenis.
+     * Judul kop resmi K7: "Realisasi Penggunaan Dana Tiap Jenis Anggaran /
+     * Tahun Anggaran 2025 / Periode Tanggal 01 April S/D 30 Juni 2025
+     * ( Triwulan II )".
+     *
+     * @param  array<string,mixed>  $summary
+     * @return array{heading:string,year_line:string,range_line:string}
      */
-    private function k7JenisForAccount(string $accountCode): ?string
+    private function k7Title(array $summary, string $scope, ?int $period, int $year): array
     {
-        $code = trim($accountCode, '.');
+        $fromLabel = '-';
+        $toLabel = '-';
+        try {
+            if (filled($summary['date_from'] ?? null)) {
+                $fromLabel = Carbon::parse((string) $summary['date_from'])->translatedFormat('d F');
+            }
+            if (filled($summary['date_to'] ?? null)) {
+                $toLabel = Carbon::parse((string) $summary['date_to'])->translatedFormat('d F Y');
+            }
+        } catch (\Throwable) {
+            // Label tetap '-' bila tanggal periode tidak valid.
+        }
 
-        if (str_starts_with($code, '5.1.01')) {
-            return 'pegawai';
+        return [
+            'heading' => 'Realisasi Penggunaan Dana Tiap Jenis Anggaran',
+            'year_line' => 'Tahun Anggaran '.$year,
+            'range_line' => 'Periode Tanggal '.$fromLabel.' S/D '.$toLabel.' ( '.$this->k7PeriodQualifier($scope, $period, $year).' )',
+        ];
+    }
+
+    /** Kualifikasi periode gaya formulir: Triwulan II, Semester I, Bulan April, Tahun 2025. */
+    private function k7PeriodQualifier(string $scope, ?int $period, int $year): string
+    {
+        $roman = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'];
+
+        return match ($scope) {
+            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => 'Triwulan '.($roman[$period ?? 0] ?? (string) $period),
+            SpjPeriodicReportRegistry::SCOPE_SEMESTER => 'Semester '.($roman[$period ?? 0] ?? (string) $period),
+            SpjPeriodicReportRegistry::SCOPE_MONTHLY => ($period >= 1 && $period <= 12)
+                ? 'Bulan '.Carbon::create($year, $period, 1)->translatedFormat('F')
+                : 'Bulanan',
+            default => 'Tahun '.$year,
+        };
+    }
+
+    /**
+     * Kolom sumber dana K7 untuk nama fund source aktif. BOSP/BOS Reguler/
+     * Kinerja (APBN) -> Pusat; BOSDA/BOP daerah mengikuti namanya;
+     * default Pusat.
+     */
+    private function k7FundColumn(string $fundName): string
+    {
+        $name = mb_strtolower(trim($fundName));
+
+        if (str_contains($name, 'provinsi')) {
+            return 'provinsi';
         }
-        if (str_starts_with($code, '5.1.02')) {
-            return 'barang_jasa';
+        if (str_contains($name, 'kab') || str_contains($name, 'kota') || str_contains($name, 'daerah')) {
+            return 'kab_kota';
         }
-        if (str_starts_with($code, '5.2')) {
-            return 'modal';
+        if (str_contains($name, 'bantuan lain')) {
+            return 'bantuan_lain';
+        }
+        if (str_contains($name, 'rutin')) {
+            return 'rutin';
+        }
+        if (str_contains($name, 'lainnya') || str_contains($name, 'pendapatan lain')) {
+            return 'sumber_lainnya';
         }
 
-        return null;
+        return 'pusat';
+    }
+
+    /**
+     * Rincian penerimaan K7 dari mirror kas umum periode: saldo_awal
+     * (bank+tunai bulan pertama), rutin (bunga bank), bos (Terima Dana BOS,
+     * distinct bukti+tanggal+nominal seperti BPK), bantuan_lain (Terima
+     * *Bantuan*), sumber_lainnya (penerimaan masuk lain). Transfer internal
+     * (Setor/Tarik Tunai, Pergeseran Tunai) bukan penerimaan baru dan
+     * dikecualikan.
+     *
+     * @return array{saldo_awal:float,rutin:float,bos:float,bantuan_lain:float,sumber_lainnya:float}
+     */
+    private function k7Receipts(array $months, int $year): array
+    {
+        $out = ['saldo_awal' => 0.0, 'rutin' => 0.0, 'bos' => 0.0, 'bantuan_lain' => 0.0, 'sumber_lainnya' => 0.0];
+        if ($months === []) {
+            return $out;
+        }
+
+        $firstMonth = min($months);
+        $placeholders = implode(',', array_fill(0, count($months), '?'));
+        $records = DB::connection('school')->table('arkas_mirror_kas_umum')
+            ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
+            ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
+            ->get(['payload'])
+            ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
+            ->values();
+        $records = $this->bkuDedupBackfillTax($records);
+
+        $receivedKeys = [];
+        foreach ($records as $payload) {
+            $baseRek = $this->bkuBaseRek((string) ($payload['REK_BKU'] ?? ''));
+            $amount = (float) ($payload['JUMLAH'] ?? 0);
+            $month = (int) substr((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''), 5, 2);
+            if (! in_array($month, $months, true)) {
+                continue;
+            }
+            if ($month === $firstMonth && in_array($baseRek, ['Saldo Awal Bank', 'Saldo Awal Tunai'], true)) {
+                $out['saldo_awal'] += $amount;
+
+                continue;
+            }
+            if ($baseRek === 'Terima Dana BOS') {
+                $key = (string) ($payload['NO_BUKTI'] ?? '').'|'.(string) ($payload['TANGGAL_TRANSAKSI'] ?? '').'|'.$amount;
+                if (! isset($receivedKeys[$key])) {
+                    $receivedKeys[$key] = true;
+                    $out['bos'] += $amount;
+                }
+
+                continue;
+            }
+            if ($baseRek === 'Bunga Bank') {
+                $out['rutin'] += $amount;
+
+                continue;
+            }
+            if (in_array($baseRek, ['Setor Tunai', 'Tarik Tunai', 'Pergeseran Tunai', 'Kas Keluar', 'Kas Keluar Non Tunai', 'Pajak Belanja Setor', 'Pajak Bunga'], true)) {
+                continue;
+            }
+            if (str_starts_with($baseRek, 'Terima')) {
+                if (str_contains(mb_strtolower($baseRek), 'bantuan')) {
+                    $out['bantuan_lain'] += $amount;
+                } else {
+                    $out['sumber_lainnya'] += $amount;
+                }
+
+                continue;
+            }
+            if ($baseRek === 'Pajak Belanja Terima') {
+                $out['sumber_lainnya'] += $amount;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Hierarki penggunaan K7 dari transaksi periode: 8 program ->
+     * sub-program (segmen 2 kode kegiatan) -> kegiatan (kode penuh).
+     * Label program dari BospRekapStandardMapper::k7Programs(), label sub
+     * dari k7SubProgramLabel(), label kegiatan dari activity_name mirror.
+     *
+     * @return array{0:array{total:float,programs:array<int,array{total:float,subs:array<int,array{total:float,label:string,activities:array<string,array{total:float,label:string}>}>}>},1:float,2:int}
+     */
+    private function k7UsageHierarchy(Collection $transactions): array
+    {
+        $programs = [];
+        foreach (array_keys(BospRekapStandardMapper::k7Programs()) as $programNo) {
+            $programs[$programNo] = ['total' => 0.0, 'subs' => []];
+        }
+        $total = 0.0;
+        $unmapped = 0.0;
+        $unmappedCount = 0;
+
+        foreach ($transactions as $transaction) {
+            $code = trim(trim((string) $transaction->sourceValue('activity_code')), '.');
+            $gross = (float) $transaction->sourceValue('gross_amount');
+            $program = BospRekapStandardMapper::a1RowForActivity($code);
+            if ($program === null) {
+                $unmapped += $gross;
+                $unmappedCount++;
+
+                continue;
+            }
+            $parts = array_values(array_filter(explode('.', $code), fn (string $part): bool => $part !== ''));
+            $sub = isset($parts[1]) && ctype_digit($parts[1]) ? (int) $parts[1] : 0;
+
+            $activityName = trim((string) $transaction->sourceValue('activity_name'));
+            if ($activityName === '') {
+                $activityName = $code;
+            }
+
+            $programs[$program]['total'] += $gross;
+            $total += $gross;
+            if (! isset($programs[$program]['subs'][$sub])) {
+                $programs[$program]['subs'][$sub] = [
+                    'total' => 0.0,
+                    'label' => BospRekapStandardMapper::k7SubProgramLabel($sub),
+                    'activities' => [],
+                ];
+            }
+            $programs[$program]['subs'][$sub]['total'] += $gross;
+            if (! isset($programs[$program]['subs'][$sub]['activities'][$code])) {
+                $programs[$program]['subs'][$sub]['activities'][$code] = ['total' => 0.0, 'label' => $activityName];
+            }
+            $programs[$program]['subs'][$sub]['activities'][$code]['total'] += $gross;
+        }
+
+        foreach ($programs as &$program) {
+            ksort($program['subs']);
+            foreach ($program['subs'] as &$sub) {
+                ksort($sub['activities']);
+            }
+            unset($sub);
+        }
+        unset($program);
+
+        return [['total' => $total, 'programs' => $programs], $unmapped, $unmappedCount];
     }
 
     /**
@@ -2128,7 +2357,7 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k7'], true)
             ? 'landscape'
             : 'portrait';
     }
@@ -2138,7 +2367,7 @@ final class SpjPeriodicReportPrintService
      */
     private function paper(string $presentation): string
     {
-        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1'], true) ? 'folio' : 'a4';
+        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1', 'k7'], true) ? 'folio' : 'a4';
     }
 
     /**
