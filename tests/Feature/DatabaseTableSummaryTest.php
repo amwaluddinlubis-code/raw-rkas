@@ -42,11 +42,34 @@ class DatabaseTableSummaryTest extends TestCase
 
     protected function tearDown(): void
     {
-        DB::purge('school');
-        if (isset($this->dbPath) && file_exists($this->dbPath)) {
-            unlink($this->dbPath);
+        try {
+            DB::purge('school');
+            $this->deleteTemporaryDatabase();
+        } finally {
+            parent::tearDown();
         }
-        parent::tearDown();
+    }
+
+    /**
+     * Hapus file sqlite sementara. Di Windows handle PDO yang baru di-purge
+     * kadang belum dilepas OS sehingga unlink langsung gagal dengan
+     * "Resource temporarily unavailable"; kegagalan itu sebelumnya melewatkan
+     * parent::tearDown() sehingga transaksi RefreshDatabase bocor dan test
+     * berikutnya gagal berantai dengan "database is locked".
+     */
+    private function deleteTemporaryDatabase(): void
+    {
+        if (! isset($this->dbPath)) {
+            return;
+        }
+        foreach ([$this->dbPath, $this->dbPath.'-wal', $this->dbPath.'-shm'] as $path) {
+            for ($attempt = 0; $attempt < 20 && file_exists($path); $attempt++) {
+                if (@unlink($path)) {
+                    break;
+                }
+                usleep(50000);
+            }
+        }
     }
 
     public function test_admin_gets_table_summary_json(): void

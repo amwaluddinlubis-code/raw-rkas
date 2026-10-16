@@ -5,6 +5,27 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Windows-safe teardown DatabaseTableSummaryTest (2026-10-16)
+
+Status: **FOCUSED PASS (lokal) / FULL SUITE PENDING**.
+
+`tests/Feature/DatabaseTableSummaryTest.php` gagal konsisten di Windows:
+`unlink()` file sqlite sementara gagal ("Resource temporarily unavailable")
+karena handle PDO yang baru di-purge belum dilepas OS; exception di
+`tearDown()` melewatkan `parent::tearDown()` sehingga transaksi
+`RefreshDatabase` bocor dan dua test berikutnya gagal berantai
+("database is locked" pada `database/testing.sqlite`). Perbaikan test-only:
+`tearDown()` memakai `try/finally` agar `parent::tearDown()` selalu jalan +
+retry `unlink` terbatas (20 × 50ms, termasuk sidecar `-wal`/`-shm`). Tanpa
+perubahan business rule, route, arsitektur, atau GUI.
+
+Evidence: `DatabaseTableSummaryTest` 3 passed / 11 assertions;
+`DatabaseTableSummaryTest + LivewireMutationAuthorizationTest +
+DocumentTemplateStoragePathServiceTest` 10 passed / 46 assertions;
+`WebRouteSmokeTest` 6 passed / 8 assertions — pulih tanpa perubahan source
+setelah `view:clear` + `view:cache` (compiled view basi di environment
+lokal); Pint passed; `git diff --check` bersih.
+
 ## Hapus endpoint rekap umum spj.export (2026-10-04)
 
 Status: **FUNCTIONAL PASS (focused) / BROWSER RVR**.
