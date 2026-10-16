@@ -213,8 +213,12 @@ final class SpjPeriodicReportPrintService
                 }
                 $isReguler = $this->bpkIsReguler($payload, $fundSourceId);
 
-                if (str_starts_with($rek, 'Saldo Awal') && substr($date, 0, 7) === sprintf('%04d-%02d', $year, $firstMonth) && substr($date, 8, 2) === '01') {
-                    if ($rek === 'Saldo Awal Bank') {
+                // Varian "Sisa" ARKAS (mis. "Saldo Awal Bank Sisa")
+                // diperlakukan sama dengan bentuk dasarnya, mengikuti
+                // aturan bulan-pertama bkuLedgerRows().
+                $baseRek = $this->bkuBaseRek($rek);
+                if (in_array($baseRek, ['Saldo Awal Bank', 'Saldo Awal Tunai'], true) && (int) substr($date, 5, 2) === $firstMonth) {
+                    if ($baseRek === 'Saldo Awal Bank') {
                         $data['openingBank'] += $amount;
                     } else {
                         $data['openingCash'] += $amount;
@@ -280,9 +284,11 @@ final class SpjPeriodicReportPrintService
                 ->whereRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI') = ?", [$nextStart])
                 ->get(['payload']) as $row) {
                 $payload = array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER);
-                if (($payload['REK_BKU'] ?? '') === 'Saldo Awal Bank') {
+                // Varian "Sisa" ARKAS diperlakukan sama dengan bentuk dasarnya.
+                $closingBaseRek = $this->bkuBaseRek((string) ($payload['REK_BKU'] ?? ''));
+                if ($closingBaseRek === 'Saldo Awal Bank') {
                     $data['closingBank'] += (float) ($payload['JUMLAH'] ?? 0);
-                } elseif (($payload['REK_BKU'] ?? '') === 'Saldo Awal Tunai') {
+                } elseif ($closingBaseRek === 'Saldo Awal Tunai') {
                     $data['closingCash'] += (float) ($payload['JUMLAH'] ?? 0);
                 }
             }
@@ -679,11 +685,23 @@ final class SpjPeriodicReportPrintService
 
         $refMap = [];
         if ($refKeys !== []) {
-            $rows = DB::table('arkas_mirror_ref_kode')
-                ->whereIn('source_key', array_keys($refKeys))
-                ->get(['source_key', 'payload']);
-            foreach ($rows as $row) {
-                $refMap[(string) $row->source_key] = (string) (json_decode((string) ($row->payload ?? ''), true)['id_kode'] ?? '');
+            // source_key ref_kode berbentuk komposit
+            // "id|tahun|sumber_dana|bentuk_pendidikan" sehingga whereIn
+            // dengan id mentah tak pernah cocok; cocokkan prefix id.
+            // Peta dikunci id_ref_kode mentah sesuai pemakaian di
+            // bkuActivityCode().
+            $query = DB::table('arkas_mirror_ref_kode');
+            $query->where(function ($q) use ($refKeys): void {
+                foreach (array_keys($refKeys) as $refId) {
+                    $q->orWhere('source_key', 'like', $this->escapeLikePrefix((string) $refId).'|%');
+                }
+            });
+            foreach ($query->get(['source_key', 'payload']) as $row) {
+                $payload = json_decode((string) ($row->payload ?? ''), true) ?? [];
+                $idRef = (string) (ArkasMirrorResolver::field($payload, ['ID_REF_KODE']) ?? '');
+                if ($idRef !== '' && ! isset($refMap[$idRef])) {
+                    $refMap[$idRef] = (string) (ArkasMirrorResolver::field($payload, ['ID_KODE']) ?? '');
+                }
             }
         }
 
@@ -1089,6 +1107,15 @@ final class SpjPeriodicReportPrintService
         }
 
         return $normalized;
+    }
+
+    /**
+     * Escape wildcard LIKE untuk pencocokan prefix source_key komposit
+     * ("id|tahun|sumber_dana|bentuk_pendidikan").
+     */
+    private function escapeLikePrefix(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
     }
 
     /**
@@ -1541,13 +1568,30 @@ final class SpjPeriodicReportPrintService
             }
         }
         if ($missingRef !== [] && Schema::hasTable('arkas_mirror_ref_kode')) {
-            foreach (DB::table('arkas_mirror_ref_kode')->whereIn('source_key', array_keys($missingRef))->get(['source_key', 'payload']) as $row) {
-                $code = trim((string) (ArkasMirrorResolver::field(json_decode((string) $row->payload, true) ?? [], ['ID_KODE']) ?? ''), '.');
+            // source_key ref_kode berbentuk komposit
+            // "id|tahun|sumber_dana|bentuk_pendidikan" sehingga whereIn
+            // dengan id mentah tak pernah cocok; cocokkan prefix id lalu
+            // petakan kembali via ID_REF_KODE pada payload.
+            $refQuery = DB::table('arkas_mirror_ref_kode');
+            $refQuery->where(function ($q) use ($missingRef): void {
+                foreach (array_keys($missingRef) as $refId) {
+                    $q->orWhere('source_key', 'like', $this->escapeLikePrefix((string) $refId).'|%');
+                }
+            });
+            foreach ($refQuery->orderBy('source_key')->get(['source_key', 'payload']) as $row) {
+                $payload = json_decode((string) $row->payload, true) ?? [];
+                $idRef = (string) (ArkasMirrorResolver::field($payload, ['ID_REF_KODE']) ?? '');
+                if ($idRef === '' || ! isset($missingRef[$idRef])) {
+                    continue;
+                }
+                $code = trim((string) (ArkasMirrorResolver::field($payload, ['ID_KODE']) ?? ''), '.');
                 if ($code === '') {
                     continue;
                 }
-                foreach ($missingRef[(string) $row->source_key] as $rapbsId) {
-                    $map[$rapbsId] = $code;
+                foreach ($missingRef[$idRef] as $rapbsId) {
+                    if (! isset($map[$rapbsId])) {
+                        $map[$rapbsId] = $code;
+                    }
                 }
             }
         }
@@ -2003,7 +2047,7 @@ final class SpjPeriodicReportPrintService
             $rest[$column] = $in[$column] - $out[$column];
         }
         $rest['jumlah'] = $in['jumlah'] - $out['jumlah'];
-        $add('section', 'C', 'Sisa Dana = I - II (Pengembalian)', $rest, true);
+        $add('section', 'C', 'Sisa Dana = A - II (Pengembalian)', $rest, true);
 
         $signed = $this->bosA1Title($summary);
 
@@ -2145,7 +2189,7 @@ final class SpjPeriodicReportPrintService
 
                 continue;
             }
-            if (in_array($baseRek, ['Setor Tunai', 'Tarik Tunai', 'Pergeseran Tunai', 'Kas Keluar', 'Kas Keluar Non Tunai', 'Pajak Belanja Setor', 'Pajak Bunga'], true)) {
+            if (in_array($baseRek, ['Setor Tunai', 'Tarik Tunai', 'Pergeseran Tunai', 'Kas Keluar', 'Kas Keluar Non Tunai', 'Pajak Belanja Setor', 'Pajak Belanja Terima', 'Pajak Bunga'], true)) {
                 continue;
             }
             if (str_starts_with($baseRek, 'Terima')) {
@@ -2156,9 +2200,6 @@ final class SpjPeriodicReportPrintService
                 }
 
                 continue;
-            }
-            if ($baseRek === 'Pajak Belanja Terima') {
-                $out['sumber_lainnya'] += $amount;
             }
         }
 
