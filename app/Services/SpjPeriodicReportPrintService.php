@@ -16,6 +16,8 @@ final class SpjPeriodicReportPrintService
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjPeriodicReportUseCase $reports,
+        private readonly RkasReportService $rkas,
+        private readonly ArkasMirrorBudgetService $budgets,
     ) {}
 
     /** @var array{bank:float,cash:float,total:float} */
@@ -87,6 +89,14 @@ final class SpjPeriodicReportPrintService
         if ($presentation === 'k7') {
             $extra['k7'] = $this->k7Data($scope, $period, $transactions, $summary);
         }
+        if ($presentation === 'k2') {
+            $extra['k2'] = $this->k2Data($scope, $period);
+            $extra['k2Title'] = $this->bosA1Title($summary);
+        }
+        if ($presentation === 'rpd') {
+            $extra['rpd'] = $this->rpdData($scope, $period);
+            $extra['rpdTitle'] = $this->bosA1Title($summary);
+        }
         if ($presentation === 'sptjm_doc') {
             $extra['sptjm'] = $this->sptjmData($scope, $period, $summary);
         }
@@ -124,6 +134,8 @@ final class SpjPeriodicReportPrintService
             'k7b' => 'k7b',
             'k7c' => 'k7c',
             'format_k7' => 'k7',
+            'format_k2' => 'k2',
+            'rpd_bos' => 'rpd',
             'sptjm' => 'sptjm_doc',
             'rekap_belanja_modal_barang_jasa', 'rekap_bmd',
             'rekap_belanja_dana_bos', 'form_1c' => 'account_summary',
@@ -148,6 +160,8 @@ final class SpjPeriodicReportPrintService
             'k7c' => [[], []],
             'k7a' => [[], []],
             'k7' => [[], []],
+            'k2' => [[], []],
+            'rpd' => [[], []],
             'sptjm_doc' => [[], []],
             'account_summary' => [$this->accountColumns(), $this->accountRows($transactions)],
             'transaction_recap' => [$this->recapColumns(), $this->recapRows($transactions)],
@@ -1688,8 +1702,9 @@ final class SpjPeriodicReportPrintService
      * angka cocok per baris): baris = segmen pertama kode kegiatan
      * (01–08); kolom Pegawai = sub-program 12 honorarium; selainnya
      * Barang dan Jasa (termasuk baris berkode rekening 5.2.*).
-     * Kolom modal dipertahankan nol + RVR: seluruh sampel resmi bernilai
-     * nol sehingga belum ada aturan populasi terverifikasi.
+     * Kolom modal_aset diisi untuk belanja buku perpustakaan (05.02.*)
+     * sesuai contoh resmi TW I 2026; modal_mesin tetap nol (belum ada
+     * aturan terverifikasi).
      *
      * @return array{rows:array<int,array{no:int,program:string,pegawai:float,barang_jasa:float,modal_mesin:float,modal_aset:float,modal_jumlah:float,total:float}>,totals:array{pegawai:float,barang_jasa:float,modal_mesin:float,modal_aset:float,modal_jumlah:float,grand:float},unmapped:float,unmappedCount:int}
      */
@@ -1723,6 +1738,11 @@ final class SpjPeriodicReportPrintService
             }
             if (BospRekapStandardMapper::a1IsHonor($code)) {
                 $rows[$row]['pegawai'] += $gross;
+            } elseif ($this->a1IsAsetTetapLainnya($code, (string) $transaction->sourceValue('item_description'))) {
+                // Contoh resmi TW I 2026: buku perpustakaan (05.02) masuk
+                // Aset Tetap Lainnya BOS, bukan Barang dan Jasa.
+                $rows[$row]['modal_aset'] += $gross;
+                $rows[$row]['modal_jumlah'] += $gross;
             } else {
                 $rows[$row]['barang_jasa'] += $gross;
             }
@@ -1733,10 +1753,371 @@ final class SpjPeriodicReportPrintService
         foreach ($rows as $row) {
             $totals['pegawai'] += $row['pegawai'];
             $totals['barang_jasa'] += $row['barang_jasa'];
+            $totals['modal_mesin'] += $row['modal_mesin'];
+            $totals['modal_aset'] += $row['modal_aset'];
+            $totals['modal_jumlah'] += $row['modal_jumlah'];
             $totals['grand'] += $row['total'];
         }
 
         return ['rows' => $rows, 'totals' => $totals, 'unmapped' => $unmapped, 'unmappedCount' => $unmappedCount];
+    }
+
+    /**
+     * Grid Format BOS K-2: rencana anggaran per 8 program resmi x triwulan.
+     *
+     * Data diambil dari RkasReportService::build('tahunan') — baris level
+     * 'program' membawa rincian triwulan 'tw' (1..4) dari periode mirror
+     * ARKAS. Baris program dipetakan ke 1..8 via
+     * BospRekapStandardMapper::a1RowForActivity() dari segmen pertama kode
+     * kegiatan.
+     *
+     * Keterbatasan: bila mirror belum punya rincian periode (seluruh 'tw'
+     * nol) padahal total tahunan ada, total tersebut ditampilkan di kolom
+     * triwulan berjalan dan nol di triwulan lain.
+     *
+     * @return array{programs:array<int,array{no:string,label:string,jumlah:float,tw:array<int,float>}>,totals:array{jumlah:float,tw:array<int,float>},quarter:int,quarter_label:string,month_range:string,has_data:bool}
+     */
+    private function k2Data(string $scope, ?int $period): array
+    {
+        $programs = [];
+        foreach (BospRekapStandardMapper::a1Programs() as $index => $label) {
+            $programs[$index] = [
+                'no' => '1.'.$index,
+                'label' => $label,
+                'jumlah' => 0.0,
+                'tw' => [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0],
+            ];
+        }
+
+        $quarter = ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4)
+            ? $period
+            : 1;
+        $hasData = false;
+
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId !== null && $fundSourceId > 0) {
+            $rkas = $this->rkas->build('tahunan', [
+                'school_id' => $this->context->schoolId(),
+                'fiscal_year_id' => $this->context->fiscalYearId(),
+                'fund_source_id' => $fundSourceId,
+                'revision' => '',
+            ]);
+            if (is_array($rkas)) {
+                foreach ($rkas['lines'] ?? [] as $line) {
+                    if (($line['level'] ?? '') !== 'program') {
+                        continue;
+                    }
+                    $row = BospRekapStandardMapper::a1RowForActivity((string) ($line['activity_code'] ?? ''));
+                    if ($row === null) {
+                        continue;
+                    }
+                    $hasData = true;
+                    $tw = [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0];
+                    foreach ([1, 2, 3, 4] as $q) {
+                        $tw[$q] = (float) ($line['tw'][$q] ?? 0);
+                    }
+                    $jumlah = (float) ($line['jumlah'] ?? 0);
+                    if (array_sum($tw) <= 0 && $jumlah > 0) {
+                        $tw[$quarter] = $jumlah;
+                    }
+                    $programs[$row]['jumlah'] += $jumlah;
+                    foreach ([1, 2, 3, 4] as $q) {
+                        $programs[$row]['tw'][$q] += $tw[$q];
+                    }
+                }
+            }
+        }
+
+        $totals = ['jumlah' => 0.0, 'tw' => [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0]];
+        foreach ($programs as $program) {
+            $totals['jumlah'] += $program['jumlah'];
+            foreach ([1, 2, 3, 4] as $q) {
+                $totals['tw'][$q] += $program['tw'][$q];
+            }
+        }
+
+        return [
+            'programs' => $programs,
+            'totals' => $totals,
+            'quarter' => $quarter,
+            'quarter_label' => $this->k2QuarterLabel($quarter),
+            'month_range' => $this->k2MonthRange($quarter, (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year)),
+            'has_data' => $hasData,
+        ];
+    }
+
+    /**
+     * Data RINCIAN PENGGUNAAN DANA BOS (RPD BOS) resmi.
+     *
+     * Hierarki baris: "I PROGRAM SEKOLAH" -> 8 program (01.-08.) -> sub
+     * (03.03.) -> kegiatan (03.03.14.) -> item rincian dengan Vol/Satuan/
+     * Tarif Harga. Kolom "Jumlah" memakai pagu RKAS pada revisi disahkan
+     * terakhir; kolom bulan memakai realisasi BELANJA kas umum per
+     * ID_RAPBS pada bulan triwulan berjalan.
+     *
+     * Vol/Satuan/Tarif dibaca dari payload arkas_mirror_rapbs
+     * (VOLUME_TOTAL/VOLUME, SATUAN/UNIT, HARGA_SATUAN) via
+     * ArkasMirrorResolver::field(). Tautan realisasi: kas_umum
+     * ID_RAPBS_PERIODE -> rapbs_periode -> ID_RAPBS, fallback ID_RAPBS
+     * langsung dari baris kas.
+     *
+     * @return array{rows:array<int,array{level:string,no:int,code:string,label:string,volume:float,unit:string,unit_price:float,jumlah:float,months:array<int,float>}>,totals:array{jumlah:float,months:array<int,float>},quarter:int,quarter_label:string,month_names:array<int,string>,month_range:string,has_data:bool}
+     */
+    private function rpdData(string $scope, ?int $period): array
+    {
+        $quarter = ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4)
+            ? $period
+            : 1;
+        $months = range((($quarter - 1) * 3) + 1, $quarter * 3);
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+        $fundSourceId = (int) ($this->context->fundSourceId() ?? 0);
+
+        $rows = [];
+        $hasData = false;
+
+        if ($fundSourceId > 0) {
+            $revisions = $this->budgets->revisions($fundSourceId, $year);
+            $latestApprovedId = collect($revisions)->where('status', 'approved')->last()['id'] ?? null;
+            $snapshot = $this->budgets->snapshot($fundSourceId, $year, $latestApprovedId === null ? null : [$latestApprovedId]);
+            /** @var Collection<int,array> $budgetRows */
+            $budgetRows = $snapshot['rows'] ?? collect();
+
+            $realization = $this->rpdRealization($months, $year);
+
+            // Kumpulkan item per hierarki: program -> sub -> kegiatan.
+            /** @var array<int,array{subs:array<string,array{label:string,activities:array<string,array{label:string,items:array<int,array<string,mixed>}>}>}>} $tree */
+            $tree = [];
+            foreach ($budgetRows as $row) {
+                $amount = (float) ($row['amount'] ?? 0);
+                if ($amount <= 0) {
+                    continue;
+                }
+                $activityCode = trim((string) ($row['activity_code'] ?? ''), '.');
+                $program = BospRekapStandardMapper::a1RowForActivity($activityCode);
+                if ($program === null) {
+                    continue;
+                }
+                $hasData = true;
+                $parts = array_values(array_filter(explode('.', $activityCode), fn (string $part): bool => $part !== ''));
+                $subCode = count($parts) >= 2 ? $parts[0].'.'.$parts[1] : $parts[0];
+                $subNo = isset($parts[1]) && ctype_digit($parts[1]) ? (int) $parts[1] : 0;
+
+                $payload = is_array($row['payload'] ?? null) ? $row['payload'] : [];
+                $rapbsId = (string) ($row['source_rapbs_id'] ?? '');
+                $itemMonths = [];
+                foreach ($months as $month) {
+                    $itemMonths[$month] = (float) ($realization[$rapbsId][$month] ?? 0);
+                }
+
+                $tree[$program] ??= ['subs' => []];
+                $tree[$program]['subs'][$subCode] ??= [
+                    'label' => BospRekapStandardMapper::k7SubProgramLabel($subNo),
+                    'activities' => [],
+                ];
+                $tree[$program]['subs'][$subCode]['activities'][$activityCode] ??= [
+                    'label' => trim((string) ($row['activity_name'] ?? '')) ?: $activityCode,
+                    'items' => [],
+                ];
+                $tree[$program]['subs'][$subCode]['activities'][$activityCode]['items'][] = [
+                    'uraian' => trim((string) ($row['description'] ?? '')) ?: trim((string) ($row['activity_name'] ?? '')),
+                    'volume' => (float) (ArkasMirrorResolver::field($payload, ['VOLUME_TOTAL', 'VOLUME']) ?? 0),
+                    'unit' => (string) (ArkasMirrorResolver::field($payload, ['SATUAN', 'UNIT']) ?? ''),
+                    'unit_price' => (float) (ArkasMirrorResolver::field($payload, ['HARGA_SATUAN']) ?? 0),
+                    'jumlah' => $amount,
+                    'months' => $itemMonths,
+                ];
+            }
+
+            $programLabels = BospRekapStandardMapper::k7Programs();
+            $totals = ['jumlah' => 0.0, 'months' => array_fill_keys($months, 0.0)];
+            $headerRow = fn (string $level, string $code, string $label, float $jumlah, array $rowMonths): array => [
+                'level' => $level,
+                'no' => 0,
+                'code' => $code,
+                'label' => $label,
+                'volume' => 0.0,
+                'unit' => '',
+                'unit_price' => 0.0,
+                'jumlah' => $jumlah,
+                'months' => $rowMonths,
+            ];
+            foreach ($programLabels as $programNo => $programLabel) {
+                $programMonths = array_fill_keys($months, 0.0);
+                $programJumlah = 0.0;
+                $subRows = [];
+                $subs = $tree[$programNo]['subs'] ?? [];
+                uksort($subs, fn (string $a, string $b): int => strnatcasecmp($a, $b));
+                foreach ($subs as $subCode => $sub) {
+                    $subMonths = array_fill_keys($months, 0.0);
+                    $subJumlah = 0.0;
+                    $activityRows = [];
+                    $activities = $sub['activities'];
+                    uksort($activities, fn (string $a, string $b): int => strnatcasecmp($a, $b));
+                    foreach ($activities as $activityCode => $activity) {
+                        $activityMonths = array_fill_keys($months, 0.0);
+                        $activityJumlah = 0.0;
+                        $itemRows = [];
+                        foreach ($activity['items'] as $item) {
+                            $activityJumlah += $item['jumlah'];
+                            foreach ($months as $month) {
+                                $activityMonths[$month] += $item['months'][$month];
+                            }
+                            $itemRows[] = [
+                                'level' => 'item',
+                                'no' => 0,
+                                'code' => $activityCode.'.',
+                                'label' => $item['uraian'],
+                                'volume' => $item['volume'],
+                                'unit' => $item['unit'],
+                                'unit_price' => $item['unit_price'],
+                                'jumlah' => $item['jumlah'],
+                                'months' => $item['months'],
+                            ];
+                        }
+                        $subJumlah += $activityJumlah;
+                        foreach ($months as $month) {
+                            $subMonths[$month] += $activityMonths[$month];
+                        }
+                        $activityRows[] = $headerRow('activity', $activityCode.'.', $activity['label'], $activityJumlah, $activityMonths);
+                        foreach ($itemRows as $itemRow) {
+                            $activityRows[] = $itemRow;
+                        }
+                    }
+                    $programJumlah += $subJumlah;
+                    foreach ($months as $month) {
+                        $programMonths[$month] += $subMonths[$month];
+                    }
+                    $subRows[] = $headerRow('sub', $subCode.'.', $sub['label'], $subJumlah, $subMonths);
+                    foreach ($activityRows as $activityRow) {
+                        $subRows[] = $activityRow;
+                    }
+                }
+                $totals['jumlah'] += $programJumlah;
+                foreach ($months as $month) {
+                    $totals['months'][$month] += $programMonths[$month];
+                }
+                $rows[] = $headerRow('program', sprintf('%02d.', $programNo), $programLabel, $programJumlah, $programMonths);
+                foreach ($subRows as $subRow) {
+                    $rows[] = $subRow;
+                }
+            }
+            // Nomor urut kolom No mengikuti urutan tampil.
+            foreach ($rows as $index => $row) {
+                $rows[$index]['no'] = $index + 1;
+            }
+        }
+
+        $monthNames = RkasReportService::MONTH_NAMES;
+
+        return [
+            'rows' => $rows,
+            'totals' => $totals,
+            'quarter' => $quarter,
+            'quarter_label' => $this->k2QuarterLabel($quarter),
+            'month_names' => array_combine($months, array_map(fn (int $m): string => $monthNames[$m - 1], $months)),
+            'month_range' => 'BULAN '.mb_strtoupper($monthNames[$months[0] - 1]).' S.D '.mb_strtoupper($monthNames[$months[2] - 1]).' '.$year,
+            'has_data' => $hasData,
+        ];
+    }
+
+    /**
+     * Realisasi BELANJA kas umum per ID_RAPBS per bulan: [id_rapbs => [bulan => jumlah]].
+     *
+     * Tautan memakai rantai kanonis kas_umum.ID_RAPBS_PERIODE ->
+     * rapbs_periode.ID_RAPBS, fallback ID_RAPBS langsung dari baris kas.
+     *
+     * @param  array<int>  $months
+     * @return array<string,array<int,float>>
+     */
+    private function rpdRealization(array $months, int $year): array
+    {
+        $map = [];
+        if ($months === []) {
+            return $map;
+        }
+
+        $periodToRapbs = [];
+        foreach (DB::connection('school')->table('arkas_mirror_rapbs_periode')->get(['payload']) as $record) {
+            $payload = json_decode((string) $record->payload, true);
+            if (! is_array($payload)) {
+                continue;
+            }
+            $periodId = (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS_PERIODE']) ?? '');
+            $rapbsId = (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS']) ?? '');
+            if ($periodId !== '' && $rapbsId !== '') {
+                $periodToRapbs[$periodId] = $rapbsId;
+            }
+        }
+
+        $placeholders = implode(',', array_fill(0, count($months), '?'));
+        $records = DB::connection('school')->table('arkas_mirror_kas_umum')
+            ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
+            ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
+            ->get(['payload']);
+
+        foreach ($records as $record) {
+            $payload = array_change_key_case(json_decode((string) $record->payload, true) ?? [], CASE_UPPER);
+            if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
+                continue;
+            }
+            $periodId = (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS_PERIODE']) ?? '');
+            $rapbsId = $periodToRapbs[$periodId] ?? (string) (ArkasMirrorResolver::field($payload, ['ID_RAPBS']) ?? '');
+            if ($rapbsId === '') {
+                continue;
+            }
+            try {
+                $month = (int) Carbon::parse((string) ($payload['TANGGAL_TRANSAKSI'] ?? ''))->month;
+            } catch (\Throwable) {
+                continue;
+            }
+            if (! in_array($month, $months, true)) {
+                continue;
+            }
+            $map[$rapbsId] ??= array_fill_keys($months, 0.0);
+            $map[$rapbsId][$month] += (float) ($payload['JUMLAH'] ?? 0);
+        }
+
+        return $map;
+    }
+
+    /**
+     * Label triwulan gaya formulir resmi: "I ( Satu )".
+     */
+    private function k2QuarterLabel(int $quarter): string
+    {
+        $romans = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'];
+        $words = [1 => 'Satu', 2 => 'Dua', 3 => 'Tiga', 4 => 'Empat'];
+
+        return ($romans[$quarter] ?? '-').' ( '.($words[$quarter] ?? '-').' )';
+    }
+
+    /**
+     * Rentang bulan triwulan gaya formulir resmi:
+     * "01 Januari  s.d 31 Maret 2026".
+     */
+    private function k2MonthRange(int $quarter, int $year): string
+    {
+        $months = RkasReportService::MONTH_NAMES;
+        $first = (($quarter - 1) * 3) + 1;
+        $last = $quarter * 3;
+        $lastDay = Carbon::create($year, $last, 1)?->endOfMonth()->day ?? 30;
+
+        return sprintf('%02d %s  s.d %02d %s %d', $first, $months[$first - 1], $lastDay, $months[$last - 1], $year);
+    }
+
+    /**
+     * Deteksi Aset Tetap Lainnya BOS untuk A-1. Aturan terverifikasi dari
+     * contoh resmi TW I 2026: belanja buku perpustakaan (kode 05.02.*)
+     * masuk kolom Aset Tetap Lainnya BOS.
+     */
+    private function a1IsAsetTetapLainnya(?string $activityCode, string $description): bool
+    {
+        $code = trim(trim((string) $activityCode), '.');
+        if (str_starts_with($code, '05.02')) {
+            return true;
+        }
+
+        return (bool) preg_match('/\bbuku\b/i', $description);
     }
 
     /**
@@ -1858,30 +2239,27 @@ final class SpjPeriodicReportPrintService
         ];
     }
 
-    /**
-     * Data BOS K7A: realisasi BELANJA per 12 komponen ARKAS.
-     *
-     * Baris dibaca dari mirror kas_umum (KATEGORI_BKU BELANJA) pada bulan
-     * scope; komponen dari NAMA_KEGIATAN via BospRekapStandardMapper
-     * (mirror tidak membawa field komponen — aturan RVR, selengkapnya
-     * pada mapper). Nilai = JUMLAH per baris kas.
-     *
-     * @return array{rows:array<int,array{no:int,label:string,smk:bool,amount:float}>,total:float,unmapped:float,unmappedCount:int,belanja:float}
-     */
+    /** Data BOS K7A. */
     private function k7aData(string $scope, ?int $period): array
     {
-        $rows = [];
-        foreach (BospRekapStandardMapper::k7aComponents() as $no => $component) {
-            $rows[$no] = ['no' => $no, 'label' => $component['label'], 'smk' => $component['smk'], 'amount' => 0.0];
+        $components = BospRekapStandardMapper::k7aComponents();
+        $programs = [];
+        foreach (BospRekapStandardMapper::k7Programs() as $programNo => $programLabel) {
+            $programs[$programNo] = [
+                'no' => '1.'.$programNo,
+                'label' => $programLabel,
+                'components' => array_fill_keys(array_keys($components), 0.0),
+                'total' => 0.0,
+            ];
         }
 
         $months = $this->scopeMonths($scope, $period);
         $unmapped = 0.0;
         $unmappedCount = 0;
         $belanja = 0.0;
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
 
         if ($months !== []) {
-            $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
             $placeholders = implode(',', array_fill(0, count($months), '?'));
             $records = DB::connection('school')->table('arkas_mirror_kas_umum')
                 ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
@@ -1902,24 +2280,55 @@ final class SpjPeriodicReportPrintService
                 $belanja += $amount;
                 $rapbsId = (string) ($payload['ID_RAPBS'] ?? '');
                 $activityName = $rapbsId !== '' ? ($activityMap[$rapbsId] ?? null) : null;
+                $kodeRekening = (string) ($payload['KODE_REKENING'] ?? '');
                 $component = BospRekapStandardMapper::k7aComponentForActivity(
                     $activityName,
                     (string) ($payload['URAIAN'] ?? ''),
-                    (string) ($payload['KODE_REKENING'] ?? '')
+                    $kodeRekening
                 );
-                if ($component === null) {
+                $program = BospRekapStandardMapper::a1RowForActivity($kodeRekening);
+                if ($component === null || $program === null) {
                     $unmapped += $amount;
                     $unmappedCount++;
 
                     continue;
                 }
-                $rows[$component]['amount'] += $amount;
+                $programs[$program]['components'][$component] += $amount;
+                $programs[$program]['total'] += $amount;
             }
         }
 
+        $componentTotals = array_fill_keys(array_keys($components), 0.0);
+        $grandTotal = 0.0;
+        foreach ($programs as $program) {
+            foreach ($program['components'] as $compNo => $amount) {
+                $componentTotals[$compNo] += $amount;
+            }
+            $grandTotal += $program['total'];
+        }
+
+        $receipts = $this->k7Receipts($months, $year);
+        // Aturan domain (konsisten dengan K7): rutin dikosongkan;
+        // penerimaan BOS triwulan = Tahap / 2.
+        $receipts['rutin'] = 0.0;
+        if ($scope === 'triwulan' && $period !== null && $period >= 1 && $period <= 4) {
+            $tahapMonths = $period <= 2 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12];
+            $tahapReceipts = $this->k7Receipts($tahapMonths, $year);
+            $receipts['bos'] = $tahapReceipts['bos'] / 2;
+        }
+        $penerimaan = $receipts['rutin'] + $receipts['bos'] + $receipts['bantuan_lain'] + $receipts['sumber_lainnya'];
+
         return [
-            'rows' => $rows,
-            'total' => array_sum(array_column($rows, 'amount')),
+            'programs' => $programs,
+            'components' => $components,
+            'componentTotals' => $componentTotals,
+            'grandTotal' => $grandTotal,
+            'summary' => [
+                'saldo_awal' => $receipts['saldo_awal'],
+                'penerimaan' => $penerimaan,
+                'penggunaan' => $grandTotal,
+                'saldo_akhir' => $receipts['saldo_awal'] + $penerimaan - $grandTotal,
+            ],
             'unmapped' => $unmapped,
             'unmappedCount' => $unmappedCount,
             'belanja' => $belanja,
@@ -1982,6 +2391,15 @@ final class SpjPeriodicReportPrintService
 
         // ---- A. Penerimaan dari mirror kas umum ----
         $receipts = $this->k7Receipts($months, $year);
+        // Aturan domain: Pendapatan Rutin dikosongkan pada K7.
+        $receipts['rutin'] = 0.0;
+        // Aturan domain: penerimaan BOS triwulan = penerimaan Tahap / 2.
+        // Tahap 1 = bulan 1-6 (TW I-II), Tahap 2 = bulan 7-12 (TW III-IV).
+        if ($scope === 'triwulan' && $period !== null && $period >= 1 && $period <= 4) {
+            $tahapMonths = $period <= 2 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12];
+            $tahapReceipts = $this->k7Receipts($tahapMonths, $year);
+            $receipts['bos'] = $tahapReceipts['bos'] / 2;
+        }
         $in = $zero();
         $in['rutin'] += $receipts['rutin'];
         $in['bantuan_lain'] += $receipts['bantuan_lain'];
@@ -2025,6 +2443,10 @@ final class SpjPeriodicReportPrintService
             $programAmounts = $zero();
             $programAmounts[$fundColumn] = $program['total'];
             $programAmounts['jumlah'] = $program['total'];
+            // Label resmi K7 untuk program 04 (contoh resmi TW I 2026).
+            if ($programNo === 4) {
+                $programLabel = 'Standar Tenaga Kependidikan';
+            }
             $add('program', sprintf('%02d.', $programNo), $programLabel, $programAmounts, true);
             foreach ($program['subs'] as $subNo => $sub) {
                 $subAmounts = $zero();
@@ -2041,13 +2463,13 @@ final class SpjPeriodicReportPrintService
         }
 
         // ---- II. Total & C. Sisa ----
-        $add('section', 'II', 'Total Penggunaan Dana', $out, true);
+        $add('section', '', 'Total Penggunaan Dana', $out, true);
         $rest = $zero();
         foreach (['rutin', 'pusat', 'provinsi', 'kab_kota', 'bantuan_lain', 'sumber_lainnya'] as $column) {
             $rest[$column] = $in[$column] - $out[$column];
         }
         $rest['jumlah'] = $in['jumlah'] - $out['jumlah'];
-        $add('section', 'C', 'Sisa Dana = A - II (Pengembalian)', $rest, true);
+        $add('section', 'C', 'Sisa Dana = I - II (Pengembalian)', $rest, true);
 
         $signed = $this->bosA1Title($summary);
 
@@ -2398,7 +2820,7 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k7'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k7', 'k2', 'rpd'], true)
             ? 'landscape'
             : 'portrait';
     }
@@ -2408,7 +2830,7 @@ final class SpjPeriodicReportPrintService
      */
     private function paper(string $presentation): string
     {
-        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1', 'k7'], true) ? 'folio' : 'a4';
+        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1', 'k7', 'k2', 'rpd'], true) ? 'folio' : 'a4';
     }
 
     /**
