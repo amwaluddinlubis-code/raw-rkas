@@ -161,22 +161,27 @@ final class SpjPeriodicReportUseCase
         // (terbukti menggeser relasi items dan agregat mirror per transaksi).
         $query->select('transactions.*');
 
+        // Filter tahun kalender tahun anggaran aktif agar konsisten dengan
+        // SpjReportUseCase::applyReportTransactionFilters(); tanpa ini,
+        // transaksi beda tahun bisa masuk/keluar periode secara tak konsisten.
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+
         if ($scope === SpjPeriodicReportRegistry::SCOPE_MONTHLY && $period) {
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) = ?", [$period]);
+            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) = ?", [$year, $period]);
 
             return $query;
         }
 
         if ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period) {
             [$from, $to] = ArkasMirrorResolver::quarterMonthRange((int) $period);
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to]);
+            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$year, $from, $to]);
 
             return $query;
         }
 
         if ($scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period) {
             [$from, $to] = ArkasMirrorResolver::semesterMonthRange((int) $period);
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$from, $to]);
+            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$year, $from, $to]);
 
             return $query;
         }
