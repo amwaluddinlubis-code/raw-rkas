@@ -31,6 +31,10 @@ final class SpjPeriodicReportExcelService
             $this->writeK7a($report, $payload);
         } elseif (($payload['presentation'] ?? '') === 'k7') {
             $this->writeK7($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'k2') {
+            $this->writeK2($report, $payload);
+        } elseif (($payload['presentation'] ?? '') === 'rpd') {
+            $this->writeRpd($report, $payload);
         } elseif (($payload['presentation'] ?? '') === 'sptjm_doc') {
             $this->writeSptjm($report, $payload);
         } else {
@@ -250,19 +254,145 @@ final class SpjPeriodicReportExcelService
     private function writeK7a(object $sheet, array $payload): void
     {
         $data = $payload['k7a'];
-        $sheet->fromArray([['No', 'Komponen Penggunaan Dana BOS', 'Jumlah (Rp)']], null, 'A1');
+        $components = $data['components'];
+        $compNos = array_keys($components);
+
+        $header = array_merge(['No', 'Program/Kegiatan'], array_column($components, 'label'), ['TOTAL']);
+        $sheet->fromArray([$header], null, 'A1');
+        $lastCol = chr(ord('A') + count($header) - 1);
 
         $rowNumber = 2;
-        foreach ($data['rows'] as $row) {
-            $sheet->fromArray([[$row['no'], $row['label'], (float) $row['amount']]], null, 'A'.$rowNumber++);
+        foreach ($data['programs'] as $program) {
+            $row = [$program['no'], $program['label']];
+            foreach ($compNos as $compNo) {
+                $row[] = (float) $program['components'][$compNo];
+            }
+            $row[] = (float) $program['total'];
+            $sheet->fromArray([$row], null, 'A'.$rowNumber++);
         }
 
-        $sheet->fromArray([['', 'JUMLAH', (float) $data['total']]], null, 'A'.$rowNumber);
-        $this->styleHeader($sheet, 'A1:C1');
-        $this->formatMoneyRange($sheet, 'C2:C'.$rowNumber);
-        $sheet->getStyle('A'.$rowNumber.':C'.$rowNumber)->getFont()->setBold(true);
+        $totalRow = ['', 'TOTAL'];
+        foreach ($compNos as $compNo) {
+            $totalRow[] = (float) $data['componentTotals'][$compNo];
+        }
+        $totalRow[] = (float) $data['grandTotal'];
+        $sheet->fromArray([$totalRow], null, 'A'.$rowNumber);
+
+        $rowNumber++;
+        $sheet->fromArray([['Saldo Tahap Sebelumnya', (float) $data['summary']['saldo_awal']]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['Total Penerimaan Dana BOS Tahap ini', (float) $data['summary']['penerimaan']]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['Total Penggunaan Dana BOS Tahap ini', (float) $data['summary']['penggunaan']]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['Saldo Tahap ini', (float) $data['summary']['saldo_akhir']]], null, 'A'.$rowNumber);
+
+        $this->styleHeader($sheet, 'A1:'.$lastCol.'1');
+        $moneyStart = chr(ord('A') + 2);
+        $this->formatMoneyRange($sheet, $moneyStart.'2:'.$lastCol.$rowNumber);
         $sheet->freezePane('A2');
-        $this->autoSize($sheet, 3);
+        $this->autoSize($sheet, count($header));
+    }
+
+    /**
+     * Lembar Excel Format BOS K-2: No | Uraian | Jumlah (dalam Rp) |
+     * Triwulan (I–IV), baris "I Program Sekolah" -> 1.1–1.8 ->
+     * "II Belanja Lainnya" -> "2.1" -> JUMLAH.
+     */
+    private function writeK2(object $sheet, array $payload): void
+    {
+        $data = $payload['k2'];
+
+        $header = ['No', 'Uraian', 'Jumlah (dalam Rp)', 'TW I', 'TW II', 'TW III', 'TW IV'];
+        $sheet->fromArray([$header], null, 'A1');
+        $lastCol = 'G';
+
+        $rowNumber = 2;
+        $sheet->fromArray([['I', 'Program Sekolah']], null, 'A'.$rowNumber++);
+        foreach ($data['programs'] as $program) {
+            $sheet->fromArray([[
+                $program['no'],
+                $program['label'],
+                (float) $program['jumlah'],
+                (float) $program['tw'][1],
+                (float) $program['tw'][2],
+                (float) $program['tw'][3],
+                (float) $program['tw'][4],
+            ]], null, 'A'.$rowNumber++);
+        }
+        $sheet->fromArray([['II', 'Belanja Lainnya']], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['2.1']], null, 'A'.$rowNumber++);
+        $sheet->fromArray([[
+            '',
+            'JUMLAH',
+            (float) $data['totals']['jumlah'],
+            (float) $data['totals']['tw'][1],
+            (float) $data['totals']['tw'][2],
+            (float) $data['totals']['tw'][3],
+            (float) $data['totals']['tw'][4],
+        ]], null, 'A'.$rowNumber);
+
+        $this->styleHeader($sheet, 'A1:'.$lastCol.'1');
+        $this->formatMoneyRange($sheet, 'C2:'.$lastCol.$rowNumber);
+        $sheet->freezePane('A2');
+        $this->autoSize($sheet, count($header));
+    }
+
+    /**
+     * Lembar Excel RPD BOS resmi: judul + identitas, header 3 baris
+     * (No | Kode Program | Uraian | Rincian Perhitungan -> Vol | Satuan |
+     * Tarif Harga | Jumlah | Bulan -> m1 | m2 | m3) + baris nomor 1..10,
+     * lalu hierarki baris dari payload dan footer Sub Total I/II +
+     * JUMLAH TOTAL.
+     */
+    private function writeRpd(object $sheet, array $payload): void
+    {
+        $data = $payload['rpd'];
+        $school = $payload['school'];
+        $monthNames = array_values($data['month_names']);
+        $monthKeys = array_keys($data['month_names']);
+
+        $rowNumber = 1;
+        $sheet->setCellValue('A'.$rowNumber, 'RINCIAN PENGGUNAAN DANA BOS (RPD BOS)');
+        $sheet->setCellValue('A'.(++$rowNumber), $data['month_range']);
+        $sheet->setCellValue('A'.(++$rowNumber), 'Nama Sekolah: '.$school->name);
+        $sheet->setCellValue('A'.(++$rowNumber), 'Desa / Kec: '.trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /'));
+        $sheet->setCellValue('A'.(++$rowNumber), 'Kab / Kota: '.($school->regency ?: '-'));
+        $sheet->setCellValue('A'.(++$rowNumber), 'Provinsi: '.($school->province ?: '-'));
+        $sheet->setCellValue('A'.(++$rowNumber), 'TRIWULAN: '.$data['quarter_label']);
+
+        $headerRow = ++$rowNumber;
+        // Baris 1 header: gabungan kolom bertingkat ditulis per sel.
+        $sheet->fromArray([['No', 'Kode Program', 'Uraian', 'Rincian Perhitungan', '', '', 'Jumlah', 'Bulan', '', '']], null, 'A'.$headerRow);
+        $sheet->fromArray([['', '', '', 'Vol', 'Satuan', 'Tarif Harga', '', $monthNames[0], $monthNames[1], $monthNames[2]]], null, 'A'.($headerRow + 1));
+        $sheet->fromArray([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], null, 'A'.($headerRow + 2));
+        $lastCol = 'J';
+        $rowNumber = $headerRow + 3;
+
+        $sheet->fromArray([['I', '', 'PROGRAM SEKOLAH']], null, 'A'.$rowNumber++);
+        foreach ($data['rows'] as $row) {
+            $sheet->fromArray([[
+                $row['no'],
+                $row['code'],
+                $row['label'],
+                $row['level'] === 'item' ? (float) $row['volume'] : null,
+                $row['level'] === 'item' ? $row['unit'] : null,
+                $row['level'] === 'item' ? (float) $row['unit_price'] : null,
+                (float) $row['jumlah'],
+                (float) $row['months'][$monthKeys[0]],
+                (float) $row['months'][$monthKeys[1]],
+                (float) $row['months'][$monthKeys[2]],
+            ]], null, 'A'.$rowNumber++);
+        }
+        $sheet->fromArray([['', '', 'Sub Total Penggunaan Dana I', '', '', '', (float) $data['totals']['jumlah'],
+            (float) $data['totals']['months'][$monthKeys[0]], (float) $data['totals']['months'][$monthKeys[1]], (float) $data['totals']['months'][$monthKeys[2]]]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['II', '', 'Penggunaan Dana Lainnya']], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['', '', 'Belanja….', '', '', '', 0, 0, 0, 0]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['', '', 'Sub Total Penggunaan Dana II', '', '', '', 0, 0, 0, 0]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['', '', 'JUMLAH TOTAL (I + II)', '', '', '', (float) $data['totals']['jumlah'],
+            (float) $data['totals']['months'][$monthKeys[0]], (float) $data['totals']['months'][$monthKeys[1]], (float) $data['totals']['months'][$monthKeys[2]]]], null, 'A'.$rowNumber);
+
+        $this->styleHeader($sheet, 'A'.$headerRow.':'.$lastCol.($headerRow + 2));
+        $this->formatMoneyRange($sheet, 'D'.$headerRow.':'.$lastCol.$rowNumber);
+        $sheet->freezePane('A'.($headerRow + 3));
+        $this->autoSize($sheet, 10);
     }
 
     /**

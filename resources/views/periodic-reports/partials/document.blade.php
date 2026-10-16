@@ -4,6 +4,7 @@
     $principalNip = trim((string) ($profile->principal_nip ?? ''));
     $treasurerName = trim((string) ($profile->treasurer_name ?? '')) ?: '........................................';
     $treasurerNip = trim((string) ($profile->treasurer_nip ?? ''));
+    $committeeName = trim((string) ($profile->committee_name ?? '')) ?: '........................................';
     $isLedger = in_array($presentation, ['bku_ledger', 'cash_ledger'], true);
     $isRekap = $presentation === 'rekap_bosp';
     $isBpk = $presentation === 'bpk_bos';
@@ -12,6 +13,8 @@
     $isK7c = $presentation === 'k7c' && isset($k7c);
     $isK7a = $presentation === 'k7a' && isset($k7a);
     $isK7 = $presentation === 'k7' && isset($k7);
+    $isK2 = $presentation === 'k2' && isset($k2);
+    $isRpd = $presentation === 'rpd' && isset($rpd);
     $isSptjm = $presentation === 'sptjm_doc' && isset($sptjm);
     $ledgerTitle = $presentation === 'cash_ledger' ? 'BUKU PEMBANTU KAS' : 'BUKU KAS UMUM (BKU)';
     $closingSubject = $presentation === 'cash_ledger' ? 'Buku Pembantu Kas' : 'Buku Kas Umum';
@@ -139,7 +142,7 @@
             <td>: {{ $school->name }}</td>
         </tr>
         <tr>
-            <td>Kecamatan</td>
+            <td>Alamat</td>
             <td>: {{ $school->district ?: '-' }}</td>
         </tr>
         <tr>
@@ -153,6 +156,84 @@
         <tr>
             <td>Sumber Dana</td>
             <td>: {{ $fundSource }}</td>
+        </tr>
+    </table>
+    @endif
+    @if($isK2)
+    @php
+        $k2DesaKec = trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /') ?: '-';
+    @endphp
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="flex:1;text-align:center;">
+            <h1 class="doc-title">RENCANA KEGIATAN DAN ANGGARAN SEKOLAH ( RKAS )</h1>
+            <div class="doc-subtitle">TAHUN ANGGARAN {{ $year->year }}</div>
+            <div class="doc-subtitle">Dikirim ke TIM Menajemen BOS Kab/Kota</div>
+        </div>
+        <table style="border-collapse:collapse;font-size:11px;white-space:nowrap;">
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Format BOS K-2</td></tr>
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;">Diisi oleh sekolah</td></tr>
+        </table>
+    </div>
+    <table class="bku-identity-block page-break-avoid">
+        <tr>
+            <td>Nama Sekolah</td>
+            <td>: {{ $school->name }}</td>
+        </tr>
+        <tr>
+            <td>Desa/Kecamatan</td>
+            <td>: {{ $k2DesaKec }}</td>
+        </tr>
+        <tr>
+            <td>Kabupaten</td>
+            <td>: {{ $school->regency ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Provinsi</td>
+            <td>: {{ $school->province ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Triwulan / Bulan</td>
+            <td>: {{ $k2['quarter_label'] }} / {{ $k2['month_range'] }}</td>
+        </tr>
+        <tr>
+            <td>Sumber Dana</td>
+            <td>: {{ $fundSource }}</td>
+        </tr>
+    </table>
+    @endif
+    @if($isRpd)
+    @php
+        $rpdDesaKec = trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /') ?: '-';
+    @endphp
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="flex:1;text-align:center;">
+            <h1 class="doc-title">RINCIAN PENGGUNAAN DANA BOS (RPD BOS)</h1>
+            <div class="doc-subtitle">{{ $rpd['month_range'] }}</div>
+        </div>
+        <table style="border-collapse:collapse;font-size:11px;white-space:nowrap;">
+            <tr><td style="border:1px solid #111827;padding:2px 10px;text-align:center;"><strong>RPD</strong></td></tr>
+        </table>
+    </div>
+    <table class="bku-identity-block page-break-avoid">
+        <tr>
+            <td>Nama Sekolah</td>
+            <td>: {{ $school->name }}</td>
+        </tr>
+        <tr>
+            <td>Desa / Kec</td>
+            <td>: {{ $rpdDesaKec }}</td>
+        </tr>
+        <tr>
+            <td>Kab / Kota</td>
+            <td>: {{ $school->regency ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>Provinsi</td>
+            <td>: {{ $school->province ?: '-' }}</td>
+        </tr>
+        <tr>
+            <td>TRIWULAN</td>
+            <td>: {{ $rpd['quarter_label'] }}</td>
         </tr>
     </table>
     @endif
@@ -200,7 +281,7 @@
     </header>
     <h1 class="doc-title">SURAT PERNYATAAN TANGGUNG JAWAB MUTLAK</h1>
     @endif
-    @if(! $isRekap && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
+    @if(! $isRekap && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isK2 && ! $isRpd && ! $isSptjm)
     <header class="doc-header">
         <div class="school">{{ $school->name }}</div>
         <div class="address">
@@ -503,32 +584,246 @@
     @endif
 
     @if($isK7a)
-    <table class="report-table">
+    <table class="report-table k7a-matrix">
         <thead>
             <tr>
-                <th>No</th>
-                <th>Komponen Penggunaan Dana BOS</th>
-                <th>Jumlah (Rp)</th>
+                <th rowspan="2">No</th>
+                <th rowspan="2">Program/Kegiatan</th>
+                <th colspan="{{ count($k7a['components']) }}">Komponen Penggunaan Dana</th>
+                <th rowspan="2">TOTAL</th>
+            </tr>
+            <tr>
+                @foreach($k7a['components'] as $comp)
+                    <th>{{ $comp['label'] }}</th>
+                @endforeach
             </tr>
         </thead>
         <tbody>
-            @foreach($k7a['rows'] as $k7arow)
+            @foreach($k7a['programs'] as $prog)
                 <tr>
-                    <td class="integer">{{ $k7arow['no'] }}</td>
-                    <td>{{ $k7arow['label'] }}</td>
-                    <td class="money">{{ $rupiah($k7arow['amount']) }}</td>
+                    <td class="integer">{{ $prog['no'] }}</td>
+                    <td>{{ $prog['label'] }}</td>
+                    @foreach($k7a['components'] as $compNo => $comp)
+                        <td class="money">{{ $rupiah($prog['components'][$compNo]) }}</td>
+                    @endforeach
+                    <td class="money"><strong>{{ $rupiah($prog['total']) }}</strong></td>
                 </tr>
             @endforeach
             <tr>
                 <td class="integer"></td>
-                <td><strong>JUMLAH</strong></td>
-                <td class="money"><strong>{{ $rupiah($k7a['total']) }}</strong></td>
+                <td><strong>TOTAL</strong></td>
+                @foreach($k7a['components'] as $compNo => $comp)
+                    <td class="money"><strong>{{ $rupiah($k7a['componentTotals'][$compNo]) }}</strong></td>
+                @endforeach
+                <td class="money"><strong>{{ $rupiah($k7a['grandTotal']) }}</strong></td>
             </tr>
         </tbody>
     </table>
+    <table class="bku-identity-block page-break-avoid" style="margin-top:12px;">
+        <tr>
+            <td>Saldo Tahap Sebelumnya</td>
+            <td>: Rp. {{ $rupiah($k7a['summary']['saldo_awal']) }}</td>
+        </tr>
+        <tr>
+            <td>Total Penerimaan Dana BOS Tahap ini</td>
+            <td>: Rp. {{ $rupiah($k7a['summary']['penerimaan']) }}</td>
+        </tr>
+        <tr>
+            <td>Total Penggunaan Dana BOS Tahap ini</td>
+            <td>: Rp. {{ $rupiah($k7a['summary']['penggunaan']) }}</td>
+        </tr>
+        <tr>
+            <td><strong>Saldo Tahap ini</strong></td>
+            <td>: <strong>Rp. {{ $rupiah($k7a['summary']['saldo_akhir']) }}</strong></td>
+        </tr>
+    </table>
     @if($k7a['unmapped'] > 0)
     <div class="note">
-        Belanja Rp. {{ $rupiah($k7a['unmapped']) }} ({{ $k7a['unmappedCount'] }} baris kas) belum terpetakan ke komponen di atas dan tidak masuk JUMLAH — cocokkan manual dengan keluaran K7A resmi sebelum ditandatangani.
+        Belanja Rp. {{ $rupiah($k7a['unmapped']) }} ({{ $k7a['unmappedCount'] }} baris kas) belum terpetakan ke matriks di atas dan tidak masuk JUMLAH — cocokkan manual dengan keluaran K7A resmi sebelum ditandatangani.
+    </div>
+    @endif
+    @endif
+
+    @if($isK2)
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th rowspan="2">No</th>
+                <th rowspan="2">Uraian</th>
+                <th rowspan="2">Jumlah<br>(dalam Rp)</th>
+                <th colspan="4">Triwulan</th>
+            </tr>
+            <tr>
+                <th>I</th>
+                <th>II</th>
+                <th>III</th>
+                <th>IV</th>
+            </tr>
+            <tr>
+                <th>1</th>
+                <th>2</th>
+                <th>3</th>
+                <th>4</th>
+                <th>5</th>
+                <th>6</th>
+                <th>7</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="integer">I</td>
+                <td colspan="6"><strong>Program Sekolah</strong></td>
+            </tr>
+            @foreach($k2['programs'] as $prog)
+            <tr>
+                <td class="integer">{{ $prog['no'] }}</td>
+                <td>{{ $prog['label'] }}</td>
+                <td class="money">{{ $rupiah($prog['jumlah']) }}</td>
+                <td class="money">{{ $rupiah($prog['tw'][1]) }}</td>
+                <td class="money">{{ $rupiah($prog['tw'][2]) }}</td>
+                <td class="money">{{ $rupiah($prog['tw'][3]) }}</td>
+                <td class="money">{{ $rupiah($prog['tw'][4]) }}</td>
+            </tr>
+            @endforeach
+            <tr>
+                <td class="integer">II</td>
+                <td colspan="6"><strong>Belanja Lainnya</strong></td>
+            </tr>
+            <tr>
+                <td class="integer">2.1</td>
+                <td></td>
+                <td class="money"></td>
+                <td class="money"></td>
+                <td class="money"></td>
+                <td class="money"></td>
+                <td class="money"></td>
+            </tr>
+            <tr>
+                <td class="integer"></td>
+                <td><strong>JUMLAH</strong></td>
+                <td class="money"><strong>{{ $rupiah($k2['totals']['jumlah']) }}</strong></td>
+                <td class="money"><strong>{{ $rupiah($k2['totals']['tw'][1]) }}</strong></td>
+                <td class="money"><strong>{{ $rupiah($k2['totals']['tw'][2]) }}</strong></td>
+                <td class="money"><strong>{{ $rupiah($k2['totals']['tw'][3]) }}</strong></td>
+                <td class="money"><strong>{{ $rupiah($k2['totals']['tw'][4]) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+    @if(! $k2['has_data'])
+    <div class="note">
+        Data anggaran RKAS belum tersedia — jalankan sinkronisasi ARKAS terlebih dahulu.
+    </div>
+    @endif
+    @endif
+
+    @if($isRpd)
+    @php
+        $rpdMonths = array_keys($rpd['month_names']);
+        $rpdColspan = 5 + count($rpdMonths);
+    @endphp
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th rowspan="2">No</th>
+                <th rowspan="2">Kode<br>Program</th>
+                <th rowspan="2">Uraian</th>
+                <th colspan="3">Rincian Perhitungan</th>
+                <th rowspan="2">Jumlah</th>
+                <th colspan="{{ count($rpdMonths) }}">Bulan</th>
+            </tr>
+            <tr>
+                <th>Vol</th>
+                <th>Satuan</th>
+                <th>Tarif Harga</th>
+                @foreach($rpd['month_names'] as $rpdMonthName)
+                <th>{{ $rpdMonthName }}</th>
+                @endforeach
+            </tr>
+            <tr>
+                @for($i = 1; $i <= $rpdColspan; $i++)
+                <th>{{ $i }}</th>
+                @endfor
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="integer">I</td>
+                <td colspan="{{ $rpdColspan - 1 }}"><strong>PROGRAM SEKOLAH</strong></td>
+            </tr>
+            @foreach($rpd['rows'] as $rpdRow)
+            <tr>
+                <td class="integer">{{ $rpdRow['no'] }}</td>
+                <td class="integer">{{ $rpdRow['code'] }}</td>
+                <td>
+                    @if($rpdRow['level'] === 'item')
+                        {{ $rpdRow['label'] }}
+                    @else
+                        <strong>{{ $rpdRow['label'] }}</strong>
+                    @endif
+                </td>
+                <td class="integer">{{ $rpdRow['level'] === 'item' && $rpdRow['volume'] > 0 ? rtrim(rtrim(number_format($rpdRow['volume'], 2, ',', '.'), '0'), ',') : '' }}</td>
+                <td>{{ $rpdRow['level'] === 'item' ? $rpdRow['unit'] : '' }}</td>
+                <td class="money">{{ $rpdRow['level'] === 'item' && $rpdRow['unit_price'] > 0 ? $rupiah($rpdRow['unit_price']) : '' }}</td>
+                <td class="money">
+                    @if($rpdRow['level'] === 'item')
+                        {{ $rupiah($rpdRow['jumlah']) }}
+                    @else
+                        <strong>{{ $rupiah($rpdRow['jumlah']) }}</strong>
+                    @endif
+                </td>
+                @foreach($rpdMonths as $rpdMonth)
+                <td class="money">
+                    @if($rpdRow['level'] === 'item')
+                        {{ $rpdRow['months'][$rpdMonth] > 0 ? $rupiah($rpdRow['months'][$rpdMonth]) : '' }}
+                    @else
+                        <strong>{{ $rpdRow['months'][$rpdMonth] > 0 ? $rupiah($rpdRow['months'][$rpdMonth]) : '' }}</strong>
+                    @endif
+                </td>
+                @endforeach
+            </tr>
+            @endforeach
+            <tr>
+                <td colspan="6"><strong>Sub Total Penggunaan Dana I</strong></td>
+                <td class="money"><strong>{{ $rupiah($rpd['totals']['jumlah']) }}</strong></td>
+                @foreach($rpdMonths as $rpdMonth)
+                <td class="money"><strong>{{ $rupiah($rpd['totals']['months'][$rpdMonth]) }}</strong></td>
+                @endforeach
+            </tr>
+            <tr>
+                <td class="integer">II</td>
+                <td colspan="{{ $rpdColspan - 1 }}"><strong>Penggunaan Dana Lainnya</strong></td>
+            </tr>
+            <tr>
+                <td class="integer"></td>
+                <td class="integer"></td>
+                <td>Belanja….</td>
+                <td class="integer"></td>
+                <td></td>
+                <td class="money"></td>
+                <td class="money">0</td>
+                @foreach($rpdMonths as $rpdMonth)
+                <td class="money"></td>
+                @endforeach
+            </tr>
+            <tr>
+                <td colspan="6"><strong>Sub Total Penggunaan Dana II</strong></td>
+                <td class="money"><strong>0</strong></td>
+                @foreach($rpdMonths as $rpdMonth)
+                <td class="money"><strong>0</strong></td>
+                @endforeach
+            </tr>
+            <tr>
+                <td colspan="6"><strong>JUMLAH TOTAL (I + II)</strong></td>
+                <td class="money"><strong>{{ $rupiah($rpd['totals']['jumlah']) }}</strong></td>
+                @foreach($rpdMonths as $rpdMonth)
+                <td class="money"><strong>{{ $rupiah($rpd['totals']['months'][$rpdMonth]) }}</strong></td>
+                @endforeach
+            </tr>
+        </tbody>
+    </table>
+    @if(! $rpd['has_data'])
+    <div class="note">
+        Data anggaran RKAS belum tersedia — jalankan sinkronisasi ARKAS terlebih dahulu.
     </div>
     @endif
     @endif
@@ -627,7 +922,7 @@
     </table>
     @endif
 
-    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
+    @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isK2 && ! $isRpd && ! $isSptjm)
     <table class="meta-table page-break-avoid">
         <tr>
             <td>Tahun Anggaran</td>
@@ -657,7 +952,7 @@
         </div>
     @endif
 
-    @if(! $isLedger && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
+    @if(! $isLedger && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isK2 && ! $isRpd && ! $isSptjm)
     <table class="summary-table page-break-avoid">
         <thead>
             <tr>
@@ -884,16 +1179,12 @@
     @elseif($isK7a)
     <table class="signature-table">
         <tr>
-            <td>
-                Bendahara BOS
-                <div class="signature-space"></div>
-                <div class="signature-name">{{ $treasurerName }}</div>
-                @if($treasurerNip)
-                    <div>NIP. {{ $treasurerNip }}</div>
-                @endif
+            <td colspan="2" style="text-align:left;border:none;padding-bottom:0;">
+                Menyetujui,
             </td>
+        </tr>
+        <tr>
             <td>
-                Mengetahui,<br>
                 Kepala Sekolah
                 <div class="signature-space"></div>
                 <div class="signature-name">{{ $principalName }}</div>
@@ -902,9 +1193,78 @@
                 @endif
             </td>
             <td>
+                Pemegang Kas Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @elseif($isK2)
+    <table class="signature-table">
+        <tr>
+            <td style="text-align:left;border:none;padding-bottom:0;">
+                Diketahui Oleh :
+            </td>
+            <td style="text-align:left;border:none;padding-bottom:0;">
+                Diketahui Oleh :
+            </td>
+            <td style="text-align:left;border:none;padding-bottom:0;">
+                {{ $k2Title['place'] }}, {{ $k2Title['signed_date'] }}
+            </td>
+        </tr>
+        <tr>
+            <td>
                 Komite Sekolah
                 <div class="signature-space"></div>
-                <div class="signature-name">........................................</div>
+                <div class="signature-name">{{ $committeeName }}</div>
+            </td>
+            <td>
+                Kepala Sekolah
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+            <td>
+                Bendahara
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
+            </td>
+        </tr>
+    </table>
+    @elseif($isRpd)
+    <table class="signature-table">
+        <tr>
+            <td style="text-align:left;border:none;padding-bottom:0;">
+                Mengetahui,
+            </td>
+            <td style="text-align:left;border:none;padding-bottom:0;">
+                {{ $rpdTitle['place'] }}, {{ $rpdTitle['signed_date'] }}
+            </td>
+        </tr>
+        <tr>
+            <td>
+                KEPALA {{ mb_strtoupper($school->name) }}
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $principalName }}</div>
+                @if($principalNip)
+                    <div>NIP. {{ $principalNip }}</div>
+                @endif
+            </td>
+            <td>
+                BENDAHARA
+                <div class="signature-space"></div>
+                <div class="signature-name">{{ $treasurerName }}</div>
+                @if($treasurerNip)
+                    <div>NIP. {{ $treasurerNip }}</div>
+                @endif
             </td>
         </tr>
     </table>
@@ -914,7 +1274,7 @@
             <td>
                 Komite Sekolah
                 <div class="signature-space"></div>
-                <div class="signature-name">........................................</div>
+                <div class="signature-name">{{ $committeeName }}</div>
             </td>
             <td>
                 Mengetahui<br>
@@ -951,7 +1311,7 @@
             </td>
         </tr>
     </table>
-    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isSptjm)
+    @elseif(! $isLedger && $presentation !== 'tax' && ! $isBpk && ! $isK7b && ! $isK7c && ! $isK7a && ! $isK7 && ! $isK2 && ! $isRpd && ! $isSptjm)
     <table class="signature-table">
         <tr>
             <td>

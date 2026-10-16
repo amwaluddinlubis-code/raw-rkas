@@ -152,18 +152,22 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertSame('portrait', $payload['orientation']);
 
         $k7a = $payload['k7a'];
-        $this->assertSame(500000.0, $k7a['rows'][1]['amount']);
-        $this->assertSame(1000000.0, $k7a['rows'][2]['amount']);
-        $this->assertSame(0.0, $k7a['rows'][3]['amount']);
-        $this->assertSame(300000.0, $k7a['rows'][7]['amount']);
-        $this->assertSame(700000.0, $k7a['rows'][8]['amount']);
-        $this->assertSame(800000.0, $k7a['rows'][9]['amount']);
-        $this->assertSame(2000000.0, $k7a['rows'][12]['amount']);
-        $this->assertSame(5300000.0, $k7a['total']);
+        $this->assertSame(500000.0, $k7a['componentTotals'][1]);
+        $this->assertSame(1000000.0, $k7a['componentTotals'][2]);
+        $this->assertSame(0.0, $k7a['componentTotals'][3]);
+        $this->assertSame(300000.0, $k7a['componentTotals'][7]);
+        $this->assertSame(700000.0, $k7a['componentTotals'][8]);
+        $this->assertSame(800000.0, $k7a['componentTotals'][9]);
+        $this->assertSame(2000000.0, $k7a['componentTotals'][12]);
+        $this->assertSame(5300000.0, $k7a['grandTotal']);
         $this->assertSame(1900000.0, $k7a['unmapped']);
         $this->assertSame(2, $k7a['unmappedCount']);
         $this->assertSame(7200000.0, $k7a['belanja']);
-        $this->assertSame($k7a['belanja'], $k7a['total'] + $k7a['unmapped']);
+        $this->assertSame($k7a['belanja'], $k7a['grandTotal'] + $k7a['unmapped']);
+        // Matriks 8 program x 12 komponen; total program = grand total.
+        $this->assertCount(8, $k7a['programs']);
+        $programTotal = array_sum(array_column($k7a['programs'], 'total'));
+        $this->assertSame($k7a['grandTotal'], $programTotal);
     }
 
     public function test_k7a_print_route_renders_official_layout(): void
@@ -177,7 +181,8 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertStringContainsString('Penerimaan Peserta Didik Baru (PPDB)', $html);
         $this->assertStringContainsString('Pembayaran Honor', $html);
         $this->assertStringContainsString('JUMLAH', $html);
-        $this->assertStringContainsString('Komite Sekolah', $html);
+        $this->assertStringContainsString('Pemegang Kas Sekolah', $html);
+        $this->assertStringContainsString('Menyetujui', $html);
         $this->assertSame(1, substr_count($html, '<table class="signature-table'));
     }
 
@@ -203,16 +208,16 @@ class K7aFormatK7SptjmReportTest extends TestCase
         }
 
         // A. Penerimaan: hanya Terima Dana BOS 10jt pada kolom Pusat.
-        $this->assertSame(10000000.0, $byLabel['Penerimaan Terdiri Dari']['amounts']['jumlah']);
-        $this->assertSame(10000000.0, $byLabel['Penerimaan Terdiri Dari']['amounts']['pusat']);
-        $this->assertSame(10000000.0, $byLabel['Bantuan Operasional Sekolah']['amounts']['jumlah']);
+        $this->assertSame(5000000.0, $byLabel['Penerimaan Terdiri Dari']['amounts']['jumlah']);
+        $this->assertSame(5000000.0, $byLabel['Penerimaan Terdiri Dari']['amounts']['pusat']);
+        $this->assertSame(5000000.0, $byLabel['Bantuan Operasional Sekolah']['amounts']['jumlah']);
         $this->assertSame(0.0, $byLabel['Saldo Awal']['amounts']['jumlah']);
 
         // Hierarki 8 program selalu tampil; program tanpa data bernilai nol.
         $this->assertSame(500000.0, $byLabel['Pengembangan Kompetensi Lulusan']['amounts']['jumlah']);
         $this->assertSame(1000000.0, $byLabel['Pengembangan Standar Isi']['amounts']['jumlah']);
         $this->assertSame(400000.0, $byLabel['Pengembangan Standar Proses']['amounts']['jumlah']);
-        $this->assertSame(0.0, $byLabel['Pengembangan pendidik dan tenaga kependidikan']['amounts']['jumlah']);
+        $this->assertSame(0.0, $byLabel['Standar Tenaga Kependidikan']['amounts']['jumlah']);
         $this->assertSame(1100000.0, $byLabel['Pengembangan sarana dan prasarana sekolah']['amounts']['jumlah']);
         $this->assertSame(700000.0, $byLabel['Pengembangan standar pengelolaan']['amounts']['jumlah']);
         $this->assertSame(3500000.0, $byLabel['Pengembangan standar pembiayaan']['amounts']['jumlah']);
@@ -226,8 +231,8 @@ class K7aFormatK7SptjmReportTest extends TestCase
         // II total penggunaan, C sisa = penerimaan - penggunaan.
         $this->assertSame(7200000.0, $byLabel['Total Penggunaan Dana']['amounts']['jumlah']);
         $this->assertSame(7200000.0, $byLabel['Total Penggunaan Dana']['amounts']['pusat']);
-        $this->assertSame(2800000.0, $byLabel['Sisa Dana = A - II (Pengembalian)']['amounts']['jumlah']);
-        $this->assertSame(2800000.0, $byLabel['Sisa Dana = A - II (Pengembalian)']['amounts']['pusat']);
+        $this->assertSame(-2200000.0, $byLabel['Sisa Dana = I - II (Pengembalian)']['amounts']['jumlah']);
+        $this->assertSame(-2200000.0, $byLabel['Sisa Dana = I - II (Pengembalian)']['amounts']['pusat']);
 
         $this->assertSame(0.0, $k7['unmapped']);
         $this->assertSame(0, $k7['unmappedCount']);
@@ -246,8 +251,8 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertStringContainsString('Diisi Oleh Sekolah', $html);
         $this->assertStringContainsString('Penggunaan Dana Per Sumber Dana', $html);
         $this->assertStringContainsString('Bantuan Operasional Sekolah (BOS)', $html);
-        $this->assertStringContainsString('Sisa Dana = A - II (Pengembalian)', $html);
-        $this->assertStringContainsString('2.800.000', $html);
+        $this->assertStringContainsString('Sisa Dana = I - II (Pengembalian)', $html);
+        $this->assertStringContainsString('-2.200.000', $html);
         $this->assertStringContainsString('Komite Sekolah', $html);
         $this->assertStringContainsString('Mengetahui', $html);
         $this->assertStringContainsString('Bendahara', $html);
@@ -292,8 +297,11 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $sheet = $book->getSheetByName('Laporan');
         $this->assertNotNull($sheet);
         $this->assertSame('No', $sheet->getCell('A1')->getValue());
-        $this->assertSame('JUMLAH', $sheet->getCell('B14')->getValue());
-        $this->assertEquals(5300000, $sheet->getCell('C14')->getValue());
+        $this->assertSame('Program/Kegiatan', $sheet->getCell('B1')->getValue());
+        $this->assertSame('TOTAL', $sheet->getCell('O1')->getValue());
+        $this->assertSame('TOTAL', $sheet->getCell('B10')->getValue());
+        $this->assertEquals(5300000, $sheet->getCell('O10')->getValue());
+        $this->assertSame('Saldo Tahap ini', $sheet->getCell('A14')->getValue());
         $book->disconnectWorksheets();
 
         $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'format_k7', 1);
@@ -309,11 +317,11 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertEquals(10, $sheet->getCell('H14')->getValue());
         // Baris A: penerimaan 10jt pada kolom Jumlah (C) dan Pusat (E).
         $this->assertSame('Penerimaan Terdiri Dari', $sheet->getCell('B15')->getValue());
-        $this->assertEquals(10000000, $sheet->getCell('C15')->getValue());
-        $this->assertEquals(10000000, $sheet->getCell('E15')->getValue());
+        $this->assertEquals(5000000, $sheet->getCell('C15')->getValue());
+        $this->assertEquals(5000000, $sheet->getCell('E15')->getValue());
         // Baris C: sisa 2,8jt.
-        $this->assertSame('Sisa Dana = A - II (Pengembalian)', $sheet->getCell('B48')->getValue());
-        $this->assertEquals(2800000, $sheet->getCell('C48')->getValue());
+        $this->assertSame('Sisa Dana = I - II (Pengembalian)', $sheet->getCell('B48')->getValue());
+        $this->assertEquals(-2200000, $sheet->getCell('C48')->getValue());
         $book->disconnectWorksheets();
 
         $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'sptjm', 1);
