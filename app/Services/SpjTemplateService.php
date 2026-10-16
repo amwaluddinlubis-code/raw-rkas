@@ -1004,12 +1004,34 @@ class SpjTemplateService
             return ['bahan' => $gross, 'upah' => 0.0];
         }
 
-        $bahan = $materialId === (int) $transaction->getKey()
+        $selfKey = (int) $transaction->getKey();
+
+        // Batasi lookup ke tahun anggaran + sumber dana yang sama dengan
+        // transaksi ini agar tidak menarik transaksi lintas konteks.
+        $findScoped = function (int $id) use ($transaction): ?Transaction {
+            if ($id === 0) {
+                return null;
+            }
+
+            return Transaction::query()
+                ->where('fiscal_year_id', $transaction->fiscal_year_id)
+                ->where('fund_source_id', $transaction->fund_source_id)
+                ->find($id);
+        };
+
+        $bahan = $materialId === $selfKey
             ? $gross
-            : (float) (Transaction::query()->find($materialId)?->sourceValue('gross_amount') ?? 0);
-        $upah = $laborId === (int) $transaction->getKey()
-            ? $gross
-            : (float) ($laborId !== 0 ? (Transaction::query()->find($laborId)?->sourceValue('gross_amount') ?? 0) : 0);
+            : (float) ($findScoped($materialId)?->sourceValue('gross_amount') ?? 0);
+
+        // Kedua ID menunjuk transaksi yang sama: hitung sekali saja
+        // sebagai bahan agar NILAI_PEKERJAAN tidak menjadi 2x bruto.
+        if ($laborId !== 0 && $laborId === $materialId) {
+            $upah = 0.0;
+        } else {
+            $upah = $laborId === $selfKey
+                ? $gross
+                : (float) ($findScoped($laborId)?->sourceValue('gross_amount') ?? 0);
+        }
 
         return ['bahan' => $bahan, 'upah' => $upah];
     }
