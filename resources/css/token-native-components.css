@@ -337,9 +337,14 @@ select:not([multiple]) {
     position: fixed !important;
     z-index: 1000 !important;
     right: auto !important;
-    bottom: auto !important;
     min-width: 0 !important;
     max-width: calc(100vw - 2rem);
+}
+
+/* Penempatan ke atas: dipakai saat ruang bawah viewport tak mencukupi.
+   `bottom` diisi via inline style oleh JS; aturan ini menetralkan `top`. */
+.ui-daisy-select-menu-portal[data-placement="up"] {
+    top: auto !important;
 }
 
 .ui-daisy-select-search-icon,

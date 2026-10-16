@@ -51,6 +51,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'SPTJM',
             'BOS K7A',
             'Format K7',
+            'Format BOS K-2',
+            'RPD BOS',
             'Buku Kas Umum (BKU)',
             'SPB',
             'SP2B',
@@ -92,7 +94,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_ANNUAL), 'label'));
 
-        $this->assertSame(47, array_sum(array_map('count', $registry->packages())));
+        $this->assertSame(49, array_sum(array_map('count', $registry->packages())));
     }
 
     #[Test]

@@ -245,6 +245,31 @@ k7PeriodQualifier/k7FundColumn/k7Receipts/k7UsageHierarchy`,
 di `document.blade.php` + `document-styles.blade.php`,
 `SpjPeriodicReportExcelService::writeK7/styleK7Header`.
 
+## Format BOS K-2 (2026-10-16)
+
+Presentasi `k2` (`format_k2`, scope triwulan): "RENCANA KEGIATAN DAN
+ANGGARAN SEKOLAH ( RKAS )" mengikuti formulir resmi (terverifikasi
+terhadap contoh TW I 2026 SDN 316 Ranto Panjang): kop identitas
+sekolah + kotak "Format BOS K-2", tabel No | Uraian | Jumlah (dalam
+Rp) | Triwulan (I–IV) dengan baris "I Program Sekolah" → 1.1–1.8
+(8 program resmi) → "II Belanja Lainnya" → "2.1" (kosong) → JUMLAH,
+dan tanda tangan Komite Sekolah + Kepala Sekolah + Bendahara (+
+tempat/tanggal). Landscape folio.
+
+Data anggaran per program per triwulan dari
+`RkasReportService::build('tahunan')` — baris level `program` membawa
+rincian `tw` 1–4 dari periode mirror ARKAS; baris program dipetakan ke
+1–8 via `BospRekapStandardMapper::a1RowForActivity()`. Bila mirror
+belum punya rincian periode, total tahunan ditampilkan di kolom
+triwulan berjalan dan nol di lainnya (keterbatasan tercatat di
+PHPDoc `k2Data()`).
+
+Implementasi: `SpjPeriodicReportPrintService::k2Data/k2QuarterLabel/
+k2MonthRange`, cabang `k2` di `document.blade.php`,
+`SpjPeriodicReportExcelService::writeK2`, registrasi
+`SpjPeriodicReportRegistry` scope triwulan.
+Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
+
 ## SPTJM (2026-10-08)
 
 Presentasi `sptjm_doc` (`sptjm`, semua scope): kop sekolah, judul

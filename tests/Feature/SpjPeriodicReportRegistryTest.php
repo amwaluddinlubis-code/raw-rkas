@@ -13,7 +13,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
         $packages = $registry->packages();
 
         $this->assertSame(11, count($packages['bulan']));
-        $this->assertSame(13, count($packages['triwulan']));
+        $this->assertSame(15, count($packages['triwulan']));
         $this->assertSame(13, count($packages['semester']));
         $this->assertSame(10, count($packages['tahunan']));
 
@@ -35,6 +35,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'SPTJM',
             'BOS K7A',
             'Format K7',
+            'Format BOS K-2',
+            'RPD BOS',
             'Buku Kas Umum (BKU)',
             'SPB',
             'SP2B',

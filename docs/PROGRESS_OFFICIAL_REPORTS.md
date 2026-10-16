@@ -5,6 +5,38 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## RPD BOS baru (2026-10-16)
+
+Laporan "RINCIAN PENGGUNAAN DANA BOS (RPD BOS)" ditambahkan ke scope
+triwulan (`rpd_bos`), mengikuti contoh resmi TW I 2026 SDN 316 Ranto
+Panjang: kop identitas + kotak "RPD", tabel No | Kode Program | Uraian |
+Rincian Perhitungan (Vol | Satuan | Tarif Harga) | Jumlah | Bulan
+(Januari/Februari/Maret), hierarki I PROGRAM SEKOLAH → 8 program → sub →
+kegiatan → item, footer Sub Total I/II + JUMLAH TOTAL, TTD
+Mengetahui/Kepala/Bendahara, landscape folio; Excel mengikuti. Kolom
+Jumlah = pagu RKAS; kolom bulan = realisasi BELANJA kas umum per
+ID_RAPBS; Vol/Satuan/Tarif dari mirror rapbs.
+
+Regression: `RpdBosReportTest` 7 passed / 77 assertions; Pint passed.
+Browser/PDF aktual RVR.
+
+## Format BOS K-2 baru (2026-10-16)
+
+Laporan "RENCANA KEGIATAN DAN ANGGARAN SEKOLAH ( RKAS )" Format BOS
+K-2 ditambahkan ke scope triwulan (`format_k2`), mengikuti contoh
+resmi TW I 2026 SDN 316 Ranto Panjang: kop identitas + kotak "Format
+BOS K-2", tabel No | Uraian | Jumlah (dalam Rp) | Triwulan (I–IV),
+baris "I Program Sekolah" → 1.1–1.8 → "II Belanja Lainnya" → "2.1" →
+JUMLAH, TTD Komite/Kepsek/Bendahara, landscape folio; Excel
+mengikuti. Data anggaran per program per triwulan dari
+`RkasReportService::build('tahunan')` (rincian `tw` mirror ARKAS);
+tanpa rincian periode, total tahunan tampil di kolom triwulan
+berjalan.
+
+Regression: `FormatK2ReportTest` 4 passed / 50 assertions (struktur
+data 8 program + total, fallback tanpa data, print route, excel);
+K7aFormatK7Sptjm 13 passed; Pint passed. Browser/PDF aktual RVR.
+
 ## Format K7 ditulis ulang ke formulir resmi (2026-10-12)
 
 Format K7 lama (tabel per jenis anggaran 5.1.01/5.1.02/5.2 per bulan)

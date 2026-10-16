@@ -57,11 +57,39 @@ const enhanceSelect = (select) => {
 
     const positionMenu = () => {
         const bounds = trigger.getBoundingClientRect();
-        const availableHeight = Math.max(180, window.innerHeight - bounds.bottom - 16);
-        menu.style.top = `${Math.round(bounds.bottom + 6)}px`;
+        const gap = 6;
+        const margin = 16;
+
+        // Ukur tinggi natural menu (tanpa batas maxHeight) agar keputusan arah
+        // buka akurat, termasuk saat opsi tinggal sedikit setelah pencarian.
+        const prevMaxHeight = menu.style.maxHeight;
+        const wasHidden = menu.hidden;
+        menu.style.maxHeight = 'none';
+        menu.style.visibility = 'hidden';
+        if (wasHidden) menu.hidden = false;
+        const naturalHeight = menu.offsetHeight || 0;
+        if (wasHidden) menu.hidden = true;
+        menu.style.visibility = '';
+        menu.style.maxHeight = prevMaxHeight;
+
+        const spaceBelow = window.innerHeight - bounds.bottom - margin;
+        const spaceAbove = bounds.top - margin;
+        // Buka ke atas hanya bila ruang bawah tak muat dan ruang atas lebih lega.
+        const openUp = spaceBelow < naturalHeight && spaceAbove > spaceBelow;
+
         menu.style.left = `${Math.round(bounds.left)}px`;
         menu.style.width = `${Math.round(bounds.width)}px`;
-        menu.style.maxHeight = `${Math.round(availableHeight)}px`;
+        if (openUp) {
+            menu.dataset.placement = 'up';
+            menu.style.top = '';
+            menu.style.bottom = `${Math.round(window.innerHeight - bounds.top + gap)}px`;
+            menu.style.maxHeight = `${Math.round(Math.max(160, spaceAbove - gap))}px`;
+        } else {
+            delete menu.dataset.placement;
+            menu.style.bottom = '';
+            menu.style.top = `${Math.round(bounds.bottom + gap)}px`;
+            menu.style.maxHeight = `${Math.round(Math.max(160, spaceBelow - gap))}px`;
+        }
     };
 
     const optionButtons = [];
@@ -111,7 +139,9 @@ const enhanceSelect = (select) => {
         if (menu.parentNode !== wrapper) {
             wrapper.appendChild(menu);
             menu.classList.remove('ui-daisy-select-menu-portal');
+            delete menu.dataset.placement;
             menu.style.top = '';
+            menu.style.bottom = '';
             menu.style.left = '';
             menu.style.width = '';
             menu.style.maxHeight = '';
