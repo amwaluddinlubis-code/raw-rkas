@@ -12,6 +12,15 @@ final class SpjPeriodicReportRegistry
 
     public const SCOPE_ANNUAL = 'tahunan';
 
+    /** @var array<string,list<array{key:string,label:string}>>|null */
+    private ?array $packagesCache = null;
+
+    /** @var list<string> */
+    private const MONTH_NAMES = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+    ];
+
     /** @return list<string> */
     public function scopes(): array
     {
@@ -43,7 +52,11 @@ final class SpjPeriodicReportRegistry
      */
     public function packages(): array
     {
-        return [
+        if ($this->packagesCache !== null) {
+            return $this->packagesCache;
+        }
+
+        return $this->packagesCache = [
             self::SCOPE_MONTHLY => [
                 $this->report('sptjm', 'SPTJM'),
                 $this->report('bku', 'Buku Kas Umum'),
@@ -162,9 +175,65 @@ final class SpjPeriodicReportRegistry
         return $period !== null && in_array($period, $this->validPeriods($scope), true);
     }
 
+    /**
+     * Daftar bulan kalender (1-12) yang dicakup scope+periode.
+     * Satu-satunya sumber kebenaran rentang bulan; dipakai filter query
+     * (UseCase::applyPeriod), agregat cetak (PrintService::scopeMonths),
+     * dan label konteks periode.
+     *
+     * @return list<int>
+     */
+    public function periodMonths(string $scope, ?int $period): array
+    {
+        if ($scope === self::SCOPE_ANNUAL) {
+            return range(1, 12);
+        }
+
+        if (! $this->isValidPeriod($scope, $period)) {
+            return [];
+        }
+
+        return match ($scope) {
+            self::SCOPE_MONTHLY => [$period],
+            self::SCOPE_QUARTERLY => range((($period - 1) * 3) + 1, $period * 3),
+            self::SCOPE_SEMESTER => range((($period - 1) * 6) + 1, $period * 6),
+            default => [],
+        };
+    }
+
+    public function monthName(int $month): string
+    {
+        return self::MONTH_NAMES[$month - 1] ?? 'Periode';
+    }
+
+    /** @return list<array{value:int,label:string}> */
+    public function periodOptions(string $scope): array
+    {
+        return match ($scope) {
+            self::SCOPE_MONTHLY => array_map(
+                fn (int $month): array => ['value' => $month, 'label' => $this->monthName($month)],
+                range(1, 12)
+            ),
+            self::SCOPE_QUARTERLY => array_map(
+                fn (int $quarter): array => ['value' => $quarter, 'label' => 'Triwulan '.$this->roman($quarter)],
+                range(1, 4)
+            ),
+            self::SCOPE_SEMESTER => array_map(
+                fn (int $semester): array => ['value' => $semester, 'label' => 'Semester '.$this->roman($semester)],
+                range(1, 2)
+            ),
+            default => [],
+        };
+    }
+
     /** @return array{key:string,label:string} */
     private function report(string $key, string $label): array
     {
         return compact('key', 'label');
+    }
+
+    private function roman(int $number): string
+    {
+        return [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'][$number] ?? (string) $number;
     }
 }

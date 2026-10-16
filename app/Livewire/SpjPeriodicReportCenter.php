@@ -18,7 +18,7 @@ class SpjPeriodicReportCenter extends Component
 
     public function mount(): void
     {
-        $registry = app(SpjPeriodicReportRegistry::class);
+        $registry = $this->registry();
 
         if (! $registry->isScope($this->scope)) {
             $this->scope = SpjPeriodicReportRegistry::SCOPE_MONTHLY;
@@ -33,9 +33,7 @@ class SpjPeriodicReportCenter extends Component
 
     public function setScope(string $scope): void
     {
-        $registry = app(SpjPeriodicReportRegistry::class);
-
-        if (! $registry->isScope($scope)) {
+        if (! $this->registry()->isScope($scope)) {
             return;
         }
 
@@ -51,46 +49,19 @@ class SpjPeriodicReportCenter extends Component
             return;
         }
 
-        $registry = app(SpjPeriodicReportRegistry::class);
         $period = (int) $value;
-        $this->periode = $registry->isValidPeriod($this->scope, $period) ? $period : null;
+        $this->periode = $this->registry()->isValidPeriod($this->scope, $period) ? $period : null;
     }
 
     /** @return list<array{value:int,label:string}> */
     public function periodOptions(): array
     {
-        return match ($this->scope) {
-            SpjPeriodicReportRegistry::SCOPE_MONTHLY => [
-                ['value' => 1, 'label' => 'Januari'],
-                ['value' => 2, 'label' => 'Februari'],
-                ['value' => 3, 'label' => 'Maret'],
-                ['value' => 4, 'label' => 'April'],
-                ['value' => 5, 'label' => 'Mei'],
-                ['value' => 6, 'label' => 'Juni'],
-                ['value' => 7, 'label' => 'Juli'],
-                ['value' => 8, 'label' => 'Agustus'],
-                ['value' => 9, 'label' => 'September'],
-                ['value' => 10, 'label' => 'Oktober'],
-                ['value' => 11, 'label' => 'November'],
-                ['value' => 12, 'label' => 'Desember'],
-            ],
-            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => [
-                ['value' => 1, 'label' => 'Triwulan I'],
-                ['value' => 2, 'label' => 'Triwulan II'],
-                ['value' => 3, 'label' => 'Triwulan III'],
-                ['value' => 4, 'label' => 'Triwulan IV'],
-            ],
-            SpjPeriodicReportRegistry::SCOPE_SEMESTER => [
-                ['value' => 1, 'label' => 'Semester I'],
-                ['value' => 2, 'label' => 'Semester II'],
-            ],
-            default => [],
-        };
+        return $this->registry()->periodOptions($this->scope);
     }
 
     public function render(): View
     {
-        $registry = app(SpjPeriodicReportRegistry::class);
+        $registry = $this->registry();
         $reports = app(SpjPeriodicReportUseCase::class);
 
         return view('livewire.spj-periodic-report-center', [
@@ -99,5 +70,10 @@ class SpjPeriodicReportCenter extends Component
             'periodRequired' => $registry->periodRequired($this->scope),
             'summary' => $reports->summary($this->scope, $this->periode),
         ]);
+    }
+
+    private function registry(): SpjPeriodicReportRegistry
+    {
+        return app(SpjPeriodicReportRegistry::class);
     }
 }

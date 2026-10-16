@@ -412,6 +412,32 @@ class RkasReportTest extends TestCase
         $this->get(route('rkas-reports.pdf', ['scope' => 'bulanan']))->assertStatus(422);
     }
 
+    public function test_monthly_preview_without_allocation_renders_empty_with_identity_and_signatories(): void
+    {
+        $this->withoutMiddleware();
+
+        // Data mirror ada (tahunan OK) tetapi Februari dan Triwulan I tanpa alokasi:
+        // rincian kosong tetap dirender dengan kop + tanda tangan periode terpilih.
+        $this->get(route('rkas-reports.preview', ['scope' => 'tahunan', 'revisi' => 'ANG-1']))->assertOk();
+
+        $payload = app(RkasReportService::class)->build('bulanan', $this->reportOptions(['revision' => 'ANG-1', 'month' => 2]));
+        $this->assertNotNull($payload);
+        $this->assertSame([], $payload['lines']);
+        $this->assertSame(0.0, $payload['totals']['jumlah']);
+
+        $this->get(route('rkas-reports.preview', ['scope' => 'bulanan', 'bulan' => 2, 'revisi' => 'ANG-1']))
+            ->assertOk()
+            ->assertSee('SMP Negeri 2 Ranto Baek', false)
+            ->assertSee('Februari', false);
+
+        $triwulan = app(RkasReportService::class)->build('triwulan-bulanan', $this->reportOptions(['revision' => 'ANG-1', 'quarter' => 1]));
+        $this->assertNotNull($triwulan);
+        $this->assertSame([], $triwulan['lines']);
+        $this->get(route('rkas-reports.preview', ['scope' => 'triwulan-bulanan', 'triwulan' => 1, 'revisi' => 'ANG-1']))
+            ->assertOk()
+            ->assertSee('Triwulan I', false);
+    }
+
     private function seedAnggaran(string $key, array $payload): void
     {
         DB::connection('school')->table('arkas_mirror_anggaran')->insert([

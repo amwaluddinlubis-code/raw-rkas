@@ -103,9 +103,12 @@ final class RkasReportService
         }
 
         $lines = $this->buildLines($rows, $scope, $month, $quarter);
-        if ($lines === []) {
+        if ($lines === [] && ! in_array($scope, ['bulanan', 'triwulan-bulanan'], true)) {
             return null;
         }
+        // Periode tanpa alokasi (mis. Februari pada dana Afirmasi yang
+        // hanya cair Juni) tetap dirender sebagai rincian kosong dengan
+        // kop identitas + tanda tangan periode terpilih — bukan 422.
 
         $totals = $this->sumLines($lines);
         $profile = (array) ($db->table('school_profiles')->where('fiscal_year_id', $yearId)->first() ?? []);

@@ -18,6 +18,7 @@ final class SpjPeriodicReportPrintService
         private readonly SpjPeriodicReportUseCase $reports,
         private readonly RkasReportService $rkas,
         private readonly ArkasMirrorBudgetService $budgets,
+        private readonly SpjPeriodicReportRegistry $registry,
     ) {}
 
     /** @var array{bank:float,cash:float,total:float} */
@@ -328,14 +329,21 @@ final class SpjPeriodicReportPrintService
         return $data;
     }
 
-    private function bpkIsReguler(array $payload, int $fundSourceId): bool
+    /**
+     * Kecocokan sumber dana baris kas mirror dengan konteks aktif.
+     * Baris tanpa ID_REF_SUMBER_DANA (data lama) tetap lolos agar tidak
+     * hilang dari laporan.
+     */
+    private function kasMatchesFund(array $payload, int $fundSourceId): bool
     {
         $fund = (int) ($payload['ID_REF_SUMBER_DANA'] ?? 0);
-        if ($fund > 0) {
-            return $fund === $fundSourceId;
-        }
 
-        return true;
+        return $fund <= 0 || $fund === $fundSourceId;
+    }
+
+    private function bpkIsReguler(array $payload, int $fundSourceId): bool
+    {
+        return $this->kasMatchesFund($payload, $fundSourceId);
     }
 
     /**
@@ -471,6 +479,17 @@ final class SpjPeriodicReportPrintService
             ->get(['source_key', 'payload'])
             ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
             ->values();
+
+        // Konteks sumber dana aktif: baris milik dana lain (mis. Afirmasi
+        // di tengah BKU Reguler) disaring di sini agar tidak tampil ganda
+        // dan tidak menggeser saldo berjalan. Baris tanpa
+        // ID_REF_SUMBER_DANA (data lama) tetap lolos seperti aturan BPK.
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId !== null) {
+            $records = $records->filter(
+                fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
+            )->values();
+        }
 
         // Baris backfill MIG-* (spj:backfill-mirror-from-local) yang sudah
         // dilengkapi baris PAJAK kanonis sync susulan dibuang di sini agar
@@ -760,17 +779,7 @@ final class SpjPeriodicReportPrintService
     /** @return list<int> */
     private function scopeMonths(string $scope, ?int $period): array
     {
-        return match ($scope) {
-            SpjPeriodicReportRegistry::SCOPE_MONTHLY => $period >= 1 && $period <= 12 ? [$period] : [],
-            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => $period >= 1 && $period <= 4
-                ? range((($period - 1) * 3) + 1, $period * 3)
-                : [],
-            SpjPeriodicReportRegistry::SCOPE_SEMESTER => $period >= 1 && $period <= 2
-                ? range((($period - 1) * 6) + 1, $period * 6)
-                : [],
-            SpjPeriodicReportRegistry::SCOPE_ANNUAL => range(1, 12),
-            default => [],
-        };
+        return $this->registry->periodMonths($scope, $period);
     }
 
     /** @param array<string,mixed> $summary */
@@ -1492,6 +1501,13 @@ final class SpjPeriodicReportPrintService
                 ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
                 ->values();
 
+            $fundSourceId = $this->context->fundSourceId();
+            if ($fundSourceId !== null) {
+                $records = $records->filter(
+                    fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
+                )->values();
+            }
+
             foreach ($records as $payload) {
                 $amount = (float) ($payload['JUMLAH'] ?? 0);
                 if (($payload['REK_BKU'] ?? '') === 'Terima Dana BOS') {
@@ -1641,6 +1657,13 @@ final class SpjPeriodicReportPrintService
             ->get(['payload'])
             ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
             ->values();
+
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId !== null) {
+            $records = $records->filter(
+                fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
+            )->values();
+        }
 
         foreach ($records as $payload) {
             $amount = (float) ($payload['JUMLAH'] ?? 0);
@@ -2036,6 +2059,7 @@ final class SpjPeriodicReportPrintService
             return $map;
         }
 
+        $fundSourceId = $this->context->fundSourceId();
         $periodToRapbs = [];
         foreach (DB::connection('school')->table('arkas_mirror_rapbs_periode')->get(['payload']) as $record) {
             $payload = json_decode((string) $record->payload, true);
@@ -2057,6 +2081,9 @@ final class SpjPeriodicReportPrintService
 
         foreach ($records as $record) {
             $payload = array_change_key_case(json_decode((string) $record->payload, true) ?? [], CASE_UPPER);
+            if ($fundSourceId !== null && ! $this->kasMatchesFund($payload, $fundSourceId)) {
+                continue;
+            }
             if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
                 continue;
             }
@@ -2269,6 +2296,13 @@ final class SpjPeriodicReportPrintService
                 ->get(['payload'])
                 ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
                 ->values();
+
+            $fundSourceId = $this->context->fundSourceId();
+            if ($fundSourceId !== null) {
+                $records = $records->filter(
+                    fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
+                )->values();
+            }
 
             $activityMap = $this->k7aActivityMap();
 
@@ -2582,6 +2616,12 @@ final class SpjPeriodicReportPrintService
             ->get(['payload'])
             ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
             ->values();
+        $fundSourceId = $this->context->fundSourceId();
+        if ($fundSourceId !== null) {
+            $records = $records->filter(
+                fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
+            )->values();
+        }
         $records = $this->bkuDedupBackfillTax($records);
 
         $receivedKeys = [];
@@ -2718,6 +2758,13 @@ final class SpjPeriodicReportPrintService
                 ->get(['payload'])
                 ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
                 ->values();
+
+            $fundSourceId = $this->context->fundSourceId();
+            if ($fundSourceId !== null) {
+                $records = $records->filter(
+                    fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
+                )->values();
+            }
 
             $receivedKeys = [];
             foreach ($records as $payload) {

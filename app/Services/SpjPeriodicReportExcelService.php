@@ -17,29 +17,19 @@ final class SpjPeriodicReportExcelService
         $this->writeSummary($summary, $payload);
 
         $report = $book->createSheet()->setTitle('Laporan');
-        if (($payload['presentation'] ?? '') === 'rekap_bosp') {
-            $this->writeBospRecap($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'bos_a1') {
-            $this->writeBosA1($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'bpk_bos') {
-            $this->writeBpk($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'k7b') {
-            $this->writeK7b($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'k7c') {
-            $this->writeK7c($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'k7a') {
-            $this->writeK7a($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'k7') {
-            $this->writeK7($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'k2') {
-            $this->writeK2($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'rpd') {
-            $this->writeRpd($report, $payload);
-        } elseif (($payload['presentation'] ?? '') === 'sptjm_doc') {
-            $this->writeSptjm($report, $payload);
-        } else {
-            $this->writeTable($report, $payload);
-        }
+        match ($payload['presentation'] ?? '') {
+            'rekap_bosp' => $this->writeBospRecap($report, $payload),
+            'bos_a1' => $this->writeBosA1($report, $payload),
+            'bpk_bos' => $this->writeBpk($report, $payload),
+            'k7b' => $this->writeK7b($report, $payload),
+            'k7c' => $this->writeK7c($report, $payload),
+            'k7a' => $this->writeK7a($report, $payload),
+            'k7' => $this->writeK7($report, $payload),
+            'k2' => $this->writeK2($report, $payload),
+            'rpd' => $this->writeRpd($report, $payload),
+            'sptjm_doc' => $this->writeSptjm($report, $payload),
+            default => $this->writeTable($report, $payload),
+        };
 
         $temporaryPath = tempnam(sys_get_temp_dir(), 'spj-periodic-');
         if ($temporaryPath === false) {
@@ -259,7 +249,7 @@ final class SpjPeriodicReportExcelService
 
         $header = array_merge(['No', 'Program/Kegiatan'], array_column($components, 'label'), ['TOTAL']);
         $sheet->fromArray([$header], null, 'A1');
-        $lastCol = chr(ord('A') + count($header) - 1);
+        $lastCol = $this->columnLetter(count($header));
 
         $rowNumber = 2;
         foreach ($data['programs'] as $program) {
@@ -285,7 +275,7 @@ final class SpjPeriodicReportExcelService
         $sheet->fromArray([['Saldo Tahap ini', (float) $data['summary']['saldo_akhir']]], null, 'A'.$rowNumber);
 
         $this->styleHeader($sheet, 'A1:'.$lastCol.'1');
-        $moneyStart = chr(ord('A') + 2);
+        $moneyStart = $this->columnLetter(3);
         $this->formatMoneyRange($sheet, $moneyStart.'2:'.$lastCol.$rowNumber);
         $sheet->freezePane('A2');
         $this->autoSize($sheet, count($header));
@@ -353,7 +343,7 @@ final class SpjPeriodicReportExcelService
         $sheet->setCellValue('A'.$rowNumber, 'RINCIAN PENGGUNAAN DANA BOS (RPD BOS)');
         $sheet->setCellValue('A'.(++$rowNumber), $data['month_range']);
         $sheet->setCellValue('A'.(++$rowNumber), 'Nama Sekolah: '.$school->name);
-        $sheet->setCellValue('A'.(++$rowNumber), 'Desa / Kec: '.trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /'));
+        $sheet->setCellValue('A'.(++$rowNumber), 'Desa / Kec: '.$this->schoolArea($school));
         $sheet->setCellValue('A'.(++$rowNumber), 'Kab / Kota: '.($school->regency ?: '-'));
         $sheet->setCellValue('A'.(++$rowNumber), 'Provinsi: '.($school->province ?: '-'));
         $sheet->setCellValue('A'.(++$rowNumber), 'TRIWULAN: '.$data['quarter_label']);
@@ -417,7 +407,7 @@ final class SpjPeriodicReportExcelService
         }
 
         $row++;
-        $desaKec = trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /') ?: '-';
+        $desaKec = $this->schoolArea($school);
         foreach ([['NPSN', $school->npsn ?? '-'], ['Nama Sekolah', $school->name], ['Desa/Kecamatan', $desaKec], ['Kabupaten', $school->regency ?: '-'], ['Provinsi', $school->province ?: '-']] as [$label, $value]) {
             $sheet->setCellValue('A'.$row, $label);
             $sheet->setCellValue('B'.$row, ': '.$value);
@@ -491,6 +481,16 @@ final class SpjPeriodicReportExcelService
         $sheet->getStyle('C'.$firstData.':I'.$lastData)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
         $sheet->getStyle('A'.$firstData.':A'.$lastData)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $this->autoSize($sheet, 9);
+    }
+
+    /**
+     * "Desa / Kecamatan" ringkas untuk kop lembar Excel; '-' bila keduanya kosong.
+     */
+    private function schoolArea(object $school): string
+    {
+        $area = trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /');
+
+        return $area !== '' ? $area : '-';
     }
 
     private function styleK7Header(object $sheet, string $range): void

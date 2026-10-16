@@ -102,8 +102,7 @@ final class SpjPeriodicReportUseCase
             $period = null;
         }
 
-        $year = FiscalYear::query()->find($this->context->fiscalYearId());
-        $fiscalYear = (int) ($year?->year ?: now()->year);
+        $fiscalYear = $this->activeFiscalYear();
         $periodContext = $this->periodContext($scope, $period, $fiscalYear);
 
         $empty = [
@@ -164,27 +163,28 @@ final class SpjPeriodicReportUseCase
         // Filter tahun kalender tahun anggaran aktif agar konsisten dengan
         // SpjReportUseCase::applyReportTransactionFilters(); tanpa ini,
         // transaksi beda tahun bisa masuk/keluar periode secara tak konsisten.
-        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+        $year = $this->activeFiscalYear();
 
-        if ($scope === SpjPeriodicReportRegistry::SCOPE_MONTHLY && $period) {
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) = ?", [$year, $period]);
+        // Paritas perilaku lama: scope tahunan tidak menambah filter tanggal
+        // (cukup forSpjContext); periodMonths('tahunan') tetap 1-12 untuk
+        // kebutuhan agregat cetak, bukan untuk query ini.
+        if ($scope === SpjPeriodicReportRegistry::SCOPE_ANNUAL) {
+            return $query;
+        }
+
+        $months = $this->registry->periodMonths($scope, $period);
+
+        if ($months === []) {
+            return $query;
+        }
+
+        if (count($months) === 1) {
+            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) = ?", [$year, $months[0]]);
 
             return $query;
         }
 
-        if ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period) {
-            [$from, $to] = ArkasMirrorResolver::quarterMonthRange((int) $period);
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$year, $from, $to]);
-
-            return $query;
-        }
-
-        if ($scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period) {
-            [$from, $to] = ArkasMirrorResolver::semesterMonthRange((int) $period);
-            ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$year, $from, $to]);
-
-            return $query;
-        }
+        ArkasMirrorResolver::whereMirrorDate($query, "CAST(strftime('%Y', {d}) AS INTEGER) = ? AND CAST(strftime('%m', {d}) AS INTEGER) BETWEEN ? AND ?", [$year, $months[0], $months[count($months) - 1]]);
 
         return $query;
     }
@@ -210,22 +210,12 @@ final class SpjPeriodicReportUseCase
             ];
         }
 
-        $startMonth = match ($scope) {
-            SpjPeriodicReportRegistry::SCOPE_MONTHLY => (int) $period,
-            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => (((int) $period - 1) * 3) + 1,
-            SpjPeriodicReportRegistry::SCOPE_SEMESTER => (((int) $period - 1) * 6) + 1,
-            default => 1,
-        };
-
-        $monthSpan = match ($scope) {
-            SpjPeriodicReportRegistry::SCOPE_MONTHLY => 1,
-            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => 3,
-            SpjPeriodicReportRegistry::SCOPE_SEMESTER => 6,
-            default => 12,
-        };
+        $months = $this->registry->periodMonths($scope, $period);
+        $startMonth = $months[0];
+        $endMonth = $months[count($months) - 1];
 
         $from = CarbonImmutable::create($year, $startMonth, 1)->startOfMonth();
-        $to = $from->addMonths($monthSpan - 1)->endOfMonth();
+        $to = CarbonImmutable::create($year, $endMonth, 1)->endOfMonth();
 
         $label = match ($scope) {
             SpjPeriodicReportRegistry::SCOPE_MONTHLY => $this->monthLabel((int) $period).' '.$year,
@@ -237,21 +227,13 @@ final class SpjPeriodicReportUseCase
         return compact('label', 'from', 'to') + ['ready' => true];
     }
 
+    private function activeFiscalYear(): int
+    {
+        return (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+    }
+
     private function monthLabel(int $month): string
     {
-        return [
-            1 => 'Januari',
-            2 => 'Februari',
-            3 => 'Maret',
-            4 => 'April',
-            5 => 'Mei',
-            6 => 'Juni',
-            7 => 'Juli',
-            8 => 'Agustus',
-            9 => 'September',
-            10 => 'Oktober',
-            11 => 'November',
-            12 => 'Desember',
-        ][$month] ?? 'Periode';
+        return $this->registry->monthName($month);
     }
 }

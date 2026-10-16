@@ -170,6 +170,37 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertSame($k7a['grandTotal'], $programTotal);
     }
 
+    public function test_k7a_and_sptjm_ignore_other_fund_source_rows(): void
+    {
+        $base = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bos_k7a', 1);
+        $this->assertSame(10000000.0, $base['k7a']['summary']['penerimaan']);
+
+        $this->seedMirrorRow('arkas_mirror_kas_umum', 'K7A-T61', [
+            'ID_KAS_UMUM' => 'K7A-T61', 'KATEGORI_BKU' => 'PENERIMAAN', 'REK_BKU' => 'Terima Dana BOS',
+            'NO_BUKTI' => 'TRS61', 'TANGGAL_TRANSAKSI' => '2026-01-15', 'URAIAN' => 'Terima BOS Afirmasi',
+            'KODE_REKENING' => '', 'JUMLAH' => 5000000, 'ID_REF_SUMBER_DANA' => 61,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_kas_umum', 'K7A-B61', [
+            'ID_KAS_UMUM' => 'K7A-B61', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar',
+            'NO_BUKTI' => 'BPU61', 'TANGGAL_TRANSAKSI' => '2026-01-16', 'URAIAN' => 'Paket Data Afirmasi',
+            'KODE_REKENING' => '5.1.02.02.01.0013', 'JUMLAH' => 1000000,
+            'ID_RAPBS' => 'K7A-B61-RA', 'ID_REF_SUMBER_DANA' => 61,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_rapbs', 'K7A-B61-RA', [
+            'id_rapbs' => 'K7A-B61-RA', 'KODE_KEGIATAN' => '03.01.01', 'NAMA_KEGIATAN' => 'Paket Data Afirmasi',
+            'kode_rekening' => '5.1.02.02.01.0013', 'uraian' => 'Paket Data Afirmasi', 'jumlah' => 1000000,
+        ]);
+
+        $k7a = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bos_k7a', 1);
+        $this->assertSame(10000000.0, $k7a['k7a']['summary']['penerimaan']);
+        $this->assertSame(7200000.0, $k7a['k7a']['belanja']);
+        $this->assertSame(5300000.0, $k7a['k7a']['grandTotal']);
+
+        $sptjm = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'sptjm', 1);
+        $this->assertSame(10000000.0, $sptjm['sptjm']['received']);
+        $this->assertSame(7200000.0, $sptjm['sptjm']['used']);
+    }
+
     public function test_k7a_print_route_renders_official_layout(): void
     {
         $response = $this->get('/laporan-periode/bulan/bos_k7a/cetak?periode_laporan=1');

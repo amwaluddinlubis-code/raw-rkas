@@ -93,14 +93,13 @@ final class RkasReportController extends Controller
             abort_unless($quarter >= 1 && $quarter <= 4, 422, 'Triwulan laporan belum dipilih atau tidak valid.');
         }
 
-        $payload = $this->reports->build($scope, [
+        $options = [
             'school_id' => (int) session('active_school_id'),
             'fiscal_year_id' => (int) session('active_fiscal_year_id'),
             'fund_source_id' => (int) session('active_fund_source_id'),
             'revision' => trim((string) $request->query('revisi', '')),
-            'month' => $month,
-            'quarter' => $quarter,
-        ]);
+        ];
+        $payload = $this->reports->build($scope, [...$options, 'month' => $month, 'quarter' => $quarter]);
         abort_if($payload === null, 422, 'Data laporan RKAS belum siap. Jalankan sinkronisasi ARKAS terlebih dahulu.');
 
         return $payload;

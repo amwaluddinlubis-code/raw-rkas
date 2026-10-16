@@ -159,9 +159,33 @@ class RekapBudgetRealizationTest extends TestCase
         $this->assertSame('APRIL TAHUN 2026', $payload['rekapTitle']['phase']);
     }
 
-    public function test_rekap_print_route_renders_official_layout(): void
+    public function test_rekap_ignores_other_fund_source_rows(): void
     {
-        $response = $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4');
+        $this->seedMirrorRow('arkas_mirror_kas_umum', 'TRM-61', [
+            'ID_KAS_UMUM' => 'TRM-61', 'KATEGORI_BKU' => 'PENERIMAAN', 'REK_BKU' => 'Terima Dana BOS',
+            'NO_BUKTI' => 'BBU61', 'TANGGAL_TRANSAKSI' => '2026-04-09', 'URAIAN' => 'Terima Dana Afirmasi',
+            'JUMLAH' => 5000000, 'ID_REF_SUMBER_DANA' => 61,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_kas_umum', 'BLJ-61', [
+            'ID_KAS_UMUM' => 'BLJ-61', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar',
+            'NO_BUKTI' => 'BPU61', 'TANGGAL_TRANSAKSI' => '2026-04-10', 'URAIAN' => 'Belanja Ekstra Afirmasi',
+            'KODE_REKENING' => '5.1.02.01.01.0005', 'JUMLAH' => 500000, 'ID_RAPBS' => 'RA-1',
+            'ID_REF_SUMBER_DANA' => 61,
+        ]);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'rekapitulasi_pengeluaran_dana_bos', 4);
+
+        $this->assertNotNull($payload);
+        $rekap = $payload['rekapBosp'];
+        $this->assertSame(1000000.0, $rekap['grid'][2][3]);
+        $this->assertSame(3000000.0, $rekap['grand']);
+        $this->assertSame(10000000.0, $rekap['received']);
+        $this->assertSame(3000000.0, $rekap['used']);
+        $this->assertSame(7000000.0, $rekap['closing']);
+    }
+
+        public function test_rekap_print_route_renders_official_layout(): void
+    {        $response = $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4');
 
         $response->assertOk();
         $response->assertSee('REKAPITULASI REALISASI PENGGUNAAN DANA BOSP', false);

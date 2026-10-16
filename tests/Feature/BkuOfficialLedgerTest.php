@@ -177,6 +177,36 @@ class BkuOfficialLedgerTest extends TestCase
         $this->assertEquals($closing['total'], $jumlah['balance']);
     }
 
+    public function test_bku_scopes_rows_to_active_fund_source(): void
+    {
+        $this->seedMirrorRow('PBUNGA-61', [
+            'TANGGAL_TRANSAKSI' => '2026-04-30',
+            'KATEGORI_BKU' => 'PAJAK_BANK',
+            'REK_BKU' => 'Pajak Bunga',
+            'URAIAN' => 'Pajak Bunga Afirmasi',
+            'JUMLAH' => 0,
+            'ID_KAS_UMUM' => 'PBUNGA-61',
+            'ID_REF_SUMBER_DANA' => 61,
+        ]);
+
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 4);
+
+        $this->assertNotNull($payload);
+        $this->assertSame([], array_filter(
+            $payload['rows'],
+            fn ($row): bool => str_contains((string) ($row['description'] ?? ''), 'Afirmasi')
+        ));
+
+        session()->put('active_fund_source_id', 61);
+        $afirmasi = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bku', 4);
+
+        $this->assertNotNull($afirmasi);
+        $this->assertNotEmpty(array_filter(
+            $afirmasi['rows'],
+            fn ($row): bool => str_contains((string) ($row['description'] ?? ''), 'Afirmasi')
+        ));
+    }
+
     public function test_bku_groups_shared_evidence_into_bold_parent_and_amount_children(): void
     {
         $base = ['TANGGAL_TRANSAKSI' => '2026-05-10', 'KODE_REKENING' => '5.1.02.02.01.0013', 'NO_BUKTI' => 'BPUX1'];
