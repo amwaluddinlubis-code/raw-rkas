@@ -61,6 +61,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('sptjm', 'SPTJM'),
                 $this->report('bos_k7a', 'BOS K7A'),
                 $this->report('format_k7', 'Format K7'),
+                $this->report('format_k2', 'Format BOS K-2'),
+                $this->report('rpd_bos', 'RPD BOS'),
                 $this->report('bku', 'Buku Kas Umum (BKU)'),
                 $this->report('spb', 'SPB'),
                 $this->report('sp2b', 'SP2B'),
