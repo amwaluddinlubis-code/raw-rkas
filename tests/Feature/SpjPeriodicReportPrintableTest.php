@@ -35,6 +35,7 @@ class SpjPeriodicReportPrintableTest extends TestCase
         $print = file_get_contents(resource_path('views/periodic-reports/print.blade.php'));
         $pdf = file_get_contents(resource_path('views/periodic-reports/pdf.blade.php'));
         $document = file_get_contents(resource_path('views/periodic-reports/partials/document.blade.php'));
+        $document .= file_get_contents(resource_path('views/periodic-reports/partials/reports/report-rekap-1.blade.php'));
 
         $this->assertIsString($print);
         $this->assertIsString($pdf);
