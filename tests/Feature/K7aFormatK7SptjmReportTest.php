@@ -226,8 +226,8 @@ class K7aFormatK7SptjmReportTest extends TestCase
         // II total penggunaan, C sisa = penerimaan - penggunaan.
         $this->assertSame(7200000.0, $byLabel['Total Penggunaan Dana']['amounts']['jumlah']);
         $this->assertSame(7200000.0, $byLabel['Total Penggunaan Dana']['amounts']['pusat']);
-        $this->assertSame(2800000.0, $byLabel['Sisa Dana = I - II (Pengembalian)']['amounts']['jumlah']);
-        $this->assertSame(2800000.0, $byLabel['Sisa Dana = I - II (Pengembalian)']['amounts']['pusat']);
+        $this->assertSame(2800000.0, $byLabel['Sisa Dana = A - II (Pengembalian)']['amounts']['jumlah']);
+        $this->assertSame(2800000.0, $byLabel['Sisa Dana = A - II (Pengembalian)']['amounts']['pusat']);
 
         $this->assertSame(0.0, $k7['unmapped']);
         $this->assertSame(0, $k7['unmappedCount']);
@@ -246,7 +246,7 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertStringContainsString('Diisi Oleh Sekolah', $html);
         $this->assertStringContainsString('Penggunaan Dana Per Sumber Dana', $html);
         $this->assertStringContainsString('Bantuan Operasional Sekolah (BOS)', $html);
-        $this->assertStringContainsString('Sisa Dana = I - II (Pengembalian)', $html);
+        $this->assertStringContainsString('Sisa Dana = A - II (Pengembalian)', $html);
         $this->assertStringContainsString('2.800.000', $html);
         $this->assertStringContainsString('Komite Sekolah', $html);
         $this->assertStringContainsString('Mengetahui', $html);
@@ -312,7 +312,7 @@ class K7aFormatK7SptjmReportTest extends TestCase
         $this->assertEquals(10000000, $sheet->getCell('C15')->getValue());
         $this->assertEquals(10000000, $sheet->getCell('E15')->getValue());
         // Baris C: sisa 2,8jt.
-        $this->assertSame('Sisa Dana = I - II (Pengembalian)', $sheet->getCell('B48')->getValue());
+        $this->assertSame('Sisa Dana = A - II (Pengembalian)', $sheet->getCell('B48')->getValue());
         $this->assertEquals(2800000, $sheet->getCell('C48')->getValue());
         $book->disconnectWorksheets();
 
