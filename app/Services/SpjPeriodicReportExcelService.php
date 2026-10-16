@@ -23,7 +23,6 @@ final class SpjPeriodicReportExcelService
             'bpk_bos' => $this->writeBpk($report, $payload),
             'k7b' => $this->writeK7b($report, $payload),
             'k7c' => $this->writeK7c($report, $payload),
-            'k7a' => $this->writeK7a($report, $payload),
             'k7' => $this->writeK7($report, $payload),
             'k2' => $this->writeK2($report, $payload),
             'rpd' => $this->writeRpd($report, $payload),
@@ -239,46 +238,6 @@ final class SpjPeriodicReportExcelService
         $this->formatMoneyRange($sheet, 'B4:B9');
         $sheet->getStyle('A1:B'.count($rows))->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
         $this->autoSize($sheet, 2);
-    }
-
-    private function writeK7a(object $sheet, array $payload): void
-    {
-        $data = $payload['k7a'];
-        $components = $data['components'];
-        $compNos = array_keys($components);
-
-        $header = array_merge(['No', 'Program/Kegiatan'], array_column($components, 'label'), ['TOTAL']);
-        $sheet->fromArray([$header], null, 'A1');
-        $lastCol = $this->columnLetter(count($header));
-
-        $rowNumber = 2;
-        foreach ($data['programs'] as $program) {
-            $row = [$program['no'], $program['label']];
-            foreach ($compNos as $compNo) {
-                $row[] = (float) $program['components'][$compNo];
-            }
-            $row[] = (float) $program['total'];
-            $sheet->fromArray([$row], null, 'A'.$rowNumber++);
-        }
-
-        $totalRow = ['', 'TOTAL'];
-        foreach ($compNos as $compNo) {
-            $totalRow[] = (float) $data['componentTotals'][$compNo];
-        }
-        $totalRow[] = (float) $data['grandTotal'];
-        $sheet->fromArray([$totalRow], null, 'A'.$rowNumber);
-
-        $rowNumber++;
-        $sheet->fromArray([['Saldo Tahap Sebelumnya', (float) $data['summary']['saldo_awal']]], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['Total Penerimaan Dana BOS Tahap ini', (float) $data['summary']['penerimaan']]], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['Total Penggunaan Dana BOS Tahap ini', (float) $data['summary']['penggunaan']]], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['Saldo Tahap ini', (float) $data['summary']['saldo_akhir']]], null, 'A'.$rowNumber);
-
-        $this->styleHeader($sheet, 'A1:'.$lastCol.'1');
-        $moneyStart = $this->columnLetter(3);
-        $this->formatMoneyRange($sheet, $moneyStart.'2:'.$lastCol.$rowNumber);
-        $sheet->freezePane('A2');
-        $this->autoSize($sheet, count($header));
     }
 
     /**

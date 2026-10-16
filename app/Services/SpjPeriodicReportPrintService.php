@@ -83,10 +83,6 @@ final class SpjPeriodicReportPrintService
         if ($presentation === 'k7c') {
             $extra['k7c'] = $this->k7cData($scope, $period, $summary);
         }
-        if ($presentation === 'k7a') {
-            $extra['k7a'] = $this->k7aData($scope, $period);
-            $extra['k7aTitle'] = $this->bosA1Title($summary);
-        }
         if ($presentation === 'k7') {
             $extra['k7'] = $this->k7Data($scope, $period, $transactions, $summary);
         }
@@ -127,7 +123,6 @@ final class SpjPeriodicReportPrintService
             'buku_pembantu_kas' => 'cash_ledger',
             'buku_pembantu_bank' => 'bank_ledger',
             'buku_pembantu_pajak' => 'tax',
-            'bos_k7a' => 'k7a',
             'bos_k8' => 'activity_summary',
             'rekapitulasi_pengeluaran_dana_bos' => 'rekap_bosp',
             'bpk_bos' => 'bpk_bos',
@@ -140,7 +135,7 @@ final class SpjPeriodicReportPrintService
             'sptjm' => 'sptjm_doc',
             'rekap_belanja_modal_barang_jasa', 'rekap_bmd',
             'rekap_belanja_dana_bos', 'form_1c' => 'account_summary',
-            'lampiran_sp2b', 'lampiran_berita_acara_rekonsiliasi' => 'transaction_recap',
+            'lampiran_berita_acara_rekonsiliasi' => 'transaction_recap',
             default => 'statement',
         };
     }
@@ -159,7 +154,6 @@ final class SpjPeriodicReportPrintService
             'activity_summary' => [$this->activityColumns(), $this->activityRows($transactions)],
             'k7b' => [[], []],
             'k7c' => [[], []],
-            'k7a' => [[], []],
             'k7' => [[], []],
             'k2' => [[], []],
             'rpd' => [[], []],
@@ -2266,129 +2260,6 @@ final class SpjPeriodicReportPrintService
         ];
     }
 
-    /** Data BOS K7A. */
-    private function k7aData(string $scope, ?int $period): array
-    {
-        $components = BospRekapStandardMapper::k7aComponents();
-        $programs = [];
-        foreach (BospRekapStandardMapper::k7Programs() as $programNo => $programLabel) {
-            $programs[$programNo] = [
-                'no' => '1.'.$programNo,
-                'label' => $programLabel,
-                'components' => array_fill_keys(array_keys($components), 0.0),
-                'total' => 0.0,
-            ];
-        }
-
-        $months = $this->scopeMonths($scope, $period);
-        $unmapped = 0.0;
-        $unmappedCount = 0;
-        $belanja = 0.0;
-        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
-
-        if ($months !== []) {
-            $placeholders = implode(',', array_fill(0, count($months), '?'));
-            $records = DB::connection('school')->table('arkas_mirror_kas_umum')
-                ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
-                ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
-                ->orderByRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI')")
-                ->orderBy('id')
-                ->get(['payload'])
-                ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER))
-                ->values();
-
-            $fundSourceId = $this->context->fundSourceId();
-            if ($fundSourceId !== null) {
-                $records = $records->filter(
-                    fn (array $payload): bool => $this->kasMatchesFund($payload, $fundSourceId)
-                )->values();
-            }
-
-            $activityMap = $this->k7aActivityMap();
-
-            foreach ($records as $payload) {
-                if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
-                    continue;
-                }
-                $amount = (float) ($payload['JUMLAH'] ?? 0);
-                $belanja += $amount;
-                $rapbsId = (string) ($payload['ID_RAPBS'] ?? '');
-                $activityName = $rapbsId !== '' ? ($activityMap[$rapbsId] ?? null) : null;
-                $kodeRekening = (string) ($payload['KODE_REKENING'] ?? '');
-                $component = BospRekapStandardMapper::k7aComponentForActivity(
-                    $activityName,
-                    (string) ($payload['URAIAN'] ?? ''),
-                    $kodeRekening
-                );
-                $program = BospRekapStandardMapper::a1RowForActivity($kodeRekening);
-                if ($component === null || $program === null) {
-                    $unmapped += $amount;
-                    $unmappedCount++;
-
-                    continue;
-                }
-                $programs[$program]['components'][$component] += $amount;
-                $programs[$program]['total'] += $amount;
-            }
-        }
-
-        $componentTotals = array_fill_keys(array_keys($components), 0.0);
-        $grandTotal = 0.0;
-        foreach ($programs as $program) {
-            foreach ($program['components'] as $compNo => $amount) {
-                $componentTotals[$compNo] += $amount;
-            }
-            $grandTotal += $program['total'];
-        }
-
-        $receipts = $this->k7Receipts($months, $year);
-        // Aturan domain (konsisten dengan K7): rutin dikosongkan;
-        // penerimaan BOS triwulan = Tahap / 2.
-        $receipts['rutin'] = 0.0;
-        if ($scope === 'triwulan' && $period !== null && $period >= 1 && $period <= 4) {
-            $tahapMonths = $period <= 2 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12];
-            $tahapReceipts = $this->k7Receipts($tahapMonths, $year);
-            $receipts['bos'] = $tahapReceipts['bos'] / 2;
-        }
-        $penerimaan = $receipts['rutin'] + $receipts['bos'] + $receipts['bantuan_lain'] + $receipts['sumber_lainnya'];
-
-        return [
-            'programs' => $programs,
-            'components' => $components,
-            'componentTotals' => $componentTotals,
-            'grandTotal' => $grandTotal,
-            'summary' => [
-                'saldo_awal' => $receipts['saldo_awal'],
-                'penerimaan' => $penerimaan,
-                'penggunaan' => $grandTotal,
-                'saldo_akhir' => $receipts['saldo_awal'] + $penerimaan - $grandTotal,
-            ],
-            'unmapped' => $unmapped,
-            'unmappedCount' => $unmappedCount,
-            'belanja' => $belanja,
-        ];
-    }
-
-    /**
-     * ID_RAPBS -> NAMA_KEGIATAN dari mirror RKAS untuk pemetaan komponen
-     * K7A. Varian huruf payload dinormalisasi seperti lapisan lain.
-     *
-     * @return array<string,string>
-     */
-    private function k7aActivityMap(): array
-    {
-        $map = [];
-        foreach (DB::connection('school')->table('arkas_mirror_rapbs')->get(['source_key', 'payload']) as $record) {
-            $payload = array_change_key_case(json_decode((string) $record->payload, true) ?? [], CASE_UPPER);
-            $name = trim((string) ($payload['NAMA_KEGIATAN'] ?? ''));
-            if ($name !== '') {
-                $map[(string) $record->source_key] = $name;
-            }
-        }
-
-        return $map;
-    }
-
     /**
      * Data Formulir BOS-K7: Realisasi Penggunaan Dana Tiap Jenis Anggaran.
      *
@@ -2427,9 +2298,11 @@ final class SpjPeriodicReportPrintService
         $receipts = $this->k7Receipts($months, $year);
         // Aturan domain: Pendapatan Rutin dikosongkan pada K7.
         $receipts['rutin'] = 0.0;
-        // Aturan domain: penerimaan BOS triwulan = penerimaan Tahap / 2.
+        // Aturan domain: penerimaan BOS triwulan = penerimaan Tahap / 2,
+        // hanya untuk BOSP Reguler. Fund source lain (mis. BOP/BOSDA) tidak dibagi 2.
         // Tahap 1 = bulan 1-6 (TW I-II), Tahap 2 = bulan 7-12 (TW III-IV).
-        if ($scope === 'triwulan' && $period !== null && $period >= 1 && $period <= 4) {
+        if ($scope === 'triwulan' && $period !== null && $period >= 1 && $period <= 4
+            && str_contains(mb_strtolower(trim($fundName)), 'bosp')) {
             $tahapMonths = $period <= 2 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12];
             $tahapReceipts = $this->k7Receipts($tahapMonths, $year);
             $receipts['bos'] = $tahapReceipts['bos'] / 2;
@@ -2847,15 +2720,6 @@ final class SpjPeriodicReportPrintService
             'k7c' => [
                 "Pada akhir {$periodLabel} dilakukan pemeriksaan atas pencatatan transaksi dan pertanggungjawaban kas berdasarkan data yang tersedia pada APP-SPJ.",
                 'Hasil pemeriksaan ditandatangani setelah nilai pada laporan ini dicocokkan dengan bukti fisik dan saldo aktual.',
-            ],
-            'spb' => [
-                "SPB {$periodLabel} menyajikan ringkasan pengeluaran yang dipertanggungjawabkan pada periode laporan beserta rekap rekening belanjanya.",
-            ],
-            'sp2b' => [
-                "SP2B {$periodLabel} merangkum nilai bruto, pajak, realisasi netto, dan rekap rekening transaksi pada periode aktif.",
-            ],
-            'sp2t' => [
-                "SP2T {$periodLabel} menyajikan pertanggungjawaban transaksi dan pajak periode aktif untuk proses penatausahaan berikutnya.",
             ],
             'berita_acara_rekonsiliasi' => [
                 "Berita acara rekonsiliasi {$periodLabel} dibuat berdasarkan pencocokan data transaksi, nilai bruto, pajak, dan realisasi netto pada konteks aktif.",
