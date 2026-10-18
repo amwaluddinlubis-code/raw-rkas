@@ -1,0 +1,132 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - region "Muse landing page" [ref=e4]:
+      - generic [ref=e6]:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - img "Meta"
+                - button "Log in" [ref=e9] [cursor=pointer]
+        - region [ref=e13]:
+          - generic [ref=e14]:
+            - img "Muse" [ref=e15]
+            - heading "Muse, AI that gets it done for you" [level=1] [ref=e16]:
+              - generic [aria-hidden] [ref=e18]: Muse, AI that
+              - generic [ref=e24]:
+                - generic [ref=e25]: gets
+                - generic [ref=e26]: it
+                - generic [ref=e27]: done
+                - generic [ref=e28]: for
+                - generic [ref=e29]: you
+            - generic [ref=e32]:
+              - heading "Log in or create an account" [level=1] [ref=e33]
+              - generic [ref=e34]:
+                - generic [ref=e36]:
+                  - generic [ref=e37]: Mobile number or email (required)
+                  - textbox "Mobile number or email" [ref=e39]
+                - paragraph [ref=e40]:
+                  - text: You may receive SMS notifications from us by using your mobile number.
+                  - link "Learn more" [ref=e41] [cursor=pointer]:
+                    - /url: https://www.meta.com/help/artificial-intelligence/31983416211257755/
+                - button "Continue" [disabled] [ref=e43]
+          - link "Learn more" [ref=e45] [cursor=pointer]:
+            - /url: "#landing-introduction-video-title"
+        - article [ref=e50]:
+          - region "Muse introduction" [ref=e51]:
+            - generic [ref=e53]:
+              - generic [ref=e54]:
+                - heading "Built around your whole life" [level=2] [ref=e55]
+                - paragraph [ref=e56]: Give Muse a goal or task and it handles the rest, from saving money and improving your health to smart shopping and helping you strengthen your relationships.
+              - img "The Muse app icon" [ref=e63]
+          - region "Muse features" [ref=e65]:
+            - region [ref=e66]:
+              - generic [ref=e67]:
+                - generic [ref=e68]:
+                  - heading "Every Muse user shares their own computer in the cloud with their Muse." [level=3] [ref=e69]
+                  - paragraph [ref=e70]: Muse Secure VM is a persistent, isolated Linux computer with a full browser that you and your agent can use to complete tasks, allowing you to intervene at any point. It's your computer and your browser, with the storage, CPU, and memory to handle real work.
+                - img "Floating browser, search, map, calendar, and confirmation panels" [ref=e73]
+            - region [ref=e74]:
+              - generic [ref=e75]:
+                - generic [ref=e76]:
+                  - heading "Designed around the way you already communicate" [level=3] [ref=e77]
+                  - paragraph [ref=e78]: Chat with your agent in the same way you message with other people, using the Muse app on mobile, Mac, or directly in WhatsApp. There's no learning curve, just tell Muse what you want to get done.
+                - img "A chat on a phone where the agent has filled out a school form, shown beside a laptop" [ref=e81]
+            - region [ref=e82]:
+              - generic [ref=e83]:
+                - generic [ref=e84]:
+                  - heading "Stay in control of what your agent does" [level=3] [ref=e85]
+                  - paragraph [ref=e86]: Approve actions your agent takes on your behalf before they happen, like sending emails and making purchases. See a complete audit trail of everything your agent has done (and what it's planning to do).
+                - img "Floating purchase, message, activity, permission, and decision controls" [ref=e89]
+            - region [ref=e90]:
+              - generic [ref=e91]:
+                - generic [ref=e92]:
+                  - heading "Your data is kept secure and private" [level=3] [ref=e93]
+                  - paragraph [ref=e94]:
+                    - text: Save your logins to a secure credential store Muse can't see, with 1Password integration coming soon. When shopping, a one-time card number is generated at checkout so your real card stays hidden from the merchant and your agent. Eligible purchases are covered by
+                    - link "Link's purchase protections" [ref=e95] [cursor=pointer]:
+                      - /url: https://link.com/protections
+                    - text: ", a first for AI agents, and your conversations are not shared with Meta's ad systems."
+                - img "A vault, privacy shield, masked credential, security control, and virtual card" [ref=e98]
+            - region [ref=e99]:
+              - generic [ref=e100]:
+                - generic [ref=e101]:
+                  - heading "Proactively helps with your goals and suggests ideas" [level=3] [ref=e102]
+                  - paragraph [ref=e103]: Muse helps you stay on top of things, takes tasks and projects off your plate, and turns long-term goals into real progress. It learns from conversations, reflects on what matters and gets sharper, coming back with ideas built around what you actually need, ready to act on them under your direction.
+                - img "Floating checklist, calendar, route, progress, and idea panels" [ref=e106]
+            - region [ref=e107]:
+              - generic [ref=e108]:
+                - generic [ref=e109]:
+                  - heading "Connects to your apps and builds its own tools" [level=3] [ref=e110]
+                  - paragraph [ref=e111]: Connect the apps you use daily, like email, calendar, and Instagram. You decide what your agent can see and what it can do. If a task needs a tool that doesn't exist, your agent builds it for you.
+                - img "Connected app, messaging, media, cloud, calendar, and automation tiles" [ref=e114]
+          - region [ref=e115]:
+            - generic [ref=e116]:
+              - generic [ref=e117]:
+                - heading "Get the most out of your Muse" [level=2] [ref=e118]
+                - paragraph [ref=e119]: A guided tour of Muse, from setting a first goal to seeing it through.
+              - img "Product designer presenting a guided tour of Muse" [ref=e125]
+          - generic [ref=e126]:
+            - region [ref=e127]:
+              - generic [ref=e128]:
+                - generic [ref=e129]:
+                  - heading "Learn more about Muse" [level=2] [ref=e130]
+                  - paragraph [ref=e131]: Explore the choices behind Muse and how it is built to deserve your trust.
+                - generic [ref=e132]:
+                  - article [ref=e133]:
+                    - link [ref=e134] [cursor=pointer]:
+                      - /url: https://introducing.muse.ai
+                      - generic [ref=e141]:
+                        - heading "How We Designed Muse" [level=3] [ref=e142]
+                        - paragraph [ref=e143]: When Muse works, it feels like magic. These are the product choices that make the experience possible.
+                  - article [ref=e148]:
+                    - link [ref=e149] [cursor=pointer]:
+                      - /url: https://security.muse.ai
+                      - generic [ref=e157]:
+                        - heading "How We Built Safety Into Muse" [level=3] [ref=e158]
+                        - paragraph [ref=e159]: Muse is built for privacy, safety, and security. Learn how these principles shape every part of the product.
+                  - article [ref=e164]:
+                    - link [ref=e165] [cursor=pointer]:
+                      - /url: /business
+                      - generic [ref=e172]:
+                        - heading "Muse for Business" [level=3] [ref=e173]
+                        - paragraph [ref=e174]: Meet the AI agent that works for your small business and keeps jobs moving between your decisions.
+            - region [ref=e179]:
+              - generic [ref=e180]:
+                - heading "Ready to try Muse?" [level=2] [ref=e181]
+                - button "Log in" [ref=e184] [cursor=pointer]
+        - generic "Meta legal information" [ref=e186]:
+          - generic [ref=e188]:
+            - paragraph [ref=e189]: © Meta 2026
+            - navigation "Legal links" [ref=e190]:
+              - link "Privacy Policy" [ref=e191] [cursor=pointer]:
+                - /url: https://muse.ai/privacy
+              - link "Cookie Policy" [ref=e192] [cursor=pointer]:
+                - /url: https://www.facebook.com/privacy/policies/cookies/
+              - link "Terms" [ref=e193] [cursor=pointer]:
+                - /url: https://muse.ai/terms
+            - generic [ref=e194]:
+              - generic [ref=e195]: from
+              - img "Meta" [ref=e196]
+  - region "Notifications alt+T"
+  - alert [ref=e198]

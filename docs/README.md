@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-10-11** (reorganisasi: `CURRENT_PROGRESS.md` dipecah per fungsi; `MOBILE_VISUAL_QA_TODO.md` digabung ke `GUI_RUNTIME_QA.md`)
+Terakhir diperbarui: **2026-10-19** (status focused verification Format K7 diperbarui; `MOBILE_VISUAL_QA_TODO.md` tetap tergabung di `GUI_RUNTIME_QA.md`)
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
@@ -29,7 +29,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` **run** `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview terbaru sudah memiliki focused verification lokal; belum tercakup run #46 dan browser runtime tetap RVR.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` **run** `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview dan penyesuaian presentasi Format K7 mendapat focused verification lokal, belum tercakup run #46; browser/operator dan visual PDF tetap RVR.
 
 > Catatan pembacaan identifier: `run #NN` adalah nomor run workflow,
 > sedangkan `PR #NNN` adalah nomor pull request. Keduanya pernah ditulis "CI #"

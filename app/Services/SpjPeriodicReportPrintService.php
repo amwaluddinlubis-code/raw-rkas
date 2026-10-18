@@ -2729,7 +2729,7 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k7', 'k2', 'rpd'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k2', 'rpd'], true)
             ? 'landscape'
             : 'portrait';
     }
@@ -2739,7 +2739,7 @@ final class SpjPeriodicReportPrintService
      */
     private function paper(string $presentation): string
     {
-        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1', 'k7', 'k2', 'rpd'], true) ? 'folio' : 'a4';
+        return in_array($presentation, ['bku_ledger', 'cash_ledger', 'bpk_bos', 'bos_a1', 'k2', 'rpd'], true) ? 'folio' : 'a4';
     }
 
     /**

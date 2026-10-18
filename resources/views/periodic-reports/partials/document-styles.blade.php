@@ -256,15 +256,21 @@
         padding: 3px 12px;
     }
 
+    .report-table.k7-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
     .report-table.k7-table thead th {
         background: #f2f1eb;
     }
 
     .report-table.k7-table td {
-        font-size: 8px;
+        font-size: 7px;
     }
 
-    .report-table.k7-table .k7-code {
+    .report-table.k7-table .k7-code,
+    .report-table.k7-table .integer {
         text-align: center;
         white-space: nowrap;
     }
@@ -320,7 +326,7 @@
         border-collapse: collapse;
     }
 
-    .bku-identity-block > tbody > tr > td {
+    .bku-identity-block>tbody>tr>td {
         width: 50%;
         vertical-align: top;
     }

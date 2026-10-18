@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-10-06**
+Terakhir diperbarui: **2026-10-19**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah workflow run #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Perubahan Bulk Preview terbaru sudah melewati focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah workflow run #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview dan penyesuaian presentasi Format K7 mendapat focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 

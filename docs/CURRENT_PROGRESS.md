@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-11** (audit source refaktor helper tampilan; regression/CI masih RVR — lihat bagian audit terbaru di bawah).
+Terakhir diperbarui: **2026-10-19** (penyesuaian layout cetak Format K7 mendapat focused verification lokal; full CI dan browser/PDF runtime tetap RVR).
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
@@ -26,7 +26,7 @@ Terakhir diperbarui: **2026-10-11** (audit source refaktor helper tampilan; regr
 
 ```text
 FUNCTIONAL BASELINE : PREVIOUS VERIFIED GATE PASS / run #46
-CURRENT CODE GATE   : FOCUSED VERIFICATION COMPLETE; FULL CI PENDING after Bulk Preview source change
+CURRENT CODE GATE   : FOCUSED VERIFICATION COMPLETE; FULL CI PENDING after Bulk Preview and Format K7 presentation changes
 REAL-DATA CORE      : VERIFIED untuk audit/preflight + isolated numbering/cancel/tail rollback yang terdokumentasi
 GENERATED OUTPUT    : RVR / OPERATOR QA ACTIVE
 TEMPLATE OFFICE QA : RVR
@@ -35,7 +35,7 @@ LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE / CODE GATE
 FINAL RELEASE       : NOT YET
 ```
 
-P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Source change terbaru sudah mendapat focused verification lokal, tetapi belum full CI. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
+P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Perubahan presentasi Format K7 terbaru mendapat focused verification lokal (5 test / 47 assertions, Pint, Vite build, dan Blade cache), tetapi belum full CI; browser/PDF aktual tetap RVR. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
 
 ---
 

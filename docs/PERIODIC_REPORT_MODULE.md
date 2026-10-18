@@ -220,18 +220,23 @@ cabang `k7a` di `document.blade.php`,
 
 Presentasi `k7` (`format_k7`, bulanan/triwulan/semester/tahunan):
 "Realisasi Penggunaan Dana Tiap Jenis Anggaran" mengikuti formulir
-resmi (terverifikasi terhadap contoh TW II 2025): kop identitas
-sekolah + kotak "Formulir Bos-K7", tabel 9 kolom (No. Kode |
-Uraian Kegiatan | Jumlah | Rutin | BOS Pusat/Provinsi/Kab-Kota |
-Bantuan Lain | Sumber Pendapatan Lainnya) dengan baris bernomor
-1,2,3,4,5,8,9,10,11, hierarki A (penerimaan: saldo awal, rutin,
+resmi (struktur dibandingkan terhadap contoh TW II 2025): kop
+identitas sekolah + kotak "Formulir Bos-K7", tabel 9 kolom (No. Kode
+| Uraian Kegiatan | Jumlah | Rutin | BOS Pusat/Provinsi/Kab-Kota |
+Bantuan Lain | Sumber Pendapatan Lainnya), hierarki A (penerimaan: saldo awal, rutin,
 BOS, bantuan lain, sumber pendapatan lainnya, total) → B/I
 (Program Sekolah: 8 program → sub-program → kegiatan dari kode
 kegiatan transaksi) → II (total penggunaan) → C (sisa = I-II),
 dan tanda tangan Komite Sekolah + Kepsek + Bendahara (+ tempat/
-tanggal). Warna baris resmi: header krem `#f2f1eb`, baris
-A/B/I abu `#d9d9d9`, program pink `#ffd6d6`, sub-program hijau
-`#d4ffd4`; landscape folio.
+tanggal). Warna baris: header krem `#f2f1eb`, baris A/B/I abu
+`#d9d9d9`, program pink `#ffd6d6`, sub-program hijau `#d4ffd4`.
+
+Rendisi print saat ini memakai nomor kolom berurutan 1–9, lebar tabel
+fixed, angka kolom dan kode rata tengah, font nominal 7px, serta
+orientasi portrait kertas A4. Contoh resmi yang menjadi acuan sebelumnya
+memiliki label kolom 1,2,3,4,5,8,9,10,11 dan orientasi landscape folio;
+kesesuaian visual rendisi terbaru terhadap formulir resmi belum
+diverifikasi dan tetap RVR.
 
 Nominal penggunaan memakai `gross_amount` seperti A-1; kolom sumber
 dana mengikuti nama fund source aktif (`k7FundColumn`, default

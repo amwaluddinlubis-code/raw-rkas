@@ -5,6 +5,21 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Penyesuaian layout cetak Format K7 (2026-10-19)
+
+Rendisi print K7 diperbarui dengan layout tabel fixed-width, font nominal
+7px, alignment tengah untuk kolom angka/kode, label kolom berurutan 1–9,
+identitas Kabupaten/Provinsi berprefix `Kab.`/`Prov.`, serta orientasi
+portrait A4. Panduan format mencatat bahwa nomor kolom dan orientasi ini
+berbeda dari contoh resmi yang menjadi acuan; visual fidelity terbaru
+belum diverifikasi dan tetap RVR.
+
+Focused verification: `php artisan test --compact
+tests/Feature/SpjPeriodicReportPrintableTest.php` — 5 passed / 47
+assertions; Pint, `npm run build`, dan `php artisan view:cache
+--no-interaction` berhasil. Full CI dan browser/PDF aktual belum
+dijalankan.
+
 ## RPD BOS baru (2026-10-16)
 
 Laporan "RINCIAN PENGGUNAAN DANA BOS (RPD BOS)" ditambahkan ke scope
