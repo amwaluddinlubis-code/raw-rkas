@@ -62,7 +62,7 @@
             </x-ui.field>
         </div>
 
-        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 items-start">
             <x-ui.field label="Program" for="rkas-filter-program">
                 <x-ui.select id="rkas-filter-program" wire:model.live="program">
                     <option value="">Semua Program</option>
@@ -89,11 +89,8 @@
                     @endforeach
                 </x-ui.select>
             </x-ui.field>
-        </div>
-
-        <div class="flex justify-end pt-2">
             <x-ui.button type="button" variant="secondary" icon="refresh" wire:click="clearFilters"
-                class="w-full sm:w-auto">
+                class="self-start w-full sm:w-auto">
                 Reset Filter
             </x-ui.button>
         </div>

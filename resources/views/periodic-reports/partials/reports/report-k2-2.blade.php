@@ -9,7 +9,7 @@
             @include('periodic-reports.partials.reports.colgroup', ['widths' => $k2Widths])
             <thead>
                 <tr>
-                    <th rowspan="2">No</th>
+                    <th rowspan="2" class="text-center">No</th>
                     <th rowspan="2">Uraian</th>
                     <th rowspan="2">Jumlah<br>(dalam Rp)</th>
                     <th colspan="{{ $k2Semester ? 2 : 4 }}">{{ $k2['group_label'] }}</th>
@@ -36,13 +36,13 @@
             </thead>
             <tbody>
                 <tr>
-                    <td class="integer">I</td>
+                    <td class="integer text-center">I</td>
                     <td colspan="{{ $k2Semester ? 4 : 6 }}"><strong>Program Sekolah</strong></td>
                 </tr>
                 @foreach ($k2['programs'] as $prog)
                     <tr>
-                        <td class="integer">{{ $prog['no'] }}</td>
-                        <td>{{ $prog['label'] }}</td>
+                        <td class="integer text-center">{{ $prog['no'] }}</td>
+                        <td> - {{ $prog['label'] }}</td>
                         <td class="money">{{ $rupiah($prog['jumlah']) }}</td>
                         @if ($k2Semester)
                             <td class="money">{{ $rupiah($prog['semester'][1]) }}</td>
