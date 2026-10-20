@@ -3,7 +3,7 @@
             $k2DesaKec =
                 trim(trim((string) ($school->desa ?? '')) . ' / ' . trim((string) ($school->district ?? '')), ' /') ?:
                 '-';
-            $k2IdentityWidths = ['15%', '85a%'];
+            $k2IdentityWidths = ['15%', '85%'];
         @endphp
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
             <div style="flex:1;text-align:center;">
@@ -42,8 +42,8 @@
                 <td>: {{ $school->province ?: '-' }}</td>
             </tr>
             <tr>
-                <td>Triwulan / Bulan</td>
-                <td>: {{ $k2['quarter_label'] }} / {{ $k2['month_range'] }}</td>
+                <td>{{ $k2['period_row_label'] }}</td>
+                <td>: {{ $k2['period_label'] }} / {{ $k2['period_range'] }}</td>
             </tr>
             <tr>
                 <td>Sumber Dana</td>

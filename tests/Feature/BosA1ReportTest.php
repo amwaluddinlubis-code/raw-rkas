@@ -231,10 +231,12 @@ class BosA1ReportTest extends TestCase
         $this->assertStringContainsString('BELANJA PEGAWAI', $html);
         $this->assertStringContainsString('ASET TETAP LAINNYA BOS', $html);
         $this->assertStringContainsString('Pengembangan Standar Proses', $html);
-        $this->assertStringContainsString('Pemegang Kas Sekolah', $html);
+        $this->assertStringContainsString('Bendahara / Pemegang Kas', $html);
         $this->assertStringContainsString('Kepala Uji', $html);
         $this->assertStringContainsString('Bendahara Uji', $html);
-        $this->assertStringContainsString('Rp -', $html);
+        $this->assertStringContainsString('<td class="money">1.000.000</td>', $html);
+        $this->assertStringContainsString('<td class="money">-</td>', $html);
+        $this->assertStringNotContainsString('Rp ', $html);
         $this->assertSame(1, substr_count($html, '<table class="signature-table'));
     }
 

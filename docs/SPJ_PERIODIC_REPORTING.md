@@ -1,6 +1,6 @@
 # SPJ Periodic Reporting
 
-Terakhir diverifikasi terhadap source: **2026-10-20** (`raw-rkas`, branch `main`)
+Terakhir diverifikasi terhadap source: **2026-10-21** (`raw-rkas`, branch `main`)
 
 Status: **REGISTRY + DATA ENGINE + INTERNAL PRINT/PDF IMPLEMENTED / VISUAL RUNTIME RVR**
 
@@ -20,8 +20,8 @@ Panduan fitur per-format laporan (aturan nilai, mapping sel, batasan presenter) 
 ## Paket laporan
 
 Daftar di bawah adalah cerminan langsung dari
-`SpjPeriodicReportRegistry::packages()`: **35 slot** (bulanan 10 + triwulan 10 +
-semester 8 + tahunan 7) dari **18 report key** berbeda. Bila daftar ini
+`SpjPeriodicReportRegistry::packages()`: **37 slot** (bulanan 10 + triwulan 10
++ semester 10 + tahunan 7) dari **18 report key** berbeda. Bila daftar ini
 berbeda dengan registry, registry yang benar.
 
 ### Bulanan
@@ -34,7 +34,7 @@ berbeda dengan registry, registry yang benar.
 - Register Penutupan Kas (K7B) (`k7b`)
 - Berita Acara Pemeriksaan Kas (K7C) (`k7c`)
 - Rekap Belanja Modal dan Belanja Barang / Jasa (`rekap_belanja_modal_barang_jasa`)
-- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
+- Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Laporan BPK Format BOS (`bpk_bos`)
 
 Periode valid: bulan `1..12`.
@@ -45,10 +45,10 @@ Periode valid: bulan `1..12`.
 - Format K7 (`format_k7`)
 - Format BOS K-2 (`format_k2`)
 - RPD BOS (`rpd_bos`)
+- Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Buku Kas Umum (BKU) (`bku`)
 - Berita Acara Rekonsiliasi (`berita_acara_rekonsiliasi`)
 - Lampiran Berita Acara Rekonsiliasi (`lampiran_berita_acara_rekonsiliasi`)
-- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
 - Laporan BPK Format BOS (`bpk_bos`)
 - Format BOS A-1 (`bos_a1`)
 
@@ -58,14 +58,19 @@ Periode valid: triwulan `1..4`.
 
 - SPTJM (`sptjm`)
 - Format K7 (`format_k7`)
+- Format BOS K-2 (`format_k2`)
+- RPD BOS (`rpd_bos`)
+- Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Buku Kas Umum (BKU) (`bku`)
 - Berita Acara Rekonsiliasi (`berita_acara_rekonsiliasi`)
 - Lampiran Berita Acara Rekonsiliasi (`lampiran_berita_acara_rekonsiliasi`)
-- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
 - Rekap Belanja Barang Milik Daerah (Aset) (`rekap_bmd`)
 - Laporan BPK Format BOS (`bpk_bos`)
 
-Periode valid: semester `1..2`.
+Periode valid: semester `1..2`. K-2 pada scope ini merender kolom
+`Semester I`/`Semester II`, sedangkan RPD merender kolom triwulan
+(I–II untuk Semester I, III–IV untuk Semester II) — lihat
+`PERIODIC_REPORT_MODULE.md`.
 
 ### Tahunan
 
@@ -74,7 +79,7 @@ Periode valid: semester `1..2`.
 - Buku Kas Umum (BKU) (`bku`)
 - Rekap Barang Milik Daerah (Aset) (`rekap_bmd`)
 - Rekap Belanja Dana BOS (`rekap_belanja_dana_bos`)
-- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
+- Rekapitulasi Pengeluaran Dana BOS(K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Laporan BPK Format BOS (`bpk_bos`)
 
 Periode tahunan selalu menggunakan seluruh tahun anggaran aktif dan tidak membutuhkan nomor periode tambahan.

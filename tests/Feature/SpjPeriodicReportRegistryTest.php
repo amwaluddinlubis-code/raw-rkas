@@ -14,7 +14,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
 
         $this->assertSame(10, count($packages['bulan']));
         $this->assertSame(10, count($packages['triwulan']));
-        $this->assertSame(8, count($packages['semester']));
+        $this->assertSame(10, count($packages['semester']));
         $this->assertSame(7, count($packages['tahunan']));
 
         $this->assertSame([
@@ -26,7 +26,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Register Penutupan Kas (K7B)',
             'Berita Acara Pemeriksaan Kas (K7C)',
             'Rekap Belanja Modal dan Belanja Barang / Jasa',
-            'Rekapitulasi Pengeluaran Dana BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Laporan BPK Format BOS',
         ], array_column($packages['bulan'], 'label'));
 
@@ -35,10 +35,10 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Format K7',
             'Format BOS K-2',
             'RPD BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Buku Kas Umum (BKU)',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
-            'Rekapitulasi Pengeluaran Dana BOS',
             'Laporan BPK Format BOS',
             'Format BOS A-1',
         ], array_column($packages['triwulan'], 'label'));
@@ -46,10 +46,12 @@ class SpjPeriodicReportRegistryTest extends TestCase
         $this->assertSame([
             'SPTJM',
             'Format K7',
+            'Format BOS K-2',
+            'RPD BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Buku Kas Umum (BKU)',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
-            'Rekapitulasi Pengeluaran Dana BOS',
             'Rekap Belanja Barang Milik Daerah (Aset)',
             'Laporan BPK Format BOS',
         ], array_column($packages['semester'], 'label'));
@@ -60,7 +62,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Buku Kas Umum (BKU)',
             'Rekap Barang Milik Daerah (Aset)',
             'Rekap Belanja Dana BOS',
-            'Rekapitulasi Pengeluaran Dana BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Laporan BPK Format BOS',
         ], array_column($packages['tahunan'], 'label'));
     }

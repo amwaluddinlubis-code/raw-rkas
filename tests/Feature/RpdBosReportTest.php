@@ -360,6 +360,125 @@ class RpdBosReportTest extends TestCase
         $this->assertStringContainsString('BENDAHARA', $html);
     }
 
+    public function test_rpd_semester_replaces_month_columns_with_quarter_columns(): void
+    {
+        $rpd = app(SpjPeriodicReportPrintService::class)->build('semester', 'rpd_bos', 1)['rpd'];
+
+        $this->assertSame('quarter', $rpd['columns']);
+        $this->assertSame([1 => 'I', 2 => 'II'], $rpd['quarter_names']);
+        $this->assertSame('SEMESTER', $rpd['period_row_label']);
+        $this->assertSame('I ( Satu )', $rpd['quarter_label']);
+        $this->assertSame('BULAN JANUARI S.D JUNI 2026', $rpd['month_range']);
+        // Realisasi tetap dihitung per bulan (Januari–Juni) untuk agregasi.
+        $this->assertSame([1, 2, 3, 4, 5, 6], array_keys($rpd['month_names']));
+
+        $programs = [];
+        foreach ($rpd['rows'] as $row) {
+            if ($row['level'] === 'program') {
+                $programs[$row['code']] = $row;
+            }
+        }
+        // Februari 2.360.000 + Maret 250.000 = Triwulan I; Triwulan II nol.
+        $this->assertSame(2610000.0, $programs['03.']['quarters'][1]);
+        $this->assertSame(0.0, $programs['03.']['quarters'][2]);
+
+        $items = [];
+        foreach ($rpd['rows'] as $row) {
+            if ($row['level'] === 'item') {
+                $items[$row['label']] = $row;
+            }
+        }
+        $this->assertSame(2360000.0, $items['Buku Ramadhan']['quarters'][1]);
+        $this->assertSame(250000.0, $items['Cetak Spanduk']['quarters'][1]);
+
+        $this->assertSame(2610000.0, $rpd['totals']['quarters'][1]);
+        $this->assertSame(0.0, $rpd['totals']['quarters'][2]);
+        $this->assertSame(array_sum($rpd['totals']['months']), array_sum($rpd['totals']['quarters']));
+    }
+
+    public function test_rpd_semester_ii_uses_quarter_iii_and_iv_columns(): void
+    {
+        $rpd = app(SpjPeriodicReportPrintService::class)->build('semester', 'rpd_bos', 2)['rpd'];
+
+        $this->assertSame([3 => 'III', 4 => 'IV'], $rpd['quarter_names']);
+        $this->assertSame([7, 8, 9, 10, 11, 12], array_keys($rpd['month_names']));
+        $this->assertSame('II ( Dua )', $rpd['quarter_label']);
+
+        // Tidak ada realisasi Juli–Desember pada data uji.
+        $this->assertSame([3 => 0.0, 4 => 0.0], $rpd['totals']['quarters']);
+    }
+
+    public function test_rpd_semester_keeps_quarter_columns_when_rows_carry_period_coordinates(): void
+    {
+        // Regresi: loop pecahan periode pernah memakai nama variabel `$period`
+        // sehingga menimpa parameter scope/period dan laporan semester jatuh
+        // kembali ke kolom bulan saat baris punya koordinat periode.
+        $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'RP-P3-JUL', [
+            'ID_RAPBS_PERIODE' => 'RP-P3-JUL', 'ID_RAPBS' => 'R-P3', 'ID_PERIODE' => '87',
+            'JUMLAH' => 2360000, 'VOLUME' => 118, 'SATUAN' => 'exemplar', 'HARGA_SATUAN' => 20000,
+        ]);
+
+        $rpd = app(SpjPeriodicReportPrintService::class)->build('semester', 'rpd_bos', 2)['rpd'];
+
+        $this->assertSame('quarter', $rpd['columns']);
+        $this->assertSame([3 => 'III', 4 => 'IV'], $rpd['quarter_names']);
+        $this->assertSame('II ( Dua )', $rpd['quarter_label']);
+        $this->assertSame('SEMESTER', $rpd['period_row_label']);
+        // Jumlah baris mengikuti alokasi periode terpilih: R-P3 dari pecahan
+        // Juli, R-P3B/R-P5 tanpa koordinat periode memakai angka tahunan;
+        // realisasi triwulan tetap nol karena kas uji hanya Feb/Mar.
+        $this->assertSame(4680000.0, $rpd['totals']['jumlah']);
+        $this->assertSame(0.0, $rpd['totals']['quarters'][3]);
+        $this->assertSame(0.0, $rpd['totals']['quarters'][4]);
+    }
+
+    public function test_rpd_semester_without_fund_source_renders_empty_quarter_grid(): void
+    {
+        session()->forget('active_fund_source_id');
+
+        $rpd = app(SpjPeriodicReportPrintService::class)->build('semester', 'rpd_bos', 2)['rpd'];
+
+        $this->assertSame('quarter', $rpd['columns']);
+        $this->assertSame([3 => 'III', 4 => 'IV'], $rpd['quarter_names']);
+        $this->assertSame([], $rpd['rows']);
+        $this->assertFalse($rpd['has_data']);
+        $this->assertSame(0.0, $rpd['totals']['jumlah']);
+        $this->assertSame([3 => 0.0, 4 => 0.0], $rpd['totals']['quarters']);
+    }
+
+    public function test_rpd_semester_print_route_renders_triwulan_columns(): void
+    {
+        $response = $this->get('/laporan-periode/semester/rpd_bos/cetak?periode_laporan=1');
+
+        $response->assertOk();
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('RINCIAN PENGGUNAAN DANA BOS (RPD BOS)', $html);
+        $this->assertStringContainsString('<td>SEMESTER</td>', $html);
+        $this->assertStringContainsString('<th colspan="2">Triwulan</th>', $html);
+        $this->assertStringContainsString('<th>I</th>', $html);
+        $this->assertStringContainsString('<th>II</th>', $html);
+        $this->assertStringNotContainsString('<th>Januari</th>', $html);
+        $this->assertStringNotContainsString('<th>Bulan</th>', $html);
+    }
+
+    public function test_rpd_semester_excel_export_uses_quarter_columns(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('semester', 'rpd_bos', 1);
+        $path = app(SpjPeriodicReportExcelService::class)->export($payload);
+
+        $book = IOFactory::load($path);
+        $sheet = $book->getSheetByName('Laporan');
+        $this->assertNotNull($sheet);
+        $this->assertSame('No', $sheet->getCell('A8')->getValue());
+        $this->assertSame('Triwulan', $sheet->getCell('H8')->getValue());
+        $this->assertSame('I', $sheet->getCell('H9')->getValue());
+        $this->assertSame('II', $sheet->getCell('I9')->getValue());
+        $this->assertNull($sheet->getCell('J9')->getValue());
+        $this->assertSame('SEMESTER: I ( Satu )', $sheet->getCell('A7')->getValue());
+        $this->assertSame('PROGRAM SEKOLAH', $sheet->getCell('C11')->getValue());
+        $book->disconnectWorksheets();
+    }
+
     public function test_rpd_excel_export_matches_data(): void
     {
         $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'rpd_bos', 1);

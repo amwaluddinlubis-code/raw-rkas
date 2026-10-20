@@ -31,7 +31,7 @@
             <td>: {{ $school->province ?: '-' }}</td>
         </tr>
         <tr>
-            <td>TRIWULAN</td>
+            <td>{{ $rpd['period_row_label'] }}</td>
             <td>: {{ $rpd['quarter_label'] }}</td>
         </tr>
     </table>

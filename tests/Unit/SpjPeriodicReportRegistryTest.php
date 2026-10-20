@@ -42,7 +42,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Register Penutupan Kas (K7B)',
             'Berita Acara Pemeriksaan Kas (K7C)',
             'Rekap Belanja Modal dan Belanja Barang / Jasa',
-            'Rekapitulasi Pengeluaran Dana BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_MONTHLY), 'label'));
 
@@ -51,10 +51,10 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Format K7',
             'Format BOS K-2',
             'RPD BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Buku Kas Umum (BKU)',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
-            'Rekapitulasi Pengeluaran Dana BOS',
             'Laporan BPK Format BOS',
             'Format BOS A-1',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_QUARTERLY), 'label'));
@@ -62,10 +62,12 @@ class SpjPeriodicReportRegistryTest extends TestCase
         $this->assertSame([
             'SPTJM',
             'Format K7',
+            'Format BOS K-2',
+            'RPD BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Buku Kas Umum (BKU)',
             'Berita Acara Rekonsiliasi',
             'Lampiran Berita Acara Rekonsiliasi',
-            'Rekapitulasi Pengeluaran Dana BOS',
             'Rekap Belanja Barang Milik Daerah (Aset)',
             'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_SEMESTER), 'label'));
@@ -76,11 +78,11 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Buku Kas Umum (BKU)',
             'Rekap Barang Milik Daerah (Aset)',
             'Rekap Belanja Dana BOS',
-            'Rekapitulasi Pengeluaran Dana BOS',
+            'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Laporan BPK Format BOS',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_ANNUAL), 'label'));
 
-        $this->assertSame(35, array_sum(array_map('count', $registry->packages())));
+        $this->assertSame(37, array_sum(array_map('count', $registry->packages())));
     }
 
     #[Test]

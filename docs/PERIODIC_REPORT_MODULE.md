@@ -1,14 +1,14 @@
 # Modul Laporan Periode
 
-Terakhir diperbarui: **2026-10-20** (`raw-rkas`, branch `main`)
+Terakhir diperbarui: **2026-10-21** (`raw-rkas`, branch `main`)
 
 Dokumen ini adalah panduan fitur laporan periode (`/laporan-periode`): generator
 internal APP-SPJ untuk cetak browser dan PDF, terpisah dari template Paket SPJ.
 
 Status: **ACTIVE FEATURE GUIDE / PRINT, PDF, DAN EXCEL SOURCE IMPLEMENTED /
 VISUAL RUNTIME RVR**. Kontrak teknis modul (registry, scope, boundary data)
-berada di `SPJ_PERIODIC_REPORTING.md`. Registry aktual berisi **35 slot**
-(bulanan 10 + triwulan 10 + semester 8 + tahunan 7) dari **18 report key**.
+berada di `SPJ_PERIODIC_REPORTING.md`. Registry aktual berisi **37 slot**
+(bulanan 10 + triwulan 10 + semester 10 + tahunan 7) dari **18 report key**.
 Daftar per scope dan key berada di kontrak teknis; dokumen ini menjelaskan
 aturan nilai per format yang sudah mempunyai presenter khusus.
 
@@ -134,6 +134,11 @@ gagal menokennya dan writ chunk mentah hingga ParseError; pindahkan ke blok
 
 Implementasi: `SpjPeriodicReportPrintService::rekapBospData/Title` +
 cabang `rekap_bosp` di `document.blade.php`.
+Kertas: **A4 landscape** (`rekap_bosp` masuk daftar landscape pada
+`SpjPeriodicReportPrintService::orientation()`; permintaan pengguna
+2026-10-21), sehingga grid 7 SNP × 12 sub program tidak terpotong. Dikunci
+oleh `RekapBudgetRealizationTest` (payload `orientation`/`paper` + CSS
+`size: A4 landscape;` pada rute cetak).
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
 ## Format BOS A-1 (rekapitulasi resmi per 8 program)
@@ -142,9 +147,15 @@ Presentasi `bos_a1` (`bos_a1`, scope triwulan; Fase 1) meniru Formulir BOS
 A-1: judul + `PERIODE TANGGAL : 01 JANUARI - 31 MARET 2024` + kotak Format
 BOS A-1, blok identitas (NPSN, sekolah, desa/kecamatan, kab/kota, provinsi,
 sumber dana), grid 8 program × (Belanja Pegawai | Barang dan Jasa | 3 kolom
-Belanja Modal | TOTAL) + baris TOTAL, sel nol sebagai `Rp -`, tanda tangan
-Menyetujui Kepsek + `{desa}, {tanggal akhir periode}` / Pemegang Kas
-Sekolah. Orientasi landscape folio; Excel menulis grid + baris TOTAL.
+Belanja Modal | TOTAL) + baris TOTAL, sel nol sebagai `-`, tanda tangan
+Menyetujui Kepsek + `{desa}, {tanggal akhir periode}` / Bendahara /
+Pemegang Kas. Orientasi landscape folio; Excel menulis grid + baris TOTAL.
+
+Format nominal (2026-10-21, dikonfirmasi pengguna): sel uang A-1 dirender
+tanpa prefix `Rp ` (`report-a1-2.blade.php`, `$a1Money`), sehingga nilai
+tampil `1.000.000` dan sel nol tampil `-`; satuan rupiah tidak diulang per
+sel. Excel tetap menulis angka numerik dengan format ribuan
+(`formatMoneyRange`).
 
 Aturan grid terverifikasi terhadap keluaran resmi TW IV 2024 (seluruh angka
 cocok per baris): baris = segmen pertama kode kegiatan 01–08
@@ -203,12 +214,12 @@ aktual dijalankan.
 
 ## RPD BOS (2026-10-16)
 
-Presentasi `rpd` (`rpd_bos`, scope triwulan) mengikuti contoh resmi
-RINCIAN PENGGUNAAN DANA BOS: kop identitas + kotak "RPD", tabel No |
-Kode Program | Uraian | Rincian Perhitungan (Vol/Satuan/Tarif) | Jumlah |
-kolom bulan triwulan berjalan, hierarki I Program Sekolah → 8 program
-(01.–08.) → sub-program → kegiatan → item, footer Sub Total I/II +
-JUMLAH TOTAL, dan tanda tangan Mengetahui/Kepala Sekolah/Bendahara.
+Presentasi `rpd` (`rpd_bos`, scope triwulan/semester) mengikuti contoh
+resmi RINCIAN PENGGUNAAN DANA BOS: kop identitas + kotak "RPD", tabel
+No | Kode Program | Uraian | Rincian Perhitungan (Vol/Satuan/Tarif) |
+Jumlah | kolom bulan triwulan berjalan, hierarki I Program Sekolah → 8
+program (01.–08.) → sub-program → kegiatan → item, footer Sub Total I/II
++ JUMLAH TOTAL, dan tanda tangan Mengetahui/Kepala Sekolah/Bendahara.
 Landscape folio; Excel mengikuti struktur yang sama.
 
 Aturan nilai: baris diambil dari snapshot revisi disahkan terakhir
@@ -232,9 +243,29 @@ berjumlah 0 dan tidak ditampilkan — bukan angka tahunan. Payload tahunan
 hanya dipakai sebagai fallback bila baris sama sekali tidak punya
 pecahan periode terkoordinat.
 
-Implementasi: `SpjPeriodicReportPrintService::rpdData/rpdRealization`,
-cabang `rpd` di `document.blade.php`,
+Implementasi: `SpjPeriodicReportPrintService::rpdData/rpdRealization/
+rpdQuarterSums`, cabang `rpd` di `document.blade.php`,
 `SpjPeriodicReportExcelService::writeRpd`.
+
+Kolom per scope (2026-10-21): `rpd_bos` kini juga terdaftar pada scope
+semester. Kolom periode mengikuti scope: triwulan → kolom **bulan**
+(triwulan berjalan), semester → kolom **triwulan**. RPD Semester I
+memakai kolom Triwulan I & II, RPD Semester II memakai kolom Triwulan
+III & IV, sehingga Sub Total/jumlah baris per kelompok triwulan
+(`quarters`) tersedia pada mode semester. Baris tetap ditampilkan hanya
+bila jumlah periode terpilihnya tidak nol; payload mencakup `columns`
+(`quarter`|`month`), `quarter_names`, dan `period_row_label`
+(`SEMESTER`/`TRIWULAN`) yang dipakai baik oleh cetak maupun Excel.
+
+Catatan regresi (2026-10-21): perulangan pecahan periode di `rpdData`
+memakai nama variabel `$period` sehingga menimpa parameter scope/period;
+akibatnya data nyata yang sudah punya koordinat periode (pecahan bulan)
+jatuh kembali ke kolom bulan meskipun scope semester. Variabel perulangan
+kini bernama `$periodRow`, dan `$totals` diinisialisasi sebelum cabang
+sumber dana sehingga laporan tetap terbentuk saat sumber dana belum
+terpilih. Keduanya dikunci oleh `RpdBosReportTest`
+(`..._when_rows_carry_period_coordinates` dan
+`..._without_fund_source_renders_empty_quarter_grid`).
 
 ## Format dengan presenter generik
 
@@ -290,8 +321,8 @@ di `document.blade.php` + `document-styles.blade.php`,
 
 ## Format BOS K-2 (2026-10-16)
 
-Presentasi `k2` (`format_k2`, scope triwulan): "RENCANA KEGIATAN DAN
-ANGGARAN SEKOLAH ( RKAS )" mengikuti formulir resmi (terverifikasi
+Presentasi `k2` (`format_k2`, scope triwulan/semester): "RENCANA KEGIATAN
+DAN ANGGARAN SEKOLAH ( RKAS )" mengikuti formulir resmi (terverifikasi
 terhadap contoh TW I 2026 SDN 316 Ranto Panjang): kop identitas
 sekolah + kotak "Format BOS K-2", tabel No | Uraian | Jumlah (dalam
 Rp) | Triwulan (I–IV) dengan baris "I Program Sekolah" → 1.1–1.8
@@ -315,10 +346,23 @@ kolom yang tampil (kumulatif), bukan pagu tahunan penuh. Semua baris
 program 1.1–1.8 tetap ditampilkan. Contoh: laporan TW II memuat TW I +
 TW II; TW III/IV = 0.
 
+Scope semester (2026-10-21): `format_k2` juga terdaftar pada scope
+semester dan merender **dua kolom `Semester I` dan `Semester II`**
+(pengganti kolom TW I–IV). Laporan Semester I hanya memuat Semester I,
+sedangkan laporan Semester II bersifat kumulatif (Semester I + Semester
+II) dengan kolom "Semester I" tetap menampilkan angka semester
+pertama; kolom "Jumlah" adalah penjumlahan kolom yang tampil.
+Pemetaan periode: Semester I = TW 1–2, Semester II = TW 3–4. Judul
+identitas memakai `period_row_label` (`SEMESTER`/`TRIWULAN`) dan
+`period_range` dari `k2MonthRangeFromMonths()`, mis. Semester II =
+"01 Juli s.d 31 Desember <tahun>".
+
 Implementasi: `SpjPeriodicReportPrintService::k2Data/k2QuarterLabel/
-k2MonthRange`, cabang `k2` di `document.blade.php`,
+k2SemesterLabel/k2MonthRange/k2MonthRangeFromMonths`, cabang `k2` di
+`document.blade.php`, partial `report-k2-1.blade.php` (5 kolom semester /
+7 kolom triwulan) dan `report-k2-2.blade.php`,
 `SpjPeriodicReportExcelService::writeK2`, registrasi
-`SpjPeriodicReportRegistry` scope triwulan.
+`SpjPeriodicReportRegistry` scope triwulan + semester.
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
 ## SPTJM (2026-10-08)
@@ -357,8 +401,9 @@ Array lebar per format:
   meta identitas 2/4 kolom (`document.blade.php`);
 - RPD 7 kolom dasar + jumlah kolom bulan; sisa 28% dibagi rata ke kolom
   bulan (`report-rpd-2.blade.php`);
-- A1 8 kolom, K-2 7 kolom, K7 9 kolom, K7B 3 kolom, K7C 2 kolom, BPK 6
-  kolom, serta tabel identitas/tanda tangan 2–3 kolom.
+- A1 8 kolom, K-2 7 kolom triwulan / **5 kolom semester** (No, Uraian,
+  Jumlah, Semester I, Semester II), K7 9 kolom, K7B 3 kolom, K7C 2 kolom,
+  BPK 6 kolom, serta tabel identitas/tanda tangan 2–3 kolom.
 
 `$rpdColspan` pada RPD ikut dikoreksi menjadi jumlah kolom sebenarnya
 (`count($rpdBaseWidths) + count($rpdMonths)`), sehingga baris nomor
@@ -366,14 +411,36 @@ Array lebar per format:
 Tidak ada perubahan pada registry, perhitungan nilai, tenant boundary,
 penomoran, atau lifecycle dokumen.
 
-## Status verifikasi (2026-10-20)
+## Status verifikasi (2026-10-21)
 
 Sinkronisasi dokumentasi registry terhadap source diverifikasi dengan:
 
 ```text
-SpjPeriodicReportRegistryTest (Feature + Unit) : 5 passed / 35 assertions
-SpjPeriodicReportRegistry::packages()          : 35 slot / 18 report key
+SpjPeriodicReportRegistryTest (Feature + Unit),
+SpjPeriodicReportPrintableTest,
+SpjPeriodicReportModuleUiTest                  : 13 passed / 103 assertions
+SpjPeriodicReportRegistry::packages()          : 37 slot / 18 report key
 ```
+
+Perubahan scope semester (K-2 dua kolom semester + RPD kolom triwulan)
+diverifikasi dengan:
+
+```text
+FormatK2ReportTest        : 9 passed / 105 assertions
+RpdBosReportTest          : 14 passed / 136 assertions
+```
+
+Regression gabungan 11 kelas (RpdBosReport, BkuOfficialLedger, BosA1Report,
+FormatK2Report, K7bK7cReport, SpjPeriodicReportPrintable,
+SpjPeriodicReportRegistry Feature + Unit, SpjPeriodicReportModuleUi,
+SpjReportLayout, WebRouteSmoke): **80 passed / 776 assertions** (dijalankan ulang setelah perbaikan kolom RPD semester).
+
+Aturan kolom Belanja Modal A-1 (2026-10-21, dikonfirmasi pengguna):
+kode rekening `5.2` = BELANJA MODAL, `5.2.02` = BELANJA MODAL PERALATAN
+DAN MESIN, `5.2.05` (dan `5.2` lainnya) = BELANJA MODAL ASET TETAP
+LAINNYA. Teks jabatan penanda tangan A-1 juga dikonfirmasi memakai
+"Bendahara / Pemegang Kas" (bukan "Pemegang Kas Sekolah"), sehingga
+assertion `BosA1ReportTest` diselaraskan dengan source.
 
 Perubahan lebar kolom persentase diverifikasi dengan:
 

@@ -157,6 +157,9 @@ class RekapBudgetRealizationTest extends TestCase
         $this->assertSame(7000000.0, $rekap['closing']);
 
         $this->assertSame('APRIL TAHUN 2026', $payload['rekapTitle']['phase']);
+        // Kertas laporan rekap: A4 landscape (permintaan pengguna 2026-10-21).
+        $this->assertSame('landscape', $payload['orientation']);
+        $this->assertSame('a4', $payload['paper']);
     }
 
     public function test_rekap_ignores_other_fund_source_rows(): void
@@ -184,8 +187,9 @@ class RekapBudgetRealizationTest extends TestCase
         $this->assertSame(7000000.0, $rekap['closing']);
     }
 
-        public function test_rekap_print_route_renders_official_layout(): void
-    {        $response = $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4');
+    public function test_rekap_print_route_renders_official_layout(): void
+    {
+        $response = $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4');
 
         $response->assertOk();
         $response->assertSee('REKAPITULASI REALISASI PENGGUNAAN DANA BOSP', false);
@@ -193,6 +197,7 @@ class RekapBudgetRealizationTest extends TestCase
         $response->assertSee('Standar Nasional', false);
         $response->assertSee('Saldo periode sebelumnya', false);
         $response->assertSee('Bendahara /', false);
+        $this->assertStringContainsString('A4 landscape', (string) $response->getContent());
     }
 
     public function test_bpk_report_aggregates_cash_mirror_into_dinas_sections(): void

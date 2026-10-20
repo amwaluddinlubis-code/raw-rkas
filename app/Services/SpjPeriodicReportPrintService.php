@@ -1802,10 +1802,18 @@ final class SpjPeriodicReportPrintService
      * "Jumlah" adalah penjumlahan kolom yang tampil (kumulatif), bukan
      * pagu tahunan penuh. Semua baris program 1.1–1.8 tetap ditampilkan.
      *
-     * @return array{programs:array<int,array{no:string,label:string,jumlah:float,tw:array<int,float>}>,totals:array{jumlah:float,tw:array<int,float>},quarter:int,quarter_label:string,month_range:string,has_data:bool}
+     * Versi semester memakai dua kolom (Semester I dan Semester II): periode
+     * terpilih mengisi kolom semesternya sendiri dan semester setelahnya nol
+     * (Semester I = TW I + TW II; Semester II = TW III + TW IV). Karena
+     * kumulatif, laporan Semester II memuat Semester I + Semester II.
+     *
+     * @return array{programs:array<int,array{no:string,label:string,jumlah:float,tw:array<int,float>,semester:array<int,float>}>,totals:array{jumlah:float,tw:array<int,float>,semester:array<int,float>},scope:string,columns:string,group_label:string,period_row_label:string,period_label:string,period_range:string,quarter:int,quarter_label:string,month_range:string,has_data:bool}
      */
     private function k2Data(string $scope, ?int $period): array
     {
+        $isSemester = $scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period >= 1 && $period <= 2;
+        $isQuarterly = $scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4;
+
         $programs = [];
         foreach (BospRekapStandardMapper::a1Programs() as $index => $label) {
             $programs[$index] = [
@@ -1813,12 +1821,13 @@ final class SpjPeriodicReportPrintService
                 'label' => $label,
                 'jumlah' => 0.0,
                 'tw' => [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0],
+                'semester' => [1 => 0.0, 2 => 0.0],
             ];
         }
 
-        $quarter = ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4)
-            ? $period
-            : 1;
+        // Triwulan terakhir yang sudah masuk periode terpilih: triwulan N
+        // untuk scope triwulan, TW II/TW IV untuk semester I/II.
+        $quarter = $isSemester ? $period * 2 : ($isQuarterly ? $period : 1);
         $hasData = false;
 
         $fundSourceId = $this->context->fundSourceId();
@@ -1854,28 +1863,49 @@ final class SpjPeriodicReportPrintService
                             $tw[$q] = 0.0;
                         }
                     }
-                    $programs[$row]['jumlah'] += array_sum($tw);
+                    $semester = [1 => $tw[1] + $tw[2], 2 => $tw[3] + $tw[4]];
+                    $programs[$row]['jumlah'] += $isSemester ? array_sum($semester) : array_sum($tw);
                     foreach ([1, 2, 3, 4] as $q) {
                         $programs[$row]['tw'][$q] += $tw[$q];
+                    }
+                    foreach ([1, 2] as $s) {
+                        $programs[$row]['semester'][$s] += $semester[$s];
                     }
                 }
             }
         }
 
-        $totals = ['jumlah' => 0.0, 'tw' => [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0]];
+        $totals = ['jumlah' => 0.0, 'tw' => [1 => 0.0, 2 => 0.0, 3 => 0.0, 4 => 0.0], 'semester' => [1 => 0.0, 2 => 0.0]];
         foreach ($programs as $program) {
             $totals['jumlah'] += $program['jumlah'];
             foreach ([1, 2, 3, 4] as $q) {
                 $totals['tw'][$q] += $program['tw'][$q];
             }
+            foreach ([1, 2] as $s) {
+                $totals['semester'][$s] += $program['semester'][$s];
+            }
         }
+
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+        $periodLabel = $isSemester
+            ? $this->k2SemesterLabel($period)
+            : $this->k2QuarterLabel($quarter);
+        $periodRange = $isSemester
+            ? $this->k2MonthRangeFromMonths((($period - 1) * 6) + 1, $period * 6, $year)
+            : $this->k2MonthRange($quarter, $year);
 
         return [
             'programs' => $programs,
             'totals' => $totals,
+            'scope' => $scope,
+            'columns' => $isSemester ? 'semester' : 'quarter',
+            'group_label' => $isSemester ? 'Semester' : 'Triwulan',
+            'period_row_label' => $isSemester ? 'Semester / Bulan' : 'Triwulan / Bulan',
+            'period_label' => $periodLabel,
+            'period_range' => $periodRange,
             'quarter' => $quarter,
-            'quarter_label' => $this->k2QuarterLabel($quarter),
-            'month_range' => $this->k2MonthRange($quarter, (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year)),
+            'quarter_label' => $periodLabel,
+            'month_range' => $periodRange,
             'has_data' => $hasData,
         ];
     }
@@ -1905,15 +1935,21 @@ final class SpjPeriodicReportPrintService
      */
     private function rpdData(string $scope, ?int $period): array
     {
-        $quarter = ($scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4)
-            ? $period
-            : 1;
-        $months = range((($quarter - 1) * 3) + 1, $quarter * 3);
+        // Triwulan yang dicakup periode terpilih: triwulan N untuk scope
+        // triwulan, TW I–II / TW III–IV untuk semester I / II.
+        $quarters = match (true) {
+            $scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4 => [$period],
+            $scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period >= 1 && $period <= 2 => $period === 1 ? [1, 2] : [3, 4],
+            default => [1],
+        };
+        $quarter = $quarters[0];
+        $months = range((($quarters[0] - 1) * 3) + 1, $quarters[count($quarters) - 1] * 3);
         $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
         $fundSourceId = (int) ($this->context->fundSourceId() ?? 0);
 
         $rows = [];
         $hasData = false;
+        $totals = ['jumlah' => 0.0, 'months' => array_fill_keys($months, 0.0)];
 
         if ($fundSourceId > 0) {
             $revisions = $this->budgets->revisions($fundSourceId, $year);
@@ -1960,26 +1996,26 @@ final class SpjPeriodicReportPrintService
                 $periodUnitPrice = 0.0;
                 $hasCoordinatedPeriod = false;
                 $hasPeriodMatch = false;
-                foreach ((array) ($row['periods'] ?? []) as $period) {
-                    if (! is_array($period)) {
+                foreach ((array) ($row['periods'] ?? []) as $periodRow) {
+                    if (! is_array($periodRow)) {
                         continue;
                     }
-                    $periodMonth = (int) ($period['__MONTH_NUMBER'] ?? 0);
-                    $periodQuarter = (int) ($period['__QUARTER_NUMBER'] ?? 0);
+                    $periodMonth = (int) ($periodRow['__MONTH_NUMBER'] ?? 0);
+                    $periodQuarter = (int) ($periodRow['__QUARTER_NUMBER'] ?? 0);
                     if ($periodMonth > 0 || $periodQuarter > 0) {
                         $hasCoordinatedPeriod = true;
                     }
-                    if (! in_array($periodMonth, $months, true) && $periodQuarter !== $quarter) {
+                    if (! in_array($periodMonth, $months, true) && ! in_array($periodQuarter, $quarters, true)) {
                         continue;
                     }
                     $hasPeriodMatch = true;
-                    $periodAmount += (float) (ArkasMirrorResolver::field($period, ['JUMLAH', 'AMOUNT', 'JUMLAH_TOTAL']) ?? 0);
-                    $periodVolume += (float) (ArkasMirrorResolver::field($period, ['VOLUME', 'VOLUME_TOTAL']) ?? 0);
+                    $periodAmount += (float) (ArkasMirrorResolver::field($periodRow, ['JUMLAH', 'AMOUNT', 'JUMLAH_TOTAL']) ?? 0);
+                    $periodVolume += (float) (ArkasMirrorResolver::field($periodRow, ['VOLUME', 'VOLUME_TOTAL']) ?? 0);
                     if ($periodUnit === '') {
-                        $periodUnit = (string) (ArkasMirrorResolver::field($period, ['SATUAN', 'UNIT']) ?? '');
+                        $periodUnit = (string) (ArkasMirrorResolver::field($periodRow, ['SATUAN', 'UNIT']) ?? '');
                     }
                     if ($periodUnitPrice <= 0.0) {
-                        $periodUnitPrice = (float) (ArkasMirrorResolver::field($period, ['HARGA_SATUAN']) ?? 0);
+                        $periodUnitPrice = (float) (ArkasMirrorResolver::field($periodRow, ['HARGA_SATUAN']) ?? 0);
                     }
                 }
                 $fallbackVolume = (float) (ArkasMirrorResolver::field($payload, ['VOLUME_TOTAL', 'VOLUME']) ?? 0);
@@ -2019,7 +2055,6 @@ final class SpjPeriodicReportPrintService
             }
 
             $programLabels = BospRekapStandardMapper::k7Programs();
-            $totals = ['jumlah' => 0.0, 'months' => array_fill_keys($months, 0.0)];
             $headerRow = fn (string $level, string $code, string $label, float $jumlah, array $rowMonths): array => [
                 'level' => $level,
                 'no' => 0,
@@ -2098,16 +2133,53 @@ final class SpjPeriodicReportPrintService
         }
 
         $monthNames = RkasReportService::MONTH_NAMES;
+        $isSemester = $scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period >= 1 && $period <= 2;
+        $lastMonth = $months[count($months) - 1];
+
+        // Semester memakai kolom triwulan (I-II / III-IV), bukan kolom bulan.
+        $quarterNames = [];
+        if ($isSemester) {
+            foreach ($quarters as $coveredQuarter) {
+                $quarterNames[$coveredQuarter] = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'][$coveredQuarter];
+            }
+            foreach ($rows as $index => $row) {
+                $rows[$index]['quarters'] = $this->rpdQuarterSums($row['months'], $quarters);
+            }
+            $totals['quarters'] = $this->rpdQuarterSums($totals['months'], $quarters);
+        }
 
         return [
             'rows' => $rows,
             'totals' => $totals,
             'quarter' => $quarter,
-            'quarter_label' => $this->k2QuarterLabel($quarter),
+            'quarter_label' => $isSemester ? $this->k2SemesterLabel($period) : $this->k2QuarterLabel($quarter),
+            'period_row_label' => $isSemester ? 'SEMESTER' : 'TRIWULAN',
+            'columns' => $isSemester ? 'quarter' : 'month',
+            'quarter_names' => $quarterNames,
             'month_names' => array_combine($months, array_map(fn (int $m): string => $monthNames[$m - 1], $months)),
-            'month_range' => 'BULAN '.mb_strtoupper($monthNames[$months[0] - 1]).' S.D '.mb_strtoupper($monthNames[$months[2] - 1]).' '.$year,
+            'month_range' => 'BULAN '.mb_strtoupper($monthNames[$months[0] - 1]).' S.D '.mb_strtoupper($monthNames[$lastMonth - 1]).' '.$year,
             'has_data' => $hasData,
         ];
+    }
+
+    /**
+     * Jumlah realisasi per triwulan dari peta bulan: [triwulan => jumlah].
+     *
+     * @param  array<int,float>  $months
+     * @param  list<int>  $quarters
+     * @return array<int,float>
+     */
+    private function rpdQuarterSums(array $months, array $quarters): array
+    {
+        $sums = [];
+        foreach ($quarters as $quarter) {
+            $sums[$quarter] = 0.0;
+            foreach (range((($quarter - 1) * 3) + 1, $quarter * 3) as $month) {
+                $sums[$quarter] += (float) ($months[$month] ?? 0);
+            }
+        }
+
+        return $sums;
     }
 
     /**
@@ -2186,27 +2258,42 @@ final class SpjPeriodicReportPrintService
     }
 
     /**
+     * Label semester gaya formulir resmi: "I ( Satu )".
+     */
+    private function k2SemesterLabel(int $semester): string
+    {
+        $romans = [1 => 'I', 2 => 'II'];
+        $words = [1 => 'Satu', 2 => 'Dua'];
+
+        return ($romans[$semester] ?? '-').' ( '.($words[$semester] ?? '-').' )';
+    }
+
+    /**
      * Rentang bulan triwulan gaya formulir resmi:
      * "01 Januari  s.d 31 Maret 2026".
      */
     private function k2MonthRange(int $quarter, int $year): string
     {
-        $months = RkasReportService::MONTH_NAMES;
-        $first = (($quarter - 1) * 3) + 1;
-        $last = $quarter * 3;
-        $lastDay = Carbon::create($year, $last, 1)?->endOfMonth()->day ?? 30;
-
-        return sprintf('%02d %s  s.d %02d %s %d', $first, $months[$first - 1], $lastDay, $months[$last - 1], $year);
+        return $this->k2MonthRangeFromMonths((($quarter - 1) * 3) + 1, $quarter * 3, $year);
     }
 
     /**
-     * Deteksi Aset Tetap Lainnya BOS untuk A-1. Aturan terverifikasi dari
-     * contoh resmi TW I 2026: belanja buku perpustakaan (kode 05.02.*)
-     * masuk kolom Aset Tetap Lainnya BOS.
+     * Rentang bulan gaya formulir resmi dari bulan awal sampai bulan akhir,
+     * dipakai triwulan (3 bulan) dan semester (6 bulan):
+     * "01 Januari  s.d 31 Maret 2026".
      */
+    private function k2MonthRangeFromMonths(int $first, int $last, int $year): string
+    {
+        $months = RkasReportService::MONTH_NAMES;
+        $lastDay = Carbon::create($year, $last, 1)?->endOfMonth()->day ?? 30;
+
+        return sprintf('01 %s  s.d %02d %s %d', $months[$first - 1], $lastDay, $months[$last - 1], $year);
+    }
+
     /**
-     * Kolom Belanja Modal A-1 berdasarkan kode rekening: 5.2.02.* =
-     * Peralatan dan Mesin, 5.2 lainnya = Aset Tetap Lainnya BOS.
+     * Kolom Belanja Modal A-1 berdasarkan kode rekening: `5.2.02.*` =
+     * Peralatan dan Mesin, `5.2` lainnya (mis. `5.2.05.*`) = Aset Tetap
+     * Lainnya BOS. Kode selain `5.2` tidak mengisi kolom modal.
      */
     private function a1ModalColumn(string $accountCode): ?string
     {
@@ -2217,6 +2304,12 @@ final class SpjPeriodicReportPrintService
         return str_starts_with($accountCode, '5.2.02') ? 'modal_mesin' : 'modal_aset';
     }
 
+    /**
+     * Deteksi Aset Tetap Lainnya BOS untuk A-1. Aturan terverifikasi dari
+     * contoh resmi TW I 2026: belanja buku perpustakaan (kode 05.02.*)
+     * masuk kolom Aset Tetap Lainnya BOS. Hanya dipakai bila kode rekening
+     * transaksi kosong.
+     */
     private function a1IsAsetTetapLainnya(?string $activityCode, string $description): bool
     {
         $code = trim(trim((string) $activityCode), '.');
@@ -2817,7 +2910,7 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k2', 'rpd'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k2', 'rpd', 'rekap_bosp'], true)
             ? 'landscape'
             : 'portrait';
     }

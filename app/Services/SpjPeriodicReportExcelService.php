@@ -242,16 +242,23 @@ final class SpjPeriodicReportExcelService
 
     /**
      * Lembar Excel Format BOS K-2: No | Uraian | Jumlah (dalam Rp) |
-     * Triwulan (I–IV), baris "I Program Sekolah" -> 1.1–1.8 -> JUMLAH.
-     * Angka mengikuti periode terpilih (kolom TW setelahnya nol).
+     * kolom periode (Triwulan I–IV atau Semester I–II), baris
+     * "I Program Sekolah" -> 1.1–1.8 -> JUMLAH. Angka mengikuti periode
+     * terpilih (kolom setelahnya nol, kolom Jumlah kumulatif).
      */
     private function writeK2(object $sheet, array $payload): void
     {
         $data = $payload['k2'];
+        $semester = ($data['columns'] ?? 'quarter') === 'semester';
 
-        $header = ['No', 'Uraian', 'Jumlah (dalam Rp)', 'TW I', 'TW II', 'TW III', 'TW IV'];
+        // Indeks nilai per kolom periode sesuai payload (tw 1..4 / semester 1..2).
+        $columnValues = $semester ? [1, 2] : [1, 2, 3, 4];
+        $columnLabels = $semester ? ['Semester I', 'Semester II'] : ['TW I', 'TW II', 'TW III', 'TW IV'];
+        $groupKey = $semester ? 'semester' : 'tw';
+
+        $header = ['No', 'Uraian', 'Jumlah (dalam Rp)', ...$columnLabels];
         $sheet->fromArray([$header], null, 'A1');
-        $lastCol = 'G';
+        $lastCol = $this->columnLetter(count($header));
 
         $rowNumber = 2;
         $sheet->fromArray([['I', 'Program Sekolah']], null, 'A'.$rowNumber++);
@@ -260,20 +267,14 @@ final class SpjPeriodicReportExcelService
                 $program['no'],
                 $program['label'],
                 (float) $program['jumlah'],
-                (float) $program['tw'][1],
-                (float) $program['tw'][2],
-                (float) $program['tw'][3],
-                (float) $program['tw'][4],
+                ...array_map(fn (int $index): float => (float) $program[$groupKey][$index], $columnValues),
             ]], null, 'A'.$rowNumber++);
         }
         $sheet->fromArray([[
             '',
             'JUMLAH',
             (float) $data['totals']['jumlah'],
-            (float) $data['totals']['tw'][1],
-            (float) $data['totals']['tw'][2],
-            (float) $data['totals']['tw'][3],
-            (float) $data['totals']['tw'][4],
+            ...array_map(fn (int $index): float => (float) $data['totals'][$groupKey][$index], $columnValues),
         ]], null, 'A'.$rowNumber);
 
         $this->styleHeader($sheet, 'A1:'.$lastCol.'1');
@@ -285,16 +286,26 @@ final class SpjPeriodicReportExcelService
     /**
      * Lembar Excel RPD BOS resmi: judul + identitas, header 3 baris
      * (No | Kode Program | Uraian | Rincian Perhitungan -> Vol | Satuan |
-     * Tarif Harga | Jumlah | Bulan -> m1 | m2 | m3) + baris nomor 1..10,
-     * lalu hierarki baris dari payload dan footer Sub Total I/II +
-     * JUMLAH TOTAL.
+     * Tarif Harga | Jumlah | kolom periode) + baris nomor 1..N, lalu
+     * hierarki baris dari payload dan footer Sub Total I/II + JUMLAH TOTAL.
+     * Kolom periode mengikuti payload: bulan (triwulan scope) atau triwulan
+     * (semester scope).
      */
     private function writeRpd(object $sheet, array $payload): void
     {
         $data = $payload['rpd'];
         $school = $payload['school'];
-        $monthNames = array_values($data['month_names']);
-        $monthKeys = array_keys($data['month_names']);
+        $quarterMode = ($data['columns'] ?? 'month') === 'quarter';
+        $columnKey = $quarterMode ? 'quarters' : 'months';
+        $columnKeys = $quarterMode ? array_keys($data['quarter_names']) : array_keys($data['month_names']);
+        $columnLabels = $quarterMode
+            ? array_values($data['quarter_names'])
+            : array_values($data['month_names']);
+        $groupLabel = $quarterMode ? 'Triwulan' : 'Bulan';
+        $columnCount = count($columnKeys);
+        $baseColumnCount = 7;
+        $lastColumnIndex = $baseColumnCount + $columnCount;
+        $lastCol = $this->columnLetter($lastColumnIndex);
 
         $rowNumber = 1;
         $sheet->setCellValue('A'.$rowNumber, 'RINCIAN PENGGUNAAN DANA BOS (RPD BOS)');
@@ -303,14 +314,16 @@ final class SpjPeriodicReportExcelService
         $sheet->setCellValue('A'.(++$rowNumber), 'Desa / Kec: '.$this->schoolArea($school));
         $sheet->setCellValue('A'.(++$rowNumber), 'Kab / Kota: '.($school->regency ?: '-'));
         $sheet->setCellValue('A'.(++$rowNumber), 'Provinsi: '.($school->province ?: '-'));
-        $sheet->setCellValue('A'.(++$rowNumber), 'TRIWULAN: '.$data['quarter_label']);
+        $sheet->setCellValue('A'.(++$rowNumber), ($data['period_row_label'] ?? 'TRIWULAN').': '.$data['quarter_label']);
 
         $headerRow = ++$rowNumber;
         // Baris 1 header: gabungan kolom bertingkat ditulis per sel.
-        $sheet->fromArray([['No', 'Kode Program', 'Uraian', 'Rincian Perhitungan', '', '', 'Jumlah', 'Bulan', '', '']], null, 'A'.$headerRow);
-        $sheet->fromArray([['', '', '', 'Vol', 'Satuan', 'Tarif Harga', '', $monthNames[0], $monthNames[1], $monthNames[2]]], null, 'A'.($headerRow + 1));
-        $sheet->fromArray([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], null, 'A'.($headerRow + 2));
-        $lastCol = 'J';
+        $sheet->fromArray([[
+            'No', 'Kode Program', 'Uraian', 'Rincian Perhitungan', '', '', 'Jumlah',
+            $groupLabel, ...array_fill(0, max(0, $columnCount - 1), ''),
+        ]], null, 'A'.$headerRow);
+        $sheet->fromArray([['', '', '', 'Vol', 'Satuan', 'Tarif Harga', '', ...$columnLabels]], null, 'A'.($headerRow + 1));
+        $sheet->fromArray([range(1, $lastColumnIndex)], null, 'A'.($headerRow + 2));
         $rowNumber = $headerRow + 3;
 
         $sheet->fromArray([['I', '', 'PROGRAM SEKOLAH']], null, 'A'.$rowNumber++);
@@ -323,23 +336,25 @@ final class SpjPeriodicReportExcelService
                 $row['level'] === 'item' ? $row['unit'] : null,
                 $row['level'] === 'item' ? (float) $row['unit_price'] : null,
                 (float) $row['jumlah'],
-                (float) $row['months'][$monthKeys[0]],
-                (float) $row['months'][$monthKeys[1]],
-                (float) $row['months'][$monthKeys[2]],
+                ...array_map(fn (int $key): float => (float) $row[$columnKey][$key], $columnKeys),
             ]], null, 'A'.$rowNumber++);
         }
-        $sheet->fromArray([['', '', 'Sub Total Penggunaan Dana I', '', '', '', (float) $data['totals']['jumlah'],
-            (float) $data['totals']['months'][$monthKeys[0]], (float) $data['totals']['months'][$monthKeys[1]], (float) $data['totals']['months'][$monthKeys[2]]]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([[
+            '', '', 'Sub Total Penggunaan Dana I', '', '', '', (float) $data['totals']['jumlah'],
+            ...array_map(fn (int $key): float => (float) $data['totals'][$columnKey][$key], $columnKeys),
+        ]], null, 'A'.$rowNumber++);
         $sheet->fromArray([['II', '', 'Penggunaan Dana Lainnya']], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['', '', 'Belanja….', '', '', '', 0, 0, 0, 0]], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['', '', 'Sub Total Penggunaan Dana II', '', '', '', 0, 0, 0, 0]], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['', '', 'JUMLAH TOTAL (I + II)', '', '', '', (float) $data['totals']['jumlah'],
-            (float) $data['totals']['months'][$monthKeys[0]], (float) $data['totals']['months'][$monthKeys[1]], (float) $data['totals']['months'][$monthKeys[2]]]], null, 'A'.$rowNumber);
+        $sheet->fromArray([['', '', 'Belanja….', '', '', '', 0, ...array_fill(0, $columnCount, 0)]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([['', '', 'Sub Total Penggunaan Dana II', '', '', '', 0, ...array_fill(0, $columnCount, 0)]], null, 'A'.$rowNumber++);
+        $sheet->fromArray([[
+            '', '', 'JUMLAH TOTAL (I + II)', '', '', '', (float) $data['totals']['jumlah'],
+            ...array_map(fn (int $key): float => (float) $data['totals'][$columnKey][$key], $columnKeys),
+        ]], null, 'A'.$rowNumber);
 
         $this->styleHeader($sheet, 'A'.$headerRow.':'.$lastCol.($headerRow + 2));
         $this->formatMoneyRange($sheet, 'D'.$headerRow.':'.$lastCol.$rowNumber);
         $sheet->freezePane('A'.($headerRow + 3));
-        $this->autoSize($sheet, 10);
+        $this->autoSize($sheet, $lastColumnIndex);
     }
 
     /**

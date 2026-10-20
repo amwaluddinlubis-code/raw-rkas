@@ -198,6 +198,104 @@ class FormatK2ReportTest extends TestCase
         $this->assertSame('II ( Dua )', $k2['quarter_label']);
     }
 
+    public function test_k2_semester_shows_two_semester_columns(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('semester', 'format_k2', 1);
+
+        $this->assertSame('k2', $payload['presentation']);
+
+        $k2 = $payload['k2'];
+        $this->assertSame('semester', $k2['columns']);
+        $this->assertSame('Semester', $k2['group_label']);
+        $this->assertSame('Semester / Bulan', $k2['period_row_label']);
+        $this->assertSame('I ( Satu )', $k2['period_label']);
+        $this->assertSame('01 Januari  s.d 30 Juni 2026', $k2['period_range']);
+        $this->assertCount(8, $k2['programs']);
+
+        // Program 5 (TW I 3.000.000 + TW II 2.898.000) masuk Semester I.
+        $this->assertSame(3000000.0, $k2['programs'][5]['tw'][1]);
+        $this->assertSame(2898000.0, $k2['programs'][5]['tw'][2]);
+        $this->assertSame(5898000.0, $k2['programs'][5]['semester'][1]);
+        $this->assertSame(0.0, $k2['programs'][5]['semester'][2]);
+        $this->assertSame(5898000.0, $k2['programs'][5]['jumlah']);
+
+        // Program 3 hanya TW I: tetap tampil di Semester I.
+        $this->assertSame(2610000.0, $k2['programs'][3]['semester'][1]);
+        $this->assertSame(2610000.0, $k2['programs'][3]['jumlah']);
+
+        // Tanpa rincian periode: total tahunan jatuh ke periode berjalan (TW II).
+        $this->assertSame(10679000.0, $k2['programs'][7]['semester'][1]);
+        $this->assertSame(0.0, $k2['programs'][7]['semester'][2]);
+
+        $expected = 2610000.0 + 5898000.0 + 10679000.0;
+        $this->assertSame($expected, $k2['totals']['jumlah']);
+        $this->assertSame(19187000.0, $k2['totals']['semester'][1]);
+        $this->assertSame(0.0, $k2['totals']['semester'][2]);
+        $this->assertSame($k2['totals']['jumlah'], array_sum($k2['totals']['semester']));
+    }
+
+    public function test_k2_semester_ii_includes_first_and_second_semester(): void
+    {
+        // Program 4 dengan anggaran TW III (September) untuk mengisi Semester II.
+        $this->seedMirrorRow('arkas_mirror_rapbs', 'R-P4', [
+            'ID_RAPBS' => 'R-P4', 'ID_ANGGARAN' => 'ANG-1', 'KODE_KEGIATAN' => '04.01.01.',
+            'KODE_REKENING' => '5.1.02.01.01.0024', 'URAIAN' => 'ATK TW3', 'JUMLAH' => 2000000,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'P-P4-3', [
+            'ID_RAPBS_PERIODE' => 'P-P4-3', 'ID_RAPBS' => 'R-P4', 'ID_PERIODE' => '89', 'JUMLAH' => 2000000,
+        ]);
+
+        $k2 = app(SpjPeriodicReportPrintService::class)->build('semester', 'format_k2', 2)['k2'];
+
+        $this->assertSame('II ( Dua )', $k2['period_label']);
+        $this->assertSame('01 Juli  s.d 31 Desember 2026', $k2['period_range']);
+
+        // Semester II memuat Semester I (kumulatif) + Semester II.
+        $this->assertSame(2610000.0, $k2['programs'][3]['semester'][1]);
+        $this->assertSame(0.0, $k2['programs'][3]['semester'][2]);
+        $this->assertSame(2000000.0, $k2['programs'][4]['semester'][2]);
+        $this->assertSame(5898000.0, $k2['programs'][5]['semester'][1]);
+        $this->assertSame(0.0, $k2['programs'][5]['semester'][2]);
+
+        $this->assertSame(8508000.0, $k2['totals']['semester'][1]);
+        $this->assertSame(12679000.0, $k2['totals']['semester'][2]);
+        $this->assertSame(21187000.0, $k2['totals']['jumlah']);
+        $this->assertSame($k2['totals']['jumlah'], array_sum($k2['totals']['semester']));
+    }
+
+    public function test_k2_semester_print_route_renders_semester_columns(): void
+    {
+        $response = $this->get('/laporan-periode/semester/format_k2/cetak?periode_laporan=1');
+
+        $response->assertOk();
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('Format BOS K-2', $html);
+        $this->assertStringContainsString('Semester / Bulan', $html);
+        $this->assertStringContainsString('01 Januari  s.d 30 Juni 2026', $html);
+        $this->assertStringContainsString('<th colspan="2">Semester</th>', $html);
+        $this->assertStringNotContainsString('Triwulan / Bulan', $html);
+    }
+
+    public function test_k2_semester_excel_export_uses_semester_columns(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('semester', 'format_k2', 1);
+        $path = app(SpjPeriodicReportExcelService::class)->export($payload);
+
+        $book = IOFactory::load($path);
+        $sheet = $book->getSheetByName('Laporan');
+        $this->assertNotNull($sheet);
+        $this->assertSame('Semester I', $sheet->getCell('D1')->getValue());
+        $this->assertSame('Semester II', $sheet->getCell('E1')->getValue());
+        $this->assertNull($sheet->getCell('F1')->getValue());
+        $this->assertEquals('1.3', $sheet->getCell('A5')->getValue());
+        $this->assertEquals(2610000, $sheet->getCell('C5')->getValue());
+        $this->assertEquals(2610000, $sheet->getCell('D5')->getValue());
+        $this->assertEquals(0, $sheet->getCell('E5')->getValue());
+        $this->assertSame('JUMLAH', $sheet->getCell('B11')->getValue());
+        $this->assertEquals(2610000 + 5898000 + 10679000, $sheet->getCell('C11')->getValue());
+        $book->disconnectWorksheets();
+    }
+
     public function test_k2_print_route_renders_official_layout(): void
     {
         $response = $this->get('/laporan-periode/triwulan/format_k2/cetak?periode_laporan=1');

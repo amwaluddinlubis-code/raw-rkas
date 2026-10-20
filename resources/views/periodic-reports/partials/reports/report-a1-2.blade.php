@@ -1,6 +1,6 @@
     @if ($isA1)
         @php
-            $a1Money = fn($value) => 'Rp ' . ($value > 0 ? $rupiah($value) : '-');
+            $a1Money = fn($value) => $value > 0 ? $rupiah($value) : '-';
             $a1Widths = ['5%', '30%', '11%', '11%', '11%', '11%', '10%', '11%'];
         @endphp
         <table class="report-table">

@@ -5,6 +5,39 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Scope semester Laporan Periode: K-2 dua kolom semester + RPD kolom triwulan (2026-10-21)
+
+Status: **SOURCE + DOCUMENTATION SYNC / IMPLEMENTED / VISUAL RUNTIME RVR**.
+
+Atas permintaan pengguna, `format_k2` dan `rpd_bos` ditambahkan ke scope
+semester pada `SpjPeriodicReportRegistry` (label `rekapitulasi_pengeluaran_dana_bos`
+menjadi "Rekapitulasi Pengeluaran Dana BOS (K7A)" dan daftar triwulan diurutkan
+ulang). Registry sekarang berisi **37 slot** (bulanan 10 + triwulan 10 +
+semester 10 + tahunan 7) dari **18 report key** — angka 35/18 pada entri di
+bawah (2026-10-20) menjadi historis, bukan status sekarang.
+
+Semantik yang disepakati pengguna:
+- Format BOS K-2 scope semester merender **dua kolom `Semester I` dan
+  `Semester II`**; laporan Semester I hanya memuat Semester I, laporan
+  Semester II kumulatif (Semester I + Semester II);
+- RPD BOS scope semester memakai **kolom triwulan** (Triwulan I & II untuk
+  Semester I, Triwulan III & IV untuk Semester II), bukan kolom bulan.
+
+Perubahan dokumen pada batch ini: `PERIODIC_REPORT_MODULE.md` (bagian K-2 dan
+RPD ditambah aturan scope semester + angka slot), `SPJ_PERIODIC_REPORTING.md`
+(daftar paket per scope + catatan kolom semester), `docs/README.md`,
+`PROGRESS_OFFICIAL_REPORTS.md`, dan `CURRENT_PROGRESS.md`.
+
+Verifikasi: `FormatK2ReportTest` 9 passed / 105 assertions; `RpdBosReportTest`
+14 passed / 136 assertions; `SpjPeriodicReportRegistryTest` (Feature + Unit),
+`SpjPeriodicReportPrintableTest`, dan `SpjPeriodicReportModuleUiTest` 13 passed
+/ 103 assertions. Regression gabungan 11 kelas: **80 passed / 776 assertions**
+(dijalankan ulang setelah perbaikan kolom RPD semester).
+Aturan kolom Belanja Modal A-1, teks jabatan penanda tangan A-1
+("Bendahara / Pemegang Kas"), dan format nominal A-1 tanpa prefix `Rp `
+dikonfirmasi pengguna, sehingga assertion `BosA1ReportTest` diselaraskan.
+Tampilan browser/PDF tetap **RVR**.
+
 ## Aturan protected file dihapus (2026-10-20)
 
 Status: **DOCUMENTATION SYNC / NO SOURCE CHANGE**.

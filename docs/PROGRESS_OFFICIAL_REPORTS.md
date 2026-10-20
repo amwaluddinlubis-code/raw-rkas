@@ -5,6 +5,61 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Format BOS K-2 dan RPD BOS pada scope semester (2026-10-21)
+
+Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
+
+Atas permintaan pengguna, scope semester kini memuat `format_k2` dan
+`rpd_bos` (registry bertambah dari 35 menjadi **37 slot**, tetap **18 report
+key**; label K7A menjadi "Rekapitulasi Pengeluaran Dana BOS (K7A)").
+
+- Format BOS K-2 scope semester merender **dua kolom `Semester I` dan
+  `Semester II`** (Semester I hanya memuat Semester I; Semester II kumulatif
+  Semester I + II, kolom "Jumlah" = jumlah kolom yang tampil). Rentang
+  tanggal identitas memakai `period_range`, mis. Semester II = "01 Juli s.d
+  31 Desember <tahun>".
+- RPD BOS scope semester memakai **kolom triwulan**: Triwulan I & II untuk
+  Semester I dan Triwulan III & IV untuk Semester II. Nilai/Vol/Satuan/Tarif
+  tetap mengikuti alokasi periode terpilih.
+- Perbaikan 2026-10-21: render dengan data mirror nyata (SDN 316 Ranto
+  Panjang, TA 2026) menunjukkan RPD semester tetap memakai kolom bulan.
+  Penyebabnya perulangan pecahan periode di `rpdData` memakai variabel
+  `$period` sehingga menimpa parameter scope/period setelah baris berkoordinat
+  periode diproses; variabel kini `$periodRow`. `$totals` juga diinisialisasi
+  sebelum cabang sumber dana agar laporan tetap terbentuk (tanpa galat
+  `rpdQuarterSums()`/`$totals`) saat sumber dana belum dipilih. Bukti render
+  nyata: header RPD semester II = `Triwulan || III || IV`, semester I =
+  `Triwulan || I || II`; triwulan (TW III) tetap `Bulan || Juli…September`.
+- Excel (`writeK2`, `writeRpd`) dan kedua partial cetak
+  (`report-k2-1/2.blade.php`, `report-rpd-1/2.blade.php`) kini
+  column-agnostic: label kolom, colspan, dan lebar kolom mengikuti payload
+  (`columns`, `group_label`, `period_row_label`).
+
+Verifikasi:
+
+```text
+tests/Feature/FormatK2ReportTest.php   : 9 passed / 105 assertions
+tests/Feature/RpdBosReportTest.php     : 14 passed / 136 assertions
+SpjPeriodicReportRegistry (Feature + Unit) + Printable + ModuleUi
+  : 13 passed / 103 assertions
+Regresi 11 kelas laporan periode       : 80 passed / 776 assertions
+```
+
+Aturan kolom Belanja Modal A-1 dikonfirmasi pengguna: kode rekening `5.2` =
+BELANJA MODAL, `5.2.02` = BELANJA MODAL PERALATAN DAN MESIN, `5.2.05` (dan
+`5.2` lainnya) = BELANJA MODAL ASET TETAP LAINNYA — sesuai implementasi
+`a1ModalColumn`. Teks jabatan penanda tangan A-1 juga dikonfirmasi
+"Bendahara / Pemegang Kas", dan sel nominal A-1 dikonfirmasi tanpa prefix
+`Rp ` (mis. `1.000.000`, sel nol `-`), sehingga assertion `BosA1ReportTest`
+diperbaiki ke bentuk terbaru.
+
+Kertas `rekapitulasi_pengeluaran_dana_bos` (K7A): atas permintaan pengguna
+2026-10-21, presentasi `rekap_bosp` kini memakai **orientasi landscape**
+(A4 landscape) agar grid 7 SNP × 12 sub program tidak terpotong; kontrak
+dikunci `RekapBudgetRealizationTest` (payload `orientation`/`paper` +
+`size: A4 landscape;` pada rute cetak). Label K7A juga diseragamkan menjadi
+"Rekapitulasi Pengeluaran Dana BOS (K7A)" di keempat scope.
+
 ## BOS A-1: kolom Belanja Modal diisi dari kode rekening (2026-10-20)
 
 Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
@@ -27,7 +82,7 @@ Verifikasi:
 
 ```text
 php artisan test --compact tests/Feature/BosA1ReportTest.php
-  : 5 passed / 50 assertions (termasuk test baru
+  : 5 passed / 52 assertions (termasuk test baru
     test_bos_a1_splits_belanja_modal_by_account_code: 5.2.02 -> mesin,
     5.2.05 -> aset tetap lainnya, Jumlah Modal 3.500.000, grand 6.500.000)
 Regresi 9 kelas laporan periode
@@ -159,7 +214,9 @@ Commit `c893e3f` menghapus `bos_k7a`, `spb`, `sp2b`, `lampiran_sp2b`, dan
 `sp2t` dari registry/presenter, lalu commit `130c47d` menghapus `bos_k8`
 dan `form_1c`. Dokumentasi belum mengikuti perubahan tersebut. Registry
 aktual sekarang berisi **35 slot** (bulanan 10, triwulan 10, semester 8,
-tahunan 7) dari **18 report key**.
+tahunan 7) dari **18 report key** — angka ini adalah keadaan 2026-10-20 dan
+sudah menjadi **historis** sejak scope semester memuat K-2, RPD, dan K7A
+pada 2026-10-21 (**37 slot** / 18 report key; lihat entri terbaru di atas).
 
 Dokumen yang diselaraskan: `SPJ_PERIODIC_REPORTING.md` (daftar paket per
 scope + key, catatan key yang dihapus, peta presentasi),
