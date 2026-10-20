@@ -74,7 +74,7 @@ final class BospRekapStandardMapper
             7 => 'Pembiayaan Langganan Daya dan Jasa',
             8 => 'Pemeliharaan Sarana dan Prasarana Sekolah',
             9 => 'Penyediaan Alat Multi Media Pembelajaran',
-            10 => 'Penyelenggaraan Kegiatan Peningkatan Komptetensi Keahlian',
+            10 => 'Penyelenggaraan Kegiatan Peningkatan Kompetensi Keahlian',
             11 => '',
             12 => 'Pembayaran Honor',
         ];

@@ -25,4 +25,24 @@ return [
         'key',
         'credential',
     ],
+    /*
+    | Lebar kolom (persen, array) untuk laporan cetak Laporan Periode.
+    | Kustomisasi cukup dari kunci ini tanpa mengubah Blade; kunci yang tidak
+    | diisi memakai nilai default pada partial masing-masing.
+    */
+    'periodic_report_column_widths' => [
+        'rekap_bosp' => [
+            'no' => '4%',
+            'standar_nasional' => '16%',
+            'sub_program' => '5.5%',
+            'jumlah' => '14%',
+            'identity' => ['25%', '75%'],
+            'meta' => ['60%', '40%'],
+        ],
+        'bpk_bos' => [
+            'meta' => ['30%', '70%'],
+            'table' => ['6%', '40%', '12%', '14%', '14%', '14%'],
+            'signature' => ['50%', '50%'],
+        ],
+    ],
 ];

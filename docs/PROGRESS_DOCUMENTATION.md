@@ -38,6 +38,31 @@ Aturan kolom Belanja Modal A-1, teks jabatan penanda tangan A-1
 dikonfirmasi pengguna, sehingga assertion `BosA1ReportTest` diselaraskan.
 Tampilan browser/PDF tetap **RVR**.
 
+## Partial laporan K7A (rekap_bosp) & BPK + lebar kolom array dapat dikustom (2026-10-21)
+
+Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
+
+Blok laporan besar dipisahkan dari `document.blade.php` menjadi partial
+khusus: `reports/report-rekap-bosp-1.blade.php` (REKAPITULASI REALISASI
+PENGGUNAAN DANA BOSP) dan `reports/report-bpk-1.blade.php` (Laporan BPK
+Format BOS, menggantikan `partials/bpk-dinas.blade.php` yang dihapus).
+Lebar kolom kedua laporan kini array yang dapat dikustom dari
+`config('spj.periodic_report_column_widths.*')` (kunci `rekap_bosp`:
+`no`/`standar_nasional`/`sub_program`/`jumlah`/`identity`/`meta`;
+kunci `bpk_bos`: `meta`/`table`/`signature`) dengan fallback default di
+partial. Laporan K7A juga memakai orientasi A4 landscape, dan label K7A
+diseragamkan menjadi "Rekapitulasi Pengeluaran Dana BOS (K7A)".
+
+Verifikasi: `RekapBudgetRealizationTest` 6 passed / 64 assertions;
+`BpkDinasFormatTest` 3 passed / 33 assertions; regression 11 kelas laporan
+periode (komposisi `PERIODIC_REPORT_MODULE.md`) 80 passed / 776 assertions,
+dan set perpanjangan 11 kelas yang memuat Rekap/BPK 68 passed / 666
+assertions; render data mirror nyata (SDN 316 Ranto
+Panjang, TA 2026, sumber dana 1) menunjukkan K7A = A4 landscape dengan
+colgroup dari config dan BPK = folio landscape dengan blok tanda tangan.
+Pint passed; `view:clear` + `view:cache` sukses. Tampilan browser/PDF tetap
+**RVR**.
+
 ## Aturan protected file dihapus (2026-10-20)
 
 Status: **DOCUMENTATION SYNC / NO SOURCE CHANGE**.

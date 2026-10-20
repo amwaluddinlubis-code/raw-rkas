@@ -193,11 +193,39 @@ class RekapBudgetRealizationTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('REKAPITULASI REALISASI PENGGUNAAN DANA BOSP', false);
-        $response->assertSee('SUB PROGRAM', false);
+        $response->assertSee('Sub Program', false);
         $response->assertSee('Standar Nasional', false);
         $response->assertSee('Saldo periode sebelumnya', false);
         $response->assertSee('Bendahara /', false);
         $this->assertStringContainsString('A4 landscape', (string) $response->getContent());
+    }
+
+    public function test_rekap_column_widths_use_configurable_array(): void
+    {
+        $default = (string) $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4')->getContent();
+
+        $this->assertStringContainsString('<col style="width: 5.5%">', $default);
+        $this->assertStringContainsString('<col style="width: 16%">', $default);
+        $this->assertSame(12, substr_count($default, '<col style="width: 5.5%">'));
+
+        config()->set('spj.periodic_report_column_widths.rekap_bosp', [
+            'no' => '3%',
+            'standar_nasional' => '18%',
+            'sub_program' => '5%',
+            'jumlah' => '13%',
+            'meta' => ['55%', '45%'],
+        ]);
+
+        $custom = (string) $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4')->getContent();
+
+        $this->assertStringContainsString('<col style="width: 3%">', $custom);
+        $this->assertStringContainsString('<col style="width: 18%">', $custom);
+        $this->assertStringContainsString('<col style="width: 13%">', $custom);
+        $this->assertSame(12, substr_count($custom, '<col style="width: 5%">'));
+        $this->assertStringContainsString('<col style="width: 55%">', $custom);
+        // Kunci `identity` tidak dikirim, sehingga default partial dipakai.
+        $this->assertStringContainsString('<col style="width: 25%">', $custom);
+        $this->assertStringNotContainsString('<col style="width: 5.5%">', $custom);
     }
 
     public function test_bpk_report_aggregates_cash_mirror_into_dinas_sections(): void

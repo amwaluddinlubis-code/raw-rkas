@@ -126,4 +126,25 @@ class BpkDinasFormatTest extends TestCase
         // Partial BPK membawa bloknya sendiri; blok generik tidak boleh ganda.
         $this->assertSame(1, substr_count((string) $response->getContent(), '<table class="signature-table'));
     }
+
+    public function test_bpk_column_widths_use_configurable_array(): void
+    {
+        $default = (string) $this->get('/laporan-periode/triwulan/bpk_bos/cetak?periode_laporan=1')->getContent();
+
+        $this->assertStringContainsString('<col style="width: 6%">', $default);
+        $this->assertStringContainsString('<col style="width: 40%">', $default);
+
+        config()->set('spj.periodic_report_column_widths.bpk_bos', [
+            'table' => ['5%', '45%', '10%', '13.34%', '13.33%', '13.33%'],
+        ]);
+
+        $custom = (string) $this->get('/laporan-periode/triwulan/bpk_bos/cetak?periode_laporan=1')->getContent();
+
+        $this->assertStringContainsString('<col style="width: 5%">', $custom);
+        $this->assertStringContainsString('<col style="width: 45%">', $custom);
+        $this->assertStringContainsString('<col style="width: 13.34%">', $custom);
+        $this->assertStringNotContainsString('<col style="width: 6%">', $custom);
+        // Kunci yang tidak dikirim tetap memakai default partial.
+        $this->assertStringContainsString('<col style="width: 70%">', $custom);
+    }
 }

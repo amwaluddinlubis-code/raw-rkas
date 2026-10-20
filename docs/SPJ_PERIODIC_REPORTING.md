@@ -79,7 +79,7 @@ Periode valid: semester `1..2`. K-2 pada scope ini merender kolom
 - Buku Kas Umum (BKU) (`bku`)
 - Rekap Barang Milik Daerah (Aset) (`rekap_bmd`)
 - Rekap Belanja Dana BOS (`rekap_belanja_dana_bos`)
-- Rekapitulasi Pengeluaran Dana BOS(K7A) (`rekapitulasi_pengeluaran_dana_bos`)
+- Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Laporan BPK Format BOS (`bpk_bos`)
 
 Periode tahunan selalu menggunakan seluruh tahun anggaran aktif dan tidak membutuhkan nomor periode tambahan.

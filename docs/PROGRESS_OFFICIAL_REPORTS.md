@@ -40,6 +40,8 @@ Verifikasi:
 ```text
 tests/Feature/FormatK2ReportTest.php   : 9 passed / 105 assertions
 tests/Feature/RpdBosReportTest.php     : 14 passed / 136 assertions
+tests/Feature/RekapBudgetRealizationTest.php : 6 passed / 64 assertions
+tests/Feature/BpkDinasFormatTest.php   : 3 passed / 33 assertions
 SpjPeriodicReportRegistry (Feature + Unit) + Printable + ModuleUi
   : 13 passed / 103 assertions
 Regresi 11 kelas laporan periode       : 80 passed / 776 assertions
@@ -59,6 +61,23 @@ Kertas `rekapitulasi_pengeluaran_dana_bos` (K7A): atas permintaan pengguna
 dikunci `RekapBudgetRealizationTest` (payload `orientation`/`paper` +
 `size: A4 landscape;` pada rute cetak). Label K7A juga diseragamkan menjadi
 "Rekapitulasi Pengeluaran Dana BOS (K7A)" di keempat scope.
+
+Pemecahan blok menjadi partial (2026-10-21, permintaan pengguna): blok K7A
+dipindah ke `partials/reports/report-rekap-bosp-1.blade.php` dan blok BPK ke
+`partials/reports/report-bpk-1.blade.php` (partial lama
+`partials/bpk-dinas.blade.php` dihapus) sehingga `document.blade.php` hanya
+memanggil `@include`. Lebar kolom kedua laporan kini **array yang dapat
+dikustom** dari `config('spj.periodic_report_column_widths')`:
+- `rekap_bosp`: `no`, `standar_nasional`, `sub_program`, `jumlah` (kolom
+  grid), `identity`, `meta`;
+- `bpk_bos`: `meta`, `table`, `signature`.
+
+Kunci yang tidak diisi memakai default di partial, dan override diuji dengan
+`config()->set()` pada `RekapBudgetRealizationTest` dan `BpkDinasFormatTest`.
+Bukti render data nyata (SDN 316 Ranto Panjang, TA 2026, sumber dana 1): K7A
+`orientation=landscape paper=a4` dengan colgroup `25/75`, `4/16/5.5×12/14`,
+`60/40`; BPK `orientation=landscape paper=folio` dengan colgroup
+`30/70`, `6/40/12/14/14/14`, `50/50`.
 
 ## BOS A-1: kolom Belanja Modal diisi dari kode rekening (2026-10-20)
 

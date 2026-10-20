@@ -39,7 +39,12 @@ Setor Tunai pada contoh TW-I resmi tidak dapat direkonsiliasi dari data
 (agregat semester/tahunan yang dipakai acuan memasukkan setor).
 
 Implementasi: `SpjPeriodicReportPrintService::bpkData/bpkBelanjaCategory` +
-partial `bpk-dinas.blade.php` + style `.bpk-dinas-*`.
+partial `report-bpk-1.blade.php` (blok BPK dipisah dari `document.blade.php`
+pada 2026-10-21; partial lama `bpk-dinas.blade.php` dihapus) + style
+`.bpk-dinas-*`. Lebar kolom memakai array yang dapat dikustom lewat
+`config('spj.periodic_report_column_widths.bpk_bos')` dengan kunci
+`meta`/`table`/`signature` (default di partial), dikunci
+`BpkDinasFormatTest`.
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
 ## Buku Pembantu Pajak (dimodelkan dari BKP-PAJAK ARKAS)
@@ -133,12 +138,18 @@ gagal menokennya dan writ chunk mentah hingga ParseError; pindahkan ke blok
 `@php...@endphp` atau variabel service.
 
 Implementasi: `SpjPeriodicReportPrintService::rekapBospData/Title` +
-cabang `rekap_bosp` di `document.blade.php`.
+partial `report-rekap-bosp-1.blade.php` (dipisah dari `document.blade.php`
+pada 2026-10-21) + cabang `rekap_bosp` di `document.blade.php`.
 Kertas: **A4 landscape** (`rekap_bosp` masuk daftar landscape pada
 `SpjPeriodicReportPrintService::orientation()`; permintaan pengguna
 2026-10-21), sehingga grid 7 SNP × 12 sub program tidak terpotong. Dikunci
 oleh `RekapBudgetRealizationTest` (payload `orientation`/`paper` + CSS
 `size: A4 landscape;` pada rute cetak).
+Lebar kolom memakai array yang dapat dikustom:
+`config('spj.periodic_report_column_widths.rekap_bosp')` dengan kunci
+`no`/`standar_nasional`/`sub_program`/`jumlah` (kolom grid),
+`identity` (blok identitas), dan `meta` (blok saldo); kunci yang tidak
+diisi memakai default di partial `report-rekap-bosp-1.blade.php`.
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
 ## Format BOS A-1 (rekapitulasi resmi per 8 program)
