@@ -409,7 +409,7 @@ Kandidat Livewire read-only setelah operator/runtime priorities:
 2. Template Dokumen filter katalog — upload/update tetap canonical flow;
 3. Laporan Audit pagination.
 
-Tetap ditunda tanpa kebutuhan/operator evidence khusus: workspace detail Paket mutation-heavy, Dashboard filter migration, dan protected Siswa. Kandidat "ARKAS importer stateful" tidak lagi berlaku karena subsystem tersebut sudah dihapus.
+Tetap ditunda tanpa kebutuhan/operator evidence khusus: workspace detail Paket mutation-heavy, Dashboard filter migration, dan halaman Siswa (`students/index.blade.php`, tidak lagi protected khusus). Kandidat "ARKAS importer stateful" tidak lagi berlaku karena subsystem tersebut sudah dihapus.
 
 ---
 

@@ -252,9 +252,7 @@ SQLite multi-DB, session auth. Filament and Laravel Sail are not active dependen
 
 - Do NOT edit migrations that already ran; new changes need new migration files.
 - Do NOT delete functions/endpoints without explicit user confirmation.
-- Do NOT restore/reset/stash/checkout/commit the protected files without explicit instruction:
-  `resources/views/dashboard.blade.php`, `resources/views/students/index.blade.php`
-  (keep `spj-bosp-web-console.code-workspace` untracked — verify exact name before touching).
+- Keep `spj-bosp-web-console.code-workspace` untracked — verify exact name before touching.
 - Do NOT commit secrets; never force-push, skip hooks, or amend failed commits.
 - Do NOT change dependencies, git config, or create new top-level folders without approval.
 - Do NOT touch other parties' uncommitted/conflicted files. Unmerged paths block your commit — report, don't resolve by guessing.

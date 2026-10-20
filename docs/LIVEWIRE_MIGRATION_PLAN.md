@@ -219,7 +219,8 @@ Tetap OUT OF SCOPE tanpa instruksi/kebutuhan khusus:
 
 - ~~ARKAS importer stateful~~ — subsystem Generic Importer sudah dihapus 2026-10-04, jadi tidak lagi relevan sebagai target migrasi; `ArkasStagingService` yang tersisa dipanggil dari service canonical, bukan dari component;
 - workspace detail Paket SPJ mutation-heavy;
-- protected `resources/views/students/index.blade.php`;
+- halaman daftar `resources/views/students/index.blade.php` (tidak lagi
+  berstatus protected khusus; tetap tanpa kebutuhan migrasi saat ini);
 - Dashboard sebagai target migrasi filter tanpa kebutuhan nyata;
 - perubahan domain Dapodik hanya demi konsistensi UI.
 

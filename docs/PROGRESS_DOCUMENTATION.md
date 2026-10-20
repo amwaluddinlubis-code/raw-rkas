@@ -5,6 +5,24 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Aturan protected file dihapus (2026-10-20)
+
+Status: **DOCUMENTATION SYNC / NO SOURCE CHANGE**.
+
+Atas permintaan pengguna, daftar file Blade yang dilindungi khusus dihapus:
+`AGENTS.md` (Agent prohibitions) dan `.ai/rules/index.md` §10 tidak lagi
+melindungi `resources/views/dashboard.blade.php` dan
+`resources/views/students/index.blade.php`. Kedua file kini mengikuti aturan
+umum: audit diff dan jaga perubahan user yang tidak terkait. Syarat
+`spj-bosp-web-console.code-workspace` tetap untracked dipertahankan.
+
+Referensi turunan ikut diselaraskan: `docs/DEVELOPMENT_ROADMAP.md` (kandidat
+Livewire ditunda), `docs/LIVEWIRE_MIGRATION_PLAN.md` (out of scope), dan
+`docs/PROGRESS_UI_UX.md` (catatan historis proteksi dashboard).
+
+Verifikasi: `git diff --check` bersih; tidak ada perubahan source/PHP sehingga
+test dan Pint tidak dijalankan.
+
 ## Sinkronisasi dokumentasi paket Laporan Periode (2026-10-20)
 
 Status: **DOCUMENTATION SYNC / REGISTRY VERIFIED / BROWSER RVR**.

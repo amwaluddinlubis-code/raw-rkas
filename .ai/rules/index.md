@@ -167,20 +167,16 @@ Jika kondisi tidak tersedia pada dataset, laporkan `RVR`, bukan PASS.
 
 Mobile visual QA tetap mengikuti status di dokumentasi aktif; jangan menyebut mobile-complete kecuali evidence dan TODO terkait sudah benar-benar ditutup.
 
-## 10. Protected local working files
-
-Jangan restore, reset, stash, checkout, overwrite, atau commit file berikut tanpa instruksi eksplisit user:
-
-```text
-resources/views/dashboard.blade.php
-resources/views/students/index.blade.php
-```
+## 10. Local working files
 
 File berikut harus tetap untracked:
 
 ```text
 spj-bosp-web-console.code-workspace
 ```
+
+Tidak ada lagi daftar file Blade yang dilindungi khusus; semua file source
+mengikuti aturan umum (audit diff, jaga perubahan user yang tidak terkait).
 
 ## 11. Change scope discipline
 
