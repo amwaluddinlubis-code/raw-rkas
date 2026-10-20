@@ -7,26 +7,43 @@
 
     if (request()->routeIs('dashboard')) {
         $page = 'Beranda';
+    } elseif (request()->routeIs('asisten.*')) {
+        $page = 'Asisten Operator';
     } elseif (request()->routeIs('rkas-budget.*')) {
         $group = 'Keuangan';
-        $page = 'Rencana Anggaran (RKAS)';
+        $page = 'Penganggaran RKAS';
+    } elseif (request()->routeIs('rkas-reports.*')) {
+        $group = 'Keuangan';
+        $page = 'Laporan RKAS';
+    } elseif (request()->routeIs('rkas-planning.*')) {
+        $group = 'Keuangan';
+        $page = 'Saran Perencanaan';
     } elseif (request()->routeIs('transactions.*')) {
         $group = 'Keuangan';
         $page = 'Transaksi';
         $pageUrl = route('transactions.index');
-        $detail = request()->routeIs('transactions.show') ? 'Rincian Transaksi' : null;
-    } elseif (request()->routeIs('employees.*')) {
+        $detail = match (true) {
+            request()->routeIs('transactions.show') => 'Rincian Transaksi',
+            request()->routeIs('transactions.vendor-recommendation') => 'Rekomendasi Vendor',
+            request()->routeIs('transactions.prepare-spj') => 'Siapkan SPJ',
+            default => null,
+        };
+    } elseif (request()->routeIs('taxes.*')) {
         $group = 'Keuangan';
+        $page = 'Pajak';
+    } elseif (request()->routeIs('employees.*')) {
+        $group = 'Referensi';
         $page = 'Pegawai';
         $pageUrl = route('employees.index');
         $detail = match (true) {
             request()->routeIs('employees.create') => 'Tambah Pegawai',
             request()->routeIs('employees.edit') => 'Ubah Pegawai',
             request()->routeIs('employees.show') => 'Rincian Pegawai',
+            request()->routeIs('employees.identity-review') => 'Tinjau Identitas',
             default => null,
         };
     } elseif (request()->routeIs('students.*')) {
-        $group = 'Keuangan';
+        $group = 'Referensi';
         $page = 'Siswa';
         $pageUrl = route('students.index');
         $detail = match (true) {
@@ -35,35 +52,58 @@
             request()->routeIs('students.show') => 'Rincian Siswa',
             default => null,
         };
-    } elseif (request()->routeIs('taxes.*')) {
-        $group = 'Keuangan';
-        $page = 'Pajak';
+    } elseif (request()->routeIs('references.*')) {
+        $group = 'Referensi';
+        $page = 'Rekening & Harga';
     } elseif (request()->routeIs('reconciliation.*')) {
-        $group = 'Dokumen & Laporan';
-        $page = 'Periksa Perubahan ARKAS';
+        $group = 'SPJ & Laporan';
+        $page = 'Rekonsiliasi Data';
     } elseif (request()->routeIs('spj.periodic-reports.*')) {
-        $group = 'Dokumen & Laporan';
+        $group = 'SPJ & Laporan';
         $page = 'Laporan Periode';
+    } elseif (request()->routeIs('spj.quarter-recap')) {
+        $group = 'SPJ & Laporan';
+        $page = 'Rekap Triwulan';
     } elseif (request()->routeIs('spj.numbering-workflow')) {
-        $group = 'Dokumen & Laporan';
+        $group = 'SPJ & Laporan';
         $page = 'Pekerjaan SPJ';
         $pageUrl = route('spj.index');
         $detail = 'Penomoran SPJ';
+    } elseif (request()->routeIs('spj.numbering-correction')) {
+        $group = 'SPJ & Laporan';
+        $page = 'Pekerjaan SPJ';
+        $pageUrl = route('spj.index');
+        $detail = 'Koreksi Penomoran';
+    } elseif (request()->routeIs('spj.honor-payments.*')) {
+        $group = 'SPJ & Laporan';
+        $page = 'Laporan SPJ';
+        $pageUrl = route('spj.index', ['tab' => 'laporan']);
+        $detail = 'Honor Pegawai';
+    } elseif (request()->routeIs('spj.service-recipients.*')) {
+        $group = 'SPJ & Laporan';
+        $page = 'Laporan SPJ';
+        $pageUrl = route('spj.index', ['tab' => 'laporan']);
+        $detail = 'Jasa Lainnya';
+    } elseif (request()->routeIs('spj.checklist')) {
+        $group = 'SPJ & Laporan';
+        $page = 'Pekerjaan SPJ';
+        $pageUrl = route('spj.index');
+        $detail = 'Checklist Paket';
     } elseif (request()->routeIs('spj.*')) {
-        $group = 'Dokumen & Laporan';
+        $group = 'SPJ & Laporan';
         $page = request('tab') === 'laporan' ? 'Laporan SPJ' : 'Pekerjaan SPJ';
     } elseif (request()->routeIs('audit-reports.*')) {
-        $group = 'Dokumen & Laporan';
-        $page = 'Laporan Pemeriksaan';
+        $group = 'SPJ & Laporan';
+        $page = 'Laporan Audit';
     } elseif (request()->routeIs('document-templates.*')) {
-        $group = 'Dokumen & Laporan';
+        $group = 'SPJ & Laporan';
         $page = 'Template Dokumen';
     } elseif (request()->routeIs('document-number-formats.*')) {
-        $group = 'Dokumen & Laporan';
-        $page = 'Format Nomor Dokumen';
+        $group = 'SPJ & Laporan';
+        $page = 'Format Penomoran';
     } elseif (request()->routeIs('synced-data.*')) {
-        $group = 'Data & Sinkronisasi';
-        $page = 'Data Hasil Sinkronisasi';
+        $group = 'Data & Integrasi';
+        $page = 'Data Hasil Sinkron';
         $pageUrl = route('synced-data.index');
         if (request()->routeIs('synced-data.show')) {
             $type = strtolower((string) request()->route('type'));
@@ -74,14 +114,20 @@
             };
         }
     } elseif (request()->routeIs('arkas.settings*')) {
-        $group = 'Data & Sinkronisasi';
-        $page = 'Pengaturan ARKAS';
+        $group = 'Data & Integrasi';
+        $page = 'Integrasi ARKAS';
+    } elseif (request()->routeIs('arkas.mirror*')) {
+        $group = 'Data & Integrasi';
+        $page = 'Sinkronisasi ARKAS';
     } elseif (request()->routeIs('dapodik.*')) {
-        $group = 'Data & Sinkronisasi';
-        $page = 'Pengaturan Dapodik';
+        $group = 'Data & Integrasi';
+        $page = 'Integrasi Dapodik';
     } elseif (request()->routeIs('years.*')) {
         $group = 'Administrasi';
         $page = 'Tahun Anggaran';
+    } elseif (request()->routeIs('schools.select')) {
+        $group = 'Administrasi';
+        $page = 'Ganti Sekolah';
     } elseif (request()->routeIs('schools.settings', 'schools.profile.*', 'schools.letterhead')) {
         $group = 'Administrasi';
         $page = 'Profil Sekolah';
@@ -89,16 +135,19 @@
         $detail = request()->routeIs('schools.letterhead') ? 'Kop Surat' : null;
     } elseif (request()->routeIs('users.*')) {
         $group = 'Administrasi';
-        $page = 'Kelola Pengguna';
+        $page = 'Manajemen User';
     } elseif (request()->routeIs('school-backups.*')) {
         $group = 'Administrasi';
-        $page = 'Cadangan & Pemulihan';
+        $page = 'Backup & Pemulihan';
+    } elseif (request()->routeIs('database-manager.reset-form')) {
+        $group = 'Administrasi';
+        $page = 'Reset Database';
     } elseif (request()->routeIs('database-manager.*')) {
         $group = 'Administrasi';
-        $page = 'Penyimpanan Data Aktif';
+        $page = 'Database Aktif';
     } elseif (request()->routeIs('impersonation.*')) {
         $group = 'Administrasi';
-        $page = 'Lihat Sebagai Pengguna';
+        $page = 'Uji Sebagai User';
     }
 
     $items = array_values(

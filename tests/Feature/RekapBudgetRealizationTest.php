@@ -203,10 +203,12 @@ class RekapBudgetRealizationTest extends TestCase
     public function test_rekap_column_widths_use_configurable_array(): void
     {
         $default = (string) $this->get('/laporan-periode/bulan/rekapitulasi_pengeluaran_dana_bos/cetak?periode_laporan=4')->getContent();
+        $configured = (array) config('spj.periodic_report_column_widths.rekap_bosp');
+        $subProgramWidth = '<col style="width: '.$configured['sub_program'].'">';
 
-        $this->assertStringContainsString('<col style="width: 5.5%">', $default);
-        $this->assertStringContainsString('<col style="width: 16%">', $default);
-        $this->assertSame(12, substr_count($default, '<col style="width: 5.5%">'));
+        $this->assertStringContainsString($subProgramWidth, $default);
+        $this->assertStringContainsString('<col style="width: '.$configured['standar_nasional'].'">', $default);
+        $this->assertSame(13, substr_count($default, $subProgramWidth));
 
         config()->set('spj.periodic_report_column_widths.rekap_bosp', [
             'no' => '3%',
@@ -223,9 +225,10 @@ class RekapBudgetRealizationTest extends TestCase
         $this->assertStringContainsString('<col style="width: 13%">', $custom);
         $this->assertSame(12, substr_count($custom, '<col style="width: 5%">'));
         $this->assertStringContainsString('<col style="width: 55%">', $custom);
-        // Kunci `identity` tidak dikirim, sehingga default partial dipakai.
-        $this->assertStringContainsString('<col style="width: 25%">', $custom);
-        $this->assertStringNotContainsString('<col style="width: 5.5%">', $custom);
+        $this->assertStringNotContainsString($subProgramWidth, $custom);
+        // Kunci `identity` tidak dikirim, sehingga default partial (2 kolom) dipakai.
+        preg_match('/<table class="bku-identity-block[^"]*">\s*<colgroup>(.*?)<\/colgroup>/s', $custom, $identityBlock);
+        $this->assertSame(2, substr_count($identityBlock[1] ?? '', '<col '));
     }
 
     public function test_bpk_report_aggregates_cash_mirror_into_dinas_sections(): void

@@ -10,10 +10,10 @@
         $rekapDefaultWidths = [
             'no' => '4%',
             'standar_nasional' => '16%',
-            'sub_program' => '5.5%',
-            'jumlah' => '14%',
-            'identity' => ['25%', '75%'],
-            'meta' => ['60%', '40%'],
+            'sub_program' => '8%',
+            'jumlah' => '8%',
+            'identity' => ['20%', '80%'],
+            'meta' => ['25%', '75%'],
         ];
         $rekapColumnWidths = array_replace(
             $rekapDefaultWidths,
@@ -113,7 +113,7 @@
             </tr>
         </tbody>
     </table>
-
+    <br>
     <table class="meta-table page-break-avoid">
         @include('periodic-reports.partials.reports.colgroup', ['widths' => $rekapMetaWidths])
         <tr>

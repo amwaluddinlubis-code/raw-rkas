@@ -130,9 +130,11 @@ class BpkDinasFormatTest extends TestCase
     public function test_bpk_column_widths_use_configurable_array(): void
     {
         $default = (string) $this->get('/laporan-periode/triwulan/bpk_bos/cetak?periode_laporan=1')->getContent();
+        $configured = (array) config('spj.periodic_report_column_widths.bpk_bos.table');
+        $configuredMeta = (array) config('spj.periodic_report_column_widths.bpk_bos.meta');
 
-        $this->assertStringContainsString('<col style="width: 6%">', $default);
-        $this->assertStringContainsString('<col style="width: 40%">', $default);
+        $this->assertStringContainsString('<col style="width: '.$configured[0].'">', $default);
+        $this->assertStringContainsString('<col style="width: '.$configured[1].'">', $default);
 
         config()->set('spj.periodic_report_column_widths.bpk_bos', [
             'table' => ['5%', '45%', '10%', '13.34%', '13.33%', '13.33%'],
@@ -143,8 +145,8 @@ class BpkDinasFormatTest extends TestCase
         $this->assertStringContainsString('<col style="width: 5%">', $custom);
         $this->assertStringContainsString('<col style="width: 45%">', $custom);
         $this->assertStringContainsString('<col style="width: 13.34%">', $custom);
-        $this->assertStringNotContainsString('<col style="width: 6%">', $custom);
+        $this->assertStringNotContainsString('<col style="width: '.$configured[0].'">', $custom);
         // Kunci yang tidak dikirim tetap memakai default partial.
-        $this->assertStringContainsString('<col style="width: 70%">', $custom);
+        $this->assertStringContainsString('<col style="width: '.$configuredMeta[1].'">', $custom);
     }
 }

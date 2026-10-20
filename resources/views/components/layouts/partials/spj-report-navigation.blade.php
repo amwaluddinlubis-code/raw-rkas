@@ -1,5 +1,6 @@
 @php
-    $isSpjReportRoute = request()->routeIs('spj.index') && request('tab') === 'laporan';
+    $isSpjReportRoute = (request()->routeIs('spj.index') && request('tab') === 'laporan')
+        || request()->routeIs('spj.honor-payments.*', 'spj.service-recipients.*');
     $isPeriodicReportRoute = request()->routeIs('spj.periodic-reports.*');
     $activeReportScope = (string) request('paket_laporan', 'bulan');
     $reportScopes = [

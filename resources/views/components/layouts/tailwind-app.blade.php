@@ -18,8 +18,8 @@
         open: false,
         collapsed: true,
         groups: {
-            finance: {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'true' : 'false' }},
-            reference: {{ request()->routeIs('employees.*', 'students.*') ? 'true' : 'false' }},
+            finance: {{ request()->routeIs('rkas-budget.*', 'rkas-reports.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'true' : 'false' }},
+            reference: {{ request()->routeIs('employees.*', 'students.*', 'references.*') ? 'true' : 'false' }},
             documents: {{ request()->routeIs('spj.*', 'reconciliation.*', 'audit-reports.*', 'document-templates.*', 'document-number-formats.*') ? 'true' : 'false' }},
             data: {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'arkas.mirror*', 'dapodik.*') ? 'true' : 'false' }},
             administration: {{ request()->routeIs('years.*', 'schools.*', 'users.*', 'school-backups.*', 'database-manager.*', 'impersonation.*') ? 'true' : 'false' }}
@@ -78,7 +78,7 @@
                 <div class="pt-3">
                     <button type="button" @click="toggleGroup('finance')" :aria-expanded="groups.finance.toString()"
                         aria-controls="nav-finance"
-                        class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'app-nav-section-active' : '' }}"
+                        class="app-nav w-full text-left {{ request()->routeIs('rkas-budget.*', 'rkas-reports.*', 'rkas-planning.*', 'transactions.*', 'taxes.*') ? 'app-nav-section-active' : '' }}"
                         title="Keuangan"><x-ui.icon name="transaction" /><span x-show="!collapsed || open"
                             class="nav-label flex-1">Keuangan</span><x-ui.icon x-show="!collapsed || open"
                             name="chevron-down" size="xs" class="transition-transform"
@@ -141,13 +141,13 @@
                             ::class="groups.documents ? 'rotate-180' : ''" /></button>
                     <div id="nav-documents" x-show="(!collapsed || open) && groups.documents" x-collapse
                         class="app-nav-submenu ml-5 space-y-1 border-l pl-2">
-                        <a class="app-nav {{ request()->routeIs('spj.*') && request('tab', 'persiapan') !== 'laporan' ? 'app-nav-active' : '' }}"
+                        <a class="app-nav {{ request()->routeIs('spj.index', 'spj.checklist') && request('tab', 'persiapan') !== 'laporan' ? 'app-nav-active' : '' }}"
                             href="{{ route('spj.index') }}"><x-ui.icon name="document" /><span class="nav-label">Ruang
                                 Kerja SPJ</span></a>
                         <a class="app-nav {{ request()->routeIs('reconciliation.*') ? 'app-nav-active' : '' }}"
                             href="{{ route('reconciliation.index') }}"><x-ui.icon name="sync" /><span
                                 class="nav-label">Rekonsiliasi</span></a>
-                        <a class="app-nav {{ request()->routeIs('spj.numbering-workflow') ? 'app-nav-active' : '' }}"
+                        <a class="app-nav {{ request()->routeIs('spj.numbering-workflow', 'spj.numbering-correction') ? 'app-nav-active' : '' }}"
                             href="{{ route('spj.numbering-workflow') }}"><x-ui.icon name="number" /><span
                                 class="nav-label">Penomoran SPJ</span></a>
                         @include('components.layouts.partials.spj-report-navigation')
@@ -170,7 +170,7 @@
                 <div>
                     <button type="button" @click="toggleGroup('data')" :aria-expanded="groups.data.toString()"
                         aria-controls="nav-data"
-                        class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'dapodik.*') ? 'app-nav-section-active' : '' }}"
+                        class="app-nav w-full text-left {{ request()->routeIs('synced-data.*', 'arkas.settings*', 'arkas.mirror*', 'dapodik.*') ? 'app-nav-section-active' : '' }}"
                         title="Data & Integrasi"><x-ui.icon name="database" /><span x-show="!collapsed || open"
                             class="nav-label flex-1">Data & Integrasi</span><x-ui.icon x-show="!collapsed || open"
                             name="chevron-down" size="xs" class="transition-transform"
@@ -184,6 +184,12 @@
                             <a class="app-nav {{ request()->routeIs('dapodik.*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('dapodik.index') }}"><x-ui.icon name="sync" /><span
                                     class="nav-label">Integrasi Dapodik</span></a>
+                            <a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}"
+                                href="{{ route('arkas.settings') }}"><x-ui.icon name="settings" /><span
+                                    class="nav-label">Integrasi ARKAS</span></a>
+                            <a class="app-nav {{ request()->routeIs('arkas.mirror*') ? 'app-nav-active' : '' }}"
+                                href="{{ route('arkas.mirror') }}"><x-ui.icon name="database" /><span
+                                    class="nav-label">Sinkronisasi ARKAS</span></a>
                         @endif
                         @if (auth()->user()->isOperatorOrAdministrator())
                             <form method="post" action="{{ route('arkas.sync') }}"
@@ -191,16 +197,6 @@
                                 @csrf<input type="hidden" name="confirm_sync" value="1"><button
                                     class="app-nav w-full text-left"><x-ui.icon name="sync" /><span
                                         class="nav-label">Sinkron Semua ARKAS</span></button></form>
-                        @endif
-                        @if (auth()->user()->isAdministrator())
-                            <a class="app-nav {{ request()->routeIs('arkas.settings*') ? 'app-nav-active' : '' }}"
-                                href="{{ route('arkas.settings') }}"><x-ui.icon name="settings" /><span
-                                    class="nav-label">Integrasi ARKAS</span></a>
-                        @endif
-                        @if (auth()->user()->isAdministrator())
-                            <a class="app-nav {{ request()->routeIs('arkas.mirror*') ? 'app-nav-active' : '' }}"
-                                href="{{ route('arkas.mirror') }}"><x-ui.icon name="database" /><span
-                                    class="nav-label">Sinkronisasi ARKAS</span></a>
                         @endif
                     </div>
                 </div>
@@ -221,17 +217,19 @@
                         <a class="app-nav {{ request()->routeIs('schools.select') ? 'app-nav-active' : '' }}"
                             href="{{ route('schools.select') }}"><x-ui.icon name="home" /><span
                                 class="nav-label">Ganti Sekolah</span></a>
-                        @if (auth()->user()->isAdministrator())
-                            <a class="app-nav {{ request()->routeIs('schools.settings', 'schools.profile.*') ? 'app-nav-active' : '' }}"
+                        @if (auth()->user()->isOperatorOrAdministrator())
+                            <a class="app-nav {{ request()->routeIs('schools.settings', 'schools.profile.*', 'schools.letterhead') ? 'app-nav-active' : '' }}"
                                 href="{{ route('schools.settings') }}"><x-ui.icon name="settings" /><span
                                     class="nav-label">Profil Sekolah</span></a>
+                        @endif
+                        @if (auth()->user()->isAdministrator())
                             <a class="app-nav {{ request()->routeIs('users.*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('users.index') }}"><x-ui.icon name="employee" /><span
                                     class="nav-label">Manajemen User</span></a>
                             <a class="app-nav {{ request()->routeIs('school-backups.*') ? 'app-nav-active' : '' }}"
                                 href="{{ route('school-backups.index') }}"><x-ui.icon name="archive" /><span
                                     class="nav-label">Backup & Pemulihan</span></a>
-                            <a class="app-nav {{ request()->routeIs('database-manager.index') ? 'app-nav-active' : '' }}"
+                            <a class="app-nav {{ request()->routeIs('database-manager.index', 'database-manager.table-summary') ? 'app-nav-active' : '' }}"
                                 href="{{ route('database-manager.index') }}"><x-ui.icon name="server" /><span
                                     class="nav-label">Database Aktif</span></a>
                             <a class="app-nav app-nav-danger {{ request()->routeIs('database-manager.reset-form') ? 'app-nav-active' : '' }}"

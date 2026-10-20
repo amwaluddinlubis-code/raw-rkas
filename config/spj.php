@@ -34,10 +34,10 @@ return [
         'rekap_bosp' => [
             'no' => '4%',
             'standar_nasional' => '16%',
-            'sub_program' => '5.5%',
-            'jumlah' => '14%',
-            'identity' => ['25%', '75%'],
-            'meta' => ['60%', '40%'],
+            'sub_program' => '8%',
+            'jumlah' => '8%',
+            'identity' => ['20%', '80%'],
+            'meta' => ['25%', '75%'],
         ],
         'bpk_bos' => [
             'meta' => ['30%', '70%'],
