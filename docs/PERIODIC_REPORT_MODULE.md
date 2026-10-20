@@ -408,8 +408,13 @@ Array lebar per format:
 - BKU/Pembantu Kas 8 kolom, Pembantu Bank 9, Pajak 12,
   `transaction_recap` 9, `account_summary` 7, dan fallback bagi rata
   untuk presentasi lain (`report-ledger-1.blade.php`);
-- Rekap BOSP 15 kolom (`4% + 16% + 12×5.5% + 14%`), ringkasan 9 kolom,
-  meta identitas 2/4 kolom (`document.blade.php`);
+- Rekap BOSP 15 kolom (No, Standar Nasional Pendidikan, 12 sub program,
+  Jumlah), ringkasan 9 kolom, meta identitas 2/4 kolom; sejak 2026-10-21
+  lebar K7A dan BPK dibaca dari
+  `config('spj.periodic_report_column_widths')` (K7A juga memakai
+  `identity` dan `meta`, BPK memakai `meta`/`table`/`signature`), dengan
+  fallback default di partial. Angka persentase aktif mengikuti isi
+  konfigurasi tersebut, bukan konstanta view;
 - RPD 7 kolom dasar + jumlah kolom bulan; sisa 28% dibagi rata ke kolom
   bulan (`report-rpd-2.blade.php`);
 - A1 8 kolom, K-2 7 kolom triwulan / **5 kolom semester** (No, Uraian,
