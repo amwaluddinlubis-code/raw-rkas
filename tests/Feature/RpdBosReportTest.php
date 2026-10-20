@@ -142,6 +142,20 @@ class RpdBosReportTest extends TestCase
         return $payload['rpd'];
     }
 
+    /** @return array<string,mixed> */
+    private function rpdItem(int $quarter, string $label): array
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'rpd_bos', $quarter);
+
+        foreach ($payload['rpd']['rows'] as $row) {
+            if ($row['level'] === 'item' && $row['label'] === $label) {
+                return $row;
+            }
+        }
+
+        $this->fail('Item RPD tidak ditemukan: '.$label);
+    }
+
     public function test_rpd_builds_program_hierarchy(): void
     {
         $rpd = $this->buildRpd();
@@ -195,6 +209,60 @@ class RpdBosReportTest extends TestCase
         $this->assertSame(50000.0, $byUraian['Cetak Spanduk']['unit_price']);
 
         $this->assertSame(46.0, $byUraian['BUKU AL-HIRA SD Kelas IV']['volume']);
+    }
+
+    public function test_rpd_volume_unit_and_unit_price_follow_selected_period(): void
+    {
+        // Pecahan periode: Januari (81 -> bulan 1) 20 exemplar,
+        // September (89 -> bulan 9) 98 exemplar.
+        $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'RP-P3-JAN', [
+            'ID_RAPBS_PERIODE' => 'RP-P3-JAN', 'ID_RAPBS' => 'R-P3', 'ID_PERIODE' => '81',
+            'VOLUME' => 20, 'SATUAN' => 'exemplar', 'HARGA_SATUAN' => 20000, 'JUMLAH' => 400000,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'RP-P3-SEP', [
+            'ID_RAPBS_PERIODE' => 'RP-P3-SEP', 'ID_RAPBS' => 'R-P3', 'ID_PERIODE' => '89',
+            'VOLUME' => 98, 'SATUAN' => 'exemplar', 'HARGA_SATUAN' => 20000, 'JUMLAH' => 1960000,
+        ]);
+        // R-P5 hanya teralokasi September: tidak boleh tampil di Triwulan I.
+        $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'RP-P5-SEP', [
+            'ID_RAPBS_PERIODE' => 'RP-P5-SEP', 'ID_RAPBS' => 'R-P5', 'ID_PERIODE' => '89',
+            'VOLUME' => 46, 'SATUAN' => 'exemplar', 'HARGA_SATUAN' => 45000, 'JUMLAH' => 2070000,
+        ]);
+
+        // Triwulan I memakai pecahan Januari (20), bukan volume tahunan 118.
+        $quarterOne = $this->rpdItem(1, 'Buku Ramadhan');
+        $this->assertSame(20.0, $quarterOne['volume']);
+        $this->assertSame('exemplar', $quarterOne['unit']);
+        $this->assertSame(20000.0, $quarterOne['unit_price']);
+        $this->assertSame(400000.0, $quarterOne['jumlah']);
+
+        // Triwulan III memakai pecahan September (98).
+        $quarterThree = $this->rpdItem(3, 'Buku Ramadhan');
+        $this->assertSame(98.0, $quarterThree['volume']);
+        $this->assertSame(1960000.0, $quarterThree['jumlah']);
+
+        // Baris tanpa pecahan periode tetap memakai payload tahunan.
+        $spanduk = $this->rpdItem(1, 'Cetak Spanduk');
+        $this->assertSame(5.0, $spanduk['volume']);
+        $this->assertSame('buah', $spanduk['unit']);
+        $this->assertSame(50000.0, $spanduk['unit_price']);
+        $this->assertSame(250000.0, $spanduk['jumlah']);
+
+        // Baris berjumlah 0 pada periode terpilih tidak ditampilkan.
+        $this->assertNotContains('BUKU AL-HIRA SD Kelas IV', $this->rpdItemLabels(1));
+        $this->assertContains('BUKU AL-HIRA SD Kelas IV', $this->rpdItemLabels(3));
+        $this->assertSame(2070000.0, $this->rpdItem(3, 'BUKU AL-HIRA SD Kelas IV')['jumlah']);
+    }
+
+    /** @return list<string> */
+    private function rpdItemLabels(int $quarter): array
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'rpd_bos', $quarter);
+
+        return array_values(array_map(
+            fn (array $row): string => (string) $row['label'],
+            array_filter($payload['rpd']['rows'], fn (array $row): bool => $row['level'] === 'item')
+        ));
     }
 
     public function test_rpd_realization_per_month_per_item(): void

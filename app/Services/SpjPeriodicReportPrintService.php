@@ -1715,11 +1715,14 @@ final class SpjPeriodicReportPrintService
      *
      * Aturan terverifikasi terhadap keluaran resmi TW IV 2024 (seluruh
      * angka cocok per baris): baris = segmen pertama kode kegiatan
-     * (01–08); kolom Pegawai = sub-program 12 honorarium; selainnya
-     * Barang dan Jasa (termasuk baris berkode rekening 5.2.*).
-     * Kolom modal_aset diisi untuk belanja buku perpustakaan (05.02.*)
-     * sesuai contoh resmi TW I 2026; modal_mesin tetap nol (belum ada
-     * aturan terverifikasi).
+     * (01–08); kolom Pegawai = sub-program 12 honorarium.
+     *
+     * Belanja Modal dipisah dari kode rekening (2026-10-20): 5.2.02.*
+     * masuk Peralatan dan Mesin, 5.2 lainnya (mis. 5.2.05 buku/aset
+     * tetap lainnya) masuk Aset Tetap Lainnya BOS. Seluruh baris modal
+     * juga menambah kolom Jumlah. Bila kode rekening kosong, dipakai
+     * fallback lama: kegiatan 05.02.* atau uraian mengandung "buku"
+     * dianggap Aset Tetap Lainnya.
      *
      * @return array{rows:array<int,array{no:int,program:string,pegawai:float,barang_jasa:float,modal_mesin:float,modal_aset:float,modal_jumlah:float,total:float}>,totals:array{pegawai:float,barang_jasa:float,modal_mesin:float,modal_aset:float,modal_jumlah:float,grand:float},unmapped:float,unmappedCount:int}
      */
@@ -1751,11 +1754,15 @@ final class SpjPeriodicReportPrintService
 
                 continue;
             }
+            $accountCode = trim((string) $transaction->sourceValue('account_code'));
+            $modalColumn = $this->a1ModalColumn($accountCode);
             if (BospRekapStandardMapper::a1IsHonor($code)) {
                 $rows[$row]['pegawai'] += $gross;
-            } elseif ($this->a1IsAsetTetapLainnya($code, (string) $transaction->sourceValue('item_description'))) {
-                // Contoh resmi TW I 2026: buku perpustakaan (05.02) masuk
-                // Aset Tetap Lainnya BOS, bukan Barang dan Jasa.
+            } elseif ($modalColumn === 'modal_mesin') {
+                $rows[$row]['modal_mesin'] += $gross;
+                $rows[$row]['modal_jumlah'] += $gross;
+            } elseif ($modalColumn === 'modal_aset'
+                || ($accountCode === '' && $this->a1IsAsetTetapLainnya($code, (string) $transaction->sourceValue('item_description')))) {
                 $rows[$row]['modal_aset'] += $gross;
                 $rows[$row]['modal_jumlah'] += $gross;
             } else {
@@ -1789,6 +1796,11 @@ final class SpjPeriodicReportPrintService
      * Keterbatasan: bila mirror belum punya rincian periode (seluruh 'tw'
      * nol) padahal total tahunan ada, total tersebut ditampilkan di kolom
      * triwulan berjalan dan nol di triwulan lain.
+     *
+     * Kolom kumulatif: laporan triwulan N hanya memuat anggaran sampai
+     * triwulan N (TW 1..N); kolom triwulan setelahnya bernilai 0, dan
+     * "Jumlah" adalah penjumlahan kolom yang tampil (kumulatif), bukan
+     * pagu tahunan penuh. Semua baris program 1.1–1.8 tetap ditampilkan.
      *
      * @return array{programs:array<int,array{no:string,label:string,jumlah:float,tw:array<int,float>}>,totals:array{jumlah:float,tw:array<int,float>},quarter:int,quarter_label:string,month_range:string,has_data:bool}
      */
@@ -1835,7 +1847,14 @@ final class SpjPeriodicReportPrintService
                     if (array_sum($tw) <= 0 && $jumlah > 0) {
                         $tw[$quarter] = $jumlah;
                     }
-                    $programs[$row]['jumlah'] += $jumlah;
+                    // Triwulan setelah periode terpilih belum dilaporkan:
+                    // kolomnya tetap ada namun bernilai 0.
+                    foreach ([1, 2, 3, 4] as $q) {
+                        if ($q > $quarter) {
+                            $tw[$q] = 0.0;
+                        }
+                    }
+                    $programs[$row]['jumlah'] += array_sum($tw);
                     foreach ([1, 2, 3, 4] as $q) {
                         $programs[$row]['tw'][$q] += $tw[$q];
                     }
@@ -1866,15 +1885,21 @@ final class SpjPeriodicReportPrintService
      *
      * Hierarki baris: "I PROGRAM SEKOLAH" -> 8 program (01.-08.) -> sub
      * (03.03.) -> kegiatan (03.03.14.) -> item rincian dengan Vol/Satuan/
-     * Tarif Harga. Kolom "Jumlah" memakai pagu RKAS pada revisi disahkan
-     * terakhir; kolom bulan memakai realisasi BELANJA kas umum per
-     * ID_RAPBS pada bulan triwulan berjalan.
+     * Tarif Harga. Kolom "Jumlah" memakai alokasi periode terpilih dari
+     * revisi disahkan terakhir; kolom bulan memakai realisasi BELANJA kas
+     * umum per ID_RAPBS pada bulan triwulan berjalan.
      *
-     * Vol/Satuan/Tarif dibaca dari payload arkas_mirror_rapbs
-     * (VOLUME_TOTAL/VOLUME, SATUAN/UNIT, HARGA_SATUAN) via
-     * ArkasMirrorResolver::field(). Tautan realisasi: kas_umum
-     * ID_RAPBS_PERIODE -> rapbs_periode -> ID_RAPBS, fallback ID_RAPBS
-     * langsung dari baris kas.
+     * Jumlah/Vol/Satuan/Tarif mengikuti alokasi periode terpilih: pecahan
+     * arkas_mirror_rapbs_periode pada snapshot (`periods`) yang bulannya
+     * atau triwulannya cocok; jumlah dan volume dijumlahkan. Baris yang
+     * punya pecahan periode terkoordinat tetapi tidak ada di periode
+     * terpilih berjumlah nol dan tidak ditampilkan. Payload tahunan
+     * arkas_mirror_rapbs (JUMLAH, VOLUME_TOTAL/VOLUME, SATUAN/UNIT,
+     * HARGA_SATUAN) hanya
+     * dipakai bila baris sama sekali tidak punya pecahan periode
+     * terkoordinat. Tautan realisasi: kas_umum ID_RAPBS_PERIODE ->
+     * rapbs_periode -> ID_RAPBS, fallback ID_RAPBS langsung dari baris
+     * kas.
      *
      * @return array{rows:array<int,array{level:string,no:int,code:string,label:string,volume:float,unit:string,unit_price:float,jumlah:float,months:array<int,float>}>,totals:array{jumlah:float,months:array<int,float>},quarter:int,quarter_label:string,month_names:array<int,string>,month_range:string,has_data:bool}
      */
@@ -1912,7 +1937,6 @@ final class SpjPeriodicReportPrintService
                 if ($program === null) {
                     continue;
                 }
-                $hasData = true;
                 $parts = array_values(array_filter(explode('.', $activityCode), fn (string $part): bool => $part !== ''));
                 $subCode = count($parts) >= 2 ? $parts[0].'.'.$parts[1] : $parts[0];
                 $subNo = isset($parts[1]) && ctype_digit($parts[1]) ? (int) $parts[1] : 0;
@@ -1923,6 +1947,57 @@ final class SpjPeriodicReportPrintService
                 foreach ($months as $month) {
                     $itemMonths[$month] = (float) ($realization[$rapbsId][$month] ?? 0);
                 }
+
+                // Jumlah/Vol/Satuan/Tarif mengikuti alokasi periode terpilih
+                // (arkas_mirror_rapbs_periode lewat snapshot `periods`).
+                // Bila baris punya pecahan periode terkoordinat tetapi
+                // tidak ada pada periode terpilih, nilainya nol/kosong —
+                // bukan angka tahunan. Payload tahunan hanya fallback saat
+                // baris sama sekali tidak punya pecahan periode terkoordinat.
+                $periodAmount = 0.0;
+                $periodVolume = 0.0;
+                $periodUnit = '';
+                $periodUnitPrice = 0.0;
+                $hasCoordinatedPeriod = false;
+                $hasPeriodMatch = false;
+                foreach ((array) ($row['periods'] ?? []) as $period) {
+                    if (! is_array($period)) {
+                        continue;
+                    }
+                    $periodMonth = (int) ($period['__MONTH_NUMBER'] ?? 0);
+                    $periodQuarter = (int) ($period['__QUARTER_NUMBER'] ?? 0);
+                    if ($periodMonth > 0 || $periodQuarter > 0) {
+                        $hasCoordinatedPeriod = true;
+                    }
+                    if (! in_array($periodMonth, $months, true) && $periodQuarter !== $quarter) {
+                        continue;
+                    }
+                    $hasPeriodMatch = true;
+                    $periodAmount += (float) (ArkasMirrorResolver::field($period, ['JUMLAH', 'AMOUNT', 'JUMLAH_TOTAL']) ?? 0);
+                    $periodVolume += (float) (ArkasMirrorResolver::field($period, ['VOLUME', 'VOLUME_TOTAL']) ?? 0);
+                    if ($periodUnit === '') {
+                        $periodUnit = (string) (ArkasMirrorResolver::field($period, ['SATUAN', 'UNIT']) ?? '');
+                    }
+                    if ($periodUnitPrice <= 0.0) {
+                        $periodUnitPrice = (float) (ArkasMirrorResolver::field($period, ['HARGA_SATUAN']) ?? 0);
+                    }
+                }
+                $fallbackVolume = (float) (ArkasMirrorResolver::field($payload, ['VOLUME_TOTAL', 'VOLUME']) ?? 0);
+                $fallbackUnit = (string) (ArkasMirrorResolver::field($payload, ['SATUAN', 'UNIT']) ?? '');
+                $fallbackUnitPrice = (float) (ArkasMirrorResolver::field($payload, ['HARGA_SATUAN']) ?? 0);
+                $itemVolume = $hasPeriodMatch ? $periodVolume : ($hasCoordinatedPeriod ? 0.0 : $fallbackVolume);
+                $itemUnit = $hasPeriodMatch
+                    ? ($periodUnit !== '' ? $periodUnit : $fallbackUnit)
+                    : ($hasCoordinatedPeriod ? '' : $fallbackUnit);
+                $itemUnitPrice = $hasPeriodMatch
+                    ? ($periodUnitPrice > 0.0 ? $periodUnitPrice : $fallbackUnitPrice)
+                    : ($hasCoordinatedPeriod ? 0.0 : $fallbackUnitPrice);
+                $itemAmount = $hasPeriodMatch ? $periodAmount : ($hasCoordinatedPeriod ? 0.0 : $amount);
+                // Baris tanpa alokasi pada periode terpilih tidak ditampilkan.
+                if ($itemAmount <= 0) {
+                    continue;
+                }
+                $hasData = true;
 
                 $tree[$program] ??= ['subs' => []];
                 $tree[$program]['subs'][$subCode] ??= [
@@ -1935,10 +2010,10 @@ final class SpjPeriodicReportPrintService
                 ];
                 $tree[$program]['subs'][$subCode]['activities'][$activityCode]['items'][] = [
                     'uraian' => trim((string) ($row['description'] ?? '')) ?: trim((string) ($row['activity_name'] ?? '')),
-                    'volume' => (float) (ArkasMirrorResolver::field($payload, ['VOLUME_TOTAL', 'VOLUME']) ?? 0),
-                    'unit' => (string) (ArkasMirrorResolver::field($payload, ['SATUAN', 'UNIT']) ?? ''),
-                    'unit_price' => (float) (ArkasMirrorResolver::field($payload, ['HARGA_SATUAN']) ?? 0),
-                    'jumlah' => $amount,
+                    'volume' => $itemVolume,
+                    'unit' => $itemUnit,
+                    'unit_price' => $itemUnitPrice,
+                    'jumlah' => $itemAmount,
                     'months' => $itemMonths,
                 ];
             }
@@ -2129,6 +2204,19 @@ final class SpjPeriodicReportPrintService
      * contoh resmi TW I 2026: belanja buku perpustakaan (kode 05.02.*)
      * masuk kolom Aset Tetap Lainnya BOS.
      */
+    /**
+     * Kolom Belanja Modal A-1 berdasarkan kode rekening: 5.2.02.* =
+     * Peralatan dan Mesin, 5.2 lainnya = Aset Tetap Lainnya BOS.
+     */
+    private function a1ModalColumn(string $accountCode): ?string
+    {
+        if (! str_starts_with($accountCode, '5.2')) {
+            return null;
+        }
+
+        return str_starts_with($accountCode, '5.2.02') ? 'modal_mesin' : 'modal_aset';
+    }
+
     private function a1IsAsetTetapLainnya(?string $activityCode, string $description): bool
     {
         $code = trim(trim((string) $activityCode), '.');

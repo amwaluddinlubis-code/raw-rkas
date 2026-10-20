@@ -9,22 +9,11 @@
                 return $rupiah($value);
             };
         @endphp
-        <table class="report-table k7-table">
         @php
-            $k7Widths = ['60px', '30%'];
-            foreach ($k7cols as $k7WidthCol) {
-                $k7WidthTotal = 0.0;
-                foreach (($k7['rows'] ?? []) as $k7WidthRow) {
-                    $k7WidthTotal += (float) ($k7WidthRow['amounts'][$k7WidthCol] ?? 0);
-                }
-                $k7Widths[] = $k7WidthTotal != 0.0 ? '11%' : '5.5%';
-            }
+            $k7Widths = ['8%', '27%', '11%', '9%', '9%', '9%', '9%', '9%', '9%'];
         @endphp
-        <colgroup>
-            @foreach ($k7Widths as $k7Width)
-                <col style="width: {{ $k7Width }}">
-            @endforeach
-        </colgroup>
+        <table class="report-table k7-table">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $k7Widths])
 
             <thead>
                 <tr>
@@ -35,9 +24,9 @@
                 </tr>
                 <tr>
                     <th rowspan="2">Rutin</th>
-                    <th colspan="3">Bantuan Operasional Sekolah (BOS)</th>
+                    <th colspan="3">Bantuan Operasional Satuan Pendidikan (BOSP)</th>
                     <th rowspan="2">Bantuan Lain</th>
-                    <th rowspan="2">Sumber Pendapatan Lainnya</th>
+                    <th rowspan="2">Sumber Lainnya</th>
                 </tr>
                 <tr>
                     <th>Pusat</th>

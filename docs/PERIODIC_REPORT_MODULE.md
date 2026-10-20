@@ -1,13 +1,16 @@
 # Modul Laporan Periode
 
-Terakhir diperbarui: **2026-10-07** (`raw-rkas`, branch `main`)
+Terakhir diperbarui: **2026-10-20** (`raw-rkas`, branch `main`)
 
 Dokumen ini adalah panduan fitur laporan periode (`/laporan-periode`): generator
 internal APP-SPJ untuk cetak browser dan PDF, terpisah dari template Paket SPJ.
 
 Status: **ACTIVE FEATURE GUIDE / PRINT, PDF, DAN EXCEL SOURCE IMPLEMENTED /
 VISUAL RUNTIME RVR**. Kontrak teknis modul (registry, scope, boundary data)
-berada di `SPJ_PERIODIC_REPORTING.md`.
+berada di `SPJ_PERIODIC_REPORTING.md`. Registry aktual berisi **35 slot**
+(bulanan 10 + triwulan 10 + semester 8 + tahunan 7) dari **18 report key**.
+Daftar per scope dan key berada di kontrak teknis; dokumen ini menjelaskan
+aturan nilai per format yang sudah mempunyai presenter khusus.
 
 ## BPK Dinas (REKAP REALISASI PENGGUNAAN DANA BOS model Dinas)
 
@@ -65,8 +68,9 @@ Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 Semua report key pada registry dapat diekspor melalui route internal
 `/laporan-periode/{scope}/{report}/excel`. Workbook dibuat dari payload yang
 sama dengan cetak/PDF dan memiliki sheet `Ringkasan` serta `Laporan`.
-Presenter khusus `rekap_bosp`, `bos_a1`, dan `bpk_bos` juga ditulis ke bentuk tabel Excel
-yang sesuai dengan data masing-masing.
+Presenter khusus yang ditulis ke bentuk tabel Excel masing-masing:
+`rekap_bosp`, `bos_a1`, `bpk_bos`, `k7b`, `k7c`, `k7`, `k2`, `rpd`, dan
+`sptjm`. Presenter lain memakai tabel generik dari kolom/baris payload.
 
 ## Buku Pembantu Kas (bentuk BKU, sisi tunai)
 
@@ -145,13 +149,21 @@ Sekolah. Orientasi landscape folio; Excel menulis grid + baris TOTAL.
 Aturan grid terverifikasi terhadap keluaran resmi TW IV 2024 (seluruh angka
 cocok per baris): baris = segmen pertama kode kegiatan 01–08
 (`BospRekapStandardMapper::a1RowForActivity`); kolom Pegawai = sub-program
-12 honorarium (`a1IsHonor`) — aturan prefix rekening DITOLAK bukti (tidak
-ada baris `5.1.01.*`, honor tercatat `5.1.02.02`, dan baris berkode `5.2.*`
-resmi masuk Barang dan Jasa); selainnya Barang dan Jasa dari
-`gross_amount`. Kolom modal dipertahankan nol + RVR: seluruh sampel resmi
-bernilai nol sehingga belum ada aturan populasi terverifikasi. Transaksi
-di luar 01–08 tercatat `unmapped` pada payload (tidak masuk grid agar
-TOTAL = jumlah baris).
+12 honorarium (`a1IsHonor`) — aturan prefix rekening `5.1.01.*` DITOLAK bukti
+(tidak ada baris `5.1.01.*`, honor tercatat `5.1.02.02`); selainnya Barang
+dan Jasa dari `gross_amount`.
+
+Pemisahan Belanja Modal memakai kode rekening (ditetapkan 2026-10-20 atas
+laporan pengguna bahwa rincian belanja modal selalu 0): `5.2.02.*` →
+Peralatan dan Mesin, `5.2` lainnya (mis. `5.2.05.*` buku/aset tetap lainnya)
+→ Aset Tetap Lainnya BOS, dan keduanya menambah kolom Jumlah Modal. Baris
+modal nyata umumnya berkegiatan `02.34.*` atau `05.08.*`, sehingga aturan
+berbasis kode kegiatan `05.02.*` milik implementasi sebelumnya salah kolom
+(dan hanya kebetulan benar untuk buku pada contoh TW I 2026). Bila kode
+rekening kosong, dipakai fallback lama: kegiatan `05.02.*` atau uraian
+mengandung "buku" dianggap Aset Tetap Lainnya. Transaksi di luar 01–08
+tercatat `unmapped` pada payload (tidak masuk grid agar TOTAL = jumlah
+baris).
 
 Implementasi: `SpjPeriodicReportPrintService::bosA1Data/Title`,
 `SpjPeriodicReportExcelService::writeBosA1`, cabang `bos_a1` di
@@ -189,36 +201,62 @@ Implementasi: `SpjPeriodicReportPrintService::k7bData/k7cData`, cabang
 writeK7b/writeK7c`. Status visual/runtime: RVR sampai QA browser/PDF
 aktual dijalankan.
 
-## BOS K7A (rekapitulasi per komponen BOS, 2026-10-08)
+## RPD BOS (2026-10-16)
 
-Presentasi `k7a` (`bos_k7a`, semua scope berperiode + tahunan) mengikuti
-daftar 12 komponen ARKAS resmi (`arkas.kemendikdasmen.go.id/komponenbos`;
-2 baris khusus SMK ditandai dan tetap tampil bernilai nol agar formulir
-utuh): tabel No/Komponen/Jumlah + JUMLAH, kop BOS K7A, identitas
-sekolah + sumber dana, dan tanda tangan Bendahara + Kepsek + Komite
-Sekolah (nama komite isian manual).
+Presentasi `rpd` (`rpd_bos`, scope triwulan) mengikuti contoh resmi
+RINCIAN PENGGUNAAN DANA BOS: kop identitas + kotak "RPD", tabel No |
+Kode Program | Uraian | Rincian Perhitungan (Vol/Satuan/Tarif) | Jumlah |
+kolom bulan triwulan berjalan, hierarki I Program Sekolah → 8 program
+(01.–08.) → sub-program → kegiatan → item, footer Sub Total I/II +
+JUMLAH TOTAL, dan tanda tangan Mengetahui/Kepala Sekolah/Bendahara.
+Landscape folio; Excel mengikuti struktur yang sama.
 
-Aturan nilai: baris BELANJA mirror per NAMA_KEGIATAN RKAS via
-`BospRekapStandardMapper::k7aComponentForActivity` (mirror tidak membawa
-field komponen — diverifikasi tidak ada kunci KOMPONEN pada payload
-`kas_umum`/`rapbs`/`rapbs_periode` tenant nyata 10208183). Prioritas kata
-kunci disengaja: honor didahulukan (agar "honor Tenaga Kependidikan"
-tidak jatuh ke Profesi GTK), administrasi didahulukan atas
-"pembelajaran" generik, dan frasa penafian "diluar komponen ..."
-menonaktifkan kata kunci komponen tersebut. Baris tak terpetakan
-dilaporkan eksplisit (`unmapped` + jumlah baris) sehingga
-`total + unmapped = belanja` selalu dapat direkonsiliasi.
+Aturan nilai: baris diambil dari snapshot revisi disahkan terakhir
+(`ArkasMirrorBudgetService::revisions/snapshot`) dan hanya baris dengan
+pagu tahunan > 0 serta program 01–08 yang masuk grid. Baris yang jumlah
+periode terpilihnya 0 (tidak teralokasi di triwulan itu) tidak
+ditampilkan, dan `has_data` hanya benar bila ada baris tampil. Kolom
+bulan memakai realisasi BELANJA `arkas_mirror_kas_umum` per `ID_RAPBS`
+(tautan `ID_RAPBS_PERIODE` → `rapbs_periode.ID_RAPBS`, fallback
+`ID_RAPBS` langsung).
 
-Status: **bentuk formulir mengikuti acuan resmi; akurasi per-komponen
-RVR** sampai dibandingkan dengan keluaran K7A resmi ARKAS/dinas.
+Jumlah/Vol/Satuan/Tarif mengikuti periode terpilih (2026-10-20):
+`JUMLAH` dan volume dijumlahkan dari pecahan
+`arkas_mirror_rapbs_periode` yang `__MONTH_NUMBER`-nya berada di rentang
+bulan triwulan terpilih (atau `__QUARTER_NUMBER` cocok); satuan/tarif
+diambil dari pecahan pertama yang terisi. Baris yang punya pecahan
+periode terkoordinat tetapi tidak teralokasi di periode terpilih
+berjumlah 0 dan tidak ditampilkan — bukan angka tahunan. Payload tahunan
+`arkas_mirror_rapbs`
+(`JUMLAH`, `VOLUME_TOTAL`/`VOLUME`, `SATUAN`/`UNIT`, `HARGA_SATUAN`)
+hanya dipakai sebagai fallback bila baris sama sekali tidak punya
+pecahan periode terkoordinat.
 
-Implementasi: `SpjPeriodicReportPrintService::k7aData/k7aActivityMap`,
-cabang `k7a` di `document.blade.php`,
-`SpjPeriodicReportExcelService::writeK7a`.
+Implementasi: `SpjPeriodicReportPrintService::rpdData/rpdRealization`,
+cabang `rpd` di `document.blade.php`,
+`SpjPeriodicReportExcelService::writeRpd`.
+
+## Format dengan presenter generik
+
+Beberapa report key belum mempunyai formulir resmi khusus dan memakai
+presenter data yang sudah tersedia:
+
+- `rekap_belanja_modal_barang_jasa`, `rekap_bmd`, dan
+  `rekap_belanja_dana_bos` → `account_summary` (kolom No, Kode/Nama
+  Rekening, jumlah transaksi, bruto, pajak, realisasi netto);
+- `lampiran_berita_acara_rekonsiliasi` → `transaction_recap` (rincian
+  transaksi: tanggal, bukti, kegiatan, rekening, uraian, bruto, pajak,
+  netto);
+- `berita_acara_rekonsiliasi` → `statement` dengan narasi rekonsiliasi
+  periode;
+- `buku_pembantu_bank` → `bank_ledger` (ledger BKU sisi bank).
+
+Untuk format-format ini, bentuk dan rumus resmi tetap RVR dan harus
+mengikuti kontrak template/formula yang disepakati kemudian.
 
 ## Format K7 (Formulir BOS-K7 resmi, 2026-10-12)
 
-Presentasi `k7` (`format_k7`, bulanan/triwulan/semester/tahunan):
+Presentasi `k7` (`format_k7`, triwulan/semester/tahunan):
 "Realisasi Penggunaan Dana Tiap Jenis Anggaran" mengikuti formulir
 resmi (struktur dibandingkan terhadap contoh TW II 2025): kop
 identitas sekolah + kotak "Formulir Bos-K7", tabel 9 kolom (No. Kode
@@ -257,9 +295,10 @@ ANGGARAN SEKOLAH ( RKAS )" mengikuti formulir resmi (terverifikasi
 terhadap contoh TW I 2026 SDN 316 Ranto Panjang): kop identitas
 sekolah + kotak "Format BOS K-2", tabel No | Uraian | Jumlah (dalam
 Rp) | Triwulan (I–IV) dengan baris "I Program Sekolah" → 1.1–1.8
-(8 program resmi) → "II Belanja Lainnya" → "2.1" (kosong) → JUMLAH,
-dan tanda tangan Komite Sekolah + Kepala Sekolah + Bendahara (+
-tempat/tanggal). Landscape folio.
+(8 program resmi) → JUMLAH, dan tanda tangan Komite Sekolah + Kepala
+Sekolah + Bendahara (+ tempat/tanggal). Landscape folio. Bagian
+"II Belanja Lainnya"/"2.1" dihapus dari cetak/PDF dan Excel
+(2026-10-20).
 
 Data anggaran per program per triwulan dari
 `RkasReportService::build('tahunan')` — baris level `program` membawa
@@ -268,6 +307,13 @@ rincian `tw` 1–4 dari periode mirror ARKAS; baris program dipetakan ke
 belum punya rincian periode, total tahunan ditampilkan di kolom
 triwulan berjalan dan nol di lainnya (keterbatasan tercatat di
 PHPDoc `k2Data()`).
+
+Kolom kumulatif (2026-10-20): laporan triwulan N hanya memuat anggaran
+sampai triwulan N. Kolom triwulan setelahnya tetap ada namun bernilai
+0 (anggaran belum dilaporkan), dan kolom "Jumlah" adalah penjumlahan
+kolom yang tampil (kumulatif), bukan pagu tahunan penuh. Semua baris
+program 1.1–1.8 tetap ditampilkan. Contoh: laporan TW II memuat TW I +
+TW II; TW III/IV = 0.
 
 Implementasi: `SpjPeriodicReportPrintService::k2Data/k2QuarterLabel/
 k2MonthRange`, cabang `k2` di `document.blade.php`,
@@ -290,18 +336,58 @@ Implementasi: `SpjPeriodicReportPrintService::sptjmData`, cabang
 `sptjm_doc` di `document.blade.php`,
 `SpjPeriodicReportExcelService::writeSptjm`.
 
-## Status verifikasi (2026-10-08)
+## Lebar kolom persentase (2026-10-20)
 
-Perubahan pada `SpjPeriodicReportPrintService` (dedup bayangan backfill pajak,
-normalisasi `REK_BKU` varian `Sisa`, perhitungan bunga/pajak sisi bank, dan
-fallback uraian BKU) sudah tercakup regression:
+Seluruh tabel cetak di `periodic-reports/partials/**` tidak lagi memakai
+lebar piksel/otomatis. Setiap tabel merender `<colgroup>` dari array
+persentase per kolom melalui partial bersama
+`periodic-reports/partials/reports/colgroup.blade.php`
+(`@include(..., ['widths' => [...]])`). Gaya tabel memakai
+`table-layout: fixed`, sementara aturan `width` piksel pada
+`document-styles.blade.php` (`.meta-table td:first-child`,
+`.bku-identity-block`, `.signature-table td`, `.bpk-table`) dihapus atau
+diubah menjadi persentase.
+
+Array lebar per format:
+
+- BKU/Pembantu Kas 8 kolom, Pembantu Bank 9, Pajak 12,
+  `transaction_recap` 9, `account_summary` 7, dan fallback bagi rata
+  untuk presentasi lain (`report-ledger-1.blade.php`);
+- Rekap BOSP 15 kolom (`4% + 16% + 12×5.5% + 14%`), ringkasan 9 kolom,
+  meta identitas 2/4 kolom (`document.blade.php`);
+- RPD 7 kolom dasar + jumlah kolom bulan; sisa 28% dibagi rata ke kolom
+  bulan (`report-rpd-2.blade.php`);
+- A1 8 kolom, K-2 7 kolom, K7 9 kolom, K7B 3 kolom, K7C 2 kolom, BPK 6
+  kolom, serta tabel identitas/tanda tangan 2–3 kolom.
+
+`$rpdColspan` pada RPD ikut dikoreksi menjadi jumlah kolom sebenarnya
+(`count($rpdBaseWidths) + count($rpdMonths)`), sehingga baris nomor
+1..N dan baris "PROGRAM SEKOLAH" selaras dengan 10 kolom (7 + 3 bulan).
+Tidak ada perubahan pada registry, perhitungan nilai, tenant boundary,
+penomoran, atau lifecycle dokumen.
+
+## Status verifikasi (2026-10-20)
+
+Sinkronisasi dokumentasi registry terhadap source diverifikasi dengan:
 
 ```text
-BkuOfficialLedgerTest              : 12 passed / 124 assertions
-filter PeriodicReport              : 13 passed / 152 assertions
-K7bK7cReportTest                   : 5 passed / 45 assertions
-K7aFormatK7SptjmReportTest         : 8 passed / 71 assertions
+SpjPeriodicReportRegistryTest (Feature + Unit) : 5 passed / 35 assertions
+SpjPeriodicReportRegistry::packages()          : 35 slot / 18 report key
 ```
 
-Artinya kontrak **source/data** terverifikasi; tampilan cetaknya tetap **RVR**
-karena belum dibuka di browser/PDF viewer aktual.
+Perubahan lebar kolom persentase diverifikasi dengan:
+
+```text
+BkuOfficialLedgerTest, BpkDinasFormatTest, BosA1ReportTest,
+FormatK2ReportTest, RpdBosReportTest, K7bK7cReportTest,
+RekapBudgetRealizationTest, SpjPeriodicReportPrintableTest,
+SpjPeriodicReportModuleUiTest                 : 48 passed / 485 assertions
+php artisan view:clear + view:cache           : Blade templates cached
+```
+
+Kontrak **source/data** yang tercatat di dokumen ini tetap mengacu pada
+regression per format (`BkuOfficialLedgerTest`, `BpkDinasFormatTest`,
+`BosA1ReportTest`, `FormatK2ReportTest`, `RpdBosReportTest`,
+`K7bK7cReportTest`, `RekapBudgetRealizationTest`,
+`SpjPeriodicReportPrintableTest`). Tampilan cetak/PDF tetap **RVR** karena
+belum dibuka di browser/PDF viewer aktual pada batch dokumentasi ini.

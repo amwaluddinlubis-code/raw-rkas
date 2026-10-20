@@ -1,6 +1,7 @@
     @if($isRpd)
     @php
         $rpdDesaKec = trim(trim((string) ($school->desa ?? '')).' / '.trim((string) ($school->district ?? '')), ' /') ?: '-';
+        $rpdIdentityWidths = ['28%', '72%'];
     @endphp
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
         <div style="flex:1;text-align:center;">
@@ -12,6 +13,7 @@
         </table>
     </div>
     <table class="bku-identity-block page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $rpdIdentityWidths])
         <tr>
             <td>Nama Sekolah</td>
             <td>: {{ $school->name }}</td>

@@ -1,5 +1,10 @@
     @if($isK7b)
+    @php
+        $k7bMetaWidths = ['55%', '45%'];
+        $k7bTableWidths = ['60%', '20%', '20%'];
+    @endphp
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $k7bMetaWidths])
         <tr>
             <td>Jumlah Total Penerimaan (D)</td>
             <td>: Rp. {{ $rupiah($k7b['total_in']) }}</td>
@@ -19,6 +24,7 @@
     </table>
     <div style="margin-top:12px;font-weight:700;">Saldo kas B terdiri dari :</div>
     <table class="report-table">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $k7bTableWidths])
         <thead>
             <tr>
                 <th>Uraian</th>
@@ -74,6 +80,7 @@
         </tbody>
     </table>
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $k7bMetaWidths])
         <tr>
             <td>Penjelasan Perbedaan</td>
             <td>: Nihil — cocok dengan Buku Kas Umum. Rincian pecahan (1)+(2) diisi manual saat opname fisik.</td>

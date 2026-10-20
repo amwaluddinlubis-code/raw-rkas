@@ -14,6 +14,7 @@
         </div>
         <div class="k7-ident page-break-avoid">
             <table class="k7-ident-left">
+                @include('periodic-reports.partials.reports.colgroup', ['widths' => ['30%', '70%']])
                 <tr>
                     <td>NPSN</td>
                     <td>: {{ $school->npsn ?? '-' }}</td>
@@ -36,6 +37,7 @@
                 </tr>
             </table>
             <table class="k7-formbox">
+                @include('periodic-reports.partials.reports.colgroup', ['widths' => ['100%']])
                 <tr>
                     <td><strong>Formulir Bos-K7</strong></td>
                 </tr>

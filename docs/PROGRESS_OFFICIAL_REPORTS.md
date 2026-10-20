@@ -1,9 +1,184 @@
 # Laporan Resmi & Format BOS — Log Kemajuan
 
-> Riwayat pekerjaan laporan resmi: BOS K7A/K7B/K7C, Format K7, SPTJM, BOS A-1, dan Bulk Preview Laporan SPJ.
+> Riwayat pekerjaan laporan resmi: BOS K7A/K7B/K7C, Format K7, SPTJM, BOS A-1, dan Bulk Preview Laporan SPJ. K7A, SPB/SP2B/SP2T, BOS K8, dan Form 1C kemudian dihapus dari registry; entri lama dipertahankan sebagai jejak historis.
 >
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
+
+## BOS A-1: kolom Belanja Modal diisi dari kode rekening (2026-10-20)
+
+Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
+
+Rincian Belanja Modal A-1 yang sebelumnya selalu 0 kini dipetakan dari
+kode rekening transaksi: `5.2.02.*` → Peralatan dan Mesin, `5.2`
+lainnya (mis. `5.2.05.*` buku/aset tetap lainnya) → Aset Tetap Lainnya
+BOS, keduanya menambah Jumlah Modal dan TOTAL baris. Baris honor tetap
+Pegawai (sub-program 12), sisanya Barang dan Jasa. Kelas transaksi modal
+data nyata umumnya berkode kegiatan `02.34.*`/`05.08.*`, sehingga aturan
+kode kegiatan `05.02.*` pada implementasi sebelumnya salah kolom.
+Fallback lama (kegiatan `05.02.*` atau uraian "buku") hanya dipakai bila
+kode rekening kosong. Tidak ada perubahan registry, tenant boundary,
+penomoran, atau lifecycle dokumen.
+
+Implementasi: `SpjPeriodicReportPrintService::bosA1Data` +
+`a1ModalColumn`.
+
+Verifikasi:
+
+```text
+php artisan test --compact tests/Feature/BosA1ReportTest.php
+  : 5 passed / 50 assertions (termasuk test baru
+    test_bos_a1_splits_belanja_modal_by_account_code: 5.2.02 -> mesin,
+    5.2.05 -> aset tetap lainnya, Jumlah Modal 3.500.000, grand 6.500.000)
+Regresi 9 kelas laporan periode
+  (RpdBosReport, BkuOfficialLedger, BosA1Report, FormatK2Report,
+   K7bK7cReport, SpjPeriodicReportPrintable, SpjPeriodicReportRegistry,
+   SpjPeriodicReportModuleUi, SpjReportLayout)
+  : 61 passed / 654 assertions
+vendor/bin/pint --dirty --format agent  : passed
+```
+
+Bukti data nyata (mirror sekolah 10208246, 2026): transaksi belanja
+berekening `5.2.02.*` = Rp 48.080.000 dan `5.2.05.*` = Rp 50.820.000,
+sebelumnya sebagian besar jatuh ke Barang dan Jasa.
+
+## Format BOS K-2 kumulatif per triwulan (2026-10-20)
+
+Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
+
+Laporan K-2 triwulan N kini hanya memuat anggaran sampai triwulan N:
+kolom TW setelah periode terpilih tetap dirender namun bernilai 0, dan
+kolom Jumlah memakai penjumlahan kolom yang tampil (kumulatif), bukan
+pagu tahunan penuh. Semua baris program 1.1–1.8 tetap ditampilkan.
+Bila mirror belum punya rincian periode, total tahunan tetap jatuh ke
+kolom triwulan berjalan. Bagian "II Belanja Lainnya"/"2.1" dihapus dari
+tampilan cetak dan export Excel (perubahan view oleh operator,
+dikonfirmasi 2026-10-20).
+
+Implementasi: `SpjPeriodicReportPrintService::k2Data` (zero-kan tw >
+quarter, Jumlah = sum tw tampil) dan `SpjPeriodicReportExcelService::
+writeK2` (baris II/2.1 dihapus).
+
+Verifikasi:
+
+```text
+php artisan test --compact tests/Feature/FormatK2ReportTest.php
+  : 5 passed / 58 assertions (termasuk test baru
+    test_k2_shows_cumulative_quarters_until_selected_period)
+vendor/bin/pint --dirty --format agent  : passed
+```
+
+Browser/PDF viewer belum dijalankan dan tetap **RVR**.
+
+## RPD BOS: Jumlah/Vol/Satuan/Tarif mengikuti periode terpilih (2026-10-20)
+
+Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
+
+`SpjPeriodicReportPrintService::rpdData` kini menurunkan kolom Jumlah,
+Vol, Satuan, dan Tarif Harga dari pecahan `arkas_mirror_rapbs_periode`
+pada snapshot (`periods`) yang `__MONTH_NUMBER`-nya berada di rentang
+bulan triwulan terpilih atau `__QUARTER_NUMBER`-nya cocok. `JUMLAH` dan
+volume dijumlahkan; satuan/tarif memakai pecahan pertama yang terisi.
+Baris yang punya pecahan periode terkoordinat tetapi tidak teralokasi
+di periode terpilih berjumlah 0 dan **tidak ditampilkan** (bukan angka
+tahunan); `has_data` hanya benar bila ada baris tampil. Payload
+tahunan `arkas_mirror_rapbs` hanya dipakai sebagai fallback saat baris
+tidak punya pecahan periode terkoordinat sama sekali (mis. baris SPPD
+tanpa split di data nyata). Agregat sub/kegiatan/program, Sub Total,
+dan JUMLAH TOTAL ikut menjumlahkan angka periode ini. Excel memakai
+payload `rpd` yang sama sehingga konsisten.
+
+Tidak ada perubahan registry, realisasi bulanan, tenant boundary,
+penomoran, atau lifecycle dokumen.
+
+Verifikasi:
+
+```text
+php artisan test --compact tests/Feature/RpdBosReportTest.php
+  : 8 passed / 90 assertions (termasuk test baru
+    test_rpd_volume_unit_and_unit_price_follow_selected_period yang juga
+    memeriksa baris berjumlah 0 tidak tampil dan Jumlah per periode)
+Regresi 9 kelas laporan periode
+  (RpdBosReport, BkuOfficialLedger, BosA1Report, FormatK2Report,
+   K7bK7cReport, SpjPeriodicReportPrintable, SpjPeriodicReportRegistry,
+   SpjPeriodicReportModuleUi, SpjReportLayout)
+  : 59 passed / 636 assertions
+vendor/bin/pint --dirty --format agent  : passed
+```
+
+Cek data nyata (school 10208246): "Biaya Paket Data" volume tahunan 28
+paket, alokasi Triwulan I = 6 paket — rendisi kini memakai 6 untuk
+Triwulan I. Total alokasi periode 81–83 (Triwulan I)
+Rp 716.945.400 dan 87–89 (Triwulan III) Rp 793.793.000, dibanding pagu
+tahunan Rp 2.725.108.000. Dari 1.459 baris RKAS, 598 baris punya
+alokasi Triwulan I; sisanya (teralokasi di triwulan lain) kini tidak
+tampil di RPD Triwulan I. Baris SPPD tanpa split periode tetap memakai
+nilai tahunan. Browser/PDF viewer belum dijalankan dan tetap **RVR**.
+
+## Lebar kolom cetak Laporan Periode menjadi persentase (2026-10-20)
+
+Status: **SOURCE IMPLEMENTED / FOCUSED VERIFIED / BROWSER–PDF RVR**.
+
+Semua tabel cetak `resources/views/periodic-reports/partials/**`
+sekarang memakai `<colgroup>` berisi lebar persentase per kolom melalui
+partial bersama `reports/colgroup.blade.php`. `document-styles.blade.php`
+memakai `table-layout: fixed` dan tidak lagi mendefinisikan lebar piksel
+untuk `.meta-table td:first-child`, `.bku-identity-block`,
+`.signature-table td`, serta `.bpk-table`.
+
+Lebar didefinisikan sebagai array per format: BKU/Pembantu Kas 8 kolom,
+Pembantu Bank 9, Pajak 12, `transaction_recap` 9, `account_summary` 7,
+Rekap BOSP 15, ringkasan 9, A1 8, K-2 7, K7 9, K7B 3, K7C 2, BPK 6, dan
+tabel identitas/tanda tangan 2–3 kolom. RPD memakai 7 kolom dasar dan
+membagi sisa 28% rata ke kolom bulan. `$rpdColspan` dikoreksi menjadi
+jumlah kolom sebenarnya sehingga baris nomor 1..N dan "PROGRAM SEKOLAH"
+selaras.
+
+Tidak ada perubahan registry, nilai, tenant boundary, penomoran, atau
+lifecycle dokumen. `BkuOfficialLedgerTest` disesuaikan agar ikut membaca
+partial `colgroup.blade.php` saat memeriksa keberadaan `<colgroup>`.
+
+Verifikasi:
+
+```text
+BkuOfficialLedgerTest, BpkDinasFormatTest, BosA1ReportTest,
+FormatK2ReportTest, RpdBosReportTest, K7bK7cReportTest,
+RekapBudgetRealizationTest, SpjPeriodicReportPrintableTest,
+SpjPeriodicReportModuleUiTest                 : 48 passed / 485 assertions
+php artisan view:clear + view:cache           : Blade templates cached
+```
+
+Browser/PDF viewer aktual (lebar kolom, page break, hasil cetak) belum
+dijalankan dan tetap **RVR**.
+
+## Sinkronisasi registry & dokumentasi laporan periode (2026-10-20)
+
+Status: **DOCUMENTATION SYNC / SOURCE VERIFIED (registry) / BROWSER RVR**.
+
+Commit `c893e3f` menghapus `bos_k7a`, `spb`, `sp2b`, `lampiran_sp2b`, dan
+`sp2t` dari registry/presenter, lalu commit `130c47d` menghapus `bos_k8`
+dan `form_1c`. Dokumentasi belum mengikuti perubahan tersebut. Registry
+aktual sekarang berisi **35 slot** (bulanan 10, triwulan 10, semester 8,
+tahunan 7) dari **18 report key**.
+
+Dokumen yang diselaraskan: `SPJ_PERIODIC_REPORTING.md` (daftar paket per
+scope + key, catatan key yang dihapus, peta presentasi),
+`PERIODIC_REPORT_MODULE.md` (hapus panduan K7A yang sudah tidak ada,
+tambah panduan RPD BOS dan format presenter generik), dan
+`docs/README.md` (angka slot/key). Tidak ada perubahan source, registry,
+business rule, tenant boundary, numbering, atau lifecycle.
+
+Verifikasi yang dijalankan:
+
+```text
+php artisan test --compact tests/Feature/SpjPeriodicReportRegistryTest.php \
+  tests/Unit/SpjPeriodicReportRegistryTest.php
+hasil: 5 passed / 35 assertions
+```
+
+Browser/PDF runtime tidak dijalankan pada batch dokumentasi ini dan tetap
+RVR. Angka slot/key pada entri historis di bawah (mis. 47 slot/23 key)
+adalah keadaan saat entri tersebut ditulis, bukan status registry sekarang.
 
 ## Penyesuaian layout cetak Format K7 (2026-10-19)
 
@@ -133,6 +308,10 @@ ditolak bukti). Kolom modal dipertahankan nol + RVR: seluruh sampel resmi
 bernilai nol sehingga belum ada aturan populasi terverifikasi. Registry
 triwulan 12→13 slot (47 total, 23 key); kontrak teknis, indeks, dan
 regression count diselaraskan.
+
+> **Disuperseded 2026-10-20**: kolom modal kini diisi dari kode rekening
+> (`5.2.02.*` → Peralatan dan Mesin, `5.2` lain → Aset Tetap Lainnya BOS);
+> lihat entri "BOS A-1: kolom Belanja Modal diisi dari kode rekening".
 
 Regression: `BosA1ReportTest` 4 passed / 40 assertions (data, print
 route, excel), registry Feature+Unit, Printable, RekapBudgetRealization,

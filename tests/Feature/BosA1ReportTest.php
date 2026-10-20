@@ -171,6 +171,55 @@ class BosA1ReportTest extends TestCase
         $this->assertSame('01 JANUARI - 31 MARET 2026', $payload['bosA1Title']['range']);
     }
 
+    public function test_bos_a1_splits_belanja_modal_by_account_code(): void
+    {
+        $this->seedMirrorRow('arkas_mirror_kas_umum', 'A1-B5', [
+            'ID_KAS_UMUM' => 'A1-B5', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar',
+            'NO_BUKTI' => 'BPU05', 'TANGGAL_TRANSAKSI' => '2026-03-10', 'URAIAN' => 'Laptop',
+            'KODE_REKENING' => '5.2.02.01.01.0005', 'JUMLAH' => 1500000, 'ID_RAPBS' => 'A1-RD',
+        ]);
+        $this->seedMirrorRow('arkas_mirror_kas_umum', 'A1-B6', [
+            'ID_KAS_UMUM' => 'A1-B6', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar',
+            'NO_BUKTI' => 'BPU06', 'TANGGAL_TRANSAKSI' => '2026-03-12', 'URAIAN' => 'Buku Perpustakaan',
+            'KODE_REKENING' => '5.2.05.01.01.0004', 'JUMLAH' => 2000000, 'ID_RAPBS' => 'A1-RE',
+        ]);
+        $this->seedMirrorRow('arkas_mirror_rapbs', 'A1-RD', [
+            'id_rapbs' => 'A1-RD', 'id_anggaran' => 'ANG-1', 'KODE_KEGIATAN' => '05.02.03',
+            'kode_rekening' => '5.2.02.01.01.0005', 'uraian' => 'Laptop', 'jumlah' => 1500000,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_rapbs', 'A1-RE', [
+            'id_rapbs' => 'A1-RE', 'id_anggaran' => 'ANG-1', 'KODE_KEGIATAN' => '05.02.05',
+            'kode_rekening' => '5.2.05.01.01.0004', 'uraian' => 'Buku Perpustakaan', 'jumlah' => 2000000,
+        ]);
+
+        foreach (['A1-B5', 'A1-B6'] as $kasId) {
+            $transaction = Transaction::query()->create([
+                'fiscal_year_id' => 1,
+                'fund_source_id' => 1,
+                'id_kas_umum' => $kasId,
+            ]);
+            $transaction->items()->create([
+                'source_item_id' => $kasId,
+                'item_description' => 'Item '.$kasId,
+            ]);
+        }
+
+        $a1 = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'bos_a1', 1)['bosA1'];
+
+        // Program 5: 5.2.02 -> Peralatan dan Mesin, 5.2.05 -> Aset Tetap Lainnya.
+        $this->assertSame(1500000.0, $a1['rows'][5]['modal_mesin']);
+        $this->assertSame(2000000.0, $a1['rows'][5]['modal_aset']);
+        $this->assertSame(3500000.0, $a1['rows'][5]['modal_jumlah']);
+        $this->assertSame(3500000.0, $a1['rows'][5]['total']);
+        $this->assertSame(0.0, $a1['rows'][5]['barang_jasa']);
+        $this->assertSame(0.0, $a1['rows'][5]['pegawai']);
+
+        $this->assertSame(1500000.0, $a1['totals']['modal_mesin']);
+        $this->assertSame(2000000.0, $a1['totals']['modal_aset']);
+        $this->assertSame(3500000.0, $a1['totals']['modal_jumlah']);
+        $this->assertSame(6500000.0, $a1['totals']['grand']);
+    }
+
     public function test_bos_a1_print_route_renders_official_layout(): void
     {
         $response = $this->get('/laporan-periode/triwulan/bos_a1/cetak?periode_laporan=1');

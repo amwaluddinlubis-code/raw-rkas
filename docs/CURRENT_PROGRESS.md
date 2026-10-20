@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-19** (penyesuaian layout cetak Format K7 mendapat focused verification lokal; full CI dan browser/PDF runtime tetap RVR).
+Terakhir diperbarui: **2026-10-20** (kolom Belanja Modal Format BOS A-1 kini diisi dari kode rekening — `5.2.02.*` Peralatan dan Mesin, `5.2` lain Aset Tetap Lainnya BOS; Jumlah/Vol/Satuan/Tarif RPD BOS kini mengikuti alokasi periode terpilih dari `arkas_mirror_rapbs_periode` dan baris berjumlah 0 tidak ditampilkan; Format BOS K-2 kini kumulatif per triwulan — kolom TW setelah periode terpilih = 0 dan Jumlah = kumulatif, bagian II Belanja Lainnya dihapus dari cetak/Excel; focused verification 61 test / 654 assertions; sinkronisasi dokumentasi registry Laporan Periode ke 35 slot/18 key; lebar kolom cetak Laporan Periode menjadi array persentase via `<colgroup>` dengan focused verification 48 test / 485 assertions; full CI dan browser/PDF runtime tetap RVR).
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.

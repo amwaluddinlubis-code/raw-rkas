@@ -107,6 +107,7 @@
     .signature-table {
         width: 100%;
         border-collapse: collapse;
+        table-layout: fixed;
     }
 
     .meta-table td {
@@ -115,7 +116,6 @@
     }
 
     .meta-table td:first-child {
-        width: 120px;
         font-weight: 700;
     }
 
@@ -141,15 +141,20 @@
 
     .report-table {
         margin-top: 12px;
-        table-layout: auto;
+        table-layout: fixed;
+    }
+
+    .report-table th {
+        vertical-align: middle !important;
     }
 
     .report-table th,
     .report-table td {
         border: 1px solid #6b7280;
-        padding: 4px 5px;
+        padding: 2px 3px;
         vertical-align: top;
     }
+
 
     .report-table th {
         background: #e5e7eb;
@@ -176,6 +181,10 @@
     .report-table .bku-sub {
         color: #6b7280;
         font-size: 7.5px;
+    }
+
+    .report-table .text-center {
+        text-align: center;
     }
 
     /* BKU resmi: semua kolom fixed satu baris (ellipsis), hanya Uraian wrap. */
@@ -306,6 +315,7 @@
     .bku-identity {
         margin: 6px auto 0;
         border-collapse: collapse;
+        table-layout: fixed;
         font-size: 10px;
     }
 
@@ -324,10 +334,10 @@
         width: 100%;
         margin-top: 8px;
         border-collapse: collapse;
+        table-layout: fixed;
     }
 
     .bku-identity-block>tbody>tr>td {
-        width: 50%;
         vertical-align: top;
     }
 
@@ -341,8 +351,10 @@
     }
 
     .bku-closing-table {
+        width: 100%;
         margin-top: 4px;
         border-collapse: collapse;
+        table-layout: fixed;
     }
 
     .bku-closing-table td {
@@ -369,13 +381,13 @@
 
     .bpk-table th:first-child,
     .bpk-table td:first-child {
-        width: 42px;
+        width: 6%;
         text-align: center;
     }
 
     .bpk-table th:last-child,
     .bpk-table td:last-child {
-        width: 135px;
+        width: 14%;
     }
 
     .statement {
@@ -395,14 +407,13 @@
     }
 
     .signature-table td {
-        width: 50%;
         padding: 0 14px;
         text-align: center;
         vertical-align: top;
     }
 
     .signature-space {
-        height: 54px;
+        height: 64px;
     }
 
     .signature-name {

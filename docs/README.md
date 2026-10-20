@@ -49,7 +49,7 @@ Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository me
 | `USER_SCENARIOS.md` | **ACTIVE** — alur operator dan ownership workspace. |
 | `SPJ_SUPPORTING_DOCUMENT_PATTERNS.md` | **ACTIVE REFERENCE / FASE 1 IMPLEMENTED** — 10 pola bukti dukung + mapping kategori/channel; checklist manual per paket sudah tersedia dan sengaja non-blocking. Aturan otomatis/threshold lanjutan masih RVR. |
 | `GUI_STANDARDIZATION.md` | **ACTIVE CONTRACT** — layout/theme/primitive/icon dan aturan evidence visual. |
-| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat scope periode dengan 47 slot (23 report key) pada `SpjPeriodicReportRegistry`, generator internal, browser print, PDF, Excel, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
+| `PERIODIC_REPORT_MODULE.md` | **ACTIVE FEATURE GUIDE / PRINT & PDF SOURCE IMPLEMENTED** — empat scope periode dengan 35 slot (18 report key) pada `SpjPeriodicReportRegistry`, generator internal, browser print, PDF, Excel, dan boundary terpisah dari template Laporan SPJ. Runtime visual QA masih RVR sampai diverifikasi. |
 | `SPJ_PERIODIC_REPORTING.md` | **ACTIVE TECHNICAL CONTRACT** — prinsip, registry, scope, dan boundary data modul Laporan Periode; berpasangan dengan feature guide di atas. |
 | `GUI_RUNTIME_QA.md` | **ACTIVE / RVR CHECKLIST** — browser desktop/laptop dan mobile/tablet verification. |
 | `CSS_USAGE_GUIDE.md` | **ACTIVE** — CSS/theme contract. |
@@ -84,7 +84,7 @@ Untuk pekerjaan sinkronisasi, baca `SYNCHRONIZATION.md` lebih dulu. Untuk number
 | Dokumen | Isi |
 |---|---|
 | `PROGRESS_NUMBERING_LIFECYCLE.md` | Penomoran & lifecycle dokumen (R1/R6, cluster penomoran, filter periode, P0-03). |
-| `PROGRESS_OFFICIAL_REPORTS.md` | Laporan resmi & format BOS (K7A/K7B/K7C, Format K7, SPTJM, BOS A-1, Bulk Preview). |
+| `PROGRESS_OFFICIAL_REPORTS.md` | Laporan resmi & format BOS (K7B/K7C, Format K7, SPTJM, BOS A-1, RPD BOS, Format BOS K-2, Bulk Preview; K7A hanya historis). |
 | `PROGRESS_SYNCHRONIZATION.md` | Sinkronisasi ARKAS (mirror kas, safe sync, reconciliation, importer, P0-05, P0-08). |
 | `PROGRESS_UI_UX.md` | UI/UX (workspace Paket, tab atribut, navigasi, density token, standardisasi GUI). |
 | `PROGRESS_QA_BROWSER.md` | QA browser (sesi QA + temuan perbaikan). Checklist canonical: `GUI_RUNTIME_QA.md`. |

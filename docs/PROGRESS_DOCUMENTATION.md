@@ -5,6 +5,37 @@
 > Dipecah dari `CURRENT_PROGRESS.md` pada 2026-10-11 agar tiap file di bawah batas 128KB konektor GitHub.
 > Urutan kronologis terbalik (terbaru di atas), sesuai file induk. Status terbaru selalu di `CURRENT_PROGRESS.md`.
 
+## Sinkronisasi dokumentasi paket Laporan Periode (2026-10-20)
+
+Status: **DOCUMENTATION SYNC / REGISTRY VERIFIED / BROWSER RVR**.
+
+Registry berubah setelah entri §4 di bawah ditulis: commit `c893e3f`
+menghapus `bos_k7a`, `spb`, `sp2b`, `lampiran_sp2b`, dan `sp2t`, lalu commit
+`130c47d` menghapus `bos_k8` dan `form_1c`. Akibatnya klaim "47 slot
+(23 report key)" pada `docs/README.md` dan `SPJ_PERIODIC_REPORTING.md` menjadi
+stale.
+
+Keadaan terverifikasi 2026-10-20: **35 slot** (bulanan 10 + triwulan 10 +
+semester 8 + tahunan 7) dari **18 report key**. Perubahan dokumen:
+
+- `docs/README.md` — angka slot/key diperbaiki menjadi 35/18;
+- `SPJ_PERIODIC_REPORTING.md` — daftar paket per scope ditulis ulang dari
+  registry (label + key), catatan key yang dihapus, dan peta presentasi
+  `SpjPeriodicReportPrintService::presentation()`;
+- `PERIODIC_REPORT_MODULE.md` — bagian K7A dihapus karena presenter/key sudah
+  tidak ada, ditambah panduan RPD BOS dan format presenter generik;
+- `PROGRESS_OFFICIAL_REPORTS.md` — entri sinkronisasi + penanda bahwa angka
+  slot/key pada entri historis bukan status sekarang.
+
+Verifikasi: `php artisan test --compact
+tests/Feature/SpjPeriodicReportRegistryTest.php
+tests/Unit/SpjPeriodicReportRegistryTest.php` — 5 passed / 35 assertions.
+Tidak ada perubahan source; browser/PDF runtime tidak dijalankan dan tetap
+RVR.
+
+Angka pada §4 ("46 slot / 22 report key") adalah temuan historis pada
+2026-10-05, bukan status registry saat ini.
+
 ## Cleanup dokumentasi usang + view orphan importer (2026-10-05)
 
 Status: **FUNCTIONAL PASS (focused, docs + view cleanup) / BROWSER RVR**.

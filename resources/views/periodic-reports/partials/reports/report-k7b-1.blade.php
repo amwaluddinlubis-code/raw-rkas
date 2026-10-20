@@ -2,6 +2,7 @@
     <h1 class="doc-title">REGISTER PENUTUPAN KAS</h1>
     <div class="doc-subtitle">Formulir BOS-K7B</div>
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => ['55%', '45%']])
         <tr>
             <td>Tanggal Penutupan Kas</td>
             <td>: {{ $k7b['closing_date'] }}</td>

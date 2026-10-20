@@ -242,8 +242,8 @@ final class SpjPeriodicReportExcelService
 
     /**
      * Lembar Excel Format BOS K-2: No | Uraian | Jumlah (dalam Rp) |
-     * Triwulan (I–IV), baris "I Program Sekolah" -> 1.1–1.8 ->
-     * "II Belanja Lainnya" -> "2.1" -> JUMLAH.
+     * Triwulan (I–IV), baris "I Program Sekolah" -> 1.1–1.8 -> JUMLAH.
+     * Angka mengikuti periode terpilih (kolom TW setelahnya nol).
      */
     private function writeK2(object $sheet, array $payload): void
     {
@@ -266,8 +266,6 @@ final class SpjPeriodicReportExcelService
                 (float) $program['tw'][4],
             ]], null, 'A'.$rowNumber++);
         }
-        $sheet->fromArray([['II', 'Belanja Lainnya']], null, 'A'.$rowNumber++);
-        $sheet->fromArray([['2.1']], null, 'A'.$rowNumber++);
         $sheet->fromArray([[
             '',
             'JUMLAH',

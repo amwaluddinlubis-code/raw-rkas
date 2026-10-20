@@ -1,5 +1,6 @@
     @if($isSptjm)
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => ['30%', '70%']])
         <tr>
             <td>Nama</td>
             <td>: {{ $principalName }}</td>
@@ -24,6 +25,7 @@
         <p>Demikian surat pernyataan ini dibuat dengan sesungguhnya.</p>
     </div>
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => ['30%', '70%']])
         <tr>
             <td>Tempat / Tanggal</td>
             <td>: {{ $sptjm['place'] }}, {{ $sptjm['signed_date'] }}</td>

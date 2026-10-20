@@ -1,8 +1,14 @@
-        @php($bpk = $bpkData)
+        <?php $bpk = $bpkData; ?>
         <?php $bpkZero = fn ($value) => (float) $value > 0 ? $rupiah($value) : '-'; ?>
         <?php $bpkBlank = fn ($value) => (float) $value > 0 ? $rupiah($value) : ''; ?>
+        <?php
+            $bpkMetaWidths = ['30%', '70%'];
+            $bpkTableWidths = ['6%', '40%', '12%', '14%', '14%', '14%'];
+            $bpkSignatureWidths = ['50%', '50%'];
+        ?>
         <h1 class="doc-title">DINAS PENDIDIKAN DAN KEBUDAYAAN<br>PEMERINTAH KABUPATEN {{ mb_strtoupper((string) $school->regency) }}<br>{{ $bpkTitle['title'] ?? 'REKAP REALISASI PENGGUNAAN DANA BOS' }}</h1>
         <table class="meta-table page-break-avoid">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $bpkMetaWidths])
             <tr><td colspan="2"><strong>DATA SEKOLAH</strong></td></tr>
             <tr><td>1&ensp;Nama Sekolah</td><td>{{ $bpkSchoolName ?? '' }}</td></tr>
             <tr><td>2&ensp;Alamat</td><td>{{ $bpkSchoolAddress ?? '' }}</td></tr>
@@ -13,6 +19,7 @@
             <tr><td>7&ensp;No. Rekening</td><td>……………………</td></tr>
         </table>
         <table class="report-table bpk-dinas-table">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $bpkTableWidths])
             <thead>
                 <tr><th colspan="6">DATA REALISASI KEUANGAN</th></tr>
                 <tr><th>NO</th><th>KETERANGAN</th><th>TANGGAL</th><th>MASUK</th><th>KELUAR</th><th>SALDO</th></tr>
@@ -117,6 +124,7 @@
             </tbody>
         </table>
         <table class="signature-table">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $bpkSignatureWidths])
             <tr>
                 <td>
                     Mengetahui,<br>

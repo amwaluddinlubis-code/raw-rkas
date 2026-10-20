@@ -1,10 +1,15 @@
     @if($isK7c)
+    @php
+        $k7cWidths = ['70%', '30%'];
+        $k7cMetaWidths = ['55%', '45%'];
+    @endphp
     <div class="statement">
         <p>Pada hari ini {{ $k7c['weekday_date'] }}, yang bertanda tangan di bawah ini, kami Kepala Sekolah yang ditunjuk berdasarkan Surat Keputusan No. - (diisi manual), Nama : {{ $principalName }}, Jabatan : Kepala Sekolah, melakukan pemeriksaan kas kepada : Nama : {{ $treasurerName }}, Jabatan : Bendahara / Pemegang Kas, yang berdasarkan Surat Keputusan No. - (diisi manual) ditugaskan dalam pengurusan uang Bantuan Operasional Sekolah (BOS).</p>
         <p>Berdasarkan pemeriksaan kas serta bukti-bukti dalam pengurusan ini, kami menemui kenyataan sebagai berikut :</p>
     </div>
     <div style="margin-top:12px;font-weight:700;">Jumlah uang yang dihitung dihadapan bendahara / Pemegang Kas adalah :</div>
     <table class="report-table">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $k7cWidths])
         <thead>
             <tr>
                 <th>Uraian</th>
@@ -39,6 +44,7 @@
         </tbody>
     </table>
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $k7cMetaWidths])
         <tr>
             <td>Tanggal</td>
             <td>: {{ $k7c['closing_date'] }}</td>

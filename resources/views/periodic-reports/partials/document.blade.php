@@ -17,6 +17,15 @@
     $isSptjm = $presentation === 'sptjm_doc' && isset($sptjm);
     $ledgerTitle = $presentation === 'cash_ledger' ? 'BUKU PEMBANTU KAS' : 'BUKU KAS UMUM (BKU)';
     $closingSubject = $presentation === 'cash_ledger' ? 'Buku Pembantu Kas' : 'Buku Kas Umum';
+    $identityWidths = ['50%', '50%'];
+    $bkuIdentityWidths = ['30%', '70%'];
+    $rekapIdentityWidths = ['25%', '75%'];
+    $rekapWidths = array_merge(['4%', '16%'], array_fill(0, 12, '5.5%'), ['14%']);
+    $rekapMetaWidths = ['60%', '40%'];
+    $summaryWidths = ['14%', '12%', '14%', '10%', '10%', '10%', '10%', '10%', '10%'];
+    $genericMetaWidths = ['18%', '32%', '18%', '32%'];
+    $bkuClosingWidths = ['60%', '40%'];
+    $signatureTwoWidths = ['50%', '50%'];
 @endphp
 
 <article class="document-sheet">
@@ -26,9 +35,11 @@
             <div class="doc-subtitle">BKU - PAJAK</div>
         @endif
         <table class="bku-identity-block page-break-avoid">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $identityWidths])
             <tr>
                 <td>
                     <table class="bku-identity">
+                        @include('periodic-reports.partials.reports.colgroup', ['widths' => $bkuIdentityWidths])
                         <tr><td>NPSN</td><td>: {{ $school->npsn ?? '-' }}</td></tr>
                         <tr><td>Nama Sekolah</td><td>: {{ $school->name }}</td></tr>
                         <tr><td>Alamat</td><td>: {{ $school->address ?: '-' }}</td></tr>
@@ -40,6 +51,7 @@
                 </td>
                 <td>
                     <table class="bku-identity">
+                        @include('periodic-reports.partials.reports.colgroup', ['widths' => $bkuIdentityWidths])
                         <tr><td>Sumber Dana</td><td>: {{ $bkuMeta['sumber_dana'] ?? $fundSource }}</td></tr>
                         <tr><td>Tahun Anggaran</td><td>: {{ $bkuMeta['tahun'] ?? $year->year }}</td></tr>
                         <tr><td>Periode</td><td>: {{ $bkuMeta['periode'] ?? $summary['period_label'] }}</td></tr>
@@ -81,6 +93,7 @@
         <div class="doc-subtitle">PERIODE TANGGAL : {{ $rekapTitle['range'] ?? '-' }}</div>
         <div class="doc-subtitle">{{ $rekapTitle['phase'] ?? '' }}</div>
         <table class="bku-identity-block page-break-avoid">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $rekapIdentityWidths])
             <tr>
                 <td>NPSN</td>
                 <td>: {{ $school->npsn ?? '-' }}</td>
@@ -112,6 +125,7 @@
             $rekapCols = range(1, 12);
         @endphp
         <table class="report-table rekap-bosp-table">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $rekapWidths])
             <thead>
                 <tr>
                     <th rowspan="3">No.<br>Urut</th>
@@ -155,6 +169,7 @@
             </tbody>
         </table>
         <table class="meta-table page-break-avoid">
+            @include('periodic-reports.partials.reports.colgroup', ['widths' => $rekapMetaWidths])
             <tr>
                 <td>Saldo periode sebelumnya</td>
                 <td>: Rp. {{ $rupiah($rekapBosp['prev'] ?? 0) }}</td>
@@ -191,6 +206,7 @@
     @include('periodic-reports.partials.reports.sptjm')
     @if(! in_array($presentation, ['bku_ledger', 'tax'], true) && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7 && ! $isK2 && ! $isRpd && ! $isSptjm)
     <table class="meta-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $genericMetaWidths])
         <tr>
             <td>Tahun Anggaran</td>
             <td>: {{ $year->year }}</td>
@@ -221,6 +237,7 @@
 
     @if(! $isLedger && ! $isRekap && ! $isBpk && ! $isA1 && ! $isK7b && ! $isK7c && ! $isK7 && ! $isK2 && ! $isRpd && ! $isSptjm)
     <table class="summary-table page-break-avoid">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $summaryWidths])
         <thead>
             <tr>
                 <th>Nilai Bruto</th>
@@ -299,6 +316,7 @@
         <div class="bku-closing page-break-avoid">
             <p>Pada hari ini {{ $bkuClosing['weekday_date'] }} {{ $closingSubject }} Ditutup dengan keadaan/posisi buku sebagai berikut :</p>
             <table class="bku-closing-table">
+                @include('periodic-reports.partials.reports.colgroup', ['widths' => $bkuClosingWidths])
                 @if($presentation === 'cash_ledger')
                     <tr><td class="bku-closing-label"><strong>Saldo Kas Tunai</strong></td><td>: Rp. {{ $rupiah($bkuClosing['cash']) }}</td></tr>
                 @else
@@ -316,6 +334,7 @@
 
     @if($isLedger || $presentation === 'tax')
     <table class="signature-table bku-signature">
+        @include('periodic-reports.partials.reports.colgroup', ['widths' => $signatureTwoWidths])
         <tr>
             <td>
                 Menyetujui,<br>

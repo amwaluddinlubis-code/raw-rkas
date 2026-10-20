@@ -1,6 +1,6 @@
 # SPJ Periodic Reporting
 
-Terakhir diverifikasi terhadap source: **2026-10-07** (`raw-rkas`, branch `main`)
+Terakhir diverifikasi terhadap source: **2026-10-20** (`raw-rkas`, branch `main`)
 
 Status: **REGISTRY + DATA ENGINE + INTERNAL PRINT/PDF IMPLEMENTED / VISUAL RUNTIME RVR**
 
@@ -20,76 +20,69 @@ Panduan fitur per-format laporan (aturan nilai, mapping sel, batasan presenter) 
 ## Paket laporan
 
 Daftar di bawah adalah cerminan langsung dari
-`SpjPeriodicReportRegistry::packages()`: **47 slot** (bulanan 11 + triwulan 13 +
-semester 13 + tahunan 10) dari **23 report key** berbeda. Bila daftar ini
+`SpjPeriodicReportRegistry::packages()`: **35 slot** (bulanan 10 + triwulan 10 +
+semester 8 + tahunan 7) dari **18 report key** berbeda. Bila daftar ini
 berbeda dengan registry, registry yang benar.
 
 ### Bulanan
 
-- SPTJM
-- Buku Kas Umum
-- Buku Pembantu Kas
-- Buku Pembantu Bank
-- Buku Pembantu Pajak
-- Register Penutupan Kas (K7B)
-- Berita Acara Pemeriksaan Kas (K7C)
-- BOS K7A
-- Rekap Belanja Modal dan Belanja Barang / Jasa
-- Rekapitulasi Pengeluaran Dana BOS
-- Laporan BPK Format BOS
+- SPTJM (`sptjm`)
+- Buku Kas Umum (`bku`)
+- Buku Pembantu Kas (`buku_pembantu_kas`)
+- Buku Pembantu Bank (`buku_pembantu_bank`)
+- Buku Pembantu Pajak (`buku_pembantu_pajak`)
+- Register Penutupan Kas (K7B) (`k7b`)
+- Berita Acara Pemeriksaan Kas (K7C) (`k7c`)
+- Rekap Belanja Modal dan Belanja Barang / Jasa (`rekap_belanja_modal_barang_jasa`)
+- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
+- Laporan BPK Format BOS (`bpk_bos`)
 
 Periode valid: bulan `1..12`.
 
 ### Tahap & Triwulan
 
-- SPTJM
-- BOS K7A
-- Format K7
-- Buku Kas Umum (BKU)
-- SPB
-- SP2B
-- Lampiran SP2B
-- SP2T
-- Berita Acara Rekonsiliasi
-- Lampiran Berita Acara Rekonsiliasi
-- Rekapitulasi Pengeluaran Dana BOS
-- Laporan BPK Format BOS
-- Format BOS A-1
+- SPTJM (`sptjm`)
+- Format K7 (`format_k7`)
+- Format BOS K-2 (`format_k2`)
+- RPD BOS (`rpd_bos`)
+- Buku Kas Umum (BKU) (`bku`)
+- Berita Acara Rekonsiliasi (`berita_acara_rekonsiliasi`)
+- Lampiran Berita Acara Rekonsiliasi (`lampiran_berita_acara_rekonsiliasi`)
+- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
+- Laporan BPK Format BOS (`bpk_bos`)
+- Format BOS A-1 (`bos_a1`)
 
 Periode valid: triwulan `1..4`.
 
 ### Semester
 
-- SPTJM
-- BOS K7A
-- Format K7
-- Buku Kas Umum (BKU)
-- SPB
-- SP2B
-- Lampiran SP2B
-- SP2T
-- Berita Acara Rekonsiliasi
-- Lampiran Berita Acara Rekonsiliasi
-- Rekap Belanja Barang Milik Daerah (Aset)
-- Rekapitulasi Pengeluaran Dana BOS
-- Laporan BPK Format BOS
+- SPTJM (`sptjm`)
+- Format K7 (`format_k7`)
+- Buku Kas Umum (BKU) (`bku`)
+- Berita Acara Rekonsiliasi (`berita_acara_rekonsiliasi`)
+- Lampiran Berita Acara Rekonsiliasi (`lampiran_berita_acara_rekonsiliasi`)
+- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
+- Rekap Belanja Barang Milik Daerah (Aset) (`rekap_bmd`)
+- Laporan BPK Format BOS (`bpk_bos`)
 
 Periode valid: semester `1..2`.
 
 ### Tahunan
 
-- SPTJM
-- BOS K7A
-- Format K7
-- Buku Kas Umum (BKU)
-- Rekap Barang Milik Daerah (Aset)
-- BOS K8
-- Rekap Belanja Dana BOS
-- Form 1C
-- Rekapitulasi Pengeluaran Dana BOS
-- Laporan BPK Format BOS
+- SPTJM (`sptjm`)
+- Format K7 (`format_k7`)
+- Buku Kas Umum (BKU) (`bku`)
+- Rekap Barang Milik Daerah (Aset) (`rekap_bmd`)
+- Rekap Belanja Dana BOS (`rekap_belanja_dana_bos`)
+- Rekapitulasi Pengeluaran Dana BOS (`rekapitulasi_pengeluaran_dana_bos`)
+- Laporan BPK Format BOS (`bpk_bos`)
 
 Periode tahunan selalu menggunakan seluruh tahun anggaran aktif dan tidak membutuhkan nomor periode tambahan.
+
+Report key berikut sudah dihapus dari registry dan tidak boleh ditampilkan atau
+ditambahkan kembali tanpa perubahan kontrak: `bos_k7a`, `spb`, `sp2b`,
+`lampiran_sp2b`, `sp2t` (commit `c893e3f`), serta `bos_k8` dan `form_1c`
+(commit `130c47d`).
 
 ## Data engine
 
@@ -106,7 +99,31 @@ Untuk periode yang sudah valid, modul menghitung ringkasan sumber data berikut l
 - PPh 4(2);
 - SSPD/Pajak Daerah.
 
-Ringkasan ini adalah **lapisan sumber data**, bukan pengganti rumus atau bentuk resmi masing-masing laporan. Misalnya aturan kolom dan saldo Buku Kas Umum, struktur SP2B, atau klasifikasi BMD harus tetap mengikuti kontrak template/formula laporan yang disepakati kemudian.
+Ringkasan ini adalah **lapisan sumber data**, bukan pengganti rumus atau bentuk resmi masing-masing laporan. Misalnya aturan kolom dan saldo Buku Kas Umum, struktur laporan rekap, atau klasifikasi BMD harus tetap mengikuti kontrak template/formula laporan yang disepakati kemudian.
+
+## Presentasi cetak
+
+`SpjPeriodicReportPrintService::presentation()` memetakan report key ke
+presentasi berikut:
+
+- `bku_ledger` — BKU;
+- `cash_ledger` — Buku Pembantu Kas;
+- `bank_ledger` — Buku Pembantu Bank;
+- `tax` — Buku Pembantu Pajak;
+- `rekap_bosp` — Rekapitulasi Pengeluaran Dana BOS;
+- `bpk_bos` — Laporan BPK Format BOS;
+- `bos_a1` — Format BOS A-1;
+- `k7b`/`k7c` — Register Penutupan Kas dan Berita Acara Pemeriksaan Kas;
+- `k7` — Format K7;
+- `k2` — Format BOS K-2;
+- `rpd` — RPD BOS;
+- `sptjm_doc` — SPTJM;
+- `account_summary` — Rekap Belanja Modal/Barang Jasa, Rekap BMD, dan Rekap
+  Belanja Dana BOS;
+- `transaction_recap` — Lampiran Berita Acara Rekonsiliasi;
+- `statement` — fallback, termasuk Berita Acara Rekonsiliasi.
+
+Detail aturan nilai per presentasi berada di `PERIODIC_REPORT_MODULE.md`.
 
 ## Integrasi UI
 
@@ -126,8 +143,10 @@ Source aktif sudah menyediakan:
 - `GET /laporan-periode/{scope}/{report}/pdf` untuk PDF;
 - `GET /laporan-periode/{scope}/{report}/excel` untuk export Excel;
 - `SpjPeriodicReportPrintService` untuk presentasi/row/column data;
-- regression `SpjPeriodicReportPrintableTest`, `BkuOfficialLedgerTest`, dan
-  registry/module UI tests.
+- regression `SpjPeriodicReportPrintableTest`, `SpjPeriodicReportRegistryTest`,
+  `BkuOfficialLedgerTest`, `BpkDinasFormatTest`, `BosA1ReportTest`,
+  `FormatK2ReportTest`, `RpdBosReportTest`, `K7bK7cReportTest`, dan
+  `RekapBudgetRealizationTest`.
 
 Daftar lengkap route modul ini beserta middleware-nya berada di `API.md` root
 (bagian "Dashboard, Referensi, dan Laporan").

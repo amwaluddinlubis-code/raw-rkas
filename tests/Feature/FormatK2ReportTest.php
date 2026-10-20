@@ -133,20 +133,22 @@ class FormatK2ReportTest extends TestCase
         $this->assertSame('1.1', $k2['programs'][1]['no']);
         $this->assertSame(BospRekapStandardMapper::a1Programs()[3], $k2['programs'][3]['label']);
 
+        // Triwulan I hanya memuat anggaran TW I; kolom TW II–IV bernilai 0
+        // dan Jumlah = kumulatif TW I.
         $this->assertSame(2610000.0, $k2['programs'][3]['jumlah']);
         $this->assertSame(2610000.0, $k2['programs'][3]['tw'][1]);
         $this->assertSame(0.0, $k2['programs'][3]['tw'][2]);
 
-        $this->assertSame(5898000.0, $k2['programs'][5]['jumlah']);
+        $this->assertSame(3000000.0, $k2['programs'][5]['jumlah']);
         $this->assertSame(3000000.0, $k2['programs'][5]['tw'][1]);
-        $this->assertSame(2898000.0, $k2['programs'][5]['tw'][2]);
+        $this->assertSame(0.0, $k2['programs'][5]['tw'][2]);
 
         // Tanpa rincian periode: total tahunan tampil di triwulan berjalan (1).
         $this->assertSame(10679000.0, $k2['programs'][7]['jumlah']);
         $this->assertSame(10679000.0, $k2['programs'][7]['tw'][1]);
         $this->assertSame(0.0, $k2['programs'][7]['tw'][3]);
 
-        $expected = 2610000.0 + 5898000.0 + 10679000.0;
+        $expected = 2610000.0 + 3000000.0 + 10679000.0;
         $this->assertSame($expected, $k2['totals']['jumlah']);
         $this->assertSame($expected, array_sum($k2['totals']['tw']));
         $this->assertSame($k2['totals']['jumlah'], array_sum(array_column($k2['programs'], 'jumlah')));
@@ -155,6 +157,30 @@ class FormatK2ReportTest extends TestCase
         $this->assertSame('I ( Satu )', $k2['quarter_label']);
         $this->assertStringContainsString('2026', $k2['month_range']);
         $this->assertTrue($k2['has_data']);
+    }
+
+    public function test_k2_shows_cumulative_quarters_until_selected_period(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('triwulan', 'format_k2', 2);
+        $k2 = $payload['k2'];
+
+        $this->assertSame(2, $k2['quarter']);
+        $this->assertCount(8, $k2['programs']);
+
+        // Program 5: TW I 3.000.000 + TW II 2.898.000 tampil; TW III/IV nol.
+        $this->assertSame(3000000.0, $k2['programs'][5]['tw'][1]);
+        $this->assertSame(2898000.0, $k2['programs'][5]['tw'][2]);
+        $this->assertSame(0.0, $k2['programs'][5]['tw'][3]);
+        $this->assertSame(0.0, $k2['programs'][5]['tw'][4]);
+        $this->assertSame(5898000.0, $k2['programs'][5]['jumlah']);
+
+        // Program 3 hanya teranggarkan TW I: tetap tampil di laporan TW II.
+        $this->assertSame(2610000.0, $k2['programs'][3]['tw'][1]);
+        $this->assertSame(2610000.0, $k2['programs'][3]['jumlah']);
+
+        // Jumlah = penjumlahan kolom yang tampil (kumulatif s.d. TW II).
+        $this->assertSame(2610000.0 + 5898000.0 + 10679000.0, $k2['totals']['jumlah']);
+        $this->assertSame($k2['totals']['jumlah'], array_sum($k2['totals']['tw']));
     }
 
     public function test_k2_without_budget_data_renders_zeros(): void
@@ -182,8 +208,8 @@ class FormatK2ReportTest extends TestCase
         $this->assertStringContainsString('Format BOS K-2', $html);
         $this->assertStringContainsString('TAHUN ANGGARAN 2026', $html);
         $this->assertStringContainsString('Program Sekolah', $html);
-        $this->assertStringContainsString('Belanja Lainnya', $html);
         $this->assertStringContainsString('JUMLAH', $html);
+        $this->assertStringNotContainsString('Belanja Lainnya', $html);
         $this->assertStringContainsString('Komite Sekolah', $html);
     }
 
@@ -204,11 +230,8 @@ class FormatK2ReportTest extends TestCase
         $this->assertEquals('1.3', $sheet->getCell('A5')->getValue());
         $this->assertEquals(2610000, $sheet->getCell('C5')->getValue());
         $this->assertEquals(2610000, $sheet->getCell('D5')->getValue());
-        $this->assertSame('II', $sheet->getCell('A11')->getValue());
-        $this->assertSame('Belanja Lainnya', $sheet->getCell('B11')->getValue());
-        $this->assertEquals('2.1', $sheet->getCell('A12')->getValue());
-        $this->assertSame('JUMLAH', $sheet->getCell('B13')->getValue());
-        $this->assertEquals(2610000 + 5898000 + 10679000, $sheet->getCell('C13')->getValue());
+        $this->assertSame('JUMLAH', $sheet->getCell('B11')->getValue());
+        $this->assertEquals(2610000 + 3000000 + 10679000, $sheet->getCell('C11')->getValue());
         $book->disconnectWorksheets();
     }
 }

@@ -434,6 +434,7 @@ class BkuOfficialLedgerTest extends TestCase
     {
         $document = file_get_contents(resource_path('views/periodic-reports/partials/document.blade.php'));
         $document .= file_get_contents(resource_path('views/periodic-reports/partials/reports/report-ledger-1.blade.php'));
+        $document .= file_get_contents(resource_path('views/periodic-reports/partials/reports/colgroup.blade.php'));
         $styles = file_get_contents(resource_path('views/periodic-reports/partials/document-styles.blade.php'));
 
         $this->assertIsString($document);
