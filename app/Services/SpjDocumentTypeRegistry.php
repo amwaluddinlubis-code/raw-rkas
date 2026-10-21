@@ -123,6 +123,7 @@ final class SpjDocumentTypeRegistry
                     'TAHUN_ANGGARAN', 'SUMBER_DANA', 'NAMA_PENERIMA', 'POTONGAN_PAJAK',
                     'TRIWULAN', 'SEMESTER', 'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM',
                     'NAMA_SUB_PROGRAM', 'URAIAN_TRANSAKSI',
+                    'NAMA_SEKOLAH', 'NPSN', 'NAMA_REKENING', 'PENERIMA_PENYEDIA',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
