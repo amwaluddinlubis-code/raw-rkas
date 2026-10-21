@@ -59,6 +59,7 @@ Komponen berikut tidak ditemukan melakukan persistence/domain mutation pada audi
 - `DatabaseStatusSummary`
 - `DatabaseTableExplorer`
 - `EmployeeDirectory`
+- `ReferenceDirectory`
 - `RkasBudgetFilter`
 - `SpjMonitoringList`
 - `SpjPackageList`
@@ -154,6 +155,7 @@ Phase 2 tidak mengubah lifecycle SPJ, numbering, sync, tenant ownership, atau ro
 | SPJ Persiapan/Paket/Laporan/Monitoring | `SpjPreparationFilter`, `SpjPackageList`, `SpjReportFilter`, `SpjMonitoringList`, SPA tab navigation | Implemented; filter/list read-only; detail Paket mutation tetap server-rendered; code gate PASS; runtime RVR |
 | Pajak | `TaxFilter` | Implemented; read-only boundary audit PASS; runtime RVR |
 | Pegawai | `EmployeeDirectory` | Implemented; read-only boundary audit PASS; runtime RVR |
+| Referensi | `ReferenceDirectory` katalog rekening, acuan harga, dan kegiatan ARKAS (read-only; query parity, `#[Url]` bookmarkable) | Implemented 2026-10-21; focused Feature PASS 28 test/253 assertions; runtime RVR |
 | User | `UserManagement` | Implemented; ADMIN action guard + negative regression PASS |
 | Master Sekolah | `SchoolMaster` | Implemented; ADMIN action guard + negative regression PASS |
 | Pilih Sekolah | `SchoolSelector` | Implemented; explicit school/role guard |
@@ -214,6 +216,7 @@ Jika operator/runtime flow sudah stabil dan manfaatnya jelas, urutan kandidat re
 2. Template Dokumen — panel Template yang Tersedia sudah memakai `DocumentTemplateList` untuk filter, pagination, dan pemetaan reaktif; upload dan penghapusan tetap melalui controller/service canonical.
 3. Laporan Audit — workspace tab, pagination, dan jumlah baris sudah memakai `AuditReportWorkspace`; export tetap melalui controller canonical.
 4. Pemilihan laporan Honor/Jasa — pemilihan transaksi dan filter periode sudah memakai `SpjReportTransactionSelector`; penyusunan/export tetap melalui use case/controller canonical.
+5. Referensi — search/filter/pagination katalog rekening, acuan harga, dan program & kegiatan ARKAS — **IMPLEMENTED 2026-10-21** (`ReferenceDirectory`).
 
 Tetap OUT OF SCOPE tanpa instruksi/kebutuhan khusus:
 

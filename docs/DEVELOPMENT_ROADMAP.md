@@ -407,9 +407,10 @@ Setelah P1 operator/runtime flow stabil:
 
 Kandidat Livewire read-only setelah operator/runtime priorities:
 
-1. Rekonsiliasi read-only filter/search;
-2. Template Dokumen filter katalog — upload/update tetap canonical flow;
-3. Laporan Audit pagination.
+1. Rekonsiliasi read-only filter/search (selesai: `ReconciliationList`);
+2. Referensi katalog master ARKAS (selesai: `ReferenceDirectory`);
+3. Template Dokumen filter katalog — upload/update tetap canonical flow;
+4. Laporan Audit pagination.
 
 Tetap ditunda tanpa kebutuhan/operator evidence khusus: workspace detail Paket mutation-heavy, Dashboard filter migration, dan halaman Siswa (`students/index.blade.php`, tidak lagi protected khusus). Kandidat "ARKAS importer stateful" tidak lagi berlaku karena subsystem tersebut sudah dihapus.
 

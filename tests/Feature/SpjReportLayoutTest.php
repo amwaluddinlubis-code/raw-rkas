@@ -164,7 +164,7 @@ class SpjReportLayoutTest extends TestCase
     {
         $tabs = file_get_contents(resource_path('views/components/tabs.blade.php'));
         $databaseTabs = file_get_contents(resource_path('views/livewire/database-manager-tabs.blade.php'));
-        $references = file_get_contents(resource_path('views/references/index.blade.php'));
+        $references = file_get_contents(resource_path('views/livewire/reference-directory.blade.php'));
         $spj = file_get_contents(resource_path('views/spj/index.blade.php'));
         $css = file_get_contents(resource_path('css/ui-generalization.css'));
         $spjCss = file_get_contents(resource_path('css/spj-workspace-standardization.css'));

@@ -152,6 +152,7 @@ Status area yang dimigrasikan:
 - SPJ Persiapan/Paket/Laporan/Monitoring: Livewire filters/lists + SPA tab navigation; detail Paket mutation-heavy tetap server-rendered;
 - Pajak: `TaxFilter` read-only;
 - Pegawai: `EmployeeDirectory` read-only;
+- Referensi: `ReferenceDirectory` read-only katalog rekening, acuan harga, dan program/kegiatan ARKAS via Livewire 3 (implemented 2026-10-21);
 - Data Sinkronisasi: `SyncedDataNavigation` UI-state/read-only;
 - Database Aktif: read-only panels + role-hardened mutation components;
 - User/Master Sekolah: role-hardened mutation components;

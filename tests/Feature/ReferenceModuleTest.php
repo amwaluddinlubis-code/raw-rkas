@@ -142,8 +142,10 @@ class ReferenceModuleTest extends TestCase
 
     public function test_reference_view_uses_canonical_primitives(): void
     {
-        $blade = (string) file_get_contents(resource_path('views/references/index.blade.php'));
+        $index = (string) file_get_contents(resource_path('views/references/index.blade.php'));
+        $blade = (string) file_get_contents(resource_path('views/livewire/reference-directory.blade.php'));
 
+        $this->assertStringContainsString('<livewire:reference-directory', $index);
         $this->assertStringContainsString('<x-page-header', $blade);
         $this->assertStringContainsString('<x-ui.table', $blade);
         $this->assertStringContainsString('<x-ui.server-pagination', $blade);
