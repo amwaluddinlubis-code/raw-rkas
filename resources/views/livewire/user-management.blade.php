@@ -8,8 +8,8 @@
         </div>
     </x-page-header>
 
-    @if (session('success'))<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{{ session('success') }}</div>@endif
-    @error('form')<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{{ $message }}</div>@enderror
+    @if (session('success'))<x-ui.alert type="success">{{ session('success') }}</x-ui.alert>@endif
+    @error('form')<x-ui.alert type="danger">{{ $message }}</x-ui.alert>@enderror
 
     <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <x-ui.form-section title="Tambah pengguna" description="Buat akun baru tanpa meninggalkan halaman.">

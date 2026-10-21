@@ -3,9 +3,9 @@
         <x-page-header title="Integrasi Dapodik" subtitle="Hubungkan layanan Dapodik lokal untuk memperbarui data pegawai dan siswa." kicker="PENGATURAN DATA">
             <div class="grid divide-y divide-[var(--ui-line)] sm:grid-cols-3 sm:divide-x sm:divide-y-0"><x-stat-item label="Status koneksi" :value="$connection ? 'Terkonfigurasi' : 'Belum dikonfigurasi'" :hint="$connection?->last_status ?? 'Belum ada sinkronisasi'" :value-class="$connection ? 'text-emerald-700' : 'text-amber-700'" icon="sync" :icon-class="$connection ? 'text-emerald-700' : 'text-amber-700'" /><x-stat-item label="Sinkron terakhir" :value="$connection?->last_synced_at?->translatedFormat('d M Y H:i') ?? '—'" hint="Waktu pembaruan terakhir" icon="clock" icon-class="text-slate-700" /><x-stat-item label="Sumber data" value="GTK & Peserta Didik" hint="Dapodik ke SPJ" value-class="text-[var(--theme-content-accent)]" icon="users" icon-class="text-[var(--theme-content-accent)]" /></div>
         </x-page-header>
-        @if(session('success'))<div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">{{ session('success') }}</div>@endif
-        @if(session('error'))<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{{ session('error') }}</div>@endif
-        @if($errors->any())<div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">{{ $errors->first() }}</div>@endif
+        @if(session('success'))<x-ui.alert type="success">{{ session('success') }}</x-ui.alert>@endif
+        @if(session('error'))<x-ui.alert type="danger">{{ session('error') }}</x-ui.alert>@endif
+        @if($errors->any())<x-ui.alert type="danger">{{ $errors->first() }}</x-ui.alert>@endif
 
         <div class="grid gap-6 xl:grid-cols-2">
             <x-ui.form-section title="Konfigurasi koneksi" description="Simpan alamat layanan dan token Dapodik lokal sekolah.">
