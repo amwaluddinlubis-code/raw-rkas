@@ -167,6 +167,7 @@ class DocumentTemplatePlaceholderInspectorTest extends TestCase
         $this->assertSame('SMP Negeri Test', $values['NAMA_SEKOLAH']);
         $this->assertSame('Kepala Sekolah Test', $values['NAMA_KEPALA_SEKOLAH']);
         $this->assertSame('Jl. Rekanan No. 10', $values['ALAMAT_REKANAN']);
+        $this->assertSame('Jl. Rekanan No. 10', $values['ALAMAT_PENYEDIA']);
 
         $package->transaction->forceFill(['vendor_name' => 'Nama Toko Lain'])->save();
         DB::connection('school')->table('school_profiles')

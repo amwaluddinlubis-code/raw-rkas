@@ -205,6 +205,9 @@ class SpjTemplateService
         $siplahResponse = data_get($transaction->siplah_metadata, 'siplahResponse', []);
         $siplahMerchant = (string) (data_get($siplahResponse, 'merchant') ?: $transaction->vendor_name ?: '');
         $siplahAddress = (string) ($transaction->siplah_merchant_address ?: data_get($siplahResponse, 'merchant_address', ''));
+        // Alamat penyedia kanonis: utamakan alamat merchant SiPlah pada
+        // transaksi; bila kosong, gunakan alamat master rekanan.
+        $vendorAddress = $siplahAddress !== '' ? $siplahAddress : $partnerAddress;
         $siplahNpwp = (string) ($transaction->vendor_npwp ?: data_get($siplahResponse, 'merchant_npwp', ''));
         $siplahPaymentDate = $transaction->siplah_payment_date?->translatedFormat('d F Y H:i') ?: '';
         $siplahItems = $transaction->items->map(function ($item, $index): string {
@@ -251,7 +254,7 @@ class SpjTemplateService
             'NAMA_PENERIMA_KUITANSI' => (string) $transaction->effective_receipt_recipient_name,
             'PENERIMA_PENYEDIA' => $vendorName,
             'NAMA_PENYEDIA' => $vendorName,
-            'ALAMAT_REKANAN' => $partnerAddress,
+            'ALAMAT_REKANAN' => $vendorAddress,
             'NPWP_PENYEDIA' => (string) $transaction->vendor_npwp,
             'KODE_PROGRAM' => (string) ($activityHierarchy['program_code'] ?? ''),
             'NAMA_PROGRAM' => (string) ($activityHierarchy['program_name'] ?? ''),
@@ -341,9 +344,11 @@ class SpjTemplateService
             'JENIS_RAB' => 'RAB Pemeliharaan',
             'TOTAL_RAB' => $values['NILAI_BRUTO'],
             'NAMA_REKENING' => (string) $transaction->sourceValue('account_name'),
-            // Field ini belum tersedia pada schema transaksi saat ini. Tetap dipetakan
-            // sebagai placeholder resmi agar template tidak menyisakan marker mentah.
-            'ALAMAT_PENYEDIA' => $siplahAddress,
+            // ALAMAT_PENYEDIA adalah alamat penyedia kanonis hasil gabungan
+            // (SiPlah diutamakan, fallback master rekanan); ALAMAT_REKANAN
+            // dipertahankan sebagai alias nilai yang sama agar template lama
+            // yang memakai salah satu/keduanya tetap terisi.
+            'ALAMAT_PENYEDIA' => $vendorAddress,
             'TELEPON_PENYEDIA' => '',
             // KOP_SURAT ditangani sebagai gambar oleh fillExcelLetterhead().
             'KOP_SURAT' => '',

@@ -189,6 +189,8 @@ class SiplahPurchaseMvpTest extends TestCase
         $this->assertSame('SIPLah Toko Uji', $values['SIPLAH_MARKETPLACE']);
         $this->assertSame('transaksi-uji-1', $values['SIPLAH_TRANSACTION_ID']);
         $this->assertSame('Jalan Uji Nomor 1', $values['SIPLAH_ALAMAT_PENYEDIA']);
+        $this->assertSame('Jalan Uji Nomor 1', $values['ALAMAT_PENYEDIA']);
+        $this->assertSame('Jalan Uji Nomor 1', $values['ALAMAT_REKANAN']);
         $this->assertSame('01.234.567.8-999.000', $values['SIPLAH_NPWP_PENYEDIA']);
         $this->assertSame('Lulus', $values['SIPLAH_STATUS_DQ']);
         $this->assertSame('Pemetaan lengkap', $values['SIPLAH_STATUS_MAPPING']);

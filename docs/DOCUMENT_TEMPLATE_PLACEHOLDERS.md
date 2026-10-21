@@ -123,8 +123,8 @@ Ownership penting:
 - `NAMA_PENERIMA_KUITANSI` memakai effective receipt recipient / `receipt_recipient_name` operator.
 - `NAMA_PENERIMA` saat ini mengikuti effective receipt recipient.
 - `PENERIMA_PENYEDIA` dan `NAMA_PENYEDIA` mengikuti vendor/effective recipient sesuai mapping service.
-- `ALAMAT_PENYEDIA` saat ini terutama dapat berasal dari metadata merchant SiPLah bila tersedia.
-- `ALAMAT_REKANAN` mencari alamat pada tabel `business_partners` ketika nama rekanan sama dengan `vendor_name` (nama toko) atau `signatory_name` (nama penandatangan), tanpa membedakan huruf besar-kecil dan spasi berulang.
+- `ALAMAT_PENYEDIA` adalah alamat penyedia kanonis: diutamakan dari `siplah_merchant_address` transaksi (atau `merchant_address` pada respons SiPlah); bila kosong, jatuh ke alamat master rekanan di bawah.
+- `ALAMAT_REKANAN` adalah alias dari nilai `ALAMAT_PENYEDIA` yang sama (digabungkan per 2026-10-22 agar template cukup memakai satu penanda alamat); sumber fallback-nya mencari alamat pada tabel `business_partners` ketika nama rekanan sama dengan `vendor_name` (nama toko) atau `signatory_name` (nama penandatangan), tanpa membedakan huruf besar-kecil dan spasi berulang. Template yang menumpuk kedua baris alamat akan mencetak alamat yang sama dua kali — cukup pakai `ALAMAT_PENYEDIA`.
 - `TELEPON_PENYEDIA` belum mempunyai source schema aktif dan dapat dirender `-`.
 
 Jangan menukar source recipient dan receipt recipient hanya demi menyesuaikan template.
