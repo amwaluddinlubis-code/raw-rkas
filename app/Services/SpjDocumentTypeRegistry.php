@@ -218,12 +218,12 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['BARANG', 'KONSUMSI', 'JASA_LAINNYA'],
                 'required' => [
-                    'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN',
+                    'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA',
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'NILAI_BRUTO',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [
-                    'KODE_REKENING', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA',
+                    'KODE_REKENING', 'NPWP_PENYEDIA', 'ALAMAT_REKANAN', 'TELEPON_PENYEDIA',
                     'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI', 'TANGGAL_PENYERAHAN',
                     'TANGGAL_BAP', 'DESA', 'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM',
                     'NAMA_SUB_PROGRAM', 'NAMA_SEKOLAH', 'SUMBER_DANA',
