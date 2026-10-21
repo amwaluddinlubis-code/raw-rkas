@@ -82,7 +82,7 @@ NIP_PENGURUS_BARANG
 
 `KOP_SURAT` tidak diisi sebagai teks biasa pada Excel; generator dapat memasukkan gambar letterhead melalui jalur khusus.
 
-Pada output XLSX, gambar `KOP_SURAT` selalu di-anchor mulai dari cell `A1`, dengan lebar mengikuti area print worksheet dan tinggi mempertahankan rasio gambar. Jika worksheet tidak mendefinisikan `printArea`, generator memakai lebar cetak A4 portrait yang konsisten. Marker pada template dibersihkan setelah gambar dipasang.
+Pada output XLSX, gambar `KOP_SURAT` di-anchor mulai dari kolom awal rentang kop dengan lebar mengikuti rentang tersebut dan tinggi mempertahankan rasio gambar. Rentang kop ditentukan berurutan dari: (1) `printArea` worksheet bila ditetapkan; (2) merge cell marker `KOP_SURAT` bila cell-nya tergabung; (3) dari kolom cell marker sampai kolom terisi terakhir pada worksheet. Dengan begitu template yang isinya mulai di kolom B (mis. `B1`) menempatkan kop tepat selebar blok isinya, bukan terkunci di `A1`. Marker pada template dibersihkan setelah gambar dipasang.
 
 Placeholder teks pada XLSX juga dapat digunakan di header dan footer worksheet. Gunakan format Excel seperti `&L{{NAMA_SEKOLAH}}`, `&C{{NOMOR_DOKUMEN}}`, atau `&R{{TANGGAL_DOKUMEN}}`; generator mengganti marker tanpa menghapus kontrol alignment header/footer.
 

@@ -91,6 +91,67 @@ class SpjLetterheadAutofitTest extends TestCase
         }
 
         $this->assertSame(max(1, $expectedWidth - 4), $drawing->getWidth());
+        $this->assertSame('B1', $drawing->getCoordinates());
+    }
+
+    public function test_kop_jangkar_dan_lebar_mengikuti_merge_sel_kop_tanpa_print_area(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('kop/test.png', $this->png(400, 100));
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        foreach (['A', 'B', 'C', 'D', 'E'] as $column) {
+            $sheet->getColumnDimension($column)->setWidth(20);
+        }
+        $sheet->mergeCells('B1:E1');
+        $sheet->setCellValue('B1', '{{KOP_SURAT}}');
+
+        $service = app(SpjTemplateService::class);
+        $method = new \ReflectionMethod(SpjTemplateService::class, 'fillExcelLetterhead');
+        $method->setAccessible(true);
+        $method->invoke($service, $sheet, new School(['letterhead_path' => 'kop/test.png']));
+
+        $drawings = iterator_to_array($sheet->getDrawingCollection());
+        $this->assertCount(1, $drawings);
+        $drawing = reset($drawings);
+        $this->assertSame('B1', $drawing->getCoordinates());
+
+        $expectedWidth = 0;
+        foreach (['B', 'C', 'D', 'E'] as $column) {
+            $expectedWidth += SharedDrawing::cellDimensionToPixels(20, $spreadsheet->getDefaultStyle()->getFont());
+        }
+        $this->assertSame(max(1, $expectedWidth - 4), $drawing->getWidth());
+    }
+
+    public function test_kop_tanpa_print_area_dan_merge_membentang_sampai_kolom_terisi_terakhir(): void
+    {
+        Storage::fake('local');
+        Storage::disk('local')->put('kop/test.png', $this->png(400, 100));
+
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        foreach (['A', 'B', 'C', 'D'] as $column) {
+            $sheet->getColumnDimension($column)->setWidth(20);
+        }
+        $sheet->setCellValue('B1', '{{KOP_SURAT}}');
+        $sheet->setCellValue('D5', 'ISI');
+
+        $service = app(SpjTemplateService::class);
+        $method = new \ReflectionMethod(SpjTemplateService::class, 'fillExcelLetterhead');
+        $method->setAccessible(true);
+        $method->invoke($service, $sheet, new School(['letterhead_path' => 'kop/test.png']));
+
+        $drawings = iterator_to_array($sheet->getDrawingCollection());
+        $this->assertCount(1, $drawings);
+        $drawing = reset($drawings);
+        $this->assertSame('B1', $drawing->getCoordinates());
+
+        $expectedWidth = 0;
+        foreach (['B', 'C', 'D'] as $column) {
+            $expectedWidth += SharedDrawing::cellDimensionToPixels(20, $spreadsheet->getDefaultStyle()->getFont());
+        }
+        $this->assertSame(max(1, $expectedWidth - 4), $drawing->getWidth());
     }
 
     private function png(int $width, int $height): string

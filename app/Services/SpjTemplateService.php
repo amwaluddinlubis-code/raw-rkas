@@ -25,8 +25,6 @@ use PhpOffice\PhpWord\TemplateProcessor;
 
 class SpjTemplateService
 {
-    private const DEFAULT_EXCEL_PRINT_WIDTH = 610;
-
     public const PLACEHOLDER_SCOPE_UMUM = 'umum';
 
     public const PLACEHOLDER_SCOPE_TRANSAKSIONAL = 'transaksional';
@@ -945,22 +943,25 @@ class SpjTemplateService
             if (! is_array($dimensions) || ($dimensions[0] ?? 0) < 1 || ($dimensions[1] ?? 0) < 1) {
                 throw new \RuntimeException('Kop surat sekolah tidak dapat dibaca sebagai gambar: '.$path);
             }
+            [$firstColumnIndex, $lastColumnIndex] = $this->excelLetterheadSpan($sheet, $coordinate);
+            $targetWidth = $this->excelColumnSpanWidth($sheet, $firstColumnIndex, $lastColumnIndex);
+            $targetHeight = max(1, (int) round($targetWidth * $dimensions[1] / $dimensions[0]));
+
             $sheet->setCellValue($coordinate, '');
             $drawing = new Drawing;
             $drawing->setPath($path);
-            $drawing->setCoordinates($coordinate);
-
-            $targetWidth = $this->excelPrintAreaWidth($sheet);
-            $targetHeight = max(1, (int) round($targetWidth * $dimensions[1] / $dimensions[0]));
             $drawing->setWidth($targetWidth);
             $drawing->setResizeProportional(true);
-            $drawing->setCoordinates('A1');
+            // Jangkar mengikuti kolom awal rentang kop (mis. B1 pada template
+            // yang isinya mulai di kolom B), bukan terkunci di A1.
+            $kopRow = (int) preg_replace('/\D+/', '', $coordinate);
+            $drawing->setCoordinates(Coordinate::stringFromColumnIndex($firstColumnIndex).$kopRow);
             $drawing->setOffsetX(0);
             $drawing->setOffsetY(0);
             $drawing->setWorksheet($sheet);
 
-            $currentHeight = $sheet->getRowDimension(1)->getRowHeight();
-            $sheet->getRowDimension(1)->setRowHeight(max(
+            $currentHeight = $sheet->getRowDimension($kopRow)->getRowHeight();
+            $sheet->getRowDimension($kopRow)->setRowHeight(max(
                 $currentHeight > 0 ? $currentHeight : 0,
                 SharedDrawing::pixelsToPoints($targetHeight) + 4,
             ));
@@ -968,17 +969,45 @@ class SpjTemplateService
         }
     }
 
-    private function excelPrintAreaWidth(Worksheet $sheet): int
+    /**
+     * Tentukan rentang kolom yang dibentangi gambar kop:
+     * 1) area cetak bila ditetapkan;
+     * 2) merge sel kop bila sel kop tergabung;
+     * 3) dari kolom sel kop sampai kolom terisi terakhir pada sheet.
+     *
+     * @return array{0: int, 1: int}
+     */
+    private function excelLetterheadSpan(Worksheet $sheet, string $kopCoordinate): array
     {
         $printArea = (string) $sheet->getPageSetup()->getPrintArea();
-        preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/i', $printArea, $matches);
-        if (! isset($matches[2])) {
-            return self::DEFAULT_EXCEL_PRINT_WIDTH;
+        if (preg_match('/(?:\$?)([A-Z]+)(?:\$?\d+):(?:\$?)([A-Z]+)(?:\$?\d+)/i', $printArea, $matches)) {
+            return [
+                Coordinate::columnIndexFromString(strtoupper($matches[1])),
+                Coordinate::columnIndexFromString(strtoupper($matches[2])),
+            ];
         }
 
-        $firstColumnIndex = Coordinate::columnIndexFromString(strtoupper($matches[1]));
-        $lastColumn = $matches[2];
-        $lastColumnIndex = Coordinate::columnIndexFromString($lastColumn);
+        [$kopColumn, $kopRow] = Coordinate::coordinateFromString($kopCoordinate);
+        $firstColumnIndex = Coordinate::columnIndexFromString($kopColumn);
+
+        foreach ($sheet->getMergeCells() as $mergedRange) {
+            [$start, $end] = Coordinate::rangeBoundaries($mergedRange);
+            if ($start[0] === $firstColumnIndex && $start[1] === (int) $kopRow) {
+                return [$start[0], $end[0]];
+            }
+        }
+
+        $lastColumnIndex = $firstColumnIndex;
+        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+            [$column] = Coordinate::coordinateFromString($coordinate);
+            $lastColumnIndex = max($lastColumnIndex, Coordinate::columnIndexFromString($column));
+        }
+
+        return [$firstColumnIndex, $lastColumnIndex];
+    }
+
+    private function excelColumnSpanWidth(Worksheet $sheet, int $firstColumnIndex, int $lastColumnIndex): int
+    {
         $width = 0;
         $defaultFont = $sheet->getParent()->getDefaultStyle()->getFont();
 
@@ -988,7 +1017,7 @@ class SpjTemplateService
             if (! $dimension->getVisible()) {
                 continue;
             }
-            $columnWidth = $sheet->getColumnDimension($letter)->getWidth();
+            $columnWidth = $dimension->getWidth();
             $width += SharedDrawing::cellDimensionToPixels(
                 $columnWidth > 0 ? $columnWidth : 8.43,
                 $defaultFont,
