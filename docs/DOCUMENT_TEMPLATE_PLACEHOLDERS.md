@@ -493,7 +493,7 @@ Catatan penting:
 - jangan mengasumsikan template DOCX otomatis mempunyai jalur PDF yang sama;
 - package XLSX/PDF dapat menggabungkan beberapa template sesuai document package flow;
 - HTML preview adalah representasi workbook melalui renderer PhpSpreadsheet, bukan bukti pixel-perfect terhadap Microsoft Excel;
-- style `gradientFill` XLSX tanpa atribut `type` dinormalisasi ke `linear` pada salinan sementara sebelum dibaca; renderer XLSX dapat memilih Excel COM lewat `SPJ_XLSX_PDF_RENDERER=excel_com` pada worker Windows khusus. Prototype template master mempertahankan gradient dan menghasilkan 13 halaman (sama dengan LibreOffice), tetapi PDF paket melalui akun service belum diverifikasi; default LibreOffice tetap meratakan gradient;
+- style `gradientFill` XLSX tanpa atribut `type` dinormalisasi ke `linear` pada salinan sementara sebelum dibaca; renderer XLSX dapat memilih Excel COM lewat `SPJ_XLSX_PDF_RENDERER=auto` (atau `excel_com`) pada worker Windows dengan Office berlisensi. Konversi gradient ke PDF melalui Excel COM sudah diverifikasi end-to-end (Producer PDF: "Microsoft Excel 2024"), tetapi PDF paket melalui akun service belum diverifikasi; default LibreOffice tetap meratakan gradient;
 - visual fidelity, print area, page break, header/footer, ukuran kertas, dan hasil buka di Microsoft Office/PDF viewer tetap harus diverifikasi dengan template resmi/aktual.
 
 ---

@@ -4,7 +4,7 @@ Terakhir diperbarui: **2026-10-21** (status focused verification placeholder mas
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
-Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada workflow run #46. Perubahan Bulk Preview, Format K7, alignment placeholder master v7, normalisasi pembacaan gradient XLSX, dan jalur opt-in Excel COM mendapat focused verification lokal, belum tercakup run #46. Jalur default LibreOffice masih meratakan gradient; PDF paket dari worker Excel COM tetap RVR sampai deployment dan output terisi diverifikasi. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
+Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada workflow run #46. Perubahan Bulk Preview, Format K7, alignment placeholder master v7, normalisasi pembacaan gradient XLSX, dan jalur opt-in Excel COM mendapat focused verification lokal, belum tercakup run #46. Mesin pengembangan kini mengatur `SPJ_XLSX_PDF_RENDERER=auto`; konversi XLSX berisi gradient ke PDF melalui Excel COM terverifikasi end-to-end (Producer: "Microsoft Excel 2024"). PDF paket dari worker Excel COM tetap RVR sampai deployment dan output terisi diverifikasi. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
 
 ## Urutan sumber kebenaran
 

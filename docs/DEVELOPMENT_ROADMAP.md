@@ -186,7 +186,7 @@ Masih RVR:
 - [ ] buka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx`;
 - [ ] periksa drawing, formula/reference, defined name, print area, page break, header/footer, repair prompt;
 - [ ] generate dan inspeksi XLSX/PDF nyata per kategori tersedia;
-- [ ] Verifikasi PDF paket hasil aplikasi melalui worker Windows berlisensi Office setelah `SPJ_XLSX_PDF_RENDERER=excel_com`: route Excel COM sudah diimplementasikan dan focused suite 16 test lulus; prototype template mempertahankan gradient dengan 13 halaman yang cocok dengan LibreOffice, tetapi runtime akun service, XLSX paket terisi, pagination/data final, concurrency, dan timeout/recovery masih RVR;
+- [ ] Verifikasi PDF paket hasil aplikasi melalui worker Windows berlisensi Office setelah `SPJ_XLSX_PDF_RENDERER=auto`: route Excel COM sudah diimplementasikan dan focused suite 10 test lulus; konversi XLSX berisi gradient ke PDF terverifikasi end-to-end pada mesin pengembangan (Producer: "Microsoft Excel 2024"), tetapi runtime akun service, XLSX paket terisi, pagination/data final, concurrency, dan timeout/recovery masih RVR;
 - [ ] verifikasi field identitas, bukti, tanggal, uraian, penerima/vendor, nominal, pajak, dan nomor dokumen turunan.
 
 Panduan canonical: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.

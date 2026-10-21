@@ -67,7 +67,7 @@ RVR. Perubahan source ini juga belum tercakup full CI setelah workflow run #46.
 
 ## XLSX gradient fill pada pembacaan dan ekspor PDF — 2026-10-21
 
-Status: **READER STYLE PRESERVATION / EXCEL COM ROUTE IMPLEMENTED / FOCUSED REGRESSION PASS / WORKER PACKAGE PDF RVR**.
+Status: **READER STYLE PRESERVATION / EXCEL COM ROUTE IMPLEMENTED / EXCEL COM END-TO-END VERIFIED / FOCUSED REGRESSION PASS / WORKER PACKAGE PDF RVR**.
 
 `SpjTemplateService` kini menambahkan `type="linear"` yang tidak tertulis pada
 `gradientFill` OOXML dalam salinan XLSX sementara sebelum PhpSpreadsheet
@@ -94,15 +94,20 @@ dan Excel COM. Pilihan konfigurasi `SPJ_XLSX_PDF_RENDERER` adalah `libreoffice`
 workbook read-only, menonaktifkan macro dan update link, menserialisasi akses
 melalui lock worker, membatasi waktu proses, serta mengembalikan error secara
 eksplisit jika mode `excel_com` gagal atau tidak tersedia. Pengujian seleksi
-renderer dan kegagalan eksplisit lulus dalam focused suite 16 test.
+renderer dan kegagalan eksplisit lulus dalam focused suite 10 test.
+
+Mesin pengembangan kini mengatur `SPJ_XLSX_PDF_RENDERER=auto` dan Excel COM
+terdaftar (Microsoft Excel 2024). Konversi XLSX berisi `gradientFill` ke PDF
+diverifikasi end-to-end: PDF dihasilkan oleh Microsoft Excel (Producer:
+"Microsoft Excel 2024"), bukan LibreOffice, sehingga gradient cell dipertahankan.
 
 Belum ada verifikasi end-to-end melalui aplikasi di akun service worker khusus,
 XLSX paket terisi, concurrency antarmesin, atau pemulihan proses Excel yang
 timeout. Deploy yang menginginkan gradient harus mengatur
-`SPJ_XLSX_PDF_RENDERER=excel_com` pada worker Windows khusus berlisensi Office.
-Sampai PDF paket aplikasi dibuat dan diperiksa pada worker tersebut, hasil
-gradient/pagination paket tetap RVR; konfigurasi default LibreOffice tetap
-meratakan gradient.
+`SPJ_XLSX_PDF_RENDERER=auto` (atau `excel_com`) pada worker Windows khusus
+berlisensi Office. Sampai PDF paket aplikasi dibuat dan diperiksa pada worker
+tersebut, hasil gradient/pagination paket tetap RVR; konfigurasi default
+LibreOffice tetap meratakan gradient.
 
 ---
 
