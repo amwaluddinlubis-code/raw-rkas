@@ -1,6 +1,6 @@
 # SPJ BOSP Web — Current Progress / Open Issues
 
-Terakhir diperbarui: **2026-10-21** (scope semester Laporan Periode diperluas — `format_k2` dan `rpd_bos` kini tersedia di semester: K-2 merender dua kolom `Semester I`/`Semester II` dengan Semester II kumulatif, RPD memakai kolom Triwulan I–II / III–IV alih-alih kolom bulan; bug regresi kolom RPD semester ditemukan lewat render data nyata dan diperbaiki - variabel perulangan pecahan periode di `rpdData` menimpa parameter scope/period (`$period`) sehingga baris berkoordinat periode jatuh ke kolom bulan, kini `$periodRow`, dan `$totals` diinisialisasi sebelum cabang sumber dana agar laporan tetap terbentuk saat sumber dana belum terpilih; Excel `writeK2`/`writeRpd` dan partial cetak dibuat column-agnostic; registry menjadi 37 slot/18 key dengan label K7A "Rekapitulasi Pengeluaran Dana BOS (K7A)"; aturan A-1 dikonfirmasi pengguna — kolom Belanja Modal dari kode rekening (`5.2` modal, `5.2.02` Peralatan dan Mesin, `5.2.05`/`5.2` lain Aset Tetap Lainnya), jabatan penanda tangan "Bendahara / Pemegang Kas", dan sel nominal tanpa prefix `Rp ` (`1.000.000`, nol `-`); focused verification FormatK2ReportTest 9 test/105 assertions, RpdBosReportTest 14 test/136 assertions, registry+printable+moduleUi 13 test/103 assertions, regression gabungan 11 kelas 80 passed/776 assertions;aturan protected file dihapus — `dashboard.blade.php` dan `students/index.blade.php` kini mengikuti aturan umum; Jumlah/Vol/Satuan/Tarif RPD BOS kini mengikuti alokasi periode terpilih dari `arkas_mirror_rapbs_periode` dan baris berjumlah 0 tidak ditampilkan; laporan Rekapitulasi Pengeluaran Dana BOS (K7A) kini berorientasi A4 landscape agar grid 7 SNP x 12 sub program tidak terpotong dan label K7A diseragamkan di keempat scope (dikunci `RekapBudgetRealizationTest` 6 test/64 assertions dan `BpkDinasFormatTest` 3 test/33 assertions); blok K7A dan BPK dipisah menjadi partial `reports/report-rekap-bosp-1.blade.php` dan `reports/report-bpk-1.blade.php` (menggantikan `partials/bpk-dinas.blade.php`) dengan lebar kolom berupa array yang dapat dikustom lewat `config('spj.periodic_report_column_widths')` dan fallback default di partial; Format BOS K-2 kini kumulatif per triwulan — kolom TW setelah periode terpilih = 0 dan Jumlah = kumulatif, bagian II Belanja Lainnya dihapus dari cetak/Excel; lebar kolom cetak Laporan Periode menjadi array persentase via `<colgroup>` dengan focused verification 48 test / 485 assertions; full CI dan browser/PDF runtime tetap RVR).
+Terakhir diperbarui: **2026-10-21** (scope semester Laporan Periode diperluas — `format_k2` dan `rpd_bos` kini tersedia di semester: K-2 merender dua kolom `Semester I`/`Semester II` dengan Semester II kumulatif, RPD memakai kolom Triwulan I–II / III–IV alih-alih kolom bulan; bug regresi kolom RPD semester ditemukan lewat render data nyata dan diperbaiki - variabel perulangan pecahan periode di `rpdData` menimpa parameter scope/period (`$period`) sehingga baris berkoordinat periode jatuh ke kolom bulan, kini `$periodRow`, dan `$totals` diinisialisasi sebelum cabang sumber dana agar laporan tetap terbentuk saat sumber dana belum terpilih; Excel `writeK2`/`writeRpd` dan partial cetak dibuat column-agnostic; registry menjadi 37 slot/18 key dengan label K7A "Rekapitulasi Pengeluaran Dana BOS (K7A)"; aturan A-1 dikonfirmasi pengguna — kolom Belanja Modal dari kode rekening (`5.2` modal, `5.2.02` Peralatan dan Mesin, `5.2.05`/`5.2` lain Aset Tetap Lainnya), jabatan penanda tangan "Bendahara / Pemegang Kas", dan sel nominal tanpa prefix `Rp ` (`1.000.000`, nol `-`); focused verification FormatK2ReportTest 9 test/105 assertions, RpdBosReportTest 14 test/136 assertions, registry+printable+moduleUi 13 test/103 assertions, regression gabungan 11 kelas 80 passed/776 assertions;aturan protected file dihapus — `dashboard.blade.php` dan `students/index.blade.php` kini mengikuti aturan umum; Jumlah/Vol/Satuan/Tarif RPD BOS kini mengikuti alokasi periode terpilih dari `arkas_mirror_rapbs_periode` dan baris berjumlah 0 tidak ditampilkan; laporan Rekapitulasi Pengeluaran Dana BOS (K7A) kini berorientasi A4 landscape agar grid 7 SNP x 12 sub program tidak terpotong dan label K7A diseragamkan di keempat scope (dikunci `RekapBudgetRealizationTest` 6 test/64 assertions dan `BpkDinasFormatTest` 3 test/33 assertions); blok K7A dan BPK dipisah menjadi partial `reports/report-rekap-bosp-1.blade.php` dan `reports/report-bpk-1.blade.php` (menggantikan `partials/bpk-dinas.blade.php`) dengan lebar kolom berupa array yang dapat dikustom lewat `config('spj.periodic_report_column_widths')` dan fallback default di partial; Format BOS K-2 kini kumulatif per triwulan — kolom TW setelah periode terpilih = 0 dan Jumlah = kumulatif, bagian II Belanja Lainnya dihapus dari cetak/Excel; lebar kolom cetak Laporan Periode menjadi array persentase via `<colgroup>` dengan focused verification 48 test / 485 assertions; placeholder workbook master SPJ v7 kini diselaraskan pada registry/resolver tanpa mengubah file XLSX sumber, validator paket pass; full CI dan browser/PDF runtime tetap RVR).
 
 > Repository canonical saat ini adalah `amwaluddinlubis-code/raw-rkas` dan menggunakan satu branch aktif: `main`.
 > Branch `hardening/raw-rkas-audit` telah digabung melalui PR #1; referensi branch lama hanya dipertahankan sebagai evidence historis, bukan branch kerja aktif.
@@ -35,7 +35,74 @@ LIVEWIRE MIGRATION : PHASE 1 AUDIT + PHASE 2 AUTH HARDENING COMPLETE / CODE GATE
 FINAL RELEASE       : NOT YET
 ```
 
-P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Perubahan presentasi Format K7 terbaru mendapat focused verification lokal (5 test / 47 assertions, Pint, Vite build, dan Blade cache), tetapi belum full CI; browser/PDF aktual tetap RVR. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
+P0 code/dependency integration gate terakhir terverifikasi pada run #46 sebelum perubahan Bulk Preview. Perubahan Bulk Preview, presentasi Format K7, dan alignment registry placeholder master v7 mendapat focused verification lokal tetapi belum full CI; browser/PDF aktual tetap RVR. Aplikasi belum boleh disebut final release-ready karena generated-document real-data QA, browser/operator QA, Office/PDF visual fidelity, dan installed-runtime verification masih terpisah dari deterministic CI.
+
+## Template master v7 — registry placeholder alignment 2026-10-21
+
+Status: **SOURCE UPDATED / FOCUSED VERIFICATION PASS / OFFICE VISUAL QA RVR**.
+
+Registry `SpjDocumentTypeRegistry` dan katalog/resolver `SpjTemplateService`
+kini menerima marker yang sudah digunakan pada sheet canonical master
+`MASTER-TEMPLATE-SPJ v7_SD.xlsx` tanpa mengubah workbook sumber. Marker tanggal
+tertulis BAP/BAST (`HARI_*`, `TANGGAL_*_HURUP`, `BULAN_*_HURUP`,
+`TAHUN_*_HURUP`) diisi dari tanggal berita acara terkait. Marker existing
+lainnya dideklarasikan per sheet sebagai optional/image; item yang tidak
+terdapat pada workbook tidak lagi dipaksakan sebagai required untuk sheet
+tersebut.
+
+Evidence aktual:
+
+```text
+SpjTemplatePackageImporter::validatePackage pada master v7
+  : valid=true, 0 errors, 0 warnings
+Focused regression lima file template
+  : 38 passed
+vendor/bin/pint --dirty --format agent
+  : passed
+```
+
+Validasi paket tersebut memeriksa nama sheet dan kontrak marker, bukan visual
+Excel/LibreOffice, hasil cetak, atau data nyata; pemeriksaan Office/PDF tetap
+RVR. Perubahan source ini juga belum tercakup full CI setelah workflow run #46.
+
+## XLSX gradient fill pada pembacaan dan ekspor PDF — 2026-10-21
+
+Status: **READER STYLE PRESERVATION / EXCEL COM ROUTE IMPLEMENTED / FOCUSED REGRESSION PASS / WORKER PACKAGE PDF RVR**.
+
+`SpjTemplateService` kini menambahkan `type="linear"` yang tidak tertulis pada
+`gradientFill` OOXML dalam salinan XLSX sementara sebelum PhpSpreadsheet
+membaca template. Workbook sumber tidak dimodifikasi. Pembandingan pada
+`MASTER-TEMPLATE-SPJ v7_SD.xlsx` menunjukkan PhpSpreadsheet sebelumnya
+membaca empat fill gradient Invoice sebagai `none`; setelah normalisasi fill
+terbaca dan bertahan dalam round-trip XLSX.
+
+Batas renderer terverifikasi secara lokal: PDF native Microsoft Excel
+mempertahankan gradient Invoice, sedangkan LibreOffice Calc 26.2 meratakannya
+menjadi warna solid. PDF paket yang diberikan dibuat oleh LibreOffice Calc.
+HTML preview dan fallback Dompdf juga belum memiliki jaminan gradient.
+
+Prototype ekspor read-only dengan Microsoft Excel 16.0 COM pada master template
+mempertahankan gradient Invoice. PDF Excel dan LibreOffice sama-sama memiliki
+13 halaman dengan urutan/ukuran kertas yang cocok; ukuran A4 berbeda maksimum
+0,1 pt. Dua pita gradient Invoice pada PDF Excel terenkode sebagai JPEG
+674x53 dan 678x53 dengan masing-masing 157 dan 160 warna unik, membentuk
+transisi kuning ke krem. File template sumber tidak berubah.
+
+`SpjExcelComPdfRenderer` kini menyediakan jalur XLSX native berbasis PowerShell
+dan Excel COM. Pilihan konfigurasi `SPJ_XLSX_PDF_RENDERER` adalah `libreoffice`
+(default, menjaga perilaku lama), `auto`, atau `excel_com`. Jalur Excel membuka
+workbook read-only, menonaktifkan macro dan update link, menserialisasi akses
+melalui lock worker, membatasi waktu proses, serta mengembalikan error secara
+eksplisit jika mode `excel_com` gagal atau tidak tersedia. Pengujian seleksi
+renderer dan kegagalan eksplisit lulus dalam focused suite 16 test.
+
+Belum ada verifikasi end-to-end melalui aplikasi di akun service worker khusus,
+XLSX paket terisi, concurrency antarmesin, atau pemulihan proses Excel yang
+timeout. Deploy yang menginginkan gradient harus mengatur
+`SPJ_XLSX_PDF_RENDERER=excel_com` pada worker Windows khusus berlisensi Office.
+Sampai PDF paket aplikasi dibuat dan diperiksa pada worker tersebut, hasil
+gradient/pagination paket tetap RVR; konfigurasi default LibreOffice tetap
+meratakan gradient.
 
 ---
 

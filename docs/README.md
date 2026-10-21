@@ -1,10 +1,10 @@
 # SPJ BOSP Web — Dokumentasi
 
-Terakhir diperbarui: **2026-10-19** (status focused verification Format K7 diperbarui; `MOBILE_VISUAL_QA_TODO.md` tetap tergabung di `GUI_RUNTIME_QA.md`)
+Terakhir diperbarui: **2026-10-21** (status focused verification placeholder master SPJ v7 diperbarui; `MOBILE_VISUAL_QA_TODO.md` tetap tergabung di `GUI_RUNTIME_QA.md`)
 
 Dokumen ini adalah indeks dokumentasi untuk branch aktif `main` pada repository mirror `raw-rkas`. Tujuannya membedakan sumber status, kontrak permanen, arsitektur, panduan teknis, verification guide, RVR, dan dokumen historis agar catatan lama tidak mengalahkan kondisi project terbaru.
 
-Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada workflow run #46; visual browser/operator tetap RVR. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
+Fitur RKAS perbandingan revisi, indikator kesegaran mirror, dan paket ekspor multi-laporan telah melewati full regression gate pada workflow run #46. Perubahan Bulk Preview, Format K7, alignment placeholder master v7, normalisasi pembacaan gradient XLSX, dan jalur opt-in Excel COM mendapat focused verification lokal, belum tercakup run #46. Jalur default LibreOffice masih meratakan gradient; PDF paket dari worker Excel COM tetap RVR sampai deployment dan output terisi diverifikasi. Lihat `CURRENT_PROGRESS.md` untuk status dan evidence.
 
 ## Urutan sumber kebenaran
 
@@ -29,7 +29,7 @@ Dokumentasi menjelaskan contract, tetapi tidak menggantikan registry executable.
 
 ## Functional gate aktif
 
-Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` **run** `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview dan penyesuaian presentasi Format K7 mendapat focused verification lokal, belum tercakup run #46; browser/operator dan visual PDF tetap RVR.
+Status saat indeks ini diperbarui mengikuti `CURRENT_PROGRESS.md`. Repository menggunakan satu branch aktif, `main`. Latest full verified code gate sebelum Bulk Preview adalah `main@e4ba5cf869f554cee9f0b9d230e437f1aee676ae`, workflow `SPJ Critical Verification` **run** `36515608353` (#46), SUCCESS: Repository Pint PASS, SPJ Critical 339 / 2.605 assertions, Full Unit 79 / 281 assertions, dan Full Feature 642 / 4.417 assertions PASS. Perubahan Bulk Preview, penyesuaian presentasi Format K7, dan alignment placeholder master v7 mendapat focused verification lokal, belum tercakup run #46; browser/operator dan visual PDF tetap RVR.
 
 > Catatan pembacaan identifier: `run #NN` adalah nomor run workflow,
 > sedangkan `PR #NNN` adalah nomor pull request. Keduanya pernah ditulis "CI #"

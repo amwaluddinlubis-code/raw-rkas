@@ -115,13 +115,14 @@ final class SpjDocumentTypeRegistry
                 'required' => [
                     'NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'TANGGAL_DOKUMEN', 'SUMBER_DANA_PERIODE',
                     'JENIS_SPJ', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING',
-                    'URAIAN_TRANSAKSI', 'NILAI_BRUTO', 'NILAI_DIBAYARKAN',
+                    'NILAI_BRUTO', 'NILAI_DIBAYARKAN',
                     'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
                 ],
                 'optional' => [
                     'TAHUN_ANGGARAN', 'SUMBER_DANA', 'NAMA_PENERIMA', 'POTONGAN_PAJAK',
-                    'TRIWULAN', 'SEMESTER',
+                    'TRIWULAN', 'SEMESTER', 'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM',
+                    'NAMA_SUB_PROGRAM', 'URAIAN_TRANSAKSI',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
@@ -143,7 +144,7 @@ final class SpjDocumentTypeRegistry
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
-                'image' => [],
+                'image' => ['KOP_SURAT'],
             ],
 
             self::KUITANSI_A2 => [
@@ -163,11 +164,12 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'PENERIMA_PENYEDIA', 'CARA_BAYAR', 'REFERENSI_BAYAR',
                     'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD',
-                    'SUMBER_DANA', 'KODE_KEGIATAN', 'KODE_REKENING',
+                    'SUMBER_DANA', 'KODE_KEGIATAN', 'KODE_REKENING', 'KODE_PROGRAM', 'NAMA_PROGRAM',
+                    'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'NAMA_KEGIATAN', 'SUMBER_DANA_PERIODE',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
-                'image' => [],
+                'image' => ['KOP_SURAT'],
             ],
 
             self::RINCIAN_BELANJA => [
@@ -178,10 +180,14 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => $allCategories,
                 'required' => ['NOMOR_DOKUMEN', 'NOMOR_BUKTI', 'NILAI_BRUTO'],
-                'optional' => ['KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING'],
+                'optional' => [
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'URAIAN_TRANSAKSI',
+                    'TANGGAL_DOKUMEN', 'SUMBER_DANA_PERIODE', 'NAMA_KEPALA_SEKOLAH',
+                    'NIP_KEPALA_SEKOLAH', 'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
+                ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
                 'repeat_optional' => ['ITEM_KODE_REKENING', 'ITEM_NAMA_REKENING'],
-                'image' => [],
+                'image' => ['KOP_SURAT'],
             ],
 
             self::REKAP_PAJAK => [
@@ -195,10 +201,12 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'NILAI_DIBAYARKAN', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD',
                     'KODE_REKENING', 'URAIAN_TRANSAKSI', 'NAMA_PENYEDIA', 'NPWP_PENYEDIA',
+                    'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'NAMA_KEPALA_SEKOLAH',
+                    'NIP_KEPALA_SEKOLAH', 'NAMA_PENERIMA', 'REFERENSI_BAYAR', 'SUMBER_DANA_PERIODE',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
-                'image' => [],
+                'image' => ['KOP_SURAT'],
             ],
 
             self::SURAT_PESANAN => [
@@ -211,11 +219,13 @@ final class SpjDocumentTypeRegistry
                 'required' => [
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN',
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'NILAI_BRUTO',
-                    'TANGGAL_PENYERAHAN', 'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [
                     'KODE_REKENING', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA',
-                    'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI',
+                    'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI', 'TANGGAL_PENYERAHAN',
+                    'TANGGAL_BAP', 'DESA', 'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM',
+                    'NAMA_SUB_PROGRAM', 'NAMA_SEKOLAH', 'SUMBER_DANA',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
                 'repeat_optional' => [],
@@ -237,6 +247,8 @@ final class SpjDocumentTypeRegistry
                 ],
                 'optional' => [
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NPWP_PENYEDIA', 'ALAMAT_REKANAN',
+                    'NAMA_PENERIMA_KUITANSI', 'HARI_BAP', 'TANGGAL_BAP_HURUP',
+                    'BULAN_BAP_HURUP', 'TAHUN_BAP_HURUP',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN'],
                 'repeat_optional' => ['ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
@@ -251,13 +263,16 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['BARANG', 'KONSUMSI'],
                 'required' => [
-                    'NOMOR_BAST', 'TANGGAL_DOKUMEN', 'NAMA_PENYEDIA', 'UNTUK_PEMBAYARAN',
+                    'NOMOR_BAST', 'NAMA_PENYEDIA',
                     'TANGGAL_PENYERAHAN', 'KECAMATAN', 'NAMA_KEPALA_SEKOLAH',
-                    'NIP_KEPALA_SEKOLAH', 'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG',
+                    'NIP_KEPALA_SEKOLAH',
                 ],
                 'optional' => [
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN', 'NPWP_PENYEDIA',
-                    'TELEPON_PENYEDIA', 'NILAI_BRUTO',
+                    'TELEPON_PENYEDIA', 'NILAI_BRUTO', 'TANGGAL_DOKUMEN', 'UNTUK_PEMBAYARAN',
+                    'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG', 'ALAMAT_SEKOLAH', 'NAMA_SEKOLAH',
+                    'NOMOR_BAP', 'TANGGAL_BAP', 'NAMA_PENERIMA_KUITANSI',
+                    'HARI_BAST', 'TANGGAL_BAST_HURUP', 'BULAN_BAST_HURUP', 'TAHUN_BAST_HURUP',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME'],
                 'repeat_optional' => ['ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
@@ -277,6 +292,7 @@ final class SpjDocumentTypeRegistry
                     'NOMOR_PESANAN', 'TANGGAL_PESANAN', 'PPN', 'PPH21', 'PPH22', 'PPH23',
                     'PPH4', 'SSPD', 'TERBILANG_NETO', 'CARA_BAYAR_REFERENSI',
                     'SIPLAH_NOMOR_PESANAN', 'SIPLAH_REFERENSI_BAYAR',
+                    'KODE_KEGIATAN', 'KODE_REKENING', 'NAMA_PENERIMA_KUITANSI', 'NAMA_SEKOLAH',
                 ],
                 'repeat_required' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH'],
                 'repeat_optional' => [],
@@ -298,6 +314,8 @@ final class SpjDocumentTypeRegistry
                     'NOMOR_RAB', 'LOKASI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG',
                     'NILAI_BAHAN', 'NILAI_BAHAN_TERBILANG', 'NILAI_UPAH', 'NILAI_UPAH_TERBILANG',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'KODE_KEGIATAN', 'NAMA_KEGIATAN',
+                    'KECAMATAN', 'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM',
+                    'KODE_REKENING',
                 ],
                 'repeat_required' => [
                     'ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH',
@@ -321,7 +339,9 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'NOMOR_RAB', 'TANGGAL_RAB', 'CARA_BAYAR', 'REFERENSI_BAYAR',
                     'NILAI_BAHAN', 'NILAI_BAHAN_TERBILANG', 'NILAI_UPAH', 'NILAI_UPAH_TERBILANG',
-                    'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
+                    'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP', 'KECAMATAN', 'KODE_KEGIATAN',
+                    'KODE_PROGRAM', 'KODE_REKENING', 'KODE_SUB_PROGRAM', 'NAMA_KEGIATAN',
+                    'NAMA_SUB_PROGRAM', 'TANGGAL_TANDA_TANGAN',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
@@ -342,7 +362,9 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'KONSUMSI_JABATAN', 'KONSUMSI_NIP', 'KONSUMSI_NUPTK',
                     'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
-                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'KODE_PROGRAM',
+                    'KODE_SUB_PROGRAM', 'NAMA_KEGIATAN', 'NAMA_PENGURUS_BARANG',
+                    'NIP_PENGURUS_BARANG', 'NAMA_PROGRAM', 'NAMA_SUB_PROGRAM',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
@@ -363,7 +385,9 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'KONSUMSI_JABATAN', 'KONSUMSI_NIP', 'KONSUMSI_NUPTK',
                     'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
-                    'KONSUMSI_HARGA_PORSI', 'KONSUMSI_JUMLAH',
+                    'KONSUMSI_HARGA_PORSI', 'KONSUMSI_JUMLAH', 'NAMA_ACARA',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH', 'NAMA_PENGURUS_BARANG',
+                    'NIP_PENGURUS_BARANG',
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],

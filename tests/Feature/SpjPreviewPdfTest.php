@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Services\SpjExcelComPdfRenderer;
 use App\Services\SpjSpreadsheetPdfConverter;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -9,8 +10,9 @@ use Tests\TestCase;
 
 class SpjPreviewPdfTest extends TestCase
 {
-    public function test_office_to_pdf_conversion_returns_null_without_libreoffice_or_pdf_bytes_with_it(): void
+    public function test_office_to_pdf_conversion_returns_pdf_bytes_when_a_renderer_is_available(): void
     {
+        config()->set('spj.xlsx_pdf_renderer', 'libreoffice');
         $source = tempnam(sys_get_temp_dir(), 'spj-preview-test-');
         $this->assertIsString($source);
         @unlink($source);
@@ -22,18 +24,115 @@ class SpjPreviewPdfTest extends TestCase
             (new Xlsx($workbook))->save($source);
             $workbook->disconnectWorksheets();
 
-            $result = app(SpjSpreadsheetPdfConverter::class)->convertFile($source);
+            $converter = app(SpjSpreadsheetPdfConverter::class);
+            $result = $converter->convertFile($source);
 
-            if (! app(SpjSpreadsheetPdfConverter::class)->isAvailable()) {
-                $this->assertNull($result);
-            } else {
+            if ($converter->isAvailable()) {
                 $this->assertIsString($result);
                 $this->assertStringStartsWith('%PDF', $result);
+            } else {
+                $this->assertNull($result);
             }
         } finally {
             if (is_file($source)) {
                 @unlink($source);
             }
+        }
+    }
+
+    public function test_xlsx_uses_excel_com_when_the_renderer_is_available(): void
+    {
+        $source = tempnam(sys_get_temp_dir(), 'spj-excel-renderer-test-');
+        $this->assertIsString($source);
+        @unlink($source);
+        $source .= '.xlsx';
+        file_put_contents($source, 'test');
+
+        $renderer = new class extends SpjExcelComPdfRenderer
+        {
+            public ?string $sourcePath = null;
+
+            public function isAvailable(): bool
+            {
+                return true;
+            }
+
+            public function convertFile(string $sourcePath): ?string
+            {
+                $this->sourcePath = $sourcePath;
+
+                return "%PDF-1.4\nexcel-com";
+            }
+        };
+        $this->app->instance(SpjExcelComPdfRenderer::class, $renderer);
+        config()->set('spj.xlsx_pdf_renderer', 'auto');
+
+        try {
+            $pdf = app(SpjSpreadsheetPdfConverter::class)->convertFile($source);
+
+            $this->assertSame("%PDF-1.4\nexcel-com", $pdf);
+            $this->assertSame($source, $renderer->sourcePath);
+        } finally {
+            @unlink($source);
+        }
+    }
+
+    public function test_excel_com_failures_are_not_silently_replaced_by_libreoffice(): void
+    {
+        $source = tempnam(sys_get_temp_dir(), 'spj-excel-renderer-test-');
+        $this->assertIsString($source);
+        @unlink($source);
+        $source .= '.xlsx';
+        file_put_contents($source, 'test');
+
+        $renderer = new class extends SpjExcelComPdfRenderer
+        {
+            public function isAvailable(): bool
+            {
+                return true;
+            }
+
+            public function convertFile(string $sourcePath): ?string
+            {
+                throw new \RuntimeException('Excel COM test failure.');
+            }
+        };
+        $this->app->instance(SpjExcelComPdfRenderer::class, $renderer);
+        config()->set('spj.xlsx_pdf_renderer', 'auto');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Excel COM test failure.');
+
+        try {
+            app(SpjSpreadsheetPdfConverter::class)->convertFile($source);
+        } finally {
+            @unlink($source);
+        }
+    }
+
+    public function test_explicit_excel_com_configuration_fails_when_the_renderer_is_unavailable(): void
+    {
+        $source = tempnam(sys_get_temp_dir(), 'spj-excel-renderer-test-');
+        $this->assertIsString($source);
+        @unlink($source);
+        $source .= '.xlsx';
+        file_put_contents($source, 'test');
+
+        $renderer = new class extends SpjExcelComPdfRenderer
+        {
+            public function isAvailable(): bool
+            {
+                return false;
+            }
+        };
+        $this->app->instance(SpjExcelComPdfRenderer::class, $renderer);
+        config()->set('spj.xlsx_pdf_renderer', 'excel_com');
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Renderer Excel COM dipilih');
+
+        try {
+            app(SpjSpreadsheetPdfConverter::class)->convertFile($source);
+        } finally {
+            @unlink($source);
         }
     }
 

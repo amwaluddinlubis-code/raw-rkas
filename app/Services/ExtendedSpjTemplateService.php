@@ -260,7 +260,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
         }
 
-        $source = IOFactory::load($sourcePath);
+        $source = $this->loadSpreadsheet($sourcePath);
 
         try {
             [$sheet, $sheetName] = $this->resolveCanonicalWorksheet($source, $template);

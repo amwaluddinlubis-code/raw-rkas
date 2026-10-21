@@ -43,7 +43,7 @@ class SpjTemplateService
             'Penerima & penyedia' => ['NAMA_PENERIMA', 'NAMA_PENERIMA_BKU', 'NAMA_PENERIMA_KUITANSI', 'PENERIMA_PENYEDIA', 'NAMA_PENYEDIA', 'ALAMAT_PENYEDIA', 'ALAMAT_REKANAN', 'NPWP_PENYEDIA', 'TELEPON_PENYEDIA', 'NAMA_PENANDATANGAN', 'JABATAN_PENANDATANGAN', 'SUDAH_TERIMA_DARI'],
             'Transaksi & pembayaran' => ['KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'KODE_KEGIATAN', 'NAMA_KEGIATAN', 'KODE_REKENING', 'NAMA_REKENING', 'URAIAN_TRANSAKSI', 'UNTUK_PEMBAYARAN', 'CARA_BAYAR', 'REFERENSI_BAYAR', 'CARA_BAYAR_REFERENSI'],
             'Pembelian SiPLah' => ['SIPLAH_MARKETPLACE', 'SIPLAH_TRANSACTION_ID', 'SIPLAH_NOMOR_PESANAN', 'SIPLAH_PENYEDIA', 'SIPLAH_ALAMAT_PENYEDIA', 'SIPLAH_NPWP_PENYEDIA', 'SIPLAH_NOMOR_INVOICE', 'SIPLAH_TANGGAL_INVOICE', 'SIPLAH_TANGGAL_PEMBAYARAN', 'SIPLAH_REFERENSI_BAYAR', 'SIPLAH_STATUS_DQ', 'SIPLAH_STATUS_MAPPING', 'SIPLAH_RINCIAN_ITEM'],
-            'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_BAP', 'TANGGAL_BAP', 'NOMOR_BAST', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'NILAI_BAHAN', 'NILAI_BAHAN_TERBILANG', 'NILAI_UPAH', 'NILAI_UPAH_TERBILANG', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
+            'Pesanan & pekerjaan' => ['NOMOR_PESANAN', 'TANGGAL_PESANAN', 'NOMOR_BAP', 'TANGGAL_BAP', 'HARI_BAP', 'TANGGAL_BAP_HURUP', 'BULAN_BAP_HURUP', 'TAHUN_BAP_HURUP', 'NOMOR_BAST', 'HARI_BAST', 'TANGGAL_BAST_HURUP', 'BULAN_BAST_HURUP', 'TAHUN_BAST_HURUP', 'NOMOR_INVOICE', 'TANGGAL_INVOICE', 'STATUS_INVOICE', 'NOMOR_SPK', 'TANGGAL_SPK', 'NOMOR_RAB', 'TANGGAL_RAB', 'NILAI_BAHAN', 'NILAI_BAHAN_TERBILANG', 'NILAI_UPAH', 'NILAI_UPAH_TERBILANG', 'URAIAN_PEKERJAAN', 'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_TANDA_TANGAN', 'TANGGAL_PENYERAHAN', 'TEMPAT_PENYERAHAN'],
             'Nilai & pajak' => ['NILAI_BRUTO', 'NILAI_PEKERJAAN', 'NILAI_PEKERJAAN_TERBILANG', 'NILAI_TERBILANG_BRUTO', 'PPN', 'PPH21', 'PPH22', 'PPH23', 'PPH4', 'SSPD', 'TOTAL_PAJAK', 'POTONGAN_PAJAK', 'NILAI_DIBAYARKAN', 'TERBILANG_NETO'],
             'Ringkasan' => ['RINCIAN_BELANJA', 'RINCIAN_UPAH', 'RINCIAN_JASA'],
             'Baris rincian barang' => ['ITEM_NO', 'ITEM_URAIAN', 'ITEM_VOLUME', 'ITEM_SATUAN', 'ITEM_HARGA_SATUAN', 'ITEM_JUMLAH', 'ITEM_KODE_REKENING', 'ITEM_NAMA_REKENING'],
@@ -190,8 +190,10 @@ class SpjTemplateService
 
         $transactionDate = $transaction->sourceCarbon()?->translatedFormat('d F Y') ?: '';
         $orderDate = $receipt?->order_date?->translatedFormat('d F Y') ?: $goods?->order_date?->translatedFormat('d F Y') ?: '';
-        $bapDate = $receipt?->bap_date?->translatedFormat('d F Y') ?: $goods?->bap_date?->translatedFormat('d F Y') ?: '';
-        $bastDate = $receipt?->bast_date?->translatedFormat('d F Y') ?: $goods?->bast_date?->translatedFormat('d F Y') ?: '';
+        $bapDateValue = $receipt?->bap_date ?: $goods?->bap_date;
+        $bastDateValue = $receipt?->bast_date ?: $goods?->bast_date;
+        $bapDate = $bapDateValue?->translatedFormat('d F Y') ?: '';
+        $bastDate = $bastDateValue?->translatedFormat('d F Y') ?: '';
         $invoiceDate = $receipt?->invoice_date?->translatedFormat('d F Y') ?: $transaction->invoice_date?->translatedFormat('d F Y') ?: '';
         $invoiceStatus = (string) ($receipt?->invoice_status ?: $transaction->invoice_status ?: '');
         $spkDate = $workOrder?->spk_date?->translatedFormat('d F Y') ?: '';
@@ -281,7 +283,15 @@ class SpjTemplateService
             'TANGGAL_PESANAN' => $orderDate,
             'NOMOR_BAP' => (string) ($goods?->bap_number ?: ''),
             'TANGGAL_BAP' => $bapDate,
+            'HARI_BAP' => $bapDateValue?->translatedFormat('l') ?: '',
+            'TANGGAL_BAP_HURUP' => $bapDateValue ? $this->terbilangNumber((int) $bapDateValue->format('j')) : '',
+            'BULAN_BAP_HURUP' => $bapDateValue?->translatedFormat('F') ?: '',
+            'TAHUN_BAP_HURUP' => $bapDateValue ? $this->terbilangNumber((int) $bapDateValue->format('Y')) : '',
             'NOMOR_BAST' => (string) ($goods?->bast_number ?: ''),
+            'HARI_BAST' => $bastDateValue?->translatedFormat('l') ?: '',
+            'TANGGAL_BAST_HURUP' => $bastDateValue ? $this->terbilangNumber((int) $bastDateValue->format('j')) : '',
+            'BULAN_BAST_HURUP' => $bastDateValue?->translatedFormat('F') ?: '',
+            'TAHUN_BAST_HURUP' => $bastDateValue ? $this->terbilangNumber((int) $bastDateValue->format('Y')) : '',
             'NOMOR_INVOICE' => (string) $transaction->invoice_number,
             'TANGGAL_INVOICE' => $invoiceDate,
             'STATUS_INVOICE' => $invoiceStatus,
@@ -457,7 +467,7 @@ class SpjTemplateService
             }
             $document->saveAs($output);
         } elseif ($extension === 'xlsx') {
-            $spreadsheet = IOFactory::load($source);
+            $spreadsheet = $this->loadSpreadsheet($source);
             foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
                 $this->fillExcelItems($sheet, $package, $template, $receipt);
                 $this->fillExcelWorkers($sheet, $package);
@@ -693,7 +703,7 @@ class SpjTemplateService
             throw new \RuntimeException('Berkas template tidak ditemukan. Unggah ulang template ini.');
         }
         $values = $this->placeholders($package, $school, $receipt);
-        $spreadsheet = IOFactory::load($source);
+        $spreadsheet = $this->loadSpreadsheet($source);
         foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
             $this->fillExcelItems($sheet, $package, $template, $receipt);
             $this->fillExcelWorkers($sheet, $package);
@@ -708,6 +718,105 @@ class SpjTemplateService
         }
 
         return $spreadsheet;
+    }
+
+    protected function loadSpreadsheet(string $sourcePath): Spreadsheet
+    {
+        $normalizedPath = $this->normalizeMissingGradientTypes($sourcePath);
+
+        try {
+            return IOFactory::load($normalizedPath ?? $sourcePath);
+        } finally {
+            if ($normalizedPath !== null) {
+                @unlink($normalizedPath);
+                @rmdir(dirname($normalizedPath));
+            }
+        }
+    }
+
+    private function normalizeMissingGradientTypes(string $sourcePath): ?string
+    {
+        if (strtolower((string) pathinfo($sourcePath, PATHINFO_EXTENSION)) !== 'xlsx') {
+            return null;
+        }
+
+        $sourceArchive = new \ZipArchive;
+        if ($sourceArchive->open($sourcePath, \ZipArchive::RDONLY) !== true) {
+            throw new \RuntimeException('Berkas XLSX tidak dapat dibuka untuk membaca style.');
+        }
+
+        try {
+            $stylesXml = $sourceArchive->getFromName('xl/styles.xml');
+        } finally {
+            $sourceArchive->close();
+        }
+
+        if (! is_string($stylesXml) || ! str_contains($stylesXml, 'gradientFill')) {
+            return null;
+        }
+
+        $stylesDocument = new \DOMDocument;
+        if (! $stylesDocument->loadXML($stylesXml, LIBXML_NONET | LIBXML_COMPACT)) {
+            throw new \RuntimeException('Style XLSX tidak berisi XML yang valid.');
+        }
+
+        $stylesXPath = new \DOMXPath($stylesDocument);
+        $stylesXPath->registerNamespace('main', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+        $gradientFills = $stylesXPath->query('//main:gradientFill[not(@type)]');
+        if ($gradientFills === false) {
+            throw new \RuntimeException('Style gradient XLSX tidak dapat diperiksa.');
+        }
+
+        if ($gradientFills->length === 0) {
+            return null;
+        }
+
+        foreach ($gradientFills as $gradientFill) {
+            $gradientFill->setAttribute('type', 'linear');
+        }
+
+        $normalizedStylesXml = $stylesDocument->saveXML();
+        if (! is_string($normalizedStylesXml)) {
+            throw new \RuntimeException('Style gradient XLSX tidak dapat dinormalisasi.');
+        }
+
+        $temporaryDirectory = rtrim(sys_get_temp_dir(), '\\/').DIRECTORY_SEPARATOR.'spj-xlsx-'.bin2hex(random_bytes(8));
+        if (! mkdir($temporaryDirectory, 0775, true) && ! is_dir($temporaryDirectory)) {
+            throw new \RuntimeException('Folder sementara untuk membaca style XLSX tidak dapat dibuat.');
+        }
+
+        $normalizedPath = $temporaryDirectory.DIRECTORY_SEPARATOR.basename($sourcePath);
+
+        try {
+            if (! copy($sourcePath, $normalizedPath)) {
+                throw new \RuntimeException('Berkas XLSX tidak dapat disalin untuk normalisasi style.');
+            }
+
+            $normalizedArchive = new \ZipArchive;
+            if ($normalizedArchive->open($normalizedPath) !== true) {
+                throw new \RuntimeException('Salinan XLSX tidak dapat dibuka untuk normalisasi style.');
+            }
+
+            $stylesUpdated = false;
+            $archiveClosed = false;
+
+            try {
+                $stylesUpdated = $normalizedArchive->addFromString('xl/styles.xml', $normalizedStylesXml);
+            } finally {
+                $archiveClosed = $normalizedArchive->close();
+            }
+
+            if (! $stylesUpdated || ! $archiveClosed) {
+                throw new \RuntimeException('Style gradient tidak dapat disimpan pada salinan XLSX.');
+            }
+
+            return $normalizedPath;
+        } catch (\Throwable $exception) {
+            @unlink($normalizedPath);
+            @rmdir($temporaryDirectory);
+
+            throw $exception;
+        }
     }
 
     /** @param Collection<int, DocumentTemplate> $templates */

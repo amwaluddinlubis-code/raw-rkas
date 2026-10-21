@@ -118,8 +118,10 @@ class SpjSupplementaryTemplateContractTest extends TestCase
 
         $this->assertContains('NOMOR_BAST', $definition['required']);
         $this->assertContains('KECAMATAN', $definition['required']);
-        $this->assertContains('NAMA_PENGURUS_BARANG', $definition['required']);
-        $this->assertContains('NIP_PENGURUS_BARANG', $definition['required']);
+        $this->assertContains('NAMA_PENGURUS_BARANG', $definition['optional']);
+        $this->assertContains('NIP_PENGURUS_BARANG', $definition['optional']);
+        $this->assertNotContains('NAMA_PENGURUS_BARANG', $definition['required']);
+        $this->assertNotContains('NIP_PENGURUS_BARANG', $definition['required']);
         $this->assertNotContains('NOMOR_DOKUMEN', $definition['required']);
         $this->assertNotContains('TEMPAT_PENYERAHAN', $definition['required']);
         $this->assertNotContains('NAMA_BENDAHARA_BOSP', $definition['required']);
@@ -156,5 +158,88 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertContains('KONSUMSI_HARGA_PORSI', $recipients['optional']);
         $this->assertContains('KONSUMSI_JUMLAH', $recipients['optional']);
         $this->assertNotContains('NAMA_ACARA', $recipients['required']);
+    }
+
+    public function test_existing_master_workbook_placeholders_are_registered_per_canonical_sheet(): void
+    {
+        $compatibilityMarkers = [
+            SpjDocumentTypeRegistry::SPJ_COVER => [
+                'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM', 'URAIAN_TRANSAKSI',
+            ],
+            SpjDocumentTypeRegistry::SPJ_CHECKLIST => ['KOP_SURAT'],
+            SpjDocumentTypeRegistry::KUITANSI_A2 => [
+                'KODE_PROGRAM', 'NAMA_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_SUB_PROGRAM',
+                'NAMA_KEGIATAN', 'SUMBER_DANA_PERIODE', 'KOP_SURAT',
+            ],
+            SpjDocumentTypeRegistry::RINCIAN_BELANJA => [
+                'KOP_SURAT', 'NAMA_BENDAHARA_BOSP', 'NAMA_KEPALA_SEKOLAH', 'NIP_BENDAHARA_BOSP',
+                'NIP_KEPALA_SEKOLAH', 'SUMBER_DANA_PERIODE', 'TANGGAL_DOKUMEN', 'URAIAN_TRANSAKSI',
+            ],
+            SpjDocumentTypeRegistry::REKAP_PAJAK => [
+                'KOP_SURAT', 'NAMA_BENDAHARA_BOSP', 'NAMA_KEPALA_SEKOLAH', 'NAMA_PENERIMA',
+                'NIP_BENDAHARA_BOSP', 'NIP_KEPALA_SEKOLAH', 'REFERENSI_BAYAR', 'SUMBER_DANA_PERIODE',
+            ],
+            SpjDocumentTypeRegistry::SURAT_PESANAN => [
+                'DESA', 'KODE_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_PROGRAM', 'NAMA_SEKOLAH',
+                'NAMA_SUB_PROGRAM', 'SUMBER_DANA', 'TANGGAL_BAP',
+            ],
+            SpjDocumentTypeRegistry::BAP => [
+                'NAMA_PENERIMA_KUITANSI', 'HARI_BAP', 'TANGGAL_BAP_HURUP',
+                'BULAN_BAP_HURUP', 'TAHUN_BAP_HURUP',
+            ],
+            SpjDocumentTypeRegistry::BAST => [
+                'ALAMAT_SEKOLAH', 'NAMA_PENERIMA_KUITANSI', 'NAMA_SEKOLAH', 'NOMOR_BAP',
+                'TANGGAL_BAP', 'HARI_BAST', 'TANGGAL_BAST_HURUP', 'BULAN_BAST_HURUP',
+                'TAHUN_BAST_HURUP',
+            ],
+            SpjDocumentTypeRegistry::INVOICE => [
+                'KODE_KEGIATAN', 'KODE_REKENING', 'NAMA_PENERIMA_KUITANSI', 'NAMA_SEKOLAH',
+            ],
+            SpjDocumentTypeRegistry::RAB_PEMELIHARAAN => [
+                'KECAMATAN', 'KODE_PROGRAM', 'KODE_REKENING', 'KODE_SUB_PROGRAM',
+                'NAMA_PROGRAM', 'NAMA_SUB_PROGRAM',
+            ],
+            SpjDocumentTypeRegistry::SPK_PEMELIHARAAN => [
+                'KECAMATAN', 'KODE_KEGIATAN', 'KODE_PROGRAM', 'KODE_REKENING', 'KODE_SUB_PROGRAM',
+                'NAMA_KEGIATAN', 'NAMA_SUB_PROGRAM', 'TANGGAL_TANDA_TANGAN',
+            ],
+            SpjDocumentTypeRegistry::DAFTAR_HADIR_KONSUMSI => [
+                'KODE_PROGRAM', 'KODE_SUB_PROGRAM', 'NAMA_KEGIATAN', 'NAMA_PENGURUS_BARANG',
+                'NAMA_PROGRAM', 'NAMA_SUB_PROGRAM', 'NIP_PENGURUS_BARANG',
+            ],
+            SpjDocumentTypeRegistry::DAFTAR_PENERIMA_KONSUMSI => [
+                'NAMA_ACARA', 'NAMA_KEPALA_SEKOLAH', 'NAMA_PENGURUS_BARANG',
+                'NIP_KEPALA_SEKOLAH', 'NIP_PENGURUS_BARANG',
+            ],
+        ];
+
+        foreach ($compatibilityMarkers as $documentType => $markers) {
+            $definition = SpjDocumentTypeRegistry::definition($documentType);
+            $registeredMarkers = SpjDocumentTypeRegistry::placeholdersFor($documentType);
+
+            foreach ($markers as $marker) {
+                $this->assertContains($marker, $registeredMarkers, "{$documentType} must register {$marker}.");
+            }
+
+            $result = app(SpjTemplateValidator::class)->validateMarkers(
+                $documentType,
+                array_merge($definition['required'], $definition['repeat_required'], $markers),
+            );
+
+            $this->assertSame([], $result['errors'], "{$documentType} must accept its workbook markers.");
+            $this->assertSame([], $result['warnings'], "{$documentType} must not report registered markers as unexpected.");
+        }
+    }
+
+    public function test_legacy_written_bap_and_bast_dates_are_exposed_in_runtime_catalog(): void
+    {
+        $groups = SpjTemplateService::placeholderGroups();
+
+        foreach ([
+            'HARI_BAP', 'TANGGAL_BAP_HURUP', 'BULAN_BAP_HURUP', 'TAHUN_BAP_HURUP',
+            'HARI_BAST', 'TANGGAL_BAST_HURUP', 'BULAN_BAST_HURUP', 'TAHUN_BAST_HURUP',
+        ] as $marker) {
+            $this->assertContains($marker, $groups['Pesanan & pekerjaan']);
+        }
     }
 }

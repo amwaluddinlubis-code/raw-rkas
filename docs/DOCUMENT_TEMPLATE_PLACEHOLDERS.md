@@ -264,6 +264,35 @@ BAP <= BAST
 
 Template tidak boleh mengubah chronology rule backend.
 
+### Marker tanggal berita acara pada master lama
+
+Registry dan resolver mempertahankan marker yang dipakai workbook master
+existing; marker tidak perlu diganti atau ditulis ulang agar lolos validasi.
+Untuk sheet BAP, placeholder legacy berikut memakai tanggal BAP:
+
+```text
+HARI_BAP
+TANGGAL_BAP_HURUP
+BULAN_BAP_HURUP
+TAHUN_BAP_HURUP
+```
+
+Untuk sheet BAST, placeholder sepadan memakai tanggal BAST:
+
+```text
+HARI_BAST
+TANGGAL_BAST_HURUP
+BULAN_BAST_HURUP
+TAHUN_BAST_HURUP
+```
+
+Nama hari dan bulan mengikuti locale aplikasi; tanggal dan tahun dalam
+`*_HURUP` dirender sebagai kata Bahasa Indonesia. Marker lama lain yang
+memang digunakan pada sheet canonical didaftarkan sebagai optional/image
+sesuai fungsi serta isi sheet. Required marker tetap hanya diwajibkan jika
+ada pada kontrak template tersebut; validasi tidak mengharuskan workbook
+menambahkan marker yang tidak dipakai sheet-nya.
+
 ---
 
 ## 7. Pembelian SiPLah
@@ -464,6 +493,7 @@ Catatan penting:
 - jangan mengasumsikan template DOCX otomatis mempunyai jalur PDF yang sama;
 - package XLSX/PDF dapat menggabungkan beberapa template sesuai document package flow;
 - HTML preview adalah representasi workbook melalui renderer PhpSpreadsheet, bukan bukti pixel-perfect terhadap Microsoft Excel;
+- style `gradientFill` XLSX tanpa atribut `type` dinormalisasi ke `linear` pada salinan sementara sebelum dibaca; renderer XLSX dapat memilih Excel COM lewat `SPJ_XLSX_PDF_RENDERER=excel_com` pada worker Windows khusus. Prototype template master mempertahankan gradient dan menghasilkan 13 halaman (sama dengan LibreOffice), tetapi PDF paket melalui akun service belum diverifikasi; default LibreOffice tetap meratakan gradient;
 - visual fidelity, print area, page break, header/footer, ukuran kertas, dan hasil buka di Microsoft Office/PDF viewer tetap harus diverifikasi dengan template resmi/aktual.
 
 ---

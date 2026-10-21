@@ -2,6 +2,7 @@
 
 return [
     'arkas_bridge_command' => env('SPJ_ARKAS_BRIDGE_COMMAND'),
+    'xlsx_pdf_renderer' => env('SPJ_XLSX_PDF_RENDERER', 'libreoffice'),
     'school_mode' => env('SPJ_SCHOOL_MODE', 'single-school'),
     'fiscal_year_mode' => env('SPJ_FISCAL_YEAR_MODE', 'single-year'),
     'backup_retention' => (int) env('SPJ_BACKUP_RETENTION', 30),

@@ -9,8 +9,10 @@ use App\Models\School;
 use App\Models\SpjPackage;
 use App\Models\Transaction;
 use App\Services\PreviewAlignedSpjTemplateService;
+use App\Services\SpjTemplateService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -151,6 +153,41 @@ class SpjGeneratedDocumentRegressionTest extends TestCase
         } finally {
             $rendered->disconnectWorksheets();
         }
+    }
+
+    public function test_legacy_bap_and_bast_written_date_placeholders_resolve_from_document_dates(): void
+    {
+        $transaction = $this->createTransaction('BARANG');
+        $item = $this->mirrorItem($transaction, [
+            'source_item_id' => 'ITEM-WRITTEN-DATES',
+            'description' => 'Barang uji tanggal berita acara',
+            'item_description' => 'Barang uji tanggal berita acara',
+            'quantity' => 1,
+            'unit' => 'unit',
+            'amount' => 100000,
+        ]);
+        $item->goods()->create([
+            'bap_date' => '2026-07-03',
+            'bast_date' => '2026-07-04',
+        ]);
+        $package = $transaction->spjPackage()->create([
+            'document_number' => 'SPJ-BARANG-DATE-001',
+            'quarter_code' => 'TW3',
+            'semester_code' => 'S2',
+            'status' => 'READY',
+        ]);
+        $package->setRelation('transaction', $transaction);
+
+        $values = app(SpjTemplateService::class)->placeholders($package, $this->school);
+
+        $this->assertSame(Carbon::parse('2026-07-03')->translatedFormat('l'), $values['HARI_BAP']);
+        $this->assertSame('tiga', $values['TANGGAL_BAP_HURUP']);
+        $this->assertSame(Carbon::parse('2026-07-03')->translatedFormat('F'), $values['BULAN_BAP_HURUP']);
+        $this->assertSame('dua ribu dua puluh enam', $values['TAHUN_BAP_HURUP']);
+        $this->assertSame(Carbon::parse('2026-07-04')->translatedFormat('l'), $values['HARI_BAST']);
+        $this->assertSame('empat', $values['TANGGAL_BAST_HURUP']);
+        $this->assertSame(Carbon::parse('2026-07-04')->translatedFormat('F'), $values['BULAN_BAST_HURUP']);
+        $this->assertSame('dua ribu dua puluh enam', $values['TAHUN_BAST_HURUP']);
     }
 
     public function test_service_recipient_eager_load_hydrates_transaction_inverse(): void

@@ -37,6 +37,13 @@ upload workbook master XLSX
 → pertahankan source workbook secara aman pada storage canonical
 ```
 
+Marker pada workbook yang sudah digunakan oleh sheet canonical dipertahankan
+apa adanya. `SpjDocumentTypeRegistry` mendefinisikan marker tersebut sebagai
+required, optional, repeating, atau image sesuai kontrak sheet, dan runtime
+`SpjTemplateService` menyediakan nilai untuk marker scalar yang dikenali.
+Penyelarasan registry tidak menulis ulang workbook sumber. Placeholder yang
+belum dikenal tetap ditolak agar kesalahan marker tidak tersembunyi.
+
 Importer sengaja tidak memecah dan menulis ulang workbook kompleks secara destruktif. Source master dapat disimpan sebagai salinan penuh per record template agar relationship OOXML asli tidak rusak pada tahap import.
 
 Independensi template berada pada **record document type**. Kontrak ini tidak berarti file source hasil import harus dipotong secara fisik menjadi satu sheet pada saat import.
@@ -308,6 +315,12 @@ HTML preview memakai renderer PhpSpreadsheet. Formula/drawing/print-layout yang 
 Master workbook hasil komposisi memakai PhpSpreadsheet sehingga official-template visual QA, formula lintas-sheet yang kompleks, drawing, print area, page breaks, header/footer, dan target Office viewer tetap mengikuti status RVR pada `CURRENT_PROGRESS.md`.
 
 Untuk PDF dari workbook, generator terlebih dahulu menyimpan workbook sementara lalu mencoba konversi native melalui LibreOffice (`soffice`/`libreoffice`, atau path dari `SPJ_LIBREOFFICE_BINARY`). `SPJ_LIBREOFFICE_BINARY` menerima path file lengkap (`C:/Program Files/LibreOffice/program/soffice.exe`) maupun direktori instalasi. Jalur ini mempertahankan font, print area, page setup, scaling, merge, row/column dimension, page break, header/footer, dan drawing sesuai konfigurasi Excel. Jika LibreOffice tidak tersedia, generator memakai fallback Dompdf dengan normalisasi print area dan registrasi font sistem; fallback tetap fungsional tetapi tidak dapat dijadikan bukti pixel-perfect terhadap Excel/Office.
+
+Sebelum XLSX dibaca PhpSpreadsheet, style `gradientFill` tanpa atribut OOXML `type` dinormalisasi menjadi `linear` pada salinan sementara agar fill tidak dibuang saat workbook ditulis ulang. File template sumber tidak diubah. Namun, LibreOffice Calc 26.2 yang diuji masih meratakan gradient cell menjadi warna solid saat ekspor PDF; ekspor PDF native dari Microsoft Excel mempertahankan gradient.
+
+Prototype ekspor read-only dengan Microsoft Excel 16.0 COM pada master template menghasilkan 13 halaman, sama dengan LibreOffice, dengan urutan dan ukuran kertas yang cocok (selisih ukuran A4 maksimum 0,1 pt). Gradient Invoice tampak sebagai pita PDF dengan transisi warna.
+
+Jalur `SpjExcelComPdfRenderer` kini tersedia untuk XLSX. Atur `SPJ_XLSX_PDF_RENDERER=excel_com` hanya pada worker Windows khusus dengan Microsoft Office berlisensi; mode ini menonaktifkan macro/update link, membuka workbook read-only, menserialisasi konversi, dan gagal eksplisit bila Excel tidak tersedia atau render gagal. Default `libreoffice` mempertahankan perilaku sebelumnya; `auto` memilih Excel COM bila terdaftar, jika tidak memakai LibreOffice. DOCX tetap menggunakan LibreOffice. Prototype hanya membuktikan rendering template sumber, bukan workbook paket terisi atau akun service deployment. Jalur PDF default LibreOffice tetap tanpa gradient; HTML preview PhpSpreadsheet dan fallback Dompdf juga belum menjaminnya. Fidelity gradient/pagination PDF paket tetap RVR sampai diuji melalui worker terpasang.
 
 Halaman pratinjau tidak menjalankan preflight download dan tidak me-render PDF/HTML dua kali: readiness PDF dicek murah (`xlsx` siap, `docx` butuh LibreOffice), HTML hanya dihitung bila PDF tidak siap, dan PDF paket/template di-render lazy melalui endpoint `pratinjau-pdf`. Kegagalan render pratinjau dikembalikan sebagai redirect dengan pesan error, bukan 500.
 

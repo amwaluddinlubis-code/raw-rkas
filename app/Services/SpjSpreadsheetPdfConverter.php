@@ -34,8 +34,16 @@ class SpjSpreadsheetPdfConverter
     /** Convert any LibreOffice-readable office file to PDF. Null when LibreOffice is unavailable. */
     public function convertFile(string $sourcePath): ?string
     {
+        if (! is_file($sourcePath)) {
+            return null;
+        }
+
+        if (strtolower((string) pathinfo($sourcePath, PATHINFO_EXTENSION)) === 'xlsx' && $this->shouldUseExcelCom()) {
+            return app(SpjExcelComPdfRenderer::class)->convertFile($sourcePath);
+        }
+
         $binary = $this->binary();
-        if ($binary === null || ! is_file($sourcePath)) {
+        if ($binary === null) {
             return null;
         }
 
@@ -97,6 +105,29 @@ class SpjSpreadsheetPdfConverter
             'xlsx', 'xls', 'ods', 'csv' => 'pdf:calc_pdf_Export',
             default => 'pdf:writer_pdf_Export',
         };
+    }
+
+    private function shouldUseExcelCom(): bool
+    {
+        $preference = (string) config('spj.xlsx_pdf_renderer', 'auto');
+        if (! in_array($preference, ['auto', 'excel_com', 'libreoffice'], true)) {
+            throw new \RuntimeException('Konfigurasi SPJ_XLSX_PDF_RENDERER tidak valid.');
+        }
+
+        if ($preference === 'libreoffice') {
+            return false;
+        }
+
+        $excelRenderer = app(SpjExcelComPdfRenderer::class);
+        if ($excelRenderer->isAvailable()) {
+            return true;
+        }
+
+        if ($preference === 'excel_com') {
+            throw new \RuntimeException('Renderer Excel COM dipilih, tetapi Microsoft Excel COM tidak tersedia.');
+        }
+
+        return false;
     }
 
     private function binary(): ?string

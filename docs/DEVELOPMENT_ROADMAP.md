@@ -1,8 +1,8 @@
 # SPJ BOSP Web — Rencana Pengembangan
 
-Terakhir diperbarui: **2026-10-19**
+Terakhir diperbarui: **2026-10-21**
 
-Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah workflow run #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview dan penyesuaian presentasi Format K7 mendapat focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
+Roadmap ini memuat urutan pekerjaan aktif pada branch `main` di repository mirror `raw-rkas`. Latest full verified code gate sebelum Bulk Preview adalah workflow run #46 pada `e4ba5cf`, setelah regression revision-comparison RKAS diisolasi dan diperkuat tanpa mengubah business rule. Perubahan Bulk Preview, penyesuaian presentasi Format K7, dan alignment placeholder master v7 mendapat focused verification lokal; full CI dan browser/operator runtime masih pending. Status/evidence rinci berada di `CURRENT_PROGRESS.md`; code gate canonical berada di `P0_VERIFICATION_KIT.md`; keputusan bisnis permanen berada di `SPJ_DESIGN_DECISIONS.md`.
 
 Prinsip kerja aktif:
 
@@ -26,7 +26,7 @@ RVR. Detail alur operator berada di `USER_SCENARIOS.md`.
 
 ## P0-00 — Current HEAD integration + dependency platform + Livewire authorization hardening
 
-**Status: WORKFLOW RUN #46 GREEN / Bulk Preview focused verification complete / full CI and browser verification pending.**
+**Status: WORKFLOW RUN #46 GREEN / latest focused verification complete / full CI and browser verification pending.**
 
 > **Cara membaca identifier gate.** Dua scheme berbeda dipakai di dokumen ini
 > dan `CURRENT_PROGRESS.md`, dan keduanya pernah ditulis "CI #" sehingga mudah
@@ -175,6 +175,7 @@ Functional coverage yang sudah hijau:
 - [x] update XLSX individu mengganti source document type berikutnya tanpa mutasi master historis;
 - [x] master parsial ditolak;
 - [x] canonical XLSX HTML preview memilih worksheet yang benar;
+- [x] gradientFill tanpa atribut `type` dipertahankan saat dibaca PhpSpreadsheet melalui normalisasi salinan sementara;
 - [x] current canonical HEAD memperoleh green code gate #486;
 - [x] validator/template load terbaru tercakup full regression;
 - [x] PDF/report writer path tercakup full Unit/Feature gate.
@@ -185,6 +186,7 @@ Masih RVR:
 - [ ] buka `MASTER-TEMPLATE-SPJ-TERBARU.xlsx`;
 - [ ] periksa drawing, formula/reference, defined name, print area, page break, header/footer, repair prompt;
 - [ ] generate dan inspeksi XLSX/PDF nyata per kategori tersedia;
+- [ ] Verifikasi PDF paket hasil aplikasi melalui worker Windows berlisensi Office setelah `SPJ_XLSX_PDF_RENDERER=excel_com`: route Excel COM sudah diimplementasikan dan focused suite 16 test lulus; prototype template mempertahankan gradient dengan 13 halaman yang cocok dengan LibreOffice, tetapi runtime akun service, XLSX paket terisi, pagination/data final, concurrency, dan timeout/recovery masih RVR;
 - [ ] verifikasi field identitas, bukti, tanggal, uraian, penerima/vendor, nominal, pajak, dan nomor dokumen turunan.
 
 Panduan canonical: `TEMPLATE_MASTER_WORKFLOW.md` dan `DOCUMENT_TEMPLATE_PLACEHOLDERS.md`.

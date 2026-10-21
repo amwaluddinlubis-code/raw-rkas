@@ -69,7 +69,7 @@ class PreviewAlignedSpjTemplateService extends ExtendedSpjTemplateService
                 return $nativePdf;
             }
 
-            $spreadsheet = IOFactory::load($path);
+            $spreadsheet = $this->loadSpreadsheet($path);
             try {
                 return $this->fallbackPdfContents($spreadsheet, false);
             } finally {
