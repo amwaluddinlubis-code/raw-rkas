@@ -81,9 +81,11 @@ class SpjExcelComPdfRenderer
             $process = new Process([
                 $powershell,
                 '-NoProfile',
+                '-ExecutionPolicy',
+                'Bypass',
                 '-NonInteractive',
-                '-EncodedCommand',
-                $this->encodedCommand($sourcePath, $output),
+                '-Command',
+                $this->commandString($sourcePath, $output),
             ]);
             $process->setTimeout(self::PROCESS_TIMEOUT_SECONDS);
             $process->run();
@@ -106,6 +108,32 @@ class SpjExcelComPdfRenderer
             fclose($lock);
             File::deleteDirectory($directory);
         }
+    }
+
+    private function commandString(string $sourcePath, string $outputPath): string
+    {
+        $lines = [];
+        $lines[] = '$ErrorActionPreference = "Stop"';
+        $lines[] = '$sourcePath = '.var_export($sourcePath, true);
+        $lines[] = '$outputPath = '.var_export($outputPath, true);
+        $lines[] = '$excel = New-Object -ComObject Excel.Application';
+        $lines[] = '$excel.Visible = $false';
+        $lines[] = '$excel.DisplayAlerts = $false';
+        $lines[] = '$excel.EnableEvents = $false';
+        $lines[] = '$excel.AutomationSecurity = 3';
+        $lines[] = '$excel.AskToUpdateLinks = $false';
+        $lines[] = '$workbooks = $excel.Workbooks';
+        $lines[] = '$workbook = $workbooks.Open($sourcePath, 0, $true, 5, "", "", $true, 1, "", $false, $false, 0, $false, $true, 0)';
+        $lines[] = '$workbook.ExportAsFixedFormat(0, $outputPath, 0, $true, $false)';
+        $lines[] = 'if ($null -ne $workbook) { try { $workbook.Close($false) } catch {} };
+        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($workbook)';
+        $lines[] = 'if ($null -ne $workbooks) { try { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($workbooks) } catch {} }';
+        $lines[] = 'if ($null -ne $excel) { try { $excel.Quit() } catch {} };
+        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($excel)';
+        $lines[] = '[GC]::Collect()';
+        $lines[] = '[GC]::WaitForPendingFinalizers()';
+
+        return implode(PHP_EOL, $lines);
     }
 
     private function encodedCommand(string $sourcePath, string $outputPath): string
