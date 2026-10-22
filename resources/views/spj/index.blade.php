@@ -130,78 +130,7 @@
                                 <h2 class="text-base font-bold text-[var(--ui-fg-strong)]">Isian Manual Paket SPJ</h2>
                                 <p class="mt-0.5 text-xs text-[var(--ui-fg-muted)]">Hanya isian kuning yang wajib. Bagian biru tampil sesuai kategori.</p>
                             </div>
-                            @php
-                                $workDetails = $transaction->workOrder;
-                                $workerRows = $transaction->workers->map(fn ($worker) => [
-                                    'name' => $worker->name,
-                                    'job_description' => $worker->job_description,
-                                    'work_days' => $worker->work_days,
-                                    'daily_rate' => $worker->daily_rate,
-                                    'is_receipt_recipient' => (bool) $worker->is_receipt_recipient,
-                                    'notes' => $worker->notes,
-                                ])->values()->all();
-                                $workerRows = old('spj_category', $transaction->spj_category) === 'PEMELIHARAAN' ? old('workers', $workerRows) : $workerRows;
-                                $selectedSpjType = strtoupper((string) old('spj_category', $transaction->spj_category ?: $transaction->spj_category));
-                            @endphp
-                            <form id="spj-manual-form" method="POST" action="{{ route('spj.update', $package->id) }}" data-source-siplah="{{ $transaction->is_siplah ? '1' : '0' }}" class="space-y-4 p-4" @submit="if (!$event.defaultPrevented) saving=true">@csrf @method('PUT')
-                    @unless($package->isEditable())<div class="flex items-start gap-2 rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-muted)] px-3 py-2 text-sm text-[var(--ui-fg)]"><span aria-hidden="true">🔒</span><p><strong>Isian terkunci.</strong> Batalkan nomor dan buka paket untuk koreksi agar field dapat diedit kembali.</p></div>@endunless
-                    <fieldset @disabled(!$package->isEditable()) class="disabled:cursor-not-allowed disabled:opacity-60">
-                    <div x-show="saving" class="flex items-center justify-center py-4"><x-loading-spinner /></div>
-                    <div x-show="!saving">
-                                <div class="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-                                    <div class="grid gap-3 lg:grid-cols-4 lg:items-end" data-spj-category-grid>
-                                        <div class="min-w-0 lg:col-span-1" data-spj-category-field>
-                                            <label for="spj-type" class="text-xs font-bold text-amber-900">Kategori SPJ <span class="text-rose-600">*</span></label>
-                                            <x-ui.select id="spj-type" name="spj_category" class="mt-1">
-                                                <option value="">Pilih kategori</option>
-                                                @foreach(['BARANG','KONSUMSI','PEMELIHARAAN','JASA_LAINNYA','SPPD','HONOR_PEGAWAI'] as $value)
-                                                    <option value="{{ $value }}" @selected(in_array($selectedSpjType, ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) && in_array(strtoupper((string) $value), ['JASA_HONORARIUM', 'HONOR_PEGAWAI']) || old('spj_category', $transaction->spj_category ?: $transaction->spj_category) === $value)>{{ \App\Support\SpjDisplay::typeLabel($value) }}</option>
-                                                @endforeach
-                                            </x-ui.select>
-                                        </div>
-                                        <div data-spj-category-context class="min-w-0 lg:col-span-3">
-                                            <div data-spj-category-context-panel="BARANG" @unless($selectedSpjType === 'BARANG') hidden @endunless>
-                                                <div class="flex min-h-10 flex-wrap items-center gap-x-7 gap-y-2 rounded-md border border-amber-300 bg-[var(--ui-surface-base)] px-3 py-1.5 text-sm">
-                                                    <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
-                                                        <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode="siplah" value="siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500" @checked($transaction->is_siplah || $transaction->payment_method === 'siplah')>
-                                                        <span>SiPLah</span>
-                                                    </label>
-                                                    <label class="inline-flex cursor-pointer items-center gap-2 font-semibold text-[var(--ui-fg-strong)]">
-                                                        <input type="radio" name="spj_siplah_mode_ui" data-spj-siplah-mode="non_siplah" value="non_siplah" class="h-4 w-4 border-amber-300 text-indigo-600 focus:ring-indigo-500" @checked(!($transaction->is_siplah || $transaction->payment_method === 'siplah')) @disabled($transaction->is_siplah)>
-                                                        <span>Non SiPLah</span>
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div data-spj-category-context-panel="PEMELIHARAAN" @unless($selectedSpjType === 'PEMELIHARAAN') hidden @endunless>
-                                                <div data-spj-maintenance-quick-slot class="min-w-0"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p class="mt-2 text-xs text-amber-800">Kategori menentukan field manual, dokumen pendukung, dan nomor yang diterbitkan. Subkategori terpisah tidak diperlukan.</p>
-                                </div>
-                                @include('spj.partials.package.common')
-                                @include('spj.partials.package.categories.honor-pegawai')
-                                @include('spj.partials.package.categories.sppd')
-                                @include('spj.partials.package.categories.barang')
-@include('spj.partials.package.categories.konsumsi')
-@include('spj.partials.package.categories.pemeliharaan')
-                                @include('spj.partials.package.categories.jasa-lainnya')
-                                <x-ui.sticky-actions class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                    @if($previousPackageId ?? null)
-                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $previousPackageId, 'package_tab' => 'isian'])" title="Buka paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center">← Prev</x-ui.button>
-                                    @else
-                                        <x-ui.button variant="secondary" disabled title="Tidak ada paket sebelumnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">← Prev</x-ui.button>
-                                    @endif
-                                    <x-ui.button type="submit" x-bind:disabled="saving" class="justify-center px-4 py-1.5 text-base"><span x-show="saving" class="h-3 w-3 animate-spin rounded-full border-2 border-white/30 border-t-white"></span> <span x-text="saving ? 'Menyimpan...' : 'Simpan Isian Paket'"></span></x-ui.button>
-                                    @if($nextPackageId ?? null)
-                                        <x-ui.button variant="secondary" :href="route('spj.index', ['tab' => 'paket', 'package_id' => $nextPackageId, 'package_tab' => 'isian'])" title="Buka paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center">Next →</x-ui.button>
-                                    @else
-                                        <x-ui.button variant="secondary" disabled title="Tidak ada paket berikutnya pada tahun anggaran dan sumber dana aktif" class="justify-center opacity-55">Next →</x-ui.button>
-                                    @endif
-                                </x-ui.sticky-actions>
-                    </div>
-                    </fieldset>
-                            </form>
+                            @include('spj.partials.package.manual-form')
                         </div>
 
                         <div x-show="packageTab === 'pajak'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" id="package-panel-pajak" role="tabpanel" aria-labelledby="package-tab-pajak" data-panel="pajak" class="tab-panel p-4">
@@ -245,55 +174,7 @@
             {{-- Tab: Monitoring --}}
             @if(($tab ?? 'persiapan') === 'monitoring')
             <div x-show="tab === 'monitoring'" x-transition>
-                <div class="space-y-4 bg-[var(--ui-surface-soft)] p-4 sm:p-6">
-                    <section class="flex flex-col gap-3 rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                        <div>
-                            <p class="text-[11px] font-bold uppercase tracking-[.14em] text-[var(--theme-content-accent)]">Ruang kontrol SPJ</p>
-                            <h2 class="mt-1 text-lg font-bold text-[var(--ui-fg-strong)]">Monitoring dan penutupan periode</h2>
-                            <p class="mt-1 text-sm text-[var(--ui-fg-muted)]">Transaksi ber-rincian yang belum siap atau belum bernomor.</p>
-                        </div>
-                        <div class="rounded-lg border border-[var(--ui-line-strong)] bg-[var(--ui-surface-soft)] px-4 py-3 sm:min-w-36 sm:text-right">
-                            <p class="text-[11px] font-bold uppercase tracking-wide text-[var(--ui-fg-muted)]">Perlu ditindaklanjuti</p>
-                            <p class="mt-1 text-2xl font-extrabold text-[var(--theme-content-accent)]">{{ number_format($pendingPaginator?->total() ?? 0, 0, ',', '.') }}</p>
-                            <p class="text-xs text-[var(--ui-fg-muted)]">transaksi</p>
-                        </div>
-                    </section>
-                    @if(auth()->user()?->isAdministrator())
-                        <div class="grid gap-4 xl:grid-cols-2">
-                        <form method="POST" action="{{ route('spj.bulk-finalize') }}" class="rounded-xl border border-emerald-200 bg-[var(--ui-surface-base)] p-4 shadow-sm" data-confirm="Finalkan semua paket NUMBERED pada triwulan terpilih? Proses ini membuat snapshot dan mengunci paket.">
-                            @csrf
-                            <div class="mb-3"><h3 class="font-bold text-[var(--ui-fg-strong)]">Bulk Final SPJ</h3><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Kunci seluruh paket NUMBERED setelah dokumen dan snapshot siap.</p></div>
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end"><x-ui.field label="Triwulan" class="flex-1"><x-ui.select name="quarter">@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach</x-ui.select></x-ui.field><x-ui.button type="submit" variant="success" class="shrink-0">Finalkan paket</x-ui.button></div>
-                            <p class="basis-full text-xs text-[var(--ui-fg-muted)]">Hanya paket NUMBERED pada triwulan dan sumber dana aktif yang diproses. Jika ada paket gagal, seluruh batch dibatalkan.</p>
-                        </form>
-                        <form method="POST" action="{{ route('spj.quarter-numbering') }}" class="rounded-xl border border-indigo-200 bg-[var(--ui-surface-base)] p-4 shadow-sm" data-confirm="Rekonsiliasi nomor triwulan ini? Transaksi yang sudah memiliki nomor aktif akan dilewati dan slot nomor yang dibatalkan dapat dipakai dokumen berikutnya dalam domain serta periode yang sama.">
-                            @csrf
-                            <div class="mb-3"><h3 class="font-bold text-[var(--ui-fg-strong)]">Penomoran Triwulan</h3><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Tetapkan nomor dokumen untuk paket berstatus READY.</p></div>
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-end"><x-ui.field label="Triwulan" class="flex-1"><x-ui.select name="quarter">@foreach(range(1,4) as $quarter)<option value="{{ $quarter }}">Triwulan {{ $quarter }}</option>@endforeach</x-ui.select></x-ui.field><x-ui.button type="submit" class="shrink-0">Tetapkan nomor</x-ui.button></div>
-                            <p class="basis-full text-xs text-[var(--ui-fg-muted)]">Nomor aktif dipertahankan. Slot nomor batal dipakai kembali menurut urutan terkecil oleh dokumen berikutnya dalam jenis dan periode penomoran yang sama.</p>
-                            <p class="basis-full text-xs text-[var(--ui-fg-muted)]">Setiap jenis dokumen diurutkan menurut tanggal peristiwanya. Nomor yang sudah terbit akan dilewati.</p>
-                        </form>
-                        </div>
-                        <section class="rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] p-4 shadow-sm sm:p-5">
-                            <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><h3 class="font-bold text-[var(--ui-fg-strong)]">Status periode</h3><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Tutup triwulan hanya setelah seluruh paket berstatus FINAL.</p></div><span class="text-xs font-semibold text-[var(--ui-fg-muted)]">Tahun anggaran aktif</span></div>
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            @foreach(range(1,4) as $quarter)
-                                @php
-                                    $period = ($periodClosures ?? collect())->get($quarter);
-                                @endphp
-                                <div class="rounded-lg border border-[var(--ui-line)] bg-[var(--ui-surface-soft)] p-3"><div class="flex items-center justify-between"><b class="text-sm text-[var(--ui-fg-strong)]">Triwulan {{ $quarter }}</b><span class="rounded-full bg-[var(--ui-surface-muted)] px-2 py-1 text-xs font-bold text-[var(--ui-fg-muted)]">{{ $period?->status ?? 'OPEN' }}</span></div>
-                                    @if($period?->status === 'NUMBERED')<form method="POST" action="{{ route('spj.quarter-close') }}" class="mt-2">@csrf<input type="hidden" name="quarter" value="{{ $quarter }}"><x-ui.button type="submit" variant="secondary" class="w-full px-3 py-1.5 text-xs">Tutup triwulan</x-ui.button></form>@endif
-                                    @if($period?->status === 'CLOSED')<form method="POST" action="{{ route('spj.quarter-reopen', $period->id) }}" class="mt-2 space-y-2">@csrf<x-ui.input name="reason" required placeholder="Alasan pembukaan" class="text-xs" /><x-ui.button type="submit" variant="warning" class="w-full px-3 py-1.5 text-xs">Buka kembali</x-ui.button></form>@endif
-                                </div>
-                            @endforeach
-                            </div>
-                        </section>
-                    @endif
-                </div>
-                <section class="mx-4 mb-4 overflow-hidden rounded-xl border border-[var(--ui-line)] bg-[var(--ui-surface-base)] shadow-sm sm:mx-6 sm:mb-6">
-                    <div class="border-b border-[var(--ui-line)] bg-[var(--ui-surface-soft)] px-5 py-4"><h3 class="font-bold text-[var(--ui-fg-strong)]">Antrean transaksi tertunda</h3><p class="mt-1 text-xs text-[var(--ui-fg-muted)]">Daftar ini hanya menampilkan transaksi yang masih memerlukan penyelesaian sebelum penomoran atau penutupan periode.</p></div>
-                    <livewire:spj-monitoring-list />
-                </section>
+                @include('spj.partials.monitoring')
             </div>
             @endif
         </section>

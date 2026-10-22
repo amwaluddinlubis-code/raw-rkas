@@ -10,15 +10,19 @@ class SpjPackageNavigationButtonsTest extends TestCase
     public function test_all_package_tabs_include_prev_next_navigation(): void
     {
         $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $manualForm = file_get_contents(resource_path('views/spj/partials/package/manual-form.blade.php'));
 
         $this->assertIsString($index);
+        $this->assertIsString($manualForm);
         // Rincian, Rincian Pajak, dan Penomoran memakai partial bersama.
         $this->assertSame(3, substr_count($index, "@include('spj.partials.package.package-navigation'"));
         $this->assertStringContainsString("@include('spj.partials.package.package-navigation', ['packageTab' => 'rincian'])", $index);
         $this->assertStringContainsString("@include('spj.partials.package.package-navigation', ['packageTab' => 'pajak'])", $index);
         $this->assertStringContainsString("@include('spj.partials.package.package-navigation', ['packageTab' => 'penomoran'])", $index);
-        // Isian Manual memakai markup sendiri (tombol Simpan di tengah) dengan package_tab yang sama.
-        $this->assertSame(2, substr_count($index, "'package_tab' => 'isian'"));
+        // Isian Manual memakai markup sendiri (tombol Simpan di tengah) dengan package_tab yang sama;
+        // markup-nya kini tinggal di partial manual-form.
+        $this->assertStringContainsString("@include('spj.partials.package.manual-form')", $index);
+        $this->assertSame(2, substr_count($manualForm, "'package_tab' => 'isian'"));
     }
 
     public function test_navigation_partial_preserves_package_tab(): void
