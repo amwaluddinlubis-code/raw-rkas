@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\\Unit;
+namespace Tests\Unit;
 
-use App\\Services\\SpjDocumentTypeRegistry;
-use PHPUnit\\Framework\\Attributes\\Test;
-use Tests\\TestCase;
+use App\Services\SpjDocumentTypeRegistry;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 class SpjDocumentTypeRegistryTest extends TestCase
 {
