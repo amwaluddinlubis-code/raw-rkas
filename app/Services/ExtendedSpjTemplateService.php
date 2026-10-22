@@ -104,8 +104,8 @@ class ExtendedSpjTemplateService extends SpjTemplateService
             'TEMPAT_KEGIATAN' => $eventLocation !== '' ? $eventLocation : $fallback,
             'TANGGAL_ACARA' => $eventDate,
             'TEMPAT_ACARA' => $eventLocation !== '' ? $eventLocation : $fallback,
-            'NAMA_PENANGGUNG_JAWAB' => $fallback,
-            'NIP_PENANGGUNG_JAWAB' => $fallback,
+            'NAMA_PENANGGUNG_JAWAB' => (string) ($transaction->person_in_charge_name ?: $fallback),
+            'NIP_PENANGGUNG_JAWAB' => (string) ($transaction->person_in_charge_nip ?: $fallback),
             'KONSUMSI_NO' => $participantNumbers !== [] ? implode("\n", $participantNumbers) : $fallback,
             'KONSUMSI_NAMA' => $participantNames !== [] ? implode("\n", $participantNames) : $fallback,
             // Alias deprecated untuk template lama: gabungan posisi/NIP/NUPTK.
@@ -363,6 +363,7 @@ class ExtendedSpjTemplateService extends SpjTemplateService
     private function fillCanonicalWorksheet(Worksheet $sheet, SpjPackage $package, School $school, ?DocumentTemplate $template = null, ?GoodsReceipt $receipt = null): void
     {
         $values = $this->placeholders($package, $school, $receipt);
+        $this->expandExcelDayColumns($sheet, $package);
         $this->normalizeMergedAnchorPlaceholders($sheet);
         $this->fillExcelItemsExtended($sheet, $package, $template, $receipt);
         $this->fillExcelWorkersExtended($sheet, $package);

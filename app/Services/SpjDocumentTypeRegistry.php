@@ -32,6 +32,10 @@ final class SpjDocumentTypeRegistry
 
     public const DAFTAR_PENERIMA_KONSUMSI = 'DAFTAR_PENERIMA_KONSUMSI';
 
+    public const DAFTAR_HADIR_PEMELIHARAAN = 'DAFTAR_HADIR_PEMELIHARAAN';
+
+    public const DAFTAR_PENERIMA_UPAH = 'DAFTAR_PENERIMA_UPAH';
+
     public const SCOPE_PACKAGE = 'PACKAGE';
 
     public const SCOPE_TRANSACTION = 'TRANSACTION';
@@ -392,6 +396,53 @@ final class SpjDocumentTypeRegistry
                 ],
                 'repeat_required' => [],
                 'repeat_optional' => [],
+                'image' => ['KOP_SURAT'],
+            ],
+
+            self::DAFTAR_HADIR_PEMELIHARAAN => [
+                'label' => 'Daftar Hadir Pemeliharaan',
+                'sheet' => 'TPL_DAFTAR_HADIR_PEMELIHARAAN',
+                'scope' => self::SCOPE_TRANSACTION,
+                'source' => self::SOURCE_GENERATED,
+                'usage' => null,
+                'applicable_categories' => ['PEMELIHARAAN'],
+                'required' => [
+                    'NOMOR_SPJ', 'URAIAN_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI',
+                ],
+                'optional' => [
+                    'LOKASI_PEKERJAAN', 'NOMOR_SPK', 'TANGGAL_SPK',
+                    'HARI_TANGGAL', 'HARI_NAMA',
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN',
+                    'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
+                    'NAMA_PENGURUS_BARANG', 'NIP_PENGURUS_BARANG',
+                ],
+                'repeat_required' => ['UPAH_NO', 'UPAH_NAMA'],
+                'repeat_optional' => ['UPAH_PEKERJAAN', 'UPAH_HARI'],
+                'image' => ['KOP_SURAT'],
+            ],
+
+            self::DAFTAR_PENERIMA_UPAH => [
+                'label' => 'Daftar Penerima Upah Pemeliharaan',
+                'sheet' => 'TPL_DAFTAR_PENERIMA_UPAH',
+                'scope' => self::SCOPE_TRANSACTION,
+                'source' => self::SOURCE_GENERATED,
+                'usage' => null,
+                'applicable_categories' => ['PEMELIHARAAN'],
+                'required' => [
+                    'NOMOR_SPJ', 'URAIAN_PEKERJAAN', 'NILAI_UPAH',
+                ],
+                'optional' => [
+                    'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI',
+                    'NILAI_UPAH_TERBILANG', 'NOMOR_SPK', 'TANGGAL_SPK',
+                    'KABUPATEN_KOTA', 'TANGGAL_TANDA_TANGAN',
+                    'KODE_KEGIATAN', 'NAMA_KEGIATAN',
+                    'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',
+                    'NAMA_KEPALA_SEKOLAH', 'NIP_KEPALA_SEKOLAH',
+                    'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
+                ],
+                'repeat_required' => ['UPAH_NO', 'UPAH_NAMA', 'UPAH_JUMLAH'],
+                'repeat_optional' => ['UPAH_PEKERJAAN', 'UPAH_HARI', 'UPAH_TARIF_HARI', 'UPAH_PENERIMA_KUITANSI'],
                 'image' => ['KOP_SURAT'],
             ],
         ];

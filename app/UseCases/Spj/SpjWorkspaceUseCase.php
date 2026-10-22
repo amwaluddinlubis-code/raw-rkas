@@ -327,6 +327,7 @@ class SpjWorkspaceUseCase
                 'filters' => [],
                 'periodClosures' => collect(),
                 'participantRoster' => collect(),
+                'employeeRoster' => collect(),
                 'consumptionOrderSources' => [],
                 'serviceOrderSources' => [],
             ]);
@@ -355,6 +356,8 @@ class SpjWorkspaceUseCase
 
         $validator = app(SpjPackageValidationService::class);
         $participantRoster = collect();
+        // Roster pegawai untuk pemilih Penanggung Jawab Kegiatan (semua kategori).
+        $employeeRoster = $this->participantRoster();
         $consumptionOrderSources = [];
         $serviceOrderSources = [];
 
@@ -435,6 +438,7 @@ class SpjWorkspaceUseCase
             'filters' => [],
             'periodClosures' => FiscalPeriodClosure::query()->where('fiscal_year_id', $this->context->fiscalYearId())->orderBy('quarter')->get()->keyBy('quarter'),
             'participantRoster' => $participantRoster,
+            'employeeRoster' => $employeeRoster,
             'consumptionOrderSources' => $consumptionOrderSources,
             'serviceOrderSources' => $serviceOrderSources,
         ]);

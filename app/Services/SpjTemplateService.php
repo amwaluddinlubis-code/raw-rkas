@@ -472,6 +472,7 @@ class SpjTemplateService
         } elseif ($extension === 'xlsx') {
             $spreadsheet = $this->loadSpreadsheet($source);
             foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+                $this->expandExcelDayColumns($sheet, $package);
                 $this->fillExcelItems($sheet, $package, $template, $receipt);
                 $this->fillExcelWorkers($sheet, $package);
                 $this->fillExcelLetterhead($sheet, $school);
@@ -708,6 +709,7 @@ class SpjTemplateService
         $values = $this->placeholders($package, $school, $receipt);
         $spreadsheet = $this->loadSpreadsheet($source);
         foreach ($spreadsheet->getWorksheetIterator() as $sheet) {
+            $this->expandExcelDayColumns($sheet, $package);
             $this->fillExcelItems($sheet, $package, $template, $receipt);
             $this->fillExcelWorkers($sheet, $package);
             $this->fillExcelLetterhead($sheet, $school);
@@ -1390,6 +1392,128 @@ class SpjTemplateService
                 if (is_string($value)) {
                     $sheet->getCell(Coordinate::stringFromColumnIndex($column).($row + $index))->setValue(strtr($value, $replacements));
                 }
+            }
+        }
+    }
+
+    /**
+     * Kembangkan kolom hari contoh {{HARI_TANGGAL}} menjadi satu kolom per hari
+     * masa pelaksanaan SPK (work_started_at s.d. work_completed_at, inklusif).
+     * Sel {{HARI_NAMA}} pada kolom yang sama diisi nama hari singkat.
+     * Tanpa masa pelaksanaan yang sah, penanda dibersihkan dan grid contoh
+     * dibiarkan apa adanya (satu kolom hari kosong) agar render tidak gagal.
+     * Hanya XLSX; dijalankan sebelum penggandaan baris agar gaya baris contoh
+     * (termasuk sel paraf kolom hari baru) ikut tergandakan ke baris pekerja.
+     */
+    protected function expandExcelDayColumns(Worksheet $sheet, SpjPackage $package): void
+    {
+        $dateCoordinate = null;
+        $nameCoordinate = null;
+        foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+            $value = $sheet->getCell($coordinate)->getValue();
+            if (! is_string($value)) {
+                continue;
+            }
+            if ($dateCoordinate === null && str_contains($value, '{{HARI_TANGGAL}}')) {
+                $dateCoordinate = $coordinate;
+            }
+            if ($nameCoordinate === null && str_contains($value, '{{HARI_NAMA}}')) {
+                $nameCoordinate = $coordinate;
+            }
+        }
+        if ($dateCoordinate === null) {
+            return;
+        }
+
+        [$prototypeColumn, $dateRow] = Coordinate::coordinateFromString($dateCoordinate);
+        $prototypeIndex = Coordinate::columnIndexFromString($prototypeColumn);
+        $nameRow = null;
+        if ($nameCoordinate !== null) {
+            [$nameColumn, $nameRowIndex] = Coordinate::coordinateFromString($nameCoordinate);
+            if ($nameColumn === $prototypeColumn) {
+                $nameRow = $nameRowIndex;
+            } else {
+                $sheet->getCell($nameCoordinate)->setValue(str_replace('{{HARI_NAMA}}', '', (string) $sheet->getCell($nameCoordinate)->getValue()));
+            }
+        }
+
+        $workOrder = $package->transaction->workOrder;
+        $start = $workOrder?->work_started_at;
+        $end = $workOrder?->work_completed_at;
+        $days = [];
+        if ($start && $end && $end->gte($start)) {
+            $cursor = $start->copy()->startOfDay();
+            $lastDay = $end->copy()->startOfDay();
+            // Batas pengaman: masa pelaksanaan sekolah tidak wajar melewati satu triwulan.
+            while ($cursor->lte($lastDay) && count($days) < 92) {
+                $days[] = $cursor->copy();
+                $cursor->addDay();
+            }
+        }
+
+        if ($days === []) {
+            $sheet->getCell($dateCoordinate)->setValue(str_replace('{{HARI_TANGGAL}}', '', (string) $sheet->getCell($dateCoordinate)->getValue()));
+            if ($nameRow !== null) {
+                $nameCell = $prototypeColumn.$nameRow;
+                $sheet->getCell($nameCell)->setValue(str_replace('{{HARI_NAMA}}', '', (string) $sheet->getCell($nameCell)->getValue()));
+            }
+
+            return;
+        }
+
+        $extra = count($days) - 1;
+        if ($extra > 0) {
+            // Tangkap gaya sel kolom contoh (kepala tabel, baris pekerja, dst.)
+            // sebelum penyisipan; kolom sesudahnya bergeser beserta gayanya.
+            $styledRows = [];
+            foreach ($sheet->getCellCollection()->getCoordinates() as $coordinate) {
+                [$column, $row] = Coordinate::coordinateFromString($coordinate);
+                if ($column === $prototypeColumn) {
+                    $styledRows[] = $row;
+                }
+            }
+            $prototypeWidth = $sheet->getColumnDimension($prototypeColumn)->getWidth();
+
+            $sheet->insertNewColumnBeforeByIndex($prototypeIndex + 1, $extra);
+
+            for ($offset = 1; $offset <= $extra; $offset++) {
+                $newColumn = Coordinate::stringFromColumnIndex($prototypeIndex + $offset);
+                if ($prototypeWidth !== null && $prototypeWidth > 0) {
+                    $sheet->getColumnDimension($newColumn)->setWidth($prototypeWidth);
+                }
+                foreach ($styledRows as $row) {
+                    $sheet->duplicateStyle(
+                        $sheet->getStyle($prototypeColumn.$row),
+                        $newColumn.$row,
+                    );
+                }
+            }
+
+            // Judul di atas baris tanggal (teks polos, mis. "TANGGAL (PARAF
+            // KEHADIRAN)") direntangkan mengikuti lebar grid hari.
+            $titleRow = $dateRow - 1;
+            if ($titleRow >= 1) {
+                $titleValue = $sheet->getCell($prototypeColumn.$titleRow)->getValue();
+                if (is_string($titleValue) && trim($titleValue) !== '' && ! str_contains($titleValue, '{{')) {
+                    foreach ($sheet->getMergeCells() as $mergeRange) {
+                        [$mergeStart, $mergeEnd] = Coordinate::rangeBoundaries($mergeRange);
+                        if ($mergeStart[0] <= $prototypeIndex && $prototypeIndex <= $mergeEnd[0]
+                            && $mergeStart[1] <= $titleRow && $titleRow <= $mergeEnd[1]) {
+                            $sheet->unmergeCells($mergeRange);
+                        }
+                    }
+                    $sheet->mergeCells(
+                        $prototypeColumn.$titleRow.':'.Coordinate::stringFromColumnIndex($prototypeIndex + $extra).$titleRow,
+                    );
+                }
+            }
+        }
+
+        foreach ($days as $offset => $day) {
+            $column = Coordinate::stringFromColumnIndex($prototypeIndex + $offset);
+            $sheet->getCell($column.$dateRow)->setValue($day->format('j'));
+            if ($nameRow !== null) {
+                $sheet->getCell($column.$nameRow)->setValue($day->translatedFormat('D'));
             }
         }
     }

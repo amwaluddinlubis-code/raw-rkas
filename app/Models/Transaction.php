@@ -66,6 +66,9 @@ class Transaction extends Model
         'spj_category', // SPJ category selected
         'spj_recipient_name', // Override for SPJ recipient
         'receipt_recipient_name', // Manual receipt recipient, may differ from ARKAS/BKU recipient
+        'person_in_charge_name', // Penanggung Jawab Kegiatan paket (snapshot dari daftar pegawai)
+        'person_in_charge_nip',
+        'person_in_charge_employee_id',
         'event_name',
         'event_location',
         'event_date',

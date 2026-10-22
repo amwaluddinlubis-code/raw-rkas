@@ -96,6 +96,15 @@ Master template terbaru juga memakai `JENIS_RAB`/`TOTAL_RAB` pada RAB Pemelihara
 
 `JENIS_RAB` pada baris rincian RAB diisi per baris: `Bahan` bila rincian milik transaksi belanja barang (material), `UPAH` bila milik transaksi pemeliharaan (tenaga kerja) itu sendiri; tanpa info linkage default `Bahan`. Render RAB menggabungkan kedua sumber (material + upah milik sendiri, tanpa duplikat, in-memory saja). Nilai scalar `JENIS_RAB` di luar baris rincian tetap `RAB Pemeliharaan`.
 
+### Penanggung Jawab Kegiatan
+
+```text
+NAMA_PENANGGUNG_JAWAB
+NIP_PENANGGUNG_JAWAB
+```
+
+Penanggung Jawab Kegiatan adalah data per paket SPJ. Operator memilihnya dari daftar pegawai (master `employees`: ARKAS + Dapodik + manual) melalui pemilih pencarian pada formulir Isian Manual paket (bagian Data Umum Dokumen), atau mengosongkannya. Nama dan NIP disimpan sebagai snapshot pada transaksi (`person_in_charge_name`, `person_in_charge_nip`, `person_in_charge_employee_id` sebagai jejak asal pilihan) agar dokumen tidak berubah bila data pegawai diperbarui kemudian. Bila belum dipilih, kedua placeholder jatuh ke nilai scalar kosong standar (`-`). Placeholder ini dipakai antara lain pada blok tanda tangan Daftar Hadir Konsumsi, Daftar Hadir Pemeliharaan, dan Daftar Penerima Upah Pemeliharaan.
+
 ---
 
 ## 4. Penerima dan penyedia
@@ -439,6 +448,15 @@ UPAH_PENERIMA_KUITANSI
 Baris template yang memuat `UPAH_NO` menjadi template row yang digandakan mengikuti pekerja/penerima yang didukung generator.
 
 Repeating row ini tidak otomatis berarti seluruh multi-recipient JASA_LAINNYA menggunakan schema `UPAH_*`. Untuk JASA gunakan placeholder/context yang memang disediakan generator atau template khusus yang sudah diverifikasi.
+
+### Ekspansi kolom hari pada daftar hadir (XLSX)
+
+```text
+HARI_TANGGAL
+HARI_NAMA
+```
+
+Kedua marker ini adalah marker struktural kolom, bukan scalar: template daftar hadir cukup menyediakan SATU kolom hari contoh yang sel kepalanya memuat `{{HARI_TANGGAL}}` (baris tanggal) dan, bila diinginkan, `{{HARI_NAMA}}` pada kolom yang sama (baris nama hari). Saat render XLSX, generator mengembangkan kolom contoh menjadi satu kolom per hari masa pelaksanaan SPK (`work_started_at` s.d. `work_completed_at`, inklusif, maksimum 92 hari): setiap kepala kolom diisi nomor tanggal dan nama hari singkat sesuai locale (`Sen`, `Sel`, ...), gaya dan lebar kolom contoh disalin, kolom sesudahnya (mis. Jumlah Hari, Tanda Tangan) bergeser, judul teks polos tepat di atas baris tanggal direntangkan mengikuti lebar grid, dan area cetak melebar mengikuti. Ekspansi berjalan sebelum penggandaan baris `UPAH_*` sehingga sel paraf pada baris pekerja ikut membawa gaya kolom baru. Bila masa pelaksanaan belum diisi, marker dibersihkan dan grid contoh dibiarkan satu kolom kosong agar render tidak gagal. Fitur ini hanya berlaku untuk XLSX dan dipakai oleh `DAFTAR_HADIR_PEMELIHARAAN`; template tanpa marker ini dirender apa adanya.
 
 ---
 
