@@ -4,17 +4,15 @@
         window.__spjUiLanguageReady = true;
 
         const exact = new Map([
-            ['Dashboard operasional', 'Ringkasan pekerjaan'],
-            ['Dashboard Operasional', 'Ringkasan pekerjaan'],
-            ['Dashboard v.2', 'Ringkasan lengkap'],
-            ['Data Hasil Sinkron', 'Data Hasil Sinkronisasi'],
-            ['Sinkron Semua ARKAS', 'Ambil Data ARKAS Terbaru'],
+            ['Dashboard Operasional', 'Ringkasan Pekerjaan'],
+            ['Data Hasil Sinkron', 'Data Sinkronisasi'],
+            ['Sinkron Semua ARKAS', 'Ambil Data ARKAS'],
             ['Integrasi ARKAS', 'Pengaturan ARKAS'],
             ['Integrasi Dapodik', 'Pengaturan Dapodik'],
             ['Manajemen User', 'Kelola Pengguna'],
             ['Uji Sebagai User', 'Lihat Sebagai Pengguna'],
             ['Backup & Pemulihan', 'Cadangan & Pemulihan'],
-            ['Database Aktif', 'Penyimpanan Data Aktif'],
+            ['Database Aktif', 'Database Aktif'],
             ['Pajak Sinkronisasi', 'Data Pajak'],
             ['WORKFLOW SPJ & PENOMORAN', 'ALUR KERJA SPJ & PENOMORAN'],
             ['Preview antrean penomoran', 'Periksa paket yang akan diberi nomor'],
@@ -36,19 +34,19 @@
         ]);
 
         const phrases = [
-            [/\bworkflow\b/gi, 'alur kerja'],
-            [/\bpreview\b/gi, 'pratinjau'],
-            [/\bfilter\b/gi, 'saringan'],
-            [/\breset\b/gi, 'atur ulang'],
-            [/\bmapping\b/gi, 'pemetaan'],
-            [/\bbatch\b/gi, 'proses'],
-            [/\buser\b/gi, 'pengguna'],
-            [/\bsync\b/gi, 'sinkronisasi'],
-            [/\bdownload\b/gi, 'unduh'],
-            [/\bupload\b/gi, 'unggah'],
-            [/\bread[ -]?only\b/gi, 'tidak dapat diubah'],
-            [/\bplaceholder\b/gi, 'penanda data'],
-            [/\bdraft\b/gi, 'belum lengkap'],
+            [/\bworkflow\b/gi, 'Alur Kerja'],
+            [/\bpreview\b/gi, 'Pratinjau'],
+            [/\bfilter\b/gi, 'Filter'],
+            [/\breset\b/gi, 'Reset'],
+            [/\bmapping\b/gi, 'Pemetaan'],
+            [/\bbatch\b/gi, 'Proses'],
+            [/\buser\b/gi, 'Pengguna'],
+            [/\bsync\b/gi, 'Sinkronisasi'],
+            [/\bdownload\b/gi, 'Unduh'],
+            [/\bupload\b/gi, 'Unggah'],
+            [/\bread[ -]?only\b/gi, 'Tidak dapat diubah'],
+            [/\bplaceholder\b/gi, 'Penanda data'],
+            [/\bdraft\b/gi, 'Belum lengkap'],
         ];
 
         const simplifyExact = (value) => {
@@ -67,7 +65,8 @@
         };
 
         const excluded = 'script, style, code, pre, textarea, [contenteditable="true"], [data-preserve-ui-copy]';
-        const uiTextContext = 'button, a, label, option, th, summary, legend, h1, h2, h3, h4, nav, [role="tab"], [role="button"], [role="menuitem"]';
+        const uiTextContext =
+            'button, a, label, option, th, summary, legend, h1, h2, h3, h4, nav, [role="tab"], [role="button"], [role="menuitem"]';
 
         const simplifyNode = (root) => {
             if (!root) return;
@@ -79,11 +78,11 @@
 
             const walker = document.createTreeWalker(
                 walkerRoot,
-                NodeFilter.SHOW_TEXT,
-                {
+                NodeFilter.SHOW_TEXT, {
                     acceptNode(node) {
                         const parent = node.parentElement;
-                        if (!parent || parent.matches(excluded) || parent.closest(excluded)) return NodeFilter.FILTER_REJECT;
+                        if (!parent || parent.matches(excluded) || parent.closest(excluded))
+                            return NodeFilter.FILTER_REJECT;
                         return NodeFilter.FILTER_ACCEPT;
                     },
                 },
@@ -96,15 +95,16 @@
             nodes.forEach((node) => {
                 const parent = node.parentElement;
                 const original = node.nodeValue;
-                const changed = parent?.closest(uiTextContext)
-                    ? simplifyUiTerm(original)
-                    : simplifyExact(original);
+                const changed = parent?.closest(uiTextContext) ?
+                    simplifyUiTerm(original) :
+                    simplifyExact(original);
                 if (changed !== original) node.nodeValue = changed;
             });
 
             const elementRoot = root.nodeType === Node.ELEMENT_NODE ? root : root.parentElement;
             if (!elementRoot) return;
-            const elements = [elementRoot, ...elementRoot.querySelectorAll('[title], [aria-label], [placeholder]')];
+            const elements = [elementRoot, ...elementRoot.querySelectorAll(
+                '[title], [aria-label], [placeholder]')];
             elements.forEach((element) => {
                 if (element.matches(excluded) || element.closest(excluded)) return;
                 ['title', 'aria-label', 'placeholder'].forEach((attribute) => {
@@ -118,7 +118,9 @@
 
         const run = () => simplifyNode(document.body);
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', run, { once: true });
+            document.addEventListener('DOMContentLoaded', run, {
+                once: true
+            });
         } else {
             run();
         }
@@ -126,7 +128,8 @@
         let scheduled = false;
         const observer = new MutationObserver((mutations) => {
             if (scheduled) return;
-            if (!mutations.some((mutation) => mutation.addedNodes.length || mutation.type === 'characterData')) return;
+            if (!mutations.some((mutation) => mutation.addedNodes.length || mutation.type ===
+                    'characterData')) return;
             scheduled = true;
             requestAnimationFrame(() => {
                 scheduled = false;
@@ -134,8 +137,14 @@
             });
         });
 
-        const startObserver = () => observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        const startObserver = () => observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true
+        });
         if (document.body) startObserver();
-        else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+        else document.addEventListener('DOMContentLoaded', startObserver, {
+            once: true
+        });
     })();
 </script>
