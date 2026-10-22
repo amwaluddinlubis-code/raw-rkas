@@ -3,6 +3,13 @@
 return [
     'arkas_bridge_command' => env('SPJ_ARKAS_BRIDGE_COMMAND'),
     'xlsx_pdf_renderer' => env('SPJ_XLSX_PDF_RENDERER', 'libreoffice'),
+    /*
+    | Batas waktu eksekusi (detik) untuk endpoint render dokumen berat
+    | (preview/unduh PDF & Excel paket). Pipeline PhpSpreadsheet + LibreOffice
+    | (timeout proses 120s) lebih lama dari max_execution_time PHP default
+    | 30 detik; tanpa pengecualian ini request mati sebelum konversi selesai.
+    */
+    'document_render_time_limit' => (int) env('SPJ_DOCUMENT_RENDER_TIME_LIMIT', 180),
     'school_mode' => env('SPJ_SCHOOL_MODE', 'single-school'),
     'fiscal_year_mode' => env('SPJ_FISCAL_YEAR_MODE', 'single-year'),
     'backup_retention' => (int) env('SPJ_BACKUP_RETENTION', 30),

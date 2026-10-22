@@ -41,6 +41,7 @@ class SpjDocumentUseCase
 
     public function download(string $packageId)
     {
+        $this->extendRenderTimeLimit();
         $package = SpjPackage::query()->with(self::QUICK_EAGER_LOAD)->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
@@ -64,6 +65,7 @@ class SpjDocumentUseCase
 
     public function downloadPackageExcel(string $packageId)
     {
+        $this->extendRenderTimeLimit();
         $package = SpjPackage::query()->with(self::QUICK_EAGER_LOAD)->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
@@ -125,6 +127,7 @@ class SpjDocumentUseCase
 
     public function downloadTemplate(string $packageId, string $templateId)
     {
+        $this->extendRenderTimeLimit();
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.goodsReceipts.items', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
         if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
@@ -164,6 +167,7 @@ class SpjDocumentUseCase
 
     public function downloadTemplatePdf(string $packageId, string $templateId)
     {
+        $this->extendRenderTimeLimit();
         $package = SpjPackage::query()->with(['transaction.items', 'transaction.goods', 'transaction.goodsReceipts.items', 'transaction.workOrder', 'transaction.workers', 'transaction.participants', 'transaction.travels'])->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
         if (! $package || ! $template || ! $template->is_active || ! $this->context->matchesTransaction($package->transaction) || $template->fiscal_year_id !== $this->context->fiscalYearId()) {
@@ -227,6 +231,7 @@ class SpjDocumentUseCase
      */
     public function previewTemplatePdf(string $packageId, string $templateId): Response|RedirectResponse
     {
+        $this->extendRenderTimeLimit();
         $templates = app(SpjTemplateService::class);
         $package = SpjPackage::query()->with(self::QUICK_EAGER_LOAD)->find($packageId);
         $template = DocumentTemplate::query()->find($templateId);
@@ -258,6 +263,7 @@ class SpjDocumentUseCase
      */
     public function previewPackagePdf(string $packageId): Response|RedirectResponse
     {
+        $this->extendRenderTimeLimit();
         $package = SpjPackage::query()->with(self::QUICK_EAGER_LOAD)->find($packageId);
         if (! $package || ! $this->context->matchesTransaction($package->transaction)) {
             return redirect()->route('spj.index', ['tab' => 'paket', 'package_id' => $packageId])->with('error', 'Paket dokumen tidak ditemukan pada konteks tahun anggaran dan sumber dana aktif.');
@@ -300,6 +306,7 @@ class SpjDocumentUseCase
      */
     public function previewPackages(array $packageIds): Response
     {
+        $this->extendRenderTimeLimit();
         abort_if($packageIds === [] || count($packageIds) > 20, 422, 'Pilih antara 1 sampai 20 paket laporan.');
 
         $packagesById = SpjPackage::query()
@@ -437,6 +444,19 @@ class SpjDocumentUseCase
     private function applyDocumentContext(SpjPackage $package): void
     {
         app(SpjMaintenanceDocumentContextService::class)->apply($package);
+    }
+
+    /**
+     * Pipeline render XLSX→PDF (PhpSpreadsheet + LibreOffice timeout 120s)
+     * melebihi max_execution_time PHP default 30 detik. Angkat batas khusus
+     * endpoint dokumen; nilai diatur via SPJ_DOCUMENT_RENDER_TIME_LIMIT.
+     */
+    private function extendRenderTimeLimit(): void
+    {
+        $limit = (int) config('spj.document_render_time_limit', 180);
+        if ($limit > 0) {
+            set_time_limit($limit);
+        }
     }
 
     /**
