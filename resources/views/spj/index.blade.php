@@ -149,8 +149,8 @@
                     <div x-show="saving" class="flex items-center justify-center py-4"><x-loading-spinner /></div>
                     <div x-show="!saving">
                                 <div class="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
-                                    <div class="grid gap-3">
-                                        <div>
+                                    <div class="grid gap-3 lg:grid-cols-4 lg:items-end">
+                                        <div class="min-w-0 lg:col-span-1">
                                             <label for="spj-type" class="text-xs font-bold text-amber-900">Kategori SPJ <span class="text-rose-600">*</span></label>
                                             <x-ui.select id="spj-type" name="spj_category" class="mt-1">
                                                 <option value="">Pilih kategori</option>
@@ -159,7 +159,7 @@
                                                 @endforeach
                                             </x-ui.select>
                                         </div>
-                                        <p class="text-xs text-amber-800">Kategori menentukan field manual, dokumen pendukung, dan nomor yang diterbitkan. Subkategori terpisah tidak diperlukan.</p>
+                                        <p class="text-xs text-amber-800 lg:col-span-4">Kategori menentukan field manual, dokumen pendukung, dan nomor yang diterbitkan. Subkategori terpisah tidak diperlukan.</p>
                                     </div>
                                 </div>
                                 @include('spj.partials.package.common')
