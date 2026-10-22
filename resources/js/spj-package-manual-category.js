@@ -49,12 +49,38 @@ const updateProcurementVisibility = (form) => {
     });
 };
 
+// Konteks kategori kini dirender server-side oleh Blade di dalam grid kategori;
+// modul ini hanya mengikat perilaku (radio SiPLah + seed metode pembayaran)
+// pada konteks yang sudah ada, atau membuatnya sebagai fallback.
+const bindCategoryContext = (form, context) => {
+    if (context.dataset.spjContextBound === 'true') return;
+    context.dataset.spjContextBound = 'true';
+
+    const paymentMethod = form.querySelector('[name="payment_method"]');
+    if (paymentMethod instanceof HTMLSelectElement && paymentMethod.value !== 'siplah') {
+        form.dataset.lastNonSiplahPayment = paymentMethod.value || 'tunai';
+    }
+
+    context.querySelectorAll('[data-spj-siplah-mode]').forEach((radio) => {
+        radio.addEventListener('change', () => {
+            if (!(radio instanceof HTMLInputElement) || !radio.checked) return;
+            // UI-only: hanya show/hide form pengadaan BARANG, tidak menyentuh payment_method.
+            updateProcurementVisibility(form);
+        });
+    });
+
+    document.dispatchEvent(new CustomEvent('spj:category-context-ready'));
+};
+
 const ensureCategoryContext = (form, categorySelect) => {
     let context = form.querySelector('[data-spj-category-context]');
-    if (context instanceof HTMLElement) return context;
+    if (context instanceof HTMLElement) {
+        bindCategoryContext(form, context);
+        return context;
+    }
 
-    const categoryField = categorySelect.parentElement;
-    const categoryGrid = categoryField?.parentElement;
+    const categoryField = categorySelect.closest('[data-spj-category-field]') || categorySelect.parentElement;
+    const categoryGrid = categorySelect.closest('[data-spj-category-grid]') || categoryField?.parentElement;
     if (!(categoryField instanceof HTMLElement) || !(categoryGrid instanceof HTMLElement)) return null;
 
     categoryGrid.classList.add('lg:grid-cols-4', 'lg:items-end');
@@ -84,21 +110,7 @@ const ensureCategoryContext = (form, categorySelect) => {
         </div>
     `;
     categoryGrid.appendChild(context);
-
-    const paymentMethod = form.querySelector('[name="payment_method"]');
-    if (paymentMethod instanceof HTMLSelectElement && paymentMethod.value !== 'siplah') {
-        form.dataset.lastNonSiplahPayment = paymentMethod.value || 'tunai';
-    }
-
-    context.querySelectorAll('[data-spj-siplah-mode]').forEach((radio) => {
-        radio.addEventListener('change', () => {
-            if (!(radio instanceof HTMLInputElement) || !radio.checked) return;
-            // UI-only: hanya show/hide form pengadaan BARANG, tidak menyentuh payment_method.
-            updateProcurementVisibility(form);
-        });
-    });
-
-    document.dispatchEvent(new CustomEvent('spj:category-context-ready'));
+    bindCategoryContext(form, context);
     return context;
 };
 
