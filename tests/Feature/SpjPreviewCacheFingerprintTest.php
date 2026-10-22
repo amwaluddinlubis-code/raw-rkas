@@ -132,6 +132,35 @@ class SpjPreviewCacheFingerprintTest extends TestCase
         $this->assertSame(200, $third->getStatusCode());
     }
 
+    public function test_preview_package_cache_survives_beyond_ten_minutes(): void
+    {
+        $transaction = $this->transaction();
+        $this->serviceRecipient($transaction);
+        $package = $this->package($transaction, 'SPJ-CACHE-TTL');
+        $this->persistedTemplate();
+
+        // Render hanya boleh terjadi sekali: panggilan kedua berjarak 2 jam
+        // (jauh melewati TTL lama 10 menit) harus tetap memukul cache karena
+        // kunci cache adalah sidik jari isi, bukan sekadar penanda waktu.
+        $this->mock(SpjTemplateService::class, function (MockInterface $mock): void {
+            $mock->shouldReceive('packagePreviewPdfBytes')
+                ->once()
+                ->andReturn('%PDF-1.4 cache ttl regression');
+        });
+
+        $useCase = app(SpjDocumentUseCase::class);
+
+        $first = $useCase->previewPackagePdf((string) $package->id);
+
+        $this->travel(2)->hours();
+
+        $second = $useCase->previewPackagePdf((string) $package->id);
+
+        $this->assertSame(200, $first->getStatusCode());
+        $this->assertSame(200, $second->getStatusCode());
+        $this->assertSame($first->getContent(), $second->getContent());
+    }
+
     public function test_fingerprint_changes_when_school_profile_changes(): void
     {
         $transaction = $this->transaction();

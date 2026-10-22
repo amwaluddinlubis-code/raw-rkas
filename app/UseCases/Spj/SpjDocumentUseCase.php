@@ -33,6 +33,17 @@ class SpjDocumentUseCase
         'transaction.travels',
     ];
 
+    /**
+     * Masa simpan cache PDF pratinjau (tunggal maupun massal). Kunci cache
+     * adalah sidik jari seluruh isi render (paket, transaksi, template,
+     * profil sekolah — lihat packagePreviewCacheKey), sehingga perubahan
+     * data apa pun menghasilkan kunci baru dan render ulang otomatis.
+     * Masa simpan panjang aman: TTL di sini hanya membersihkan entri lama
+     * yang tidak akan pernah terpanggil lagi. Sebelumnya 10 menit, yang
+     * memaksa render ulang 5–30 detik berkali-kali dalam satu hari kerja.
+     */
+    private const PREVIEW_PDF_CACHE_DAYS = 7;
+
     public function __construct(
         private readonly ActiveSpjContext $context,
         private readonly SpjPackageTemplateSelector $templateSelector,
@@ -278,7 +289,7 @@ class SpjDocumentUseCase
         try {
             $contents = Cache::remember(
                 $this->packagePreviewCacheKey($package, $templates),
-                now()->addMinutes(10),
+                now()->addDays(self::PREVIEW_PDF_CACHE_DAYS),
                 fn (): string => app(SpjTemplateService::class)->packagePreviewPdfBytes($templates, $package, $school),
             );
         } catch (Throwable $exception) {
@@ -349,7 +360,7 @@ class SpjDocumentUseCase
         try {
             $contents = Cache::remember(
                 $cacheKey,
-                now()->addMinutes(10),
+                now()->addDays(self::PREVIEW_PDF_CACHE_DAYS),
                 fn (): string => app(SpjTemplateService::class)->packagesPreviewPdfBytes($renderPackages, $school),
             );
         } catch (Throwable $exception) {
