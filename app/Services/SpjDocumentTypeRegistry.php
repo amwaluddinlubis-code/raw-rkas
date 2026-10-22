@@ -407,10 +407,10 @@ final class SpjDocumentTypeRegistry
                 'usage' => null,
                 'applicable_categories' => ['PEMELIHARAAN'],
                 'required' => [
-                    'NOMOR_SPJ', 'URAIAN_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI',
+                    'NOMOR_SPK', 'TANGGAL_SPK', 'URAIAN_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI',
                 ],
                 'optional' => [
-                    'LOKASI_PEKERJAAN', 'NOMOR_SPK', 'TANGGAL_SPK',
+                    'NOMOR_SPJ', 'LOKASI_PEKERJAAN',
                     'HARI_TANGGAL', 'HARI_NAMA',
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN',
                     'NAMA_PENANGGUNG_JAWAB', 'NIP_PENANGGUNG_JAWAB',
@@ -435,6 +435,7 @@ final class SpjDocumentTypeRegistry
                 'optional' => [
                     'LOKASI_PEKERJAAN', 'TANGGAL_MULAI', 'TANGGAL_SELESAI',
                     'NILAI_UPAH_TERBILANG', 'NOMOR_SPK', 'TANGGAL_SPK',
+                    'NOMOR_RAB', 'TANGGAL_RAB', 'TANGGAL_DOKUMEN', 'DESA', 'NAMA_PENERIMA',
                     'KABUPATEN_KOTA', 'TANGGAL_TANDA_TANGAN',
                     'KODE_KEGIATAN', 'NAMA_KEGIATAN',
                     'NAMA_BENDAHARA_BOSP', 'NIP_BENDAHARA_BOSP',

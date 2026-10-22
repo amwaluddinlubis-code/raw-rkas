@@ -59,6 +59,54 @@ class SpjSupplementaryTemplateContractTest extends TestCase
         $this->assertNotContains('UNKNOWN_PLACEHOLDER', $errorCodes);
     }
 
+    public function test_maintenance_support_documents_are_registered_for_maintenance_only(): void
+    {
+        $attendance = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::DAFTAR_HADIR_PEMELIHARAAN);
+        $recipients = SpjDocumentTypeRegistry::definition(SpjDocumentTypeRegistry::DAFTAR_PENERIMA_UPAH);
+
+        $this->assertSame('TPL_DAFTAR_HADIR_PEMELIHARAAN', $attendance['sheet']);
+        $this->assertSame(['PEMELIHARAAN'], $attendance['applicable_categories']);
+        // Daftar hadir pemeliharaan berkunci nomor SPK seperti SPK/RAB, bukan nomor SPJ.
+        $this->assertContains('NOMOR_SPK', $attendance['required']);
+        $this->assertContains('TANGGAL_SPK', $attendance['required']);
+        $this->assertNotContains('NOMOR_SPJ', $attendance['required']);
+        $this->assertContains('HARI_TANGGAL', $attendance['optional']);
+        $this->assertContains('HARI_NAMA', $attendance['optional']);
+
+        $this->assertSame('TPL_DAFTAR_PENERIMA_UPAH', $recipients['sheet']);
+        $this->assertSame(['PEMELIHARAAN'], $recipients['applicable_categories']);
+        $this->assertContains('NOMOR_SPJ', $recipients['required']);
+        $this->assertContains('NILAI_UPAH', $recipients['required']);
+        foreach (['DESA', 'NOMOR_RAB', 'TANGGAL_RAB', 'TANGGAL_DOKUMEN', 'NAMA_PENERIMA'] as $marker) {
+            $this->assertContains($marker, $recipients['optional']);
+        }
+    }
+
+    public function test_master_maintenance_support_markers_validate_without_errors_or_warnings(): void
+    {
+        $validator = app(SpjTemplateValidator::class);
+
+        $attendance = $validator->validateMarkers(SpjDocumentTypeRegistry::DAFTAR_HADIR_PEMELIHARAAN, [
+            'HARI_NAMA', 'HARI_TANGGAL', 'LOKASI_PEKERJAAN', 'NAMA_KEPALA_SEKOLAH',
+            'NAMA_PENANGGUNG_JAWAB', 'NIP_KEPALA_SEKOLAH', 'NIP_PENANGGUNG_JAWAB',
+            'NOMOR_SPK', 'TANGGAL_MULAI', 'TANGGAL_SELESAI', 'TANGGAL_SPK',
+            'UPAH_HARI', 'UPAH_NAMA', 'UPAH_NO', 'UPAH_PEKERJAAN', 'URAIAN_PEKERJAAN',
+        ]);
+        $this->assertSame([], $attendance['errors']);
+        $this->assertSame([], $attendance['warnings']);
+
+        $recipients = $validator->validateMarkers(SpjDocumentTypeRegistry::DAFTAR_PENERIMA_UPAH, [
+            'DESA', 'KOP_SURAT', 'LOKASI_PEKERJAAN', 'NAMA_BENDAHARA_BOSP', 'NAMA_KEPALA_SEKOLAH',
+            'NAMA_PENERIMA', 'NILAI_UPAH_TERBILANG', 'NILAI_UPAH', 'NIP_BENDAHARA_BOSP',
+            'NIP_KEPALA_SEKOLAH', 'NOMOR_RAB', 'NOMOR_SPJ', 'NOMOR_SPK', 'TANGGAL_DOKUMEN',
+            'TANGGAL_MULAI', 'TANGGAL_RAB', 'TANGGAL_SELESAI', 'TANGGAL_SPK',
+            'TANGGAL_TANDA_TANGAN', 'UPAH_HARI', 'UPAH_JUMLAH', 'UPAH_NAMA', 'UPAH_NO',
+            'UPAH_PEKERJAAN', 'UPAH_TARIF_HARI', 'URAIAN_PEKERJAAN',
+        ]);
+        $this->assertSame([], $recipients['errors']);
+        $this->assertSame([], $recipients['warnings']);
+    }
+
     public function test_revised_master_workbook_metadata_and_unimplemented_design_sheets_are_technical(): void
     {
         $technical = SpjDocumentTypeRegistry::technicalSheets();
