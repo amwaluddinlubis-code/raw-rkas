@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Unit;
+namespace Tests\\Unit;
 
-use App\Services\SpjDocumentTypeRegistry;
-use PHPUnit\Framework\Attributes\Test;
-use Tests\TestCase;
+use App\\Services\\SpjDocumentTypeRegistry;
+use PHPUnit\\Framework\\Attributes\\Test;
+use Tests\\TestCase;
 
 class SpjDocumentTypeRegistryTest extends TestCase
 {
@@ -25,8 +25,11 @@ class SpjDocumentTypeRegistryTest extends TestCase
             'SPK_PEMELIHARAAN',
             'DAFTAR_HADIR_KONSUMSI',
             'DAFTAR_PENERIMA_KONSUMSI',
+            'DAFTAR_HADIR_PEMELIHARAAN',
+            'DAFTAR_PENERIMA_UPAH',
         ], SpjDocumentTypeRegistry::codes());
 
+        $this->assertCount(15, SpjDocumentTypeRegistry::codes());
         $this->assertNotContains('PLACEHOLDER_MAP', SpjDocumentTypeRegistry::codes());
         $this->assertContains('PLACEHOLDER_MAP', SpjDocumentTypeRegistry::technicalSheets());
     }
