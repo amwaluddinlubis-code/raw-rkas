@@ -53,22 +53,26 @@ class SpjMainTabsRenderingTest extends TestCase
     public function test_tab_switching_prefers_spa_navigation_with_reload_fallback(): void
     {
         $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $previewJs = file_get_contents(resource_path('js/spj-template-preview.js'));
 
         $this->assertIsString($index);
+        $this->assertIsString($previewJs);
         $this->assertStringContainsString('Livewire.navigate', $index);
         $this->assertStringContainsString('window.location.assign', $index);
-        $this->assertStringContainsString("templatePreview('close')", $index);
-        $this->assertStringNotContainsString("querySelectorAll('[data-close-template-preview]')", $index);
+        $this->assertStringContainsString("templatePreview('close')", $previewJs);
+        $this->assertStringNotContainsString("querySelectorAll('[data-close-template-preview]')", $previewJs);
     }
 
     public function test_preview_modal_uses_direct_pdf_frame_when_available(): void
     {
         $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $previewJs = file_get_contents(resource_path('js/spj-template-preview.js'));
         $documents = file_get_contents(resource_path('views/spj/partials/package/documents.blade.php'));
 
         $this->assertIsString($index);
+        $this->assertIsString($previewJs);
         $this->assertIsString($documents);
-        $this->assertStringContainsString('button.dataset.templatePreviewPdf || button.dataset.templatePreview', $index);
+        $this->assertStringContainsString('button.dataset.templatePreviewPdf || button.dataset.templatePreview', $previewJs);
         $this->assertStringContainsString('data-template-preview-pdf="{{ route(\'spj.preview-package-pdf\'', $documents);
         $this->assertStringContainsString('route(\'spj.preview-template-pdf\'', $documents);
     }

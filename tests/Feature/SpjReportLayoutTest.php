@@ -69,14 +69,16 @@ class SpjReportLayoutTest extends TestCase
     public function test_spj_tabs_use_livewire_filters_without_full_page_reload(): void
     {
         $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $monitoringTab = file_get_contents(resource_path('views/spj/partials/monitoring.blade.php'));
 
         $this->assertIsString($index);
+        $this->assertIsString($monitoringTab);
         $this->assertStringContainsString('<livewire:spj-preparation-filter />', $index);
         $this->assertStringContainsString('<livewire:spj-package-list />', $index);
         $this->assertStringContainsString('<livewire:spj-report-filter />', $index);
-        $this->assertStringContainsString('<livewire:spj-monitoring-list />', $index);
-        $this->assertStringContainsString("route('spj.bulk-finalize')", $index);
-        $this->assertStringContainsString('Finalkan paket', $index);
+        $this->assertStringContainsString('<livewire:spj-monitoring-list />', $monitoringTab);
+        $this->assertStringContainsString("route('spj.bulk-finalize')", $monitoringTab);
+        $this->assertStringContainsString('Finalkan paket', $monitoringTab);
         $this->assertStringNotContainsString('relocateReportRowControl', $index);
         $this->assertStringNotContainsString('data-report-mode', $index);
     }
@@ -108,9 +110,12 @@ class SpjReportLayoutTest extends TestCase
         $this->assertStringContainsString('data-bulk-select-all', $report);
         $this->assertStringContainsString("route('spj.preview-packages')", $report);
         $this->assertStringNotContainsString('target="_blank">Preview dokumen', $report);
-        $this->assertStringContainsString('updateBulkSelection', $index);
-        $this->assertStringContainsString('Maksimal 20; batalkan pilihan', $index);
-        $this->assertStringContainsString('submit.disabled = selectedCount === 0 || overLimit', $index);
+        $previewJs = file_get_contents(resource_path('js/spj-template-preview.js'));
+
+        $this->assertIsString($previewJs);
+        $this->assertStringContainsString('updateBulkSelection', $previewJs);
+        $this->assertStringContainsString('Maksimal 20; batalkan pilihan', $previewJs);
+        $this->assertStringContainsString('submit.disabled = selectedCount === 0 || overLimit', $previewJs);
     }
 
     public function test_bulk_report_preview_uses_the_same_inline_pdf_pipeline_as_single_preview(): void
@@ -237,7 +242,7 @@ class SpjReportLayoutTest extends TestCase
 
         $displayFiles = [
             resource_path('views/livewire/spj-preparation-filter.blade.php'),
-            resource_path('views/spj/index.blade.php'),
+            resource_path('views/spj/partials/package/category-card.blade.php'),
             resource_path('views/livewire/transactions-table.blade.php'),
             resource_path('views/livewire/spj-package-list.blade.php'),
             resource_path('views/livewire/spj-attribute-list.blade.php'),
@@ -279,12 +284,14 @@ class SpjReportLayoutTest extends TestCase
     public function test_spj_monitoring_surfaces_use_theme_tokens(): void
     {
         $index = file_get_contents(resource_path('views/spj/index.blade.php'));
+        $monitoringTab = file_get_contents(resource_path('views/spj/partials/monitoring.blade.php'));
         $monitoring = file_get_contents(resource_path('views/livewire/spj-monitoring-list.blade.php'));
 
         $this->assertIsString($index);
+        $this->assertIsString($monitoringTab);
         $this->assertIsString($monitoring);
-        $this->assertStringContainsString('bg-[var(--ui-surface-soft)]', $index);
-        $this->assertStringNotContainsString('bg-amber-50/40', $index);
+        $this->assertStringContainsString('bg-[var(--ui-surface-soft)]', $monitoringTab);
+        $this->assertStringNotContainsString('bg-amber-50/40', $monitoringTab);
         $this->assertStringNotContainsString('bg-amber-50', $monitoring);
         $this->assertStringNotContainsString('bg-rose-50', $monitoring);
         $this->assertStringContainsString('spj-monitoring-table', $monitoring);
