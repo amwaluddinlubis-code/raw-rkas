@@ -53,8 +53,9 @@
             class="app-sidebar-overlay fixed inset-0 z-30 backdrop-blur-sm lg:hidden"></div>
         <aside id="app-sidebar" :aria-hidden="(!open).toString()"
             :class="[open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0', collapsed ? 'app-sidebar-collapsed lg:w-[5.25rem]' : 'lg:w-[17rem]']"
-            class="app-sidebar fixed inset-y-0 left-0 z-40 w-[17rem] transform overflow-y-auto px-4 py-5 transition-all duration-200 lg:translate-x-0"
+            class="app-sidebar fixed inset-y-0 left-0 z-40 flex w-[17rem] transform flex-col transition-all duration-200 lg:translate-x-0"
             :style="window.innerWidth >= 1024 ? { width: collapsed ? '5.25rem' : '17rem' } : {}">
+            <div class="min-h-0 flex-1 overflow-y-auto px-4 py-5">
             <div class="mb-8 flex items-center justify-between gap-2">
                 <a href="{{ route('dashboard') }}"
                     class="app-sidebar-brand flex min-w-0 items-center gap-3 rounded-xl bg-white p-1.5 pr-3 text-lg font-bold shadow-sm"><span
@@ -241,11 +242,14 @@
                         @endif
                     </div>
                 </div>
+            </nav>
+            </div>
+            <div class="shrink-0 border-t border-[var(--app-sidebar-line)] px-4 py-3">
                 <form method="post" action="{{ route('logout') }}">@csrf<button
-                        class="app-nav app-nav-danger mt-6 w-full text-left" title="Keluar"><x-ui.icon
+                        class="app-nav app-nav-danger w-full text-left" title="Keluar"><x-ui.icon
                             name="logout" /><span x-show="!collapsed || open" x-transition.opacity
                             class="nav-label">Keluar</span></button></form>
-            </nav>
+            </div>
         </aside>
         @php
             $currentRouteName = (string) request()->route()?->getName();
@@ -274,7 +278,7 @@
                     :aria-expanded="(window.innerWidth >= 1024 ? !collapsed : open).toString()"
                     :aria-label="window.innerWidth >= 1024 ? (collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar') : 'Buka navigasi'"
                     :title="window.innerWidth >= 1024 ? (collapsed ? 'Perluas sidebar' : 'Ciutkan sidebar') : 'Buka navigasi'"
-                    aria-controls="app-sidebar" class="app-topbar-menu p-2.5"><x-ui.icon
+                    aria-controls="app-sidebar" class="app-topbar-menu shrink-0 p-2.5"><x-ui.icon
                         x-show="window.innerWidth < 1024" name="menu" size="sm" /><span
                         x-show="window.innerWidth >= 1024" x-text="collapsed ? '»' : '«'"
                         class="text-xl leading-none"></span></button>
