@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\User;
+use App\Services\RkasPlanningSuggestionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,38 @@ class RkasPlanningSuggestionTest extends TestCase
         $response->assertSee('Terserap baik', false);
         $response->assertSee('Tersendat', false);
         $response->assertSee('Belum tersentuh', false);
+    }
+
+    public function test_mirror_accumulation_does_not_override_normalized_totals(): void
+    {
+        // Data normalisasi yang sah untuk 2026 (yang dipakai halaman RKAS).
+        $this->seedItems(2, [
+            ['KGT-1', 'Kegiatan Satu', 'RAPBS-1', 10000000],
+            ['KGT-2', 'Kegiatan Dua', 'RAPBS-2', 5000000],
+        ]);
+        $this->seedRealization(2, ['RAPBS-1' => 9000000]);
+
+        // Snapshot mirror mentah: salinan rincian yang sama menumpuk lintas
+        // revisi (source_key unik), tanpa tahun, tanpa sumber dana, tanpa
+        // kode kegiatan — pola data asli di SDN 316 yang membuat halaman
+        // Saran membengkak ke Rp 2,57 miliar.
+        foreach (range(1, 12) as $copy) {
+            DB::connection('school')->table('arkas_mirror_rapbs')->insert([
+                'source_key' => 'SNAP-'.$copy,
+                'payload' => json_encode(['URAIAN' => 'Biaya Paket Data', 'JUMLAH' => 10000000]),
+                'source_hash' => hash('sha256', 'snap-'.$copy),
+            ]);
+        }
+
+        $report = app(RkasPlanningSuggestionService::class)->build(2, 1);
+
+        // Halaman memakai angka normalisasi (Rp 15 jt), bukan akumulasi
+        // mirror (Rp 120 jt), dan pengelompokannya per kegiatan berkode.
+        $this->assertSame(15000000.0, $report['current']['budget']);
+        $this->assertSame(9000000.0, $report['current']['spent']);
+        $this->assertSame(15000000.0, $report['remaining']['totals']['budget']);
+        $this->assertSame(9000000.0, $report['remaining']['totals']['spent']);
+        $this->assertSame(['KGT-1', 'KGT-2'], array_column($report['remaining']['rows'], 'activity_code'));
     }
 
     public function test_exports_return_spreadsheets(): void

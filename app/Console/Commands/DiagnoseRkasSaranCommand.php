@@ -95,10 +95,12 @@ class DiagnoseRkasSaranCommand extends Command
 
         $mirrorAvailable = Schema::connection('school')->hasTable('arkas_mirror_rapbs')
             && DB::connection('school')->table('arkas_mirror_rapbs')->exists();
-        $this->line('Jalur halaman: '.($mirrorAvailable ? 'MIRROR (arkas_mirror_rapbs)' : 'LEGASI (arkas_rkas_items)'));
+        $legacy = $this->legacyBreakdown($yearId, $fundSourceId);
+        $normalizedPresent = DB::connection('school')->table('arkas_rkas_items')
+            ->where('fund_source_id', $fundSourceId)->exists();
+        $this->line('Jalur halaman: '.(! $normalizedPresent && $mirrorAvailable ? 'MIRROR (arkas_mirror_rapbs)' : 'LEGASI (arkas_rkas_items)'));
 
         $mirror = $mirrorAvailable ? $this->mirrorBreakdown($fundSourceId, $year) : null;
-        $legacy = $this->legacyBreakdown($yearId, $fundSourceId);
 
         $this->line('Baris mirror relevan: '.($mirror['rows'] ?? 0).' (source_key unik: '.($mirror['distinct_keys'] ?? 0).')');
         $this->line('Baris arkas_rkas_items: '.$legacy['rows'].' · total pagu normalisasi: '.SpjDisplay::rupiah($legacy['total']));
@@ -140,7 +142,7 @@ class DiagnoseRkasSaranCommand extends Command
 
         if ($mirror !== null && abs($mirror['total'] - $legacy['total']) > 0.5) {
             $this->warn('  ! Total mirror ('.SpjDisplay::rupiah($mirror['total']).') ≠ total normalisasi ('
-                .SpjDisplay::rupiah($legacy['total']).') — halaman memakai angka mirror.');
+                .SpjDisplay::rupiah($legacy['total']).') — halaman memakai angka dari jalur aktif di atas.');
         }
         $top = collect($remaining['rows'])->sortByDesc('budget')->first();
         if ($top && $totals['budget'] > 0 && $top['budget'] > $totals['budget'] * 0.5) {

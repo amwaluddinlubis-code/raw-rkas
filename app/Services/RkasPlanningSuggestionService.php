@@ -24,7 +24,7 @@ class RkasPlanningSuggestionService
      */
     public function build(int $yearId, int $fundSourceId): array
     {
-        if ($this->hasUsableMirrorRows()) {
+        if (! $this->hasNormalizedRows($fundSourceId) && $this->hasUsableMirrorRows()) {
             return $this->buildFromMirror($yearId, $fundSourceId);
         }
 
@@ -44,8 +44,25 @@ class RkasPlanningSuggestionService
     }
 
     /**
-     * Build suggestions from fixed mirror rows. The legacy normalized tables
-     * remain a compatibility fallback only for databases not yet mirrored.
+     * Tabel normalisasi adalah sumber otoritatif bila sinkronisasi V2
+     * pernah berjalan untuk sumber dana ini: isinya terpelihara per tahun
+     * anggaran + sumber dana, dan baris yang tidak lagi aktif dibuang pada
+     * setiap refresh (ArkasSynchronizationServiceV2::saveRkas). Mirror
+     * adalah snapshot mentah tanpa cakupan tahun/sumber dana yang andal —
+     * menjumlahkannya menghitung juga salinan revisi lama.
+     */
+    private function hasNormalizedRows(int $fundSourceId): bool
+    {
+        return Schema::connection('school')->hasTable('arkas_rkas_items')
+            && DB::connection('school')->table('arkas_rkas_items')
+                ->where('fund_source_id', $fundSourceId)->exists();
+    }
+
+    /**
+     * Build suggestions from fixed mirror rows. Fallback hanya untuk
+     * database yang belum pernah dinormalisasi (arkas_rkas_items kosong);
+     * bila tabel normalisasi terisi, jalur normalisasi yang dipakai karena
+     * mirror adalah snapshot mentah lintas revisi tanpa cakupan konteks.
      *
      * @return array{current: array{year_id:int, budget:float, spent:float}, initial: array{applicable:bool, base_year:?int, rows:array}, remaining: array{rows:array, totals:array}}
      */
