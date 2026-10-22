@@ -115,11 +115,7 @@ class SpjWorkspaceUseCase
                 });
             });
 
-        $workQueueCounts = ['all' => (clone $query)->count()];
-        foreach (array_keys($this->workflowFilters->options()) as $state) {
-            $workQueueCounts[$state] = $this->workflowFilters->apply(clone $query, $state)->count();
-        }
-        $workQueueCounts['needs_details'] = $workQueueCounts['attention'];
+        $workQueueCounts = $this->workQueueCounts($query);
 
         $this->workflowFilters->apply($query, $filters['state'] ?? 'all');
 
@@ -141,6 +137,46 @@ class SpjWorkspaceUseCase
             'workQueueCounts' => $workQueueCounts,
             'spjTypes' => Transaction::query()->forSpjContext($this->context)->whereNotNull('spj_category')->where('spj_category', '!=', '')->distinct()->orderBy('spj_category')->pluck('spj_category'),
         ];
+    }
+
+    /**
+     * Hitungan antrean kerja per status dalam SATU query agregat, menggantikan
+     * satu query COUNT terpisah per status (sebelumnya 6 query). Kondisi tiap
+     * status meniru persis SpjWorkflowFilterService::apply(): status
+     * "perhatian" adalah baris sumber bermasalah, dan setiap status lain
+     * selalu mengecualikan baris tersebut terlebih dahulu. Query dasar yang
+     * diterima sudah membawa konteks + filter periode/kategori/pencarian,
+     * TANPA filter status terpilih — sama seperti hitungan lama.
+     *
+     * @return array<string, int>
+     */
+    private function workQueueCounts($query): array
+    {
+        $attention = "(transactions.requires_reconciliation = 1 OR transactions.source_status = 'SOURCE_MISSING')";
+        $calm = "(transactions.requires_reconciliation IS NULL OR transactions.requires_reconciliation = 0) AND (transactions.source_status IS NULL OR transactions.source_status != 'SOURCE_MISSING')";
+        $package = 'EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id)';
+        $packageWithStatus = fn (string $statusList): string => "EXISTS (SELECT 1 FROM spj_packages WHERE spj_packages.transaction_id = transactions.id AND spj_packages.status IN ({$statusList}))";
+
+        $row = (clone $query)->selectRaw(implode(', ', [
+            'COUNT(*) AS total_all',
+            "SUM(CASE WHEN {$attention} THEN 1 ELSE 0 END) AS total_attention",
+            "SUM(CASE WHEN {$calm} AND NOT {$package} THEN 1 ELSE 0 END) AS total_unprepared",
+            "SUM(CASE WHEN {$calm} AND ".$packageWithStatus("'DRAFT'").' THEN 1 ELSE 0 END) AS total_draft',
+            "SUM(CASE WHEN {$calm} AND ".$packageWithStatus("'READY'").' THEN 1 ELSE 0 END) AS total_ready',
+            "SUM(CASE WHEN {$calm} AND ".$packageWithStatus("'NUMBERED', 'FINAL'").' THEN 1 ELSE 0 END) AS total_numbered',
+        ]))->first();
+
+        $counts = [
+            'all' => (int) ($row->total_all ?? 0),
+            'attention' => (int) ($row->total_attention ?? 0),
+            'unprepared' => (int) ($row->total_unprepared ?? 0),
+            'draft' => (int) ($row->total_draft ?? 0),
+            'ready' => (int) ($row->total_ready ?? 0),
+            'numbered' => (int) ($row->total_numbered ?? 0),
+        ];
+        $counts['needs_details'] = $counts['attention'];
+
+        return $counts;
     }
 
     /**

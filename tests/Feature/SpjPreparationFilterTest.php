@@ -60,6 +60,42 @@ class SpjPreparationFilterTest extends TestCase
         $this->assertSame([$sourceMissing->id, $reconciliation->id], $this->filteredIds('attention'));
     }
 
+    public function test_work_queue_counts_are_computed_in_one_aggregate_query(): void
+    {
+        $this->transaction('BPU-001', '2026-01-11');
+        $this->transaction('BPU-002', '2026-01-12', 'DRAFT');
+        $this->transaction('BPU-003', '2026-01-13', 'READY');
+        $this->transaction('BPU-004', '2026-01-14', 'NUMBERED', '001/SPJ/2026');
+        $this->transaction('BPU-005', '2026-01-15', 'FINAL', '002/SPJ/2026');
+        $this->transaction('BPU-006', '2026-01-16', sourceStatus: 'SOURCE_MISSING');
+        $this->transaction('BPU-007', '2026-01-17', requiresReconciliation: true);
+
+        DB::connection('school')->flushQueryLog();
+        DB::connection('school')->enableQueryLog();
+
+        $data = app(SpjWorkspaceUseCase::class)->preparationData([], 15);
+
+        $queries = collect(DB::connection('school')->getQueryLog())->pluck('query');
+        DB::connection('school')->disableQueryLog();
+
+        $this->assertSame([
+            'all' => 7,
+            'attention' => 2,
+            'unprepared' => 1,
+            'draft' => 1,
+            'ready' => 1,
+            'numbered' => 2,
+            'needs_details' => 2,
+        ], $data['workQueueCounts']);
+
+        // Seluruh hitungan antrean harus berasal dari satu query agregat,
+        // bukan satu query COUNT terpisah per status seperti sebelumnya.
+        $this->assertSame(
+            1,
+            $queries->filter(fn (string $sql): bool => str_contains($sql, 'total_attention'))->count(),
+        );
+    }
+
     public function test_legacy_needs_details_state_is_a_temporary_alias_for_source_attention(): void
     {
         $sourceMissing = $this->transaction('BPU-MISSING', '2026-01-10', sourceStatus: 'SOURCE_MISSING');
