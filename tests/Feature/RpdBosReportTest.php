@@ -184,6 +184,65 @@ class RpdBosReportTest extends TestCase
         $this->assertSame([2 => 2360000.0], $rpd['totals']['months']);
     }
 
+    public function test_rpd_monthly_allocation_matches_only_its_own_month_fraction(): void
+    {
+        // Satu item dengan pecahan per bulan Apr 400rb / Mei 500rb / Jun 600rb
+        // (ID_PERIODE 84/85/86 = bulan 4/5/6; resolver menurunkan triwulan 2
+        // dari bulannya). RPD bulan 4 tidak boleh menjumlah pecahan Mei/Juni
+        // hanya karena triwulannya sama.
+        $this->seedMirrorRow('arkas_mirror_rapbs', 'R-P4', [
+            'ID_RAPBS' => 'R-P4', 'ID_ANGGARAN' => 'ANG-1', 'KODE_KEGIATAN' => '03.03.15.',
+            'NAMA_KEGIATAN' => 'Kegiatan Bulanan', 'KODE_REKENING' => '5.1.02.01.01.0024',
+            'URAIAN' => 'Paket Bulanan', 'JUMLAH' => 1500000,
+            'VOLUME' => 15, 'SATUAN' => 'paket', 'HARGA_SATUAN' => 100000,
+        ]);
+        foreach ([84 => 400000, 85 => 500000, 86 => 600000] as $periodId => $amount) {
+            $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'PP-P4-'.$periodId, [
+                'ID_RAPBS_PERIODE' => 'PP-P4-'.$periodId, 'ID_RAPBS' => 'R-P4',
+                'ID_PERIODE' => (string) $periodId, 'JUMLAH' => $amount,
+                'VOLUME' => $amount / 100000, 'SATUAN' => 'paket', 'HARGA_SATUAN' => 100000,
+            ]);
+        }
+        // Item lain hanya punya pecahan per triwulan (tanpa rincian bulan):
+        // tetap tampil di setiap bulan triwulan itu dengan jumlah triwulannya.
+        $this->seedMirrorRow('arkas_mirror_rapbs', 'R-P6', [
+            'ID_RAPBS' => 'R-P6', 'ID_ANGGARAN' => 'ANG-1', 'KODE_KEGIATAN' => '05.02.05.',
+            'NAMA_KEGIATAN' => 'Pengadaan buku pengayaan dan referensi', 'KODE_REKENING' => '5.2.05.01.01.0004',
+            'URAIAN' => 'Paket Triwulanan', 'JUMLAH' => 900000,
+            'VOLUME' => 9, 'SATUAN' => 'paket', 'HARGA_SATUAN' => 100000,
+        ]);
+        $this->seedMirrorRow('arkas_mirror_rapbs_periode', 'PP-P6-TW2', [
+            'ID_RAPBS_PERIODE' => 'PP-P6-TW2', 'ID_RAPBS' => 'R-P6',
+            'ID_PERIODE' => 'TW2', 'NAMA_PERIODE' => 'Triwulan 2', 'JUMLAH' => 900000,
+            'VOLUME' => 9, 'SATUAN' => 'paket', 'HARGA_SATUAN' => 100000,
+        ]);
+
+        $item = function (int $month, string $label): ?array {
+            $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'rpd_bos', $month);
+            foreach ($payload['rpd']['rows'] as $row) {
+                if ($row['level'] === 'item' && $row['label'] === $label) {
+                    return $row;
+                }
+            }
+
+            return null;
+        };
+
+        $april = $item(4, 'Paket Bulanan');
+        $this->assertNotNull($april);
+        $this->assertSame(400000.0, $april['jumlah']);
+        $this->assertSame(4.0, $april['volume']);
+
+        $june = $item(6, 'Paket Bulanan');
+        $this->assertNotNull($june);
+        $this->assertSame(600000.0, $june['jumlah']);
+        $this->assertSame(6.0, $june['volume']);
+
+        // Pecahan triwulan saja: tampil utuh di bulan 4 maupun bulan 6.
+        $this->assertSame(900000.0, $item(4, 'Paket Triwulanan')['jumlah']);
+        $this->assertSame(900000.0, $item(6, 'Paket Triwulanan')['jumlah']);
+    }
+
     public function test_rpd_monthly_print_route_renders_month_range(): void
     {
         $response = $this->get('/laporan-periode/bulan/rpd_bos/cetak?periode_laporan=2');

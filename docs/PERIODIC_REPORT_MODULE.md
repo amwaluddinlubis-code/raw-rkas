@@ -271,11 +271,20 @@ bila jumlah periode terpilihnya tidak nol; payload mencakup `columns`
 Scope bulanan (2026-10-24): `rpd_bos` kini juga terdaftar pada scope
 bulanan. Kolom realisasi hanya bulan terpilih (`month_names` satu bulan),
 baris identitas menjadi `BULAN` dengan label nama bulan dan
-`month_range` `BULAN <NAMA> <TAHUN>`. Pencocokan pecahan alokasi sama
-seperti scope lain: cocok bila `__MONTH_NUMBER` sama dengan bulan
-terpilih, atau `__QUARTER_NUMBER` sama dengan triwulan yang memuat bulan
-terpilih bila pecahan hanya terkoordinat per triwulan. Dikunci oleh
-`RpdBosReportTest::test_rpd_monthly_*`.
+`month_range` `BULAN <NAMA> <TAHUN>`. Pencocokan pecahan alokasi pada
+scope bulanan memakai preseden bulan: pecahan berkoordinat bulan
+(`__MONTH_NUMBER` > 0) hanya cocok pada bulannya sendiri; pecahan yang
+hanya berkoordinat triwulan (bulan 0) cocok per triwulan yang memuat
+bulan terpilih. Dikunci oleh `RpdBosReportTest::test_rpd_monthly_*`.
+
+Catatan regresi (2026-10-24, temuan data nyata sekolah 10260756):
+pencocokan awal memakai OR bulan/triwulan seperti scope lain, padahal
+resolver selalu menurunkan `__QUARTER_NUMBER` dari bulan pecahan —
+akibatnya RPD bulan 4 dan bulan 6 sama-sama menjumlah seluruh pecahan
+TW II (Apr+Mei+Jun) pada kolom Jumlah sehingga hasil antarbulan tidak
+konsisten. Preseden bulan di atas memperbaikinya; scope triwulan dan
+semester tidak berubah. Dikunci oleh
+`RpdBosReportTest::test_rpd_monthly_allocation_matches_only_its_own_month_fraction`.
 
 Catatan regresi (2026-10-21): perulangan pecahan periode di `rpdData`
 memakai nama variabel `$period` sehingga menimpa parameter scope/period;

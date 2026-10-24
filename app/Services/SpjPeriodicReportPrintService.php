@@ -2015,7 +2015,19 @@ final class SpjPeriodicReportPrintService
                     if ($periodMonth > 0 || $periodQuarter > 0) {
                         $hasCoordinatedPeriod = true;
                     }
-                    if (! in_array($periodMonth, $months, true) && ! in_array($periodQuarter, $quarters, true)) {
+                    // Scope bulanan: pecahan berkoordinat bulan hanya cocok
+                    // pada bulannya sendiri — triwulan yang diturunkan
+                    // resolver dari bulan itu tidak boleh menarik pecahan
+                    // bulan lain dalam triwulan yang sama (tanpa ini, RPD
+                    // bulan 4/5/6 menjumlah seluruh pecahan triwulannya).
+                    // Pecahan yang hanya berkoordinat triwulan (bulan 0)
+                    // tetap cocok per triwulan.
+                    $matchesPeriod = $isMonthly
+                        ? ($periodMonth > 0
+                            ? in_array($periodMonth, $months, true)
+                            : in_array($periodQuarter, $quarters, true))
+                        : (in_array($periodMonth, $months, true) || in_array($periodQuarter, $quarters, true));
+                    if (! $matchesPeriod) {
                         continue;
                     }
                     $hasPeriodMatch = true;
