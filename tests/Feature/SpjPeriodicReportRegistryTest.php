@@ -12,7 +12,7 @@ class SpjPeriodicReportRegistryTest extends TestCase
         $registry = app(SpjPeriodicReportRegistry::class);
         $packages = $registry->packages();
 
-        $this->assertSame(10, count($packages['bulan']));
+        $this->assertSame(14, count($packages['bulan']));
         $this->assertSame(10, count($packages['triwulan']));
         $this->assertSame(10, count($packages['semester']));
         $this->assertSame(7, count($packages['tahunan']));
@@ -26,7 +26,11 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Register Penutupan Kas (K7B)',
             'Berita Acara Pemeriksaan Kas (K7C)',
             'Rekap Belanja Modal dan Belanja Barang / Jasa',
+            'Format K7',
+            'Format BOS K-2',
+            'RPD BOS',
             'Rekapitulasi Pengeluaran Dana BOS (K7A)',
+            'Format BOS A-1',
             'Laporan BPK Format BOS',
         ], array_column($packages['bulan'], 'label'));
 

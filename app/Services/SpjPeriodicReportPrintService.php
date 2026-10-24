@@ -1813,6 +1813,7 @@ final class SpjPeriodicReportPrintService
     {
         $isSemester = $scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period >= 1 && $period <= 2;
         $isQuarterly = $scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4;
+        $isMonthly = $scope === SpjPeriodicReportRegistry::SCOPE_MONTHLY && $period >= 1 && $period <= 12;
 
         $programs = [];
         foreach (BospRekapStandardMapper::a1Programs() as $index => $label) {
@@ -1826,8 +1827,10 @@ final class SpjPeriodicReportPrintService
         }
 
         // Triwulan terakhir yang sudah masuk periode terpilih: triwulan N
-        // untuk scope triwulan, TW II/TW IV untuk semester I/II.
-        $quarter = $isSemester ? $period * 2 : ($isQuarterly ? $period : 1);
+        // untuk scope triwulan, TW II/TW IV untuk semester I/II, dan
+        // triwulan yang memuat bulan terpilih untuk scope bulanan (kolom TW
+        // setelahnya nol, sama seperti scope triwulan).
+        $quarter = $isSemester ? $period * 2 : ($isQuarterly ? $period : ($isMonthly ? intdiv($period - 1, 3) + 1 : 1));
         $hasData = false;
 
         $fundSourceId = $this->context->fundSourceId();
@@ -1889,10 +1892,10 @@ final class SpjPeriodicReportPrintService
         $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
         $periodLabel = $isSemester
             ? $this->k2SemesterLabel($period)
-            : $this->k2QuarterLabel($quarter);
+            : ($isMonthly ? $this->registry->monthName($period) : $this->k2QuarterLabel($quarter));
         $periodRange = $isSemester
             ? $this->k2MonthRangeFromMonths((($period - 1) * 6) + 1, $period * 6, $year)
-            : $this->k2MonthRange($quarter, $year);
+            : ($isMonthly ? $this->k2MonthRangeFromMonths($period, $period, $year) : $this->k2MonthRange($quarter, $year));
 
         return [
             'programs' => $programs,
@@ -1936,14 +1939,21 @@ final class SpjPeriodicReportPrintService
     private function rpdData(string $scope, ?int $period): array
     {
         // Triwulan yang dicakup periode terpilih: triwulan N untuk scope
-        // triwulan, TW I–II / TW III–IV untuk semester I / II.
+        // triwulan, TW I–II / TW III–IV untuk semester I / II. Scope
+        // bulanan: kolom realisasi hanya bulan terpilih; pecahan alokasi
+        // cocok bila bulannya sama, atau triwulannya sama dengan triwulan
+        // bulan terpilih bila pecahan hanya terkoordinat per triwulan.
+        $isMonthly = $scope === SpjPeriodicReportRegistry::SCOPE_MONTHLY && $period >= 1 && $period <= 12;
         $quarters = match (true) {
             $scope === SpjPeriodicReportRegistry::SCOPE_QUARTERLY && $period >= 1 && $period <= 4 => [$period],
             $scope === SpjPeriodicReportRegistry::SCOPE_SEMESTER && $period >= 1 && $period <= 2 => $period === 1 ? [1, 2] : [3, 4],
+            $isMonthly => [intdiv($period - 1, 3) + 1],
             default => [1],
         };
         $quarter = $quarters[0];
-        $months = range((($quarters[0] - 1) * 3) + 1, $quarters[count($quarters) - 1] * 3);
+        $months = $isMonthly
+            ? [$period]
+            : range((($quarters[0] - 1) * 3) + 1, $quarters[count($quarters) - 1] * 3);
         $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
         $fundSourceId = (int) ($this->context->fundSourceId() ?? 0);
 
@@ -2152,12 +2162,14 @@ final class SpjPeriodicReportPrintService
             'rows' => $rows,
             'totals' => $totals,
             'quarter' => $quarter,
-            'quarter_label' => $isSemester ? $this->k2SemesterLabel($period) : $this->k2QuarterLabel($quarter),
-            'period_row_label' => $isSemester ? 'SEMESTER' : 'TRIWULAN',
+            'quarter_label' => $isSemester ? $this->k2SemesterLabel($period) : ($isMonthly ? $this->registry->monthName($period) : $this->k2QuarterLabel($quarter)),
+            'period_row_label' => $isSemester ? 'SEMESTER' : ($isMonthly ? 'BULAN' : 'TRIWULAN'),
             'columns' => $isSemester ? 'quarter' : 'month',
             'quarter_names' => $quarterNames,
             'month_names' => array_combine($months, array_map(fn (int $m): string => $monthNames[$m - 1], $months)),
-            'month_range' => 'BULAN '.mb_strtoupper($monthNames[$months[0] - 1]).' S.D '.mb_strtoupper($monthNames[$lastMonth - 1]).' '.$year,
+            'month_range' => $isMonthly
+                ? 'BULAN '.mb_strtoupper($monthNames[$months[0] - 1]).' '.$year
+                : 'BULAN '.mb_strtoupper($monthNames[$months[0] - 1]).' S.D '.mb_strtoupper($monthNames[$lastMonth - 1]).' '.$year,
             'has_data' => $hasData,
         ];
     }

@@ -1,14 +1,14 @@
 # Modul Laporan Periode
 
-Terakhir diperbarui: **2026-10-21** (`raw-rkas`, branch `main`)
+Terakhir diperbarui: **2026-10-24** (`raw-rkas`, branch `main`)
 
 Dokumen ini adalah panduan fitur laporan periode (`/laporan-periode`): generator
 internal APP-SPJ untuk cetak browser dan PDF, terpisah dari template Paket SPJ.
 
 Status: **ACTIVE FEATURE GUIDE / PRINT, PDF, DAN EXCEL SOURCE IMPLEMENTED /
 VISUAL RUNTIME RVR**. Kontrak teknis modul (registry, scope, boundary data)
-berada di `SPJ_PERIODIC_REPORTING.md`. Registry aktual berisi **37 slot**
-(bulanan 10 + triwulan 10 + semester 10 + tahunan 7) dari **18 report key**.
+berada di `SPJ_PERIODIC_REPORTING.md`. Registry aktual berisi **41 slot**
+(bulanan 14 + triwulan 10 + semester 10 + tahunan 7) dari **18 report key**.
 Daftar per scope dan key berada di kontrak teknis; dokumen ini menjelaskan
 aturan nilai per format yang sudah mempunyai presenter khusus.
 
@@ -154,7 +154,7 @@ Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
 ## Format BOS A-1 (rekapitulasi resmi per 8 program)
 
-Presentasi `bos_a1` (`bos_a1`, scope triwulan; Fase 1) meniru Formulir BOS
+Presentasi `bos_a1` (`bos_a1`, scope bulanan/triwulan; Fase 1) meniru Formulir BOS
 A-1: judul + `PERIODE TANGGAL : 01 JANUARI - 31 MARET 2024` + kotak Format
 BOS A-1, blok identitas (NPSN, sekolah, desa/kecamatan, kab/kota, provinsi,
 sumber dana), grid 8 program × (Belanja Pegawai | Barang dan Jasa | 3 kolom
@@ -225,7 +225,7 @@ aktual dijalankan.
 
 ## RPD BOS (2026-10-16)
 
-Presentasi `rpd` (`rpd_bos`, scope triwulan/semester) mengikuti contoh
+Presentasi `rpd` (`rpd_bos`, scope bulanan/triwulan/semester) mengikuti contoh
 resmi RINCIAN PENGGUNAAN DANA BOS: kop identitas + kotak "RPD", tabel
 No | Kode Program | Uraian | Rincian Perhitungan (Vol/Satuan/Tarif) |
 Jumlah | kolom bulan triwulan berjalan, hierarki I Program Sekolah → 8
@@ -268,6 +268,15 @@ bila jumlah periode terpilihnya tidak nol; payload mencakup `columns`
 (`quarter`|`month`), `quarter_names`, dan `period_row_label`
 (`SEMESTER`/`TRIWULAN`) yang dipakai baik oleh cetak maupun Excel.
 
+Scope bulanan (2026-10-24): `rpd_bos` kini juga terdaftar pada scope
+bulanan. Kolom realisasi hanya bulan terpilih (`month_names` satu bulan),
+baris identitas menjadi `BULAN` dengan label nama bulan dan
+`month_range` `BULAN <NAMA> <TAHUN>`. Pencocokan pecahan alokasi sama
+seperti scope lain: cocok bila `__MONTH_NUMBER` sama dengan bulan
+terpilih, atau `__QUARTER_NUMBER` sama dengan triwulan yang memuat bulan
+terpilih bila pecahan hanya terkoordinat per triwulan. Dikunci oleh
+`RpdBosReportTest::test_rpd_monthly_*`.
+
 Catatan regresi (2026-10-21): perulangan pecahan periode di `rpdData`
 memakai nama variabel `$period` sehingga menimpa parameter scope/period;
 akibatnya data nyata yang sudah punya koordinat periode (pecahan bulan)
@@ -298,7 +307,7 @@ mengikuti kontrak template/formula yang disepakati kemudian.
 
 ## Format K7 (Formulir BOS-K7 resmi, 2026-10-12)
 
-Presentasi `k7` (`format_k7`, triwulan/semester/tahunan):
+Presentasi `k7` (`format_k7`, bulanan/triwulan/semester/tahunan):
 "Realisasi Penggunaan Dana Tiap Jenis Anggaran" mengikuti formulir
 resmi (struktur dibandingkan terhadap contoh TW II 2025): kop
 identitas sekolah + kotak "Formulir Bos-K7", tabel 9 kolom (No. Kode
@@ -324,6 +333,11 @@ Pusat untuk BOSP/BOS Reguler). Transaksi tanpa kode kegiatan 01–08
 dilaporkan sebagai unmapped (tidak masuk JUMLAH).
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
+Scope bulanan (2026-10-24): `format_k7` juga terdaftar pada scope
+bulanan; penerimaan dan penggunaan dihitung dari bulan terpilih saja
+(aturan penerimaan BOS = Tahap/2 tetap hanya berlaku scope triwulan).
+Dikunci oleh `FormatK7MonthlyReportTest`.
+
 Implementasi: `SpjPeriodicReportPrintService::k7Data/k7Title/
 k7PeriodQualifier/k7FundColumn/k7Receipts/k7UsageHierarchy`,
 `BospRekapStandardMapper::k7Programs/k7SubProgramLabel`, cabang `k7`
@@ -332,7 +346,7 @@ di `document.blade.php` + `document-styles.blade.php`,
 
 ## Format BOS K-2 (2026-10-16)
 
-Presentasi `k2` (`format_k2`, scope triwulan/semester): "RENCANA KEGIATAN
+Presentasi `k2` (`format_k2`, scope bulanan/triwulan/semester): "RENCANA KEGIATAN
 DAN ANGGARAN SEKOLAH ( RKAS )" mengikuti formulir resmi (terverifikasi
 terhadap contoh TW I 2026 SDN 316 Ranto Panjang): kop identitas
 sekolah + kotak "Format BOS K-2", tabel No | Uraian | Jumlah (dalam
@@ -368,12 +382,18 @@ identitas memakai `period_row_label` (`SEMESTER`/`TRIWULAN`) dan
 `period_range` dari `k2MonthRangeFromMonths()`, mis. Semester II =
 "01 Juli s.d 31 Desember <tahun>".
 
+Scope bulanan (2026-10-24): `format_k2` juga terdaftar pada scope
+bulanan. Kolom tetap TW I–IV dengan batas kumulatif triwulan yang memuat
+bulan terpilih (kolom TW setelahnya 0); label periode memakai nama
+bulan dan `period_range` adalah rentang bulan itu sendiri. Dikunci oleh
+`FormatK2ReportTest::test_k2_monthly_*`.
+
 Implementasi: `SpjPeriodicReportPrintService::k2Data/k2QuarterLabel/
 k2SemesterLabel/k2MonthRange/k2MonthRangeFromMonths`, cabang `k2` di
 `document.blade.php`, partial `report-k2-1.blade.php` (5 kolom semester /
 7 kolom triwulan) dan `report-k2-2.blade.php`,
 `SpjPeriodicReportExcelService::writeK2`, registrasi
-`SpjPeriodicReportRegistry` scope triwulan + semester.
+`SpjPeriodicReportRegistry` scope bulanan + triwulan + semester.
 Status visual/runtime: RVR sampai QA browser/PDF aktual dijalankan.
 
 ## SPTJM (2026-10-08)

@@ -171,6 +171,33 @@ class BosA1ReportTest extends TestCase
         $this->assertSame('01 JANUARI - 31 MARET 2026', $payload['bosA1Title']['range']);
     }
 
+    public function test_bos_a1_monthly_counts_only_selected_month(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'bos_a1', 2);
+
+        $this->assertSame('bos_a1', $payload['presentation']);
+        $a1 = $payload['bosA1'];
+
+        // Februari hanya memuat Honor Operator (program 7, belanja pegawai).
+        $this->assertSame(2000000.0, $a1['rows'][7]['pegawai']);
+        $this->assertSame(2000000.0, $a1['rows'][7]['total']);
+        $this->assertSame(0.0, $a1['rows'][3]['total']);
+        $this->assertSame(2000000.0, $a1['totals']['grand']);
+        $this->assertSame(0.0, $a1['unmapped']);
+
+        $this->assertSame('01 FEBRUARI - 28 FEBRUARI 2026', $payload['bosA1Title']['range']);
+    }
+
+    public function test_bos_a1_monthly_print_route_renders(): void
+    {
+        $response = $this->get('/laporan-periode/bulan/bos_a1/cetak?periode_laporan=2');
+
+        $response->assertOk();
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('Format BOS A-1', $html);
+        $this->assertStringContainsString('FEBRUARI 2026', $html);
+    }
+
     public function test_bos_a1_splits_belanja_modal_by_account_code(): void
     {
         $this->seedMirrorRow('arkas_mirror_kas_umum', 'A1-B5', [

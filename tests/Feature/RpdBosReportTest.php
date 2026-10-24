@@ -156,6 +156,45 @@ class RpdBosReportTest extends TestCase
         $this->fail('Item RPD tidak ditemukan: '.$label);
     }
 
+    public function test_rpd_monthly_shows_single_month_realization_column(): void
+    {
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'rpd_bos', 2);
+
+        $this->assertSame('rpd', $payload['presentation']);
+        $rpd = $payload['rpd'];
+
+        $this->assertSame('month', $rpd['columns']);
+        $this->assertSame([2 => 'Februari'], $rpd['month_names']);
+        $this->assertSame('BULAN', $rpd['period_row_label']);
+        $this->assertSame('Februari', $rpd['quarter_label']);
+        $this->assertSame('BULAN FEBRUARI 2026', $rpd['month_range']);
+        $this->assertSame(1, $rpd['quarter']);
+        $this->assertTrue($rpd['has_data']);
+
+        $items = [];
+        foreach ($rpd['rows'] as $row) {
+            if ($row['level'] === 'item') {
+                $items[$row['label']] = $row;
+            }
+        }
+
+        // Realisasi Februari hanya dari transaksi bulan itu.
+        $this->assertSame([2 => 2360000.0], $items['Buku Ramadhan']['months']);
+        $this->assertSame([2 => 0.0], $items['Cetak Spanduk']['months']);
+        $this->assertSame([2 => 2360000.0], $rpd['totals']['months']);
+    }
+
+    public function test_rpd_monthly_print_route_renders_month_range(): void
+    {
+        $response = $this->get('/laporan-periode/bulan/rpd_bos/cetak?periode_laporan=2');
+
+        $response->assertOk();
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('RINCIAN PENGGUNAAN DANA BOS (RPD BOS)', $html);
+        $this->assertStringContainsString('BULAN FEBRUARI 2026', $html);
+        $this->assertStringContainsString('Buku Ramadhan', $html);
+    }
+
     public function test_rpd_builds_program_hierarchy(): void
     {
         $rpd = $this->buildRpd();

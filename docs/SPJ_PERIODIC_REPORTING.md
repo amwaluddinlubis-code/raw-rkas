@@ -20,7 +20,7 @@ Panduan fitur per-format laporan (aturan nilai, mapping sel, batasan presenter) 
 ## Paket laporan
 
 Daftar di bawah adalah cerminan langsung dari
-`SpjPeriodicReportRegistry::packages()`: **37 slot** (bulanan 10 + triwulan 10
+`SpjPeriodicReportRegistry::packages()`: **41 slot** (bulanan 14 + triwulan 10
 + semester 10 + tahunan 7) dari **18 report key** berbeda. Bila daftar ini
 berbeda dengan registry, registry yang benar.
 
@@ -34,10 +34,19 @@ berbeda dengan registry, registry yang benar.
 - Register Penutupan Kas (K7B) (`k7b`)
 - Berita Acara Pemeriksaan Kas (K7C) (`k7c`)
 - Rekap Belanja Modal dan Belanja Barang / Jasa (`rekap_belanja_modal_barang_jasa`)
+- Format K7 (`format_k7`)
+- Format BOS K-2 (`format_k2`)
+- RPD BOS (`rpd_bos`)
 - Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
+- Format BOS A-1 (`bos_a1`)
 - Laporan BPK Format BOS (`bpk_bos`)
 
-Periode valid: bulan `1..12`.
+Periode valid: bulan `1..12`. Catatan scope bulanan (2026-10-24): K7 dan
+A-1 memakai transaksi bulan terpilih; K-2 tetap menampilkan kolom TW I–IV
+dengan batas kumulatif triwulan yang memuat bulan terpilih dan label
+periode nama bulan; RPD memakai satu kolom realisasi bulan terpilih,
+baris identitas `BULAN`, dan alokasi pecahan cocok per bulan (atau per
+triwulan induk bila pecahan hanya terkoordinat per triwulan).
 
 ### Tahap & Triwulan
 

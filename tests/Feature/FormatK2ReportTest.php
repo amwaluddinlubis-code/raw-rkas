@@ -183,6 +183,52 @@ class FormatK2ReportTest extends TestCase
         $this->assertSame($k2['totals']['jumlah'], array_sum($k2['totals']['tw']));
     }
 
+    public function test_k2_monthly_uses_quarter_of_selected_month_as_cutoff(): void
+    {
+        // Februari berada di TW I: angka sama dengan laporan triwulan I,
+        // label periode memakai nama bulan.
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'format_k2', 2);
+        $k2 = $payload['k2'];
+
+        $this->assertSame('k2', $payload['presentation']);
+        $this->assertSame('quarter', $k2['columns']);
+        $this->assertSame(1, $k2['quarter']);
+        $this->assertSame('Februari', $k2['period_label']);
+        $this->assertSame('Februari', $k2['quarter_label']);
+        $this->assertStringContainsString('01 Februari', $k2['period_range']);
+        $this->assertStringContainsString('28 Februari 2026', $k2['period_range']);
+
+        $this->assertSame(2610000.0 + 3000000.0 + 10679000.0, $k2['totals']['jumlah']);
+        $this->assertSame(0.0, $k2['totals']['tw'][2]);
+        $this->assertTrue($k2['has_data']);
+    }
+
+    public function test_k2_monthly_in_second_quarter_is_cumulative_until_that_quarter(): void
+    {
+        // Mei berada di TW II: kolom TW III/IV nol, Jumlah kumulatif TW I+II.
+        $payload = app(SpjPeriodicReportPrintService::class)->build('bulan', 'format_k2', 5);
+        $k2 = $payload['k2'];
+
+        $this->assertSame(2, $k2['quarter']);
+        $this->assertSame('Mei', $k2['period_label']);
+        $this->assertSame(3000000.0, $k2['programs'][5]['tw'][1]);
+        $this->assertSame(2898000.0, $k2['programs'][5]['tw'][2]);
+        $this->assertSame(0.0, $k2['programs'][5]['tw'][3]);
+        $this->assertSame(2610000.0 + 5898000.0 + 10679000.0, $k2['totals']['jumlah']);
+        $this->assertSame($k2['totals']['jumlah'], array_sum($k2['totals']['tw']));
+    }
+
+    public function test_k2_monthly_print_route_renders_month_label(): void
+    {
+        $response = $this->get('/laporan-periode/bulan/format_k2/cetak?periode_laporan=2');
+
+        $response->assertOk();
+        $html = (string) $response->getContent();
+        $this->assertStringContainsString('Format BOS K-2', $html);
+        $this->assertStringContainsString('Triwulan / Bulan', $html);
+        $this->assertStringContainsString('Februari / 01 Februari  s.d 28 Februari 2026', $html);
+    }
+
     public function test_k2_without_budget_data_renders_zeros(): void
     {
         DB::connection('school')->table('arkas_mirror_rapbs')->truncate();

@@ -66,7 +66,11 @@ final class SpjPeriodicReportRegistry
                 $this->report('k7b', 'Register Penutupan Kas (K7B)'),
                 $this->report('k7c', 'Berita Acara Pemeriksaan Kas (K7C)'),
                 $this->report('rekap_belanja_modal_barang_jasa', 'Rekap Belanja Modal dan Belanja Barang / Jasa'),
+                $this->report('format_k7', 'Format K7'),
+                $this->report('format_k2', 'Format BOS K-2'),
+                $this->report('rpd_bos', 'RPD BOS'),
                 $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS (K7A)'),
+                $this->report('bos_a1', 'Format BOS A-1'),
                 $this->report('bpk_bos', 'Laporan BPK Format BOS'),
             ],
             self::SCOPE_QUARTERLY => [
