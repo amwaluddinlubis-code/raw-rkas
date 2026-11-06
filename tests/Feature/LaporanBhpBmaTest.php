@@ -103,11 +103,12 @@ class LaporanBhpBmaTest extends TestCase
 
         $this->seedMirrorRow('BHP-1', ['ID_KAS_UMUM' => 'BHP-1', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU09', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'Buku Ramadhan', 'KODE_REKENING' => '5.1.02.01.01.0024', 'VOLUME' => 118, 'JUMLAH' => 2360000, 'ID_RAPBS_PERIODE' => 'PER-1', 'ID_REF_SUMBER_DANA' => 1]);
         $this->seedMirrorRow('BHP-2', ['ID_KAS_UMUM' => 'BHP-2', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU12', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'Kertas HVS A4', 'KODE_REKENING' => '5.1.02.01.01.0024', 'VOLUME' => 7, 'JUMLAH' => 350000, 'ID_RAPBS_PERIODE' => 'PER-1', 'ID_REF_SUMBER_DANA' => 1]);
-        // Konsumsi (makanan/minuman 0052/0053/0058): satu kelompok rekening
-        // dengan BHP tetapi bukan barang persediaan — tidak boleh tampil.
+        // Konsumsi (makanan/minuman 0052/0053/0055/0058): satu kelompok
+        // rekening dengan BHP tetapi bukan barang persediaan — tidak boleh tampil.
         $this->seedMirrorRow('BHP-3', ['ID_KAS_UMUM' => 'BHP-3', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU13', 'TANGGAL_TRANSAKSI' => '2026-03-08', 'URAIAN' => 'Konsumsi Rapat', 'KODE_REKENING' => '5.1.02.01.01.0052', 'VOLUME' => 10, 'JUMLAH' => 500000, 'ID_REF_SUMBER_DANA' => 1]);
         $this->seedMirrorRow('KONSUMSI-2', ['ID_KAS_UMUM' => 'KONSUMSI-2', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU14', 'TANGGAL_TRANSAKSI' => '2026-03-08', 'URAIAN' => 'Jamuan Tamu', 'KODE_REKENING' => '5.1.02.01.01.0053', 'VOLUME' => 10, 'JUMLAH' => 300000, 'ID_REF_SUMBER_DANA' => 1]);
         $this->seedMirrorRow('KONSUMSI-3', ['ID_KAS_UMUM' => 'KONSUMSI-3', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU17', 'TANGGAL_TRANSAKSI' => '2026-03-09', 'URAIAN' => 'Konsumsi Kegiatan Lapangan', 'KODE_REKENING' => '5.1.02.01.01.0058', 'VOLUME' => 20, 'JUMLAH' => 400000, 'ID_REF_SUMBER_DANA' => 1]);
+        $this->seedMirrorRow('KONSUMSI-4', ['ID_KAS_UMUM' => 'KONSUMSI-4', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU18', 'TANGGAL_TRANSAKSI' => '2026-03-10', 'URAIAN' => 'Nasi Box Lomba Siswa', 'KODE_REKENING' => '5.1.02.01.01.0055', 'VOLUME' => 20, 'JUMLAH' => 500000, 'ID_REF_SUMBER_DANA' => 1]);
         // Anak pajak dari BHP-1: bukan barang, tidak boleh tampil.
         $this->seedMirrorRow('BHP-TAX', ['ID_KAS_UMUM' => 'BHP-TAX', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU09', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'PPh 21 atas Buku Ramadhan', 'KODE_REKENING' => '5.1.02.01.01.0024', 'JUMLAH' => 50000, 'PARENT_ID_KAS_UMUM' => 'BHP-1', 'IS_PPH21' => 1, 'ID_REF_SUMBER_DANA' => 1]);
         // Belanja jasa: bukan BHP maupun BMA.
@@ -209,6 +210,7 @@ class LaporanBhpBmaTest extends TestCase
         $response->assertDontSee('Konsumsi Rapat');
         $response->assertDontSee('Jamuan Tamu');
         $response->assertDontSee('Konsumsi Kegiatan Lapangan');
+        $response->assertDontSee('Nasi Box Lomba Siswa');
         $response->assertDontSee('Jasa Narasumber');
         $response->assertDontSee('PPh 21 atas Buku Ramadhan');
         // Blok tanda tangan hanya dari partial BHP/BMA, tidak ganda dengan blok generik.

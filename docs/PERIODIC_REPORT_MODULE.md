@@ -68,10 +68,14 @@ Panjang, Jan–Sep 2026; realisasi hanya pada Maret/Juni/September):
   dan seterusnya) tidak masuk keduanya;
 - konsumsi (makanan/minuman) TIDAK masuk BHP walaupun satu kelompok
   rekening `5.1.02.01.01`: ia bukan barang persediaan. Pembedanya kode
-  rekening rincian objeknya, bukan uraian — `0052` Makanan dan Minuman
-  Rapat, `0053` Jamuan Tamu, `0058` Aktivitas Lapangan (Bagan Akun
-  Standar; selaras kategori `makan` pada BPK Dinas). Koreksi pengguna
-  2026-11-07 — versi awal laporan ini sempat memasukkan `0052`;
+  rekening rincian objeknya, bukan uraian — keluarga makanan/minuman
+  `0052` Rapat, `0053` Jamuan Tamu, `0055` pada Fasilitas Pelayanan
+  Urusan Pendidikan, `0056` Urusan Kesehatan, `0057` Urusan Sosial,
+  `0058` Aktivitas Lapangan (Bagan Akun Standar; selaras kategori
+  `makan` pada BPK Dinas). Rincian `0054` Penambah Daya Tahan Tubuh
+  bukan makanan/minuman dan tetap barang. Koreksi pengguna 2026-11-07 —
+  versi awal laporan ini sempat memasukkan seluruh kelompok; `0055`
+  ditemukan dari pengecekan kode oleh pengguna;
 - jumlah barang = `VOLUME` baris; harga satuan = `JUMLAH`/`VOLUME` (persis
   penurunan ARKAS pada ekspornya — terverifikasi pada seluruh baris
   contoh); realisasi = `JUMLAH` baris;

@@ -370,8 +370,9 @@ final class SpjPeriodicReportPrintService
      * Panjang, realisasi Maret/Juni/September 2026):
      * - klasifikasi murni dari KODE_REKENING baris: BHP = awalan
      *   `5.1.02.01.01` (Belanja Barang Pakai Habis), BMA = awalan `5.2.`
-     *   (Belanja Modal); konsumsi (makanan/minuman rincian `0052`/`0053`/
-     *   `0058`) dikeluarkan dari BHP — bukan barang persediaan;
+     *   (Belanja Modal); konsumsi (rincian makanan/minuman `0052`/`0053`/
+     *   `0055`/`0056`/`0057`/`0058`) dikeluarkan dari BHP — bukan barang
+     *   persediaan;
      * - jumlah barang dari VOLUME baris kas; harga satuan = JUMLAH / VOLUME
      *   (persis cara ARKAS menurunkan harga satuan pada ekspornya);
      *   realisasi = JUMLAH baris;
@@ -457,13 +458,16 @@ final class SpjPeriodicReportPrintService
      * Konsumsi (makanan/minuman) berada di dalam kelompok Barang Pakai
      * Habis tetapi bukan barang persediaan, sehingga tidak masuk Laporan
      * BHP. Pembedanya adalah kode rekening rincian objeknya — bukan uraian
-     * barang: `0052` Makanan dan Minuman Rapat, `0053` Jamuan Tamu, `0058`
-     * Aktivitas Lapangan (Bagan Akun Standar; kategori `makan` pada BPK
-     * Dinas memakai pembeda yang sama untuk `0052`).
+     * barang: `0052` Makanan dan Minuman Rapat, `0053` Jamuan Tamu, `0055`
+     * pada Fasilitas Pelayanan Urusan Pendidikan, `0056` Urusan Kesehatan,
+     * `0057` Urusan Sosial, `0058` Aktivitas Lapangan (Bagan Akun Standar;
+     * kategori `makan` pada BPK Dinas memakai pembeda yang sama untuk
+     * `0052`). Rincian `0054` Penambah Daya Tahan Tubuh bukan
+     * makanan/minuman dan tetap diperlakukan sebagai barang.
      */
     private function itemRecapIsKonsumsi(string $account): bool
     {
-        return in_array($account, ['5.1.02.01.01.0052', '5.1.02.01.01.0053', '5.1.02.01.01.0058'], true);
+        return in_array($account, ['5.1.02.01.01.0052', '5.1.02.01.01.0053', '5.1.02.01.01.0055', '5.1.02.01.01.0056', '5.1.02.01.01.0057', '5.1.02.01.01.0058'], true);
     }
 
     /**
