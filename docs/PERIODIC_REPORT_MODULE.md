@@ -64,9 +64,14 @@ Aturan nilai (diverifikasi terhadap 18 contoh resmi ARKAS SDN 316 Ranto
 Panjang, Jan–Sep 2026; realisasi hanya pada Maret/Juni/September):
 
 - klasifikasi dari `KODE_REKENING` baris kas `BELANJA`: BHP = awalan
-  `5.1.02.01.01` (termasuk makan/minum `5.1.02.01.01.0052`), BMA = awalan
-  `5.2.`; rekening lain (jasa `5.1.02.02%` dan seterusnya) tidak masuk
-  keduanya;
+  `5.1.02.01.01`, BMA = awalan `5.2.`; rekening lain (jasa `5.1.02.02%`
+  dan seterusnya) tidak masuk keduanya;
+- konsumsi (makanan/minuman) TIDAK masuk BHP walaupun satu kelompok
+  rekening `5.1.02.01.01`: ia bukan barang persediaan. Pembedanya kode
+  rekening rincian objeknya, bukan uraian — `0052` Makanan dan Minuman
+  Rapat, `0053` Jamuan Tamu, `0058` Aktivitas Lapangan (Bagan Akun
+  Standar; selaras kategori `makan` pada BPK Dinas). Koreksi pengguna
+  2026-11-07 — versi awal laporan ini sempat memasukkan `0052`;
 - jumlah barang = `VOLUME` baris; harga satuan = `JUMLAH`/`VOLUME` (persis
   penurunan ARKAS pada ekspornya — terverifikasi pada seluruh baris
   contoh); realisasi = `JUMLAH` baris;

@@ -370,7 +370,8 @@ final class SpjPeriodicReportPrintService
      * Panjang, realisasi Maret/Juni/September 2026):
      * - klasifikasi murni dari KODE_REKENING baris: BHP = awalan
      *   `5.1.02.01.01` (Belanja Barang Pakai Habis), BMA = awalan `5.2.`
-     *   (Belanja Modal);
+     *   (Belanja Modal); konsumsi (makanan/minuman rincian `0052`/`0053`/
+     *   `0058`) dikeluarkan dari BHP — bukan barang persediaan;
      * - jumlah barang dari VOLUME baris kas; harga satuan = JUMLAH / VOLUME
      *   (persis cara ARKAS menurunkan harga satuan pada ekspornya);
      *   realisasi = JUMLAH baris;
@@ -426,7 +427,7 @@ final class SpjPeriodicReportPrintService
             }
             $account = trim((string) ($payload['KODE_REKENING'] ?? ''));
             $matches = $isBhp
-                ? str_starts_with($account, '5.1.02.01.01')
+                ? str_starts_with($account, '5.1.02.01.01') && ! $this->itemRecapIsKonsumsi($account)
                 : str_starts_with($account, '5.2.');
             if (! $matches) {
                 continue;
@@ -450,6 +451,19 @@ final class SpjPeriodicReportPrintService
         }
 
         return $rows;
+    }
+
+    /**
+     * Konsumsi (makanan/minuman) berada di dalam kelompok Barang Pakai
+     * Habis tetapi bukan barang persediaan, sehingga tidak masuk Laporan
+     * BHP. Pembedanya adalah kode rekening rincian objeknya — bukan uraian
+     * barang: `0052` Makanan dan Minuman Rapat, `0053` Jamuan Tamu, `0058`
+     * Aktivitas Lapangan (Bagan Akun Standar; kategori `makan` pada BPK
+     * Dinas memakai pembeda yang sama untuk `0052`).
+     */
+    private function itemRecapIsKonsumsi(string $account): bool
+    {
+        return in_array($account, ['5.1.02.01.01.0052', '5.1.02.01.01.0053', '5.1.02.01.01.0058'], true);
     }
 
     /**

@@ -103,7 +103,11 @@ class LaporanBhpBmaTest extends TestCase
 
         $this->seedMirrorRow('BHP-1', ['ID_KAS_UMUM' => 'BHP-1', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU09', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'Buku Ramadhan', 'KODE_REKENING' => '5.1.02.01.01.0024', 'VOLUME' => 118, 'JUMLAH' => 2360000, 'ID_RAPBS_PERIODE' => 'PER-1', 'ID_REF_SUMBER_DANA' => 1]);
         $this->seedMirrorRow('BHP-2', ['ID_KAS_UMUM' => 'BHP-2', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU12', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'Kertas HVS A4', 'KODE_REKENING' => '5.1.02.01.01.0024', 'VOLUME' => 7, 'JUMLAH' => 350000, 'ID_RAPBS_PERIODE' => 'PER-1', 'ID_REF_SUMBER_DANA' => 1]);
+        // Konsumsi (makanan/minuman 0052/0053/0058): satu kelompok rekening
+        // dengan BHP tetapi bukan barang persediaan — tidak boleh tampil.
         $this->seedMirrorRow('BHP-3', ['ID_KAS_UMUM' => 'BHP-3', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU13', 'TANGGAL_TRANSAKSI' => '2026-03-08', 'URAIAN' => 'Konsumsi Rapat', 'KODE_REKENING' => '5.1.02.01.01.0052', 'VOLUME' => 10, 'JUMLAH' => 500000, 'ID_REF_SUMBER_DANA' => 1]);
+        $this->seedMirrorRow('KONSUMSI-2', ['ID_KAS_UMUM' => 'KONSUMSI-2', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU14', 'TANGGAL_TRANSAKSI' => '2026-03-08', 'URAIAN' => 'Jamuan Tamu', 'KODE_REKENING' => '5.1.02.01.01.0053', 'VOLUME' => 10, 'JUMLAH' => 300000, 'ID_REF_SUMBER_DANA' => 1]);
+        $this->seedMirrorRow('KONSUMSI-3', ['ID_KAS_UMUM' => 'KONSUMSI-3', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU17', 'TANGGAL_TRANSAKSI' => '2026-03-09', 'URAIAN' => 'Konsumsi Kegiatan Lapangan', 'KODE_REKENING' => '5.1.02.01.01.0058', 'VOLUME' => 20, 'JUMLAH' => 400000, 'ID_REF_SUMBER_DANA' => 1]);
         // Anak pajak dari BHP-1: bukan barang, tidak boleh tampil.
         $this->seedMirrorRow('BHP-TAX', ['ID_KAS_UMUM' => 'BHP-TAX', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU09', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'PPh 21 atas Buku Ramadhan', 'KODE_REKENING' => '5.1.02.01.01.0024', 'JUMLAH' => 50000, 'PARENT_ID_KAS_UMUM' => 'BHP-1', 'IS_PPH21' => 1, 'ID_REF_SUMBER_DANA' => 1]);
         // Belanja jasa: bukan BHP maupun BMA.
@@ -123,7 +127,7 @@ class LaporanBhpBmaTest extends TestCase
         $this->assertSame('a4', $payload['paper']);
 
         $rows = $payload['rows'];
-        $this->assertCount(3, $rows);
+        $this->assertCount(2, $rows);
         $this->assertSame('07-03-2026', $rows[0]['date']);
         $this->assertSame('03.03.14.', $rows[0]['activity']);
         $this->assertSame('5.1.02.01.01.0024', $rows[0]['account']);
@@ -132,14 +136,15 @@ class LaporanBhpBmaTest extends TestCase
         $this->assertSame('118', $rows[0]['quantity']);
         $this->assertSame(20000.0, $rows[0]['unit_price']);
         $this->assertSame(2360000.0, $rows[0]['amount']);
-        $this->assertSame('-', $rows[2]['activity']);
+        $this->assertSame('Kertas HVS A4', $rows[1]['description']);
+        $this->assertSame(50000.0, $rows[1]['unit_price']);
 
         $recap = $payload['itemRecap'];
         $this->assertSame('REKAPITULASI REALISASI BELANJA DANA BOSP ( BARANG HABIS PAKAI )', $recap['title']);
         $this->assertSame('BHP', $recap['tag']);
         $this->assertSame('BULAN : MARET TAHUN : 2026', $recap['periodLine']);
         $this->assertSame('Rantopanjang, Kec. Ranto Baek', $recap['villageDistrict']);
-        $this->assertSame(3210000.0, $recap['total']);
+        $this->assertSame(2710000.0, $recap['total']);
         $this->assertSame('Kec. Ranto Baek', $recap['signedPlace']);
         $this->assertSame('31 Maret 2026', $recap['signedDate']);
     }
@@ -150,6 +155,7 @@ class LaporanBhpBmaTest extends TestCase
 
         $this->assertNotNull($payload);
         $this->assertCount(1, $payload['rows']);
+        $this->assertSame('-', $payload['rows'][0]['activity']);
         $this->assertSame('Buku Al-Hira Kelas IV', $payload['rows'][0]['description']);
         $this->assertSame(45000.0, $payload['rows'][0]['unit_price']);
         $this->assertSame('REKAPITULASI REALISASI BELANJA DANA BOSP ( BARANG MODAL / ASET )', $payload['itemRecap']['title']);
@@ -163,8 +169,8 @@ class LaporanBhpBmaTest extends TestCase
 
         $triwulan = $service->build('triwulan', 'laporan_bhp', 1);
         $this->assertNotNull($triwulan);
-        $this->assertCount(4, $triwulan['rows']);
-        $this->assertSame(3510000.0, $triwulan['itemRecap']['total']);
+        $this->assertCount(3, $triwulan['rows']);
+        $this->assertSame(3010000.0, $triwulan['itemRecap']['total']);
         $this->assertSame('TRIWULAN : I TAHUN : 2026', $triwulan['itemRecap']['periodLine']);
 
         $triwulanDua = $service->build('triwulan', 'laporan_bma', 2);
@@ -174,7 +180,7 @@ class LaporanBhpBmaTest extends TestCase
 
         $semester = $service->build('semester', 'laporan_bhp', 1);
         $this->assertNotNull($semester);
-        $this->assertCount(4, $semester['rows']);
+        $this->assertCount(3, $semester['rows']);
         $this->assertSame('SEMESTER : I TAHUN : 2026', $semester['itemRecap']['periodLine']);
 
         $semesterDua = $service->build('semester', 'laporan_bma', 2);
@@ -198,9 +204,11 @@ class LaporanBhpBmaTest extends TestCase
         $response->assertSee('BULAN : MARET TAHUN : 2026', false);
         $response->assertSee('SD NEGERI 316 RANTO PANJANG', false);
         $response->assertSee('Buku Ramadhan', false);
-        $response->assertSee('Konsumsi Rapat', false);
-        $response->assertSee('Rp. 3.210.000', false);
+        $response->assertSee('Rp. 2.710.000', false);
         $response->assertSee('Menyetujui,', false);
+        $response->assertDontSee('Konsumsi Rapat');
+        $response->assertDontSee('Jamuan Tamu');
+        $response->assertDontSee('Konsumsi Kegiatan Lapangan');
         $response->assertDontSee('Jasa Narasumber');
         $response->assertDontSee('PPh 21 atas Buku Ramadhan');
         // Blok tanda tangan hanya dari partial BHP/BMA, tidak ganda dengan blok generik.
