@@ -8,7 +8,7 @@
         */
         $itemRecapDefaultWidths = [
             'identity' => ['85%', '15%'],
-            'table' => ['9%', '9%', '13%', '8%', '10%', '27%', '6%', '8%', '10%'],
+            'table' => ['8%', '8%', '12%', '7%', '9%', '25%', '6%', '6%', '8%', '11%'],
             'signature' => ['50%', '50%'],
         ];
         $itemRecapWidths = array_replace(
@@ -70,6 +70,7 @@
                 <th>ID Barang</th>
                 <th>Uraian Barang</th>
                 <th>Jumlah Barang</th>
+                <th>Satuan</th>
                 <th>Harga Satuan</th>
                 <th>Realisasi</th>
             </tr>
@@ -84,16 +85,17 @@
                     <td>{{ $row['item_code'] }}</td>
                     <td>{{ $row['description'] }}</td>
                     <td class="integer">{{ $row['quantity'] }}</td>
+                    <td>{{ $row['unit'] }}</td>
                     <td class="money">{{ $rupiah($row['unit_price']) }}</td>
                     <td class="money">{{ $rupiah($row['amount']) }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="9" class="empty-row">Tidak ada realisasi pada periode ini.</td>
+                    <td colspan="10" class="empty-row">Tidak ada realisasi pada periode ini.</td>
                 </tr>
             @endforelse
             <tr>
-                <td colspan="8" style="text-align: right;"><strong>Jumlah</strong></td>
+                <td colspan="9" style="text-align: right;"><strong>Jumlah</strong></td>
                 <td class="money"><strong>Rp. {{ $rupiah($itemRecap['total']) }}</strong></td>
             </tr>
         </tbody>

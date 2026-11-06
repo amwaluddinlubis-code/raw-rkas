@@ -55,10 +55,12 @@ bulanan, triwulan, semester, tahunan) meniru ekspor resmi ARKAS
 "( BARANG MODAL / ASET )": judul + label periode (`BULAN : … TAHUN : …`,
 `TRIWULAN : …`, `SEMESTER : …`, atau `TAHUN : …`), blok identitas (NPSN,
 nama sekolah, desa/kecamatan, kab/kota, provinsi, sumber dana) + kode sudut
-`BHP`/`BMA`, tabel per barang 9 kolom (Tanggal, Kode Kegiatan, Kode
-Rekening, No. Bukti, ID Barang, Uraian Barang, Jumlah Barang, Harga Satuan,
-Realisasi), baris `Jumlah` (Rp.), dan tanda tangan `Menyetujui` Kepala
-Sekolah + Bendahara bertanggal akhir periode. Kertas A4 landscape.
+`BHP`/`BMA`, tabel per barang 10 kolom (Tanggal, Kode Kegiatan, Kode
+Rekening, No. Bukti, ID Barang, Uraian Barang, Jumlah Barang, Satuan, Harga
+Satuan, Realisasi), baris `Jumlah` (Rp.), dan tanda tangan `Menyetujui`
+Kepala Sekolah + Bendahara bertanggal akhir periode. Kertas A4 landscape.
+Kolom Satuan ditambahkan atas permintaan pengguna 2026-11-07 (ekspor
+ARKAS aslinya tidak memuatnya).
 
 Aturan nilai (diverifikasi terhadap 18 contoh resmi ARKAS SDN 316 Ranto
 Panjang, Jan–Sep 2026; realisasi hanya pada Maret/Juni/September):
@@ -83,6 +85,12 @@ Panjang, Jan–Sep 2026; realisasi hanya pada Maret/Juni/September):
   `IS_PPN`/`IS_PPH*`/`IS_SSPD`) bukan barang dan dikeluarkan;
 - kode kegiatan via rantai yang sama dengan BKU (rapbs_periode → rapbs →
   snapshot `arkas_rkas_items`/`ref_kode`);
+- satuan barang dari `SATUAN` payload rapbs_periode baris (rantai
+  `ID_RAPBS_PERIODE` yang sama), `-` bila tidak tersedia;
+- uraian barang memakai deskripsi item isian manual operator
+  (`transaction_items.item_description`, peta overlay yang sama dengan
+  BKU — permintaan pengguna 2026-11-07); kosong mengikuti `URAIAN`
+  mirror;
 - kesesuaian sumber dana mengikuti `kasMatchesFund()` seperti laporan
   mirror lainnya; rentang bulan mengikuti `scopeMonths()` per scope.
 

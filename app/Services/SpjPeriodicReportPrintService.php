@@ -355,6 +355,7 @@ final class SpjPeriodicReportPrintService
             ['key' => 'item_code', 'label' => 'ID Barang', 'type' => 'text'],
             ['key' => 'description', 'label' => 'Uraian Barang', 'type' => 'text'],
             ['key' => 'quantity', 'label' => 'Jumlah Barang', 'type' => 'text'],
+            ['key' => 'unit', 'label' => 'Satuan', 'type' => 'text'],
             ['key' => 'unit_price', 'label' => 'Harga Satuan', 'type' => 'money'],
             ['key' => 'amount', 'label' => 'Realisasi', 'type' => 'money'],
         ];
@@ -380,6 +381,11 @@ final class SpjPeriodicReportPrintService
      *   barang dan dikeluarkan;
      * - kode kegiatan via rantai yang sama dengan BKU
      *   (bkuActivityChainMaps/bkuActivityCode);
+     * - satuan barang dari SATUAN baris rapbs_periode (rantai
+     *   ID_RAPBS_PERIODE baris), '-' bila tidak tersedia;
+     * - uraian barang memakai deskripsi item isian operator
+     *   (transaction_items.item_description, peta overlay yang sama dengan
+     *   BKU) bila diisi; kosong mengikuti URAIAN mirror;
      * - ID Barang tidak tersedia pada data mirror SPJ sehingga kolomnya
      *   diisi '-' (preseden placeholder No. Rekening pada BPK Dinas).
      *
@@ -414,6 +420,8 @@ final class SpjPeriodicReportPrintService
                 ->all();
         }
         $kegiatanCache = [];
+        $operatorMaps = $this->bkuOperatorMaps($records);
+        $unitMap = $this->itemRecapUnitMap($records);
 
         $rows = [];
         foreach ($records as $payload) {
@@ -438,20 +446,68 @@ final class SpjPeriodicReportPrintService
             $quantity = isset($payload['VOLUME']) && is_numeric($payload['VOLUME']) ? (float) $payload['VOLUME'] : null;
             $date = (string) ($payload['TANGGAL_TRANSAKSI'] ?? '');
 
+            $periodeId = (string) ($payload['ID_RAPBS_PERIODE'] ?? '');
+            if ($periodeId === '' && filled($payload['PARENT_ID_KAS_UMUM'] ?? null)) {
+                $parent = $records->firstWhere('ID_KAS_UMUM', (string) $payload['PARENT_ID_KAS_UMUM']);
+                $periodeId = (string) (is_array($parent) ? ($parent['ID_RAPBS_PERIODE'] ?? '') : '');
+            }
+            $unit = $periodeId !== '' ? ($unitMap[$periodeId] ?? '') : '';
+
+            $operatorDescription = $this->bkuItemLine($payload, $operatorMaps);
+
             $rows[] = [
                 'date' => $date !== '' ? Carbon::parse($date)->format('d-m-Y') : '-',
                 'activity' => $this->bkuActivityCode($payload, $records, $kegiatanCache, $rkasMap, $chainMaps),
                 'account' => $account !== '' ? $account : '-',
                 'evidence' => (string) ($payload['NO_BUKTI'] ?? '') ?: '-',
                 'item_code' => '-',
-                'description' => trim((string) ($payload['URAIAN'] ?? '')) ?: '-',
+                'description' => $operatorDescription !== '' ? $operatorDescription : (trim((string) ($payload['URAIAN'] ?? '')) ?: '-'),
                 'quantity' => $quantity === null ? '-' : $this->itemRecapQuantity($quantity),
+                'unit' => $unit !== '' ? $unit : '-',
                 'unit_price' => $quantity !== null && $quantity > 0 ? $amount / $quantity : 0.0,
                 'amount' => $amount,
             ];
         }
 
         return $rows;
+    }
+
+    /**
+     * Peta satuan barang per periode anggaran: SATUAN pada payload
+     * rapbs_periode, dikunci ID_RAPBS_PERIODE baris kas (rantai yang sama
+     * dengan kode kegiatan BKU; baris tanpa periode sendiri mengikuti
+     * induknya).
+     *
+     * @param  Collection<int,array<string,mixed>>  $records
+     * @return array<string,string>
+     */
+    private function itemRecapUnitMap(Collection $records): array
+    {
+        $periodeIds = [];
+        foreach ($records as $payload) {
+            $id = (string) ($payload['ID_RAPBS_PERIODE'] ?? '');
+            if ($id === '' && filled($payload['PARENT_ID_KAS_UMUM'] ?? null)) {
+                $parent = $records->firstWhere('ID_KAS_UMUM', (string) $payload['PARENT_ID_KAS_UMUM']);
+                $id = (string) (is_array($parent) ? ($parent['ID_RAPBS_PERIODE'] ?? '') : '');
+            }
+            if ($id !== '') {
+                $periodeIds[$id] = true;
+            }
+        }
+
+        $map = [];
+        if ($periodeIds !== []) {
+            $rows = DB::connection('school')->table('arkas_mirror_rapbs_periode')
+                ->whereIn('source_key', array_keys($periodeIds))
+                ->get(['source_key', 'payload']);
+            foreach ($rows as $row) {
+                $payload = json_decode((string) ($row->payload ?? ''), true) ?? [];
+                $unit = ArkasMirrorResolver::field($payload, ['SATUAN', 'S1', 'S2', 'S3', 'S4']);
+                $map[(string) $row->source_key] = is_scalar($unit) ? trim((string) $unit) : '';
+            }
+        }
+
+        return $map;
     }
 
     /**

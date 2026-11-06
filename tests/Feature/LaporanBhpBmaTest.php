@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FiscalYear;
 use App\Models\FundSource;
 use App\Models\School;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Services\SpjPeriodicReportPrintService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,8 +78,9 @@ class LaporanBhpBmaTest extends TestCase
     private function seedMirror(): void
     {
         // Rantai kegiatan untuk BHP-1/BHP-2: kas PER-1 -> rapbs RAPBS-1 ->
-        // snapshot RKAS membawa kode kegiatan 03.03.14.
-        $periodeJson = json_encode(['id_rapbs' => 'RAPBS-1'], JSON_THROW_ON_ERROR);
+        // snapshot RKAS membawa kode kegiatan 03.03.14; periode membawa
+        // satuan barang.
+        $periodeJson = json_encode(['id_rapbs' => 'RAPBS-1', 'satuan' => 'Buah'], JSON_THROW_ON_ERROR);
         DB::connection('school')->table('arkas_mirror_rapbs_periode')->insert([
             'source_key' => 'PER-1',
             'payload' => $periodeJson,
@@ -116,6 +118,20 @@ class LaporanBhpBmaTest extends TestCase
         $this->seedMirrorRow('BMA-1', ['ID_KAS_UMUM' => 'BMA-1', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar Non Tunai', 'NO_BUKTI' => 'BPU15', 'TANGGAL_TRANSAKSI' => '2026-03-07', 'URAIAN' => 'Buku Al-Hira Kelas IV', 'KODE_REKENING' => '5.2.05.01.01.0001', 'VOLUME' => 46, 'JUMLAH' => 2070000, 'ID_REF_SUMBER_DANA' => 1]);
         $this->seedMirrorRow('BMA-2', ['ID_KAS_UMUM' => 'BMA-2', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar Non Tunai', 'NO_BUKTI' => 'BPU16', 'TANGGAL_TRANSAKSI' => '2026-06-11', 'URAIAN' => 'Laptop Pembelajaran', 'KODE_REKENING' => '5.2.02.19.01.0001', 'VOLUME' => 2, 'JUMLAH' => 13000000, 'ID_REF_SUMBER_DANA' => 1]);
         $this->seedMirrorRow('BHP-FEB', ['ID_KAS_UMUM' => 'BHP-FEB', 'KATEGORI_BKU' => 'BELANJA', 'REK_BKU' => 'Kas Keluar', 'NO_BUKTI' => 'BPU05', 'TANGGAL_TRANSAKSI' => '2026-02-10', 'URAIAN' => 'Bola Kasti', 'KODE_REKENING' => '5.1.02.01.01.0005', 'VOLUME' => 12, 'JUMLAH' => 300000, 'ID_REF_SUMBER_DANA' => 1]);
+
+        // Overlay operator untuk BHP-1: deskripsi item manual harus menang
+        // atas URAIAN mirror pada kolom Uraian laporan.
+        $transaction = Transaction::query()->create([
+            'fiscal_year_id' => 1,
+            'fund_source_id' => 1,
+            'id_kas_umum' => 'BHP-1',
+            'payment_description' => 'Pembayaran buku Ramadhan',
+            'spj_category' => 'BARANG',
+        ]);
+        $transaction->items()->create([
+            'source_item_id' => 'BHP-1',
+            'item_description' => 'Buku Ramadhan Edisi Operator',
+        ]);
     }
 
     public function test_bhp_monthly_rows_follow_account_classification(): void
@@ -127,17 +143,24 @@ class LaporanBhpBmaTest extends TestCase
         $this->assertSame('landscape', $payload['orientation']);
         $this->assertSame('a4', $payload['paper']);
 
+        $labels = array_column($payload['columns'], 'label');
+        $this->assertSame('Satuan', $labels[array_search('Jumlah Barang', $labels, true) + 1]);
+
         $rows = $payload['rows'];
         $this->assertCount(2, $rows);
         $this->assertSame('07-03-2026', $rows[0]['date']);
         $this->assertSame('03.03.14.', $rows[0]['activity']);
         $this->assertSame('5.1.02.01.01.0024', $rows[0]['account']);
         $this->assertSame('BPU09', $rows[0]['evidence']);
-        $this->assertSame('Buku Ramadhan', $rows[0]['description']);
+        // Uraian mengikuti deskripsi item overlay operator, bukan mirror.
+        $this->assertSame('Buku Ramadhan Edisi Operator', $rows[0]['description']);
         $this->assertSame('118', $rows[0]['quantity']);
+        $this->assertSame('Buah', $rows[0]['unit']);
         $this->assertSame(20000.0, $rows[0]['unit_price']);
         $this->assertSame(2360000.0, $rows[0]['amount']);
+        // Tanpa overlay: uraian mirror; satuan tetap dari periode yang sama.
         $this->assertSame('Kertas HVS A4', $rows[1]['description']);
+        $this->assertSame('Buah', $rows[1]['unit']);
         $this->assertSame(50000.0, $rows[1]['unit_price']);
 
         $recap = $payload['itemRecap'];
@@ -157,6 +180,7 @@ class LaporanBhpBmaTest extends TestCase
         $this->assertNotNull($payload);
         $this->assertCount(1, $payload['rows']);
         $this->assertSame('-', $payload['rows'][0]['activity']);
+        $this->assertSame('-', $payload['rows'][0]['unit']);
         $this->assertSame('Buku Al-Hira Kelas IV', $payload['rows'][0]['description']);
         $this->assertSame(45000.0, $payload['rows'][0]['unit_price']);
         $this->assertSame('REKAPITULASI REALISASI BELANJA DANA BOSP ( BARANG MODAL / ASET )', $payload['itemRecap']['title']);
@@ -204,7 +228,8 @@ class LaporanBhpBmaTest extends TestCase
         $response->assertSee('REKAPITULASI REALISASI BELANJA DANA BOSP ( BARANG HABIS PAKAI )', false);
         $response->assertSee('BULAN : MARET TAHUN : 2026', false);
         $response->assertSee('SD NEGERI 316 RANTO PANJANG', false);
-        $response->assertSee('Buku Ramadhan', false);
+        $response->assertSee('Buku Ramadhan Edisi Operator', false);
+        $response->assertSee('Buah', false);
         $response->assertSee('Rp. 2.710.000', false);
         $response->assertSee('Menyetujui,', false);
         $response->assertDontSee('Konsumsi Rapat');
