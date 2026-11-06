@@ -214,7 +214,7 @@
                 </td>
             </tr>
         </table>
-    @elseif(!$isLedger && $presentation !== 'tax' && !$isBpk && !$isK7b && !$isK7c && !$isK7 && !$isK2 && !$isRpd && !$isSptjm)
+    @elseif(!$isLedger && $presentation !== 'tax' && !$isBpk && !$isK7b && !$isK7c && !$isK7 && !$isK2 && !$isRpd && !$isSptjm && !$isItemRecap)
         <table class="signature-table">
             @include('periodic-reports.partials.reports.colgroup', ['widths' => ['50%', '50%']])
             <tr>

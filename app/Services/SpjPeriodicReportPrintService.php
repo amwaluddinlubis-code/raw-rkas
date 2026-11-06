@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\FiscalYear;
+use App\Models\School;
 use App\Models\Transaction;
 use App\Support\ActiveSpjContext;
 use App\UseCases\Spj\SpjPeriodicReportUseCase;
@@ -43,7 +44,7 @@ final class SpjPeriodicReportPrintService
             ->first();
 
         $presentation = $this->presentation($reportKey);
-        [$columns, $rows] = $this->table($presentation, $transactions, $scope, $period);
+        [$columns, $rows] = $this->table($presentation, $transactions, $scope, $period, $reportKey);
         $summary = $payload['summary'];
 
         $extra = [];
@@ -97,6 +98,9 @@ final class SpjPeriodicReportPrintService
         if ($presentation === 'sptjm_doc') {
             $extra['sptjm'] = $this->sptjmData($scope, $period, $summary);
         }
+        if ($presentation === 'item_recap') {
+            $extra['itemRecap'] = $this->itemRecapData($scope, $period, $reportKey, $summary, $school, (int) ($year->year ?: now()->year), $rows);
+        }
 
         return [
             ...$payload,
@@ -132,6 +136,7 @@ final class SpjPeriodicReportPrintService
             'format_k2' => 'k2',
             'rpd_bos' => 'rpd',
             'sptjm' => 'sptjm_doc',
+            'laporan_bhp', 'laporan_bma' => 'item_recap',
             'rekap_belanja_modal_barang_jasa', 'rekap_bmd',
             'rekap_belanja_dana_bos' => 'account_summary',
             'lampiran_berita_acara_rekonsiliasi' => 'transaction_recap',
@@ -140,7 +145,7 @@ final class SpjPeriodicReportPrintService
     }
 
     /** @return array{0:list<array{key:string,label:string,type:string}>,1:list<array<string,mixed>>} */
-    private function table(string $presentation, Collection $transactions, string $scope = '', ?int $period = null): array
+    private function table(string $presentation, Collection $transactions, string $scope = '', ?int $period = null, string $reportKey = ''): array
     {
         return match ($presentation) {
             'bku_ledger' => [$this->bkuLedgerColumns(), $this->bkuLedgerRows($scope, $period)],
@@ -156,6 +161,7 @@ final class SpjPeriodicReportPrintService
             'k2' => [[], []],
             'rpd' => [[], []],
             'sptjm_doc' => [[], []],
+            'item_recap' => [$this->itemRecapColumns(), $this->itemRecapRows($scope, $period, $reportKey)],
             'account_summary' => [$this->accountColumns(), $this->accountRows($transactions)],
             'transaction_recap' => [$this->recapColumns(), $this->recapRows($transactions)],
             'bos_a1' => [[], []],
@@ -336,6 +342,192 @@ final class SpjPeriodicReportPrintService
     private function bpkIsReguler(array $payload, int $fundSourceId): bool
     {
         return $this->kasMatchesFund($payload, $fundSourceId);
+    }
+
+    /** @return list<array{key:string,label:string,type:string}> */
+    private function itemRecapColumns(): array
+    {
+        return [
+            ['key' => 'date', 'label' => 'Tanggal', 'type' => 'text'],
+            ['key' => 'activity', 'label' => 'Kode Kegiatan', 'type' => 'text'],
+            ['key' => 'account', 'label' => 'Kode Rekening', 'type' => 'text'],
+            ['key' => 'evidence', 'label' => 'No. Bukti', 'type' => 'text'],
+            ['key' => 'item_code', 'label' => 'ID Barang', 'type' => 'text'],
+            ['key' => 'description', 'label' => 'Uraian Barang', 'type' => 'text'],
+            ['key' => 'quantity', 'label' => 'Jumlah Barang', 'type' => 'text'],
+            ['key' => 'unit_price', 'label' => 'Harga Satuan', 'type' => 'money'],
+            ['key' => 'amount', 'label' => 'Realisasi', 'type' => 'money'],
+        ];
+    }
+
+    /**
+     * Baris Laporan Barang Habis Pakai (BHP) & Belanja Modal / Aset (BMA)
+     * model ekspor ARKAS "REKAPITULASI REALISASI BELANJA DANA BOSP": satu
+     * baris per barang dari baris kas BELANJA mirror pada bulan-bulan
+     * periode (bulanan/triwulan/semester/tahunan mengikuti scopeMonths).
+     *
+     * Aturan nilai (diverifikasi terhadap contoh resmi ARKAS SDN 316 Ranto
+     * Panjang, realisasi Maret/Juni/September 2026):
+     * - klasifikasi murni dari KODE_REKENING baris: BHP = awalan
+     *   `5.1.02.01.01` (Belanja Barang Pakai Habis), BMA = awalan `5.2.`
+     *   (Belanja Modal);
+     * - jumlah barang dari VOLUME baris kas; harga satuan = JUMLAH / VOLUME
+     *   (persis cara ARKAS menurunkan harga satuan pada ekspornya);
+     *   realisasi = JUMLAH baris;
+     * - baris anak pajak (PARENT_ID_KAS_UMUM terisi + penanda pajak) bukan
+     *   barang dan dikeluarkan;
+     * - kode kegiatan via rantai yang sama dengan BKU
+     *   (bkuActivityChainMaps/bkuActivityCode);
+     * - ID Barang tidak tersedia pada data mirror SPJ sehingga kolomnya
+     *   diisi '-' (preseden placeholder No. Rekening pada BPK Dinas).
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function itemRecapRows(string $scope, ?int $period, string $reportKey): array
+    {
+        $months = $this->scopeMonths($scope, $period);
+        if ($months === [] || ! in_array($reportKey, ['laporan_bhp', 'laporan_bma'], true)) {
+            return [];
+        }
+
+        $year = (int) (FiscalYear::query()->find($this->context->fiscalYearId())?->year ?: now()->year);
+        $fundSourceId = $this->context->fundSourceId() ?? 0;
+        $isBhp = $reportKey === 'laporan_bhp';
+
+        $placeholders = implode(',', array_fill(0, count($months), '?'));
+        $records = DB::connection('school')->table('arkas_mirror_kas_umum')
+            ->whereRaw("CAST(strftime('%Y', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) = ?", [$year])
+            ->whereRaw("CAST(strftime('%m', json_extract(payload, '\$.TANGGAL_TRANSAKSI')) AS INTEGER) IN ({$placeholders})", $months)
+            ->orderByRaw("json_extract(payload, '\$.TANGGAL_TRANSAKSI')")
+            ->orderBy('id')
+            ->get(['payload'])
+            ->map(fn ($row): array => array_change_key_case(json_decode((string) $row->payload, true) ?? [], CASE_UPPER));
+
+        $chainMaps = $this->bkuActivityChainMaps($records);
+        $rkasMap = [];
+        if (Schema::connection('school')->hasTable('arkas_rkas_items')) {
+            $rkasMap = DB::connection('school')->table('arkas_rkas_items')
+                ->pluck('activity_code', 'source_rapbs_id')
+                ->mapWithKeys(fn ($code, $key): array => [strtoupper(trim((string) $key)) => (string) $code])
+                ->all();
+        }
+        $kegiatanCache = [];
+
+        $rows = [];
+        foreach ($records as $payload) {
+            if (strtoupper((string) ($payload['KATEGORI_BKU'] ?? '')) !== 'BELANJA') {
+                continue;
+            }
+            if (! $this->kasMatchesFund($payload, $fundSourceId)) {
+                continue;
+            }
+            if ($this->itemRecapIsTaxChild($payload)) {
+                continue;
+            }
+            $account = trim((string) ($payload['KODE_REKENING'] ?? ''));
+            $matches = $isBhp
+                ? str_starts_with($account, '5.1.02.01.01')
+                : str_starts_with($account, '5.2.');
+            if (! $matches) {
+                continue;
+            }
+
+            $amount = (float) ($payload['JUMLAH'] ?? 0);
+            $quantity = isset($payload['VOLUME']) && is_numeric($payload['VOLUME']) ? (float) $payload['VOLUME'] : null;
+            $date = (string) ($payload['TANGGAL_TRANSAKSI'] ?? '');
+
+            $rows[] = [
+                'date' => $date !== '' ? Carbon::parse($date)->format('d-m-Y') : '-',
+                'activity' => $this->bkuActivityCode($payload, $records, $kegiatanCache, $rkasMap, $chainMaps),
+                'account' => $account !== '' ? $account : '-',
+                'evidence' => (string) ($payload['NO_BUKTI'] ?? '') ?: '-',
+                'item_code' => '-',
+                'description' => trim((string) ($payload['URAIAN'] ?? '')) ?: '-',
+                'quantity' => $quantity === null ? '-' : $this->itemRecapQuantity($quantity),
+                'unit_price' => $quantity !== null && $quantity > 0 ? $amount / $quantity : 0.0,
+                'amount' => $amount,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Baris anak pajak menggantung pada baris belanja induknya dan bukan
+     * merupakan barang; dikenali dari PARENT_ID_KAS_UMUM + penanda pajak.
+     *
+     * @param  array<string,mixed>  $payload
+     */
+    private function itemRecapIsTaxChild(array $payload): bool
+    {
+        if (blank($payload['PARENT_ID_KAS_UMUM'] ?? null)) {
+            return false;
+        }
+
+        foreach (['IS_PPN', 'IS_PPH21', 'IS_PPH22', 'IS_PPH23', 'IS_PPH4', 'IS_SSPD'] as $flag) {
+            $value = $payload[$flag] ?? null;
+            if ($value === true || (is_numeric($value) && (float) $value > 0) || (is_string($value) && in_array(strtolower(trim($value)), ['1', 'true', 'ya'], true))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function itemRecapQuantity(float $quantity): string
+    {
+        if (floor($quantity) === $quantity) {
+            return number_format($quantity, 0, ',', '.');
+        }
+
+        return rtrim(rtrim(number_format($quantity, 2, ',', '.'), '0'), ',');
+    }
+
+    /**
+     * Blok judul & tanda tangan Laporan BHP/BMA mengikuti ekspor ARKAS:
+     * judul rekapitulasi + label periode (BULAN/TRIWULAN/SEMESTER/TAHUN) +
+     * kode sudut (BHP/BMA) + tanggal tanda tangan di akhir periode.
+     *
+     * @param  array<string,mixed>  $summary
+     * @param  list<array<string,mixed>>  $rows
+     * @return array<string,mixed>
+     */
+    private function itemRecapData(string $scope, ?int $period, string $reportKey, array $summary, School $school, int $year, array $rows): array
+    {
+        $isBhp = $reportKey === 'laporan_bhp';
+        $roman = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV'];
+        $periodLine = match ($scope) {
+            SpjPeriodicReportRegistry::SCOPE_MONTHLY => 'BULAN : '.mb_strtoupper($this->registry->monthName((int) $period)).' TAHUN : '.$year,
+            SpjPeriodicReportRegistry::SCOPE_QUARTERLY => 'TRIWULAN : '.($roman[(int) $period] ?? (string) $period).' TAHUN : '.$year,
+            SpjPeriodicReportRegistry::SCOPE_SEMESTER => 'SEMESTER : '.($roman[(int) $period] ?? (string) $period).' TAHUN : '.$year,
+            default => 'TAHUN : '.$year,
+        };
+
+        $signedDate = '';
+        try {
+            if (filled($summary['date_to'] ?? null)) {
+                $signedDate = Carbon::parse((string) $summary['date_to'])->translatedFormat('d F Y');
+            }
+        } catch (\Throwable) {
+            $signedDate = '';
+        }
+
+        $villageDistrict = collect([
+            trim((string) ($school->desa ?? '')) ?: null,
+            filled($school->district ?? null) ? 'Kec. '.$school->district : null,
+        ])->filter()->implode(', ');
+
+        return [
+            'title' => $isBhp
+                ? 'REKAPITULASI REALISASI BELANJA DANA BOSP ( BARANG HABIS PAKAI )'
+                : 'REKAPITULASI REALISASI BELANJA DANA BOSP ( BARANG MODAL / ASET )',
+            'tag' => $isBhp ? 'BHP' : 'BMA',
+            'periodLine' => $periodLine,
+            'villageDistrict' => $villageDistrict !== '' ? $villageDistrict : '-',
+            'total' => (float) array_sum(array_map(fn (array $row): float => (float) ($row['amount'] ?? 0), $rows)),
+            'signedPlace' => filled($school->district ?? null) ? 'Kec. '.$school->district : '',
+            'signedDate' => $signedDate,
+        ];
     }
 
     /**
@@ -2934,7 +3126,7 @@ final class SpjPeriodicReportPrintService
 
     private function orientation(string $presentation): string
     {
-        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k2', 'rpd', 'rekap_bosp'], true)
+        return in_array($presentation, ['ledger', 'cash_ledger', 'bank_ledger', 'tax', 'transaction_recap', 'bku_ledger', 'bpk_bos', 'bos_a1', 'k2', 'rpd', 'rekap_bosp', 'item_recap'], true)
             ? 'landscape'
             : 'portrait';
     }

@@ -42,8 +42,14 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Register Penutupan Kas (K7B)',
             'Berita Acara Pemeriksaan Kas (K7C)',
             'Rekap Belanja Modal dan Belanja Barang / Jasa',
+            'Format K7',
+            'Format BOS K-2',
+            'RPD BOS',
             'Rekapitulasi Pengeluaran Dana BOS (K7A)',
+            'Format BOS A-1',
             'Laporan BPK Format BOS',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_MONTHLY), 'label'));
 
         $this->assertSame([
@@ -57,6 +63,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Lampiran Berita Acara Rekonsiliasi',
             'Laporan BPK Format BOS',
             'Format BOS A-1',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_QUARTERLY), 'label'));
 
         $this->assertSame([
@@ -70,6 +78,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Lampiran Berita Acara Rekonsiliasi',
             'Rekap Belanja Barang Milik Daerah (Aset)',
             'Laporan BPK Format BOS',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_SEMESTER), 'label'));
 
         $this->assertSame([
@@ -80,9 +90,11 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Rekap Belanja Dana BOS',
             'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Laporan BPK Format BOS',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($registry->forScope(SpjPeriodicReportRegistry::SCOPE_ANNUAL), 'label'));
 
-        $this->assertSame(37, array_sum(array_map('count', $registry->packages())));
+        $this->assertSame(49, array_sum(array_map('count', $registry->packages())));
     }
 
     #[Test]

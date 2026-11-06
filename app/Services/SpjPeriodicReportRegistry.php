@@ -72,6 +72,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS (K7A)'),
                 $this->report('bos_a1', 'Format BOS A-1'),
                 $this->report('bpk_bos', 'Laporan BPK Format BOS'),
+                $this->report('laporan_bhp', 'Laporan Barang Habis Pakai'),
+                $this->report('laporan_bma', 'Laporan Belanja Modal / Aset'),
             ],
             self::SCOPE_QUARTERLY => [
                 $this->report('sptjm', 'SPTJM'),
@@ -84,6 +86,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('lampiran_berita_acara_rekonsiliasi', 'Lampiran Berita Acara Rekonsiliasi'),
                 $this->report('bpk_bos', 'Laporan BPK Format BOS'),
                 $this->report('bos_a1', 'Format BOS A-1'),
+                $this->report('laporan_bhp', 'Laporan Barang Habis Pakai'),
+                $this->report('laporan_bma', 'Laporan Belanja Modal / Aset'),
             ],
             self::SCOPE_SEMESTER => [
                 $this->report('sptjm', 'SPTJM'),
@@ -96,6 +100,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('lampiran_berita_acara_rekonsiliasi', 'Lampiran Berita Acara Rekonsiliasi'),
                 $this->report('rekap_bmd', 'Rekap Belanja Barang Milik Daerah (Aset)'),
                 $this->report('bpk_bos', 'Laporan BPK Format BOS'),
+                $this->report('laporan_bhp', 'Laporan Barang Habis Pakai'),
+                $this->report('laporan_bma', 'Laporan Belanja Modal / Aset'),
             ],
             self::SCOPE_ANNUAL => [
                 $this->report('sptjm', 'SPTJM'),
@@ -105,6 +111,8 @@ final class SpjPeriodicReportRegistry
                 $this->report('rekap_belanja_dana_bos', 'Rekap Belanja Dana BOS'),
                 $this->report('rekapitulasi_pengeluaran_dana_bos', 'Rekapitulasi Pengeluaran Dana BOS (K7A)'),
                 $this->report('bpk_bos', 'Laporan BPK Format BOS'),
+                $this->report('laporan_bhp', 'Laporan Barang Habis Pakai'),
+                $this->report('laporan_bma', 'Laporan Belanja Modal / Aset'),
             ],
         ];
     }

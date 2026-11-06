@@ -1,6 +1,6 @@
 # SPJ Periodic Reporting
 
-Terakhir diverifikasi terhadap source: **2026-10-21** (`raw-rkas`, branch `main`)
+Terakhir diverifikasi terhadap source: **2026-11-07** (`raw-rkas`, branch `main`)
 
 Status: **REGISTRY + DATA ENGINE + INTERNAL PRINT/PDF IMPLEMENTED / VISUAL RUNTIME RVR**
 
@@ -20,8 +20,8 @@ Panduan fitur per-format laporan (aturan nilai, mapping sel, batasan presenter) 
 ## Paket laporan
 
 Daftar di bawah adalah cerminan langsung dari
-`SpjPeriodicReportRegistry::packages()`: **41 slot** (bulanan 14 + triwulan 10
-+ semester 10 + tahunan 7) dari **18 report key** berbeda. Bila daftar ini
+`SpjPeriodicReportRegistry::packages()`: **49 slot** (bulanan 16 + triwulan 12
++ semester 12 + tahunan 9) dari **20 report key** berbeda. Bila daftar ini
 berbeda dengan registry, registry yang benar.
 
 ### Bulanan
@@ -40,6 +40,8 @@ berbeda dengan registry, registry yang benar.
 - Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Format BOS A-1 (`bos_a1`)
 - Laporan BPK Format BOS (`bpk_bos`)
+- Laporan Barang Habis Pakai (`laporan_bhp`)
+- Laporan Belanja Modal / Aset (`laporan_bma`)
 
 Periode valid: bulan `1..12`. Catatan scope bulanan (2026-10-24): K7 dan
 A-1 memakai transaksi bulan terpilih; K-2 tetap menampilkan kolom TW I–IV
@@ -60,6 +62,8 @@ triwulan induk bila pecahan hanya terkoordinat per triwulan).
 - Lampiran Berita Acara Rekonsiliasi (`lampiran_berita_acara_rekonsiliasi`)
 - Laporan BPK Format BOS (`bpk_bos`)
 - Format BOS A-1 (`bos_a1`)
+- Laporan Barang Habis Pakai (`laporan_bhp`)
+- Laporan Belanja Modal / Aset (`laporan_bma`)
 
 Periode valid: triwulan `1..4`.
 
@@ -75,6 +79,8 @@ Periode valid: triwulan `1..4`.
 - Lampiran Berita Acara Rekonsiliasi (`lampiran_berita_acara_rekonsiliasi`)
 - Rekap Belanja Barang Milik Daerah (Aset) (`rekap_bmd`)
 - Laporan BPK Format BOS (`bpk_bos`)
+- Laporan Barang Habis Pakai (`laporan_bhp`)
+- Laporan Belanja Modal / Aset (`laporan_bma`)
 
 Periode valid: semester `1..2`. K-2 pada scope ini merender kolom
 `Semester I`/`Semester II`, sedangkan RPD merender kolom triwulan
@@ -90,6 +96,8 @@ Periode valid: semester `1..2`. K-2 pada scope ini merender kolom
 - Rekap Belanja Dana BOS (`rekap_belanja_dana_bos`)
 - Rekapitulasi Pengeluaran Dana BOS (K7A) (`rekapitulasi_pengeluaran_dana_bos`)
 - Laporan BPK Format BOS (`bpk_bos`)
+- Laporan Barang Habis Pakai (`laporan_bhp`)
+- Laporan Belanja Modal / Aset (`laporan_bma`)
 
 Periode tahunan selalu menggunakan seluruh tahun anggaran aktif dan tidak membutuhkan nomor periode tambahan.
 
@@ -126,6 +134,7 @@ presentasi berikut:
 - `tax` — Buku Pembantu Pajak;
 - `rekap_bosp` — Rekapitulasi Pengeluaran Dana BOS;
 - `bpk_bos` — Laporan BPK Format BOS;
+- `item_recap` — Laporan Barang Habis Pakai (`laporan_bhp`) dan Laporan Belanja Modal / Aset (`laporan_bma`), satu baris per barang model ekspor ARKAS;
 - `bos_a1` — Format BOS A-1;
 - `k7b`/`k7c` — Register Penutupan Kas dan Berita Acara Pemeriksaan Kas;
 - `k7` — Format K7;

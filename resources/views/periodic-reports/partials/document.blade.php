@@ -15,6 +15,7 @@
     $isK2 = $presentation === 'k2' && isset($k2);
     $isRpd = $presentation === 'rpd' && isset($rpd);
     $isSptjm = $presentation === 'sptjm_doc' && isset($sptjm);
+    $isItemRecap = $presentation === 'item_recap' && isset($itemRecap);
     $ledgerTitle = $presentation === 'cash_ledger' ? 'BUKU PEMBANTU KAS' : 'BUKU KAS UMUM (BKU)';
     $closingSubject = $presentation === 'cash_ledger' ? 'Buku Pembantu Kas' : 'Buku Kas Umum';
     $identityWidths = ['50%', '50%'];
@@ -106,7 +107,7 @@
         @include('periodic-reports.partials.reports.report-rpd-1')
         @include('periodic-reports.partials.reports.report-k7-1')
         @include('periodic-reports.partials.reports.report-sptjm-1')
-        @if (!$isRekap && !$isA1 && !$isK7b && !$isK7c && !$isK7 && !$isK2 && !$isRpd && !$isSptjm)
+        @if (!$isRekap && !$isA1 && !$isK7b && !$isK7c && !$isK7 && !$isK2 && !$isRpd && !$isSptjm && !$isItemRecap)
             <header class="doc-header">
                 <div class="school">{{ $school->name }}</div>
                 <div class="address">
@@ -151,7 +152,8 @@
             !$isK7 &&
             !$isK2 &&
             !$isRpd &&
-            !$isSptjm)
+            !$isSptjm &&
+            !$isItemRecap)
         <table class="meta-table page-break-avoid">
             @include('periodic-reports.partials.reports.colgroup', ['widths' => $genericMetaWidths])
             <tr>
@@ -171,6 +173,7 @@
 
     @include('periodic-reports.partials.reports.report-bpk-1')
 
+    @include('periodic-reports.partials.reports.report-item-recap-1')
 
     @if ($presentation === 'statement')
         <div class="statement">
@@ -180,7 +183,7 @@
         </div>
     @endif
 
-    @if (!$isLedger && !$isRekap && !$isBpk && !$isA1 && !$isK7b && !$isK7c && !$isK7 && !$isK2 && !$isRpd && !$isSptjm)
+    @if (!$isLedger && !$isRekap && !$isBpk && !$isA1 && !$isK7b && !$isK7c && !$isK7 && !$isK2 && !$isRpd && !$isSptjm && !$isItemRecap)
         <table class="summary-table page-break-avoid">
             @include('periodic-reports.partials.reports.colgroup', ['widths' => $summaryWidths])
             <thead>
@@ -212,7 +215,7 @@
         </table>
     @endif
 
-    @if (count($columns) > 0)
+    @if (count($columns) > 0 && !$isItemRecap)
         @if ($presentation === 'statement')
             <div style="margin-top:12px;font-weight:700;">Rekap Pendukung</div>
         @endif

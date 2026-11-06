@@ -12,10 +12,10 @@ class SpjPeriodicReportRegistryTest extends TestCase
         $registry = app(SpjPeriodicReportRegistry::class);
         $packages = $registry->packages();
 
-        $this->assertSame(14, count($packages['bulan']));
-        $this->assertSame(10, count($packages['triwulan']));
-        $this->assertSame(10, count($packages['semester']));
-        $this->assertSame(7, count($packages['tahunan']));
+        $this->assertSame(16, count($packages['bulan']));
+        $this->assertSame(12, count($packages['triwulan']));
+        $this->assertSame(12, count($packages['semester']));
+        $this->assertSame(9, count($packages['tahunan']));
 
         $this->assertSame([
             'SPTJM',
@@ -32,6 +32,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Format BOS A-1',
             'Laporan BPK Format BOS',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($packages['bulan'], 'label'));
 
         $this->assertSame([
@@ -45,6 +47,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Lampiran Berita Acara Rekonsiliasi',
             'Laporan BPK Format BOS',
             'Format BOS A-1',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($packages['triwulan'], 'label'));
 
         $this->assertSame([
@@ -58,6 +62,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Lampiran Berita Acara Rekonsiliasi',
             'Rekap Belanja Barang Milik Daerah (Aset)',
             'Laporan BPK Format BOS',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($packages['semester'], 'label'));
 
         $this->assertSame([
@@ -68,6 +74,8 @@ class SpjPeriodicReportRegistryTest extends TestCase
             'Rekap Belanja Dana BOS',
             'Rekapitulasi Pengeluaran Dana BOS (K7A)',
             'Laporan BPK Format BOS',
+            'Laporan Barang Habis Pakai',
+            'Laporan Belanja Modal / Aset',
         ], array_column($packages['tahunan'], 'label'));
     }
 
