@@ -406,6 +406,11 @@ Nomor SPJ tidak mengikuti:
 
 Canonical order berasal dari `SpjNumberingOrderService`, tetapi pemilihan tanggal event untuk setiap document type berasal dari `event_date_rule` pada registry canonical.
 
+Registry yang sama menyatakan `order_rule` per document type (sejak 2026-11-09, keputusan pengguna):
+
+- **SPJ (`BKU_CREATED_AT`)**: urutan nomor mengikuti urutan nomor BKU ARKAS. Komponen pertama kunci urut adalah datetime create no_bukti — `transactions.source_created_at`, yaitu CREATE_DATE paling awal di antara baris kas umum pembentuk transaksi — disusul `source_last_updated_at`, lalu rantai identitas sumber yang sama dengan `sourceOrderKey()`. Tanggal transaksi BUKAN komponen pertama: sebelum perubahan ini tanggal transaksi didahulukan, sehingga entri susulan/backdate (tanggal lama, dibuat belakangan) menerima nomor SPJ lebih kecil daripada transaksi yang lebih dulu tercatat di BKU. Transaksi tanpa timestamp sumber (legacy/lokal) jatuh ke awal hari tanggal transaksinya, lalu rantai identitas sumber. Tanggal dokumen SPJ sendiri tetap tanggal transaksi (event date tidak berubah).
+- **Jenis lain (`EVENT_DATE`)**: PESANAN, BAP, BAST, SPK, RAB, dan Surat Tugas tetap diurutkan menurut tanggal dokumennya masing-masing, lalu kunci sumber ARKAS — tidak berubah.
+
 Real-data preflight read-only sudah PASS sebelum mutation QA, dengan baseline SHA-256 tetap tidak berubah.
 
 ---

@@ -472,6 +472,7 @@ Preview/download tidak boleh mengubah lifecycle.
 8. Nomor otomatis bukan field manual operator.
 9. Boundary numbering dan rollback adalah `School + Fiscal Year + Fund Source`.
 10. Target urutan SPJ adalah konsisten dengan urutan pembukuan ARKAS pada context yang sama.
+11. Kunci urut SPJ utama adalah **datetime create no_bukti** ARKAS (`transactions.source_created_at` = CREATE_DATE kas umum paling awal pada transaksi), bukan tanggal transaksi — entri susulan/backdate tidak lagi menggeser nomor SPJ dari urutan nomor BKU. Dokumen pendukung (PESANAN, BAP, BAST, SPK, RAB, Surat Tugas) tetap mengikuti tanggal dokumennya masing-masing. Keduanya dinyatakan sebagai `order_rule` pada registry canonical (`BKU_CREATED_AT` untuk SPJ, `EVENT_DATE` untuk jenis lain); tanggal event dokumen (termasuk tanggal cetak SPJ = tanggal transaksi) tidak berubah.
 
 ### 17.2 Cancel individual
 

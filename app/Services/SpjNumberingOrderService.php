@@ -36,21 +36,30 @@ class SpjNumberingOrderService
 
     public function sourceOrderKey(Transaction $transaction): string
     {
-        $arkasTimestampKey = $this->arkasTimestampOrderKey($transaction);
+        return $this->arkasTimestampOrderKey($transaction).'|'.$this->sourceChainKey($transaction);
+    }
+
+    /**
+     * Rantai identitas sumber sesudah komponen timestamp: item sumber
+     * pertama, id kas umum, source key, lalu nomor bukti. Dipakai bersama
+     * oleh kunci urut berbasis timestamp ARKAS dan kunci urut BKU.
+     */
+    private function sourceChainKey(Transaction $transaction): string
+    {
         $sourceItemIds = $transaction->relationLoaded('items') ? $transaction->items->pluck('source_item_id') : $transaction->items()->pluck('source_item_id');
         $firstSourceItemId = $sourceItemIds->filter(fn ($value): bool => filled($value))->map(fn ($value): string => trim((string) $value))->sortBy(fn (string $value): string => $this->normalizeSourceOrderPart($value))->first();
 
         if (filled($firstSourceItemId)) {
-            return implode('|', [$arkasTimestampKey, $this->normalizeSourceOrderPart($firstSourceItemId), $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti'))]);
+            return implode('|', [$this->normalizeSourceOrderPart($firstSourceItemId), $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti'))]);
         }
         if (filled($transaction->id_kas_umum)) {
-            return implode('|', [$arkasTimestampKey, $this->normalizeSourceOrderPart($transaction->id_kas_umum), $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti'))]);
+            return implode('|', [$this->normalizeSourceOrderPart($transaction->id_kas_umum), $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti'))]);
         }
         if (filled($transaction->source_key)) {
-            return implode('|', [$arkasTimestampKey, $this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti'))]);
+            return implode('|', [$this->normalizeSourceOrderPart($transaction->source_key), $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti'))]);
         }
 
-        return $arkasTimestampKey.'|'.$this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti')).'|LOCAL:'.str_pad((string) $transaction->id, 20, '0', STR_PAD_LEFT);
+        return $this->normalizeSourceOrderPart($transaction->sourceValue('no_bukti')).'|LOCAL:'.str_pad((string) $transaction->id, 20, '0', STR_PAD_LEFT);
     }
 
     /** @param array<int, string> $documentTypes */
@@ -96,7 +105,40 @@ class SpjNumberingOrderService
 
     private function numberingOrderKey(SpjPackage $package, string $documentType): string
     {
+        $definition = $this->numberingPolicy->numberingDefinition($documentType);
+        if (($definition['order_rule'] ?? SpjNumberingDocumentRegistry::ORDER_EVENT_DATE) === SpjNumberingDocumentRegistry::ORDER_BKU_CREATED_AT) {
+            return $this->bkuOrderKey($package->transaction);
+        }
+
         return $this->documentEventDate($package, $documentType)->format('Y-m-d').'|'.$this->sourceOrderKey($package->transaction);
+    }
+
+    /**
+     * Kunci urut mengikuti urutan nomor BKU ARKAS: komponen pertama adalah
+     * datetime create no_bukti (source_created_at, CREATE_DATE kas umum
+     * paling awal pada transaksi), BUKAN tanggal transaksi. Transaksi lama
+     * tanpa timestamp sumber jatuh ke awal hari tanggal transaksinya agar
+     * tetap terurut wajar di antara transaksi bertimestamp. Seri berikutnya
+     * memakai last update sumber lalu rantai identitas sumber yang sama
+     * dengan sourceOrderKey().
+     */
+    private function bkuOrderKey(Transaction $transaction): string
+    {
+        $createdKey = $transaction->source_created_at?->format('Y-m-d H:i:s.u')
+            ?? $this->transactionDateOrderKey($transaction);
+        $updatedKey = $transaction->source_last_updated_at?->format('Y-m-d H:i:s.u')
+            ?? '9999-12-31 23:59:59.999999';
+
+        return implode('|', [$createdKey, $updatedKey, $this->sourceChainKey($transaction)]);
+    }
+
+    private function transactionDateOrderKey(Transaction $transaction): string
+    {
+        $date = $transaction->sourceValue('transaction_date');
+
+        return filled($date)
+            ? Carbon::parse($date)->format('Y-m-d').' 00:00:00.000000'
+            : '9999-12-31 23:59:59.999999';
     }
 
     private function arkasTimestampOrderKey(Transaction $transaction): string

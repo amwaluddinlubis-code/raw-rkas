@@ -8,6 +8,12 @@ final class SpjNumberingDocumentRegistry
 
     public const CHANNEL_NON_SIPLAH = 'NON_SIPLAH';
 
+    /** Urutan nomor mengikuti tanggal event dokumen itu sendiri. */
+    public const ORDER_EVENT_DATE = 'EVENT_DATE';
+
+    /** Urutan nomor mengikuti urutan BKU ARKAS (datetime create no_bukti). */
+    public const ORDER_BKU_CREATED_AT = 'BKU_CREATED_AT';
+
     /**
      * Canonical numbering registry.
      *
@@ -23,7 +29,8 @@ final class SpjNumberingDocumentRegistry
      *     channel:string,
      *     event_date_rule:array{relation:string,field:string,fallback_field:?string},
      *     number_target:array{relation:string,field:?string},
-     *     scope_rule:string
+     *     scope_rule:string,
+     *     order_rule:string
      * }>
      */
     public function all(): array
@@ -40,6 +47,7 @@ final class SpjNumberingDocumentRegistry
                 'package',
                 'document_number',
                 'MAIN',
+                self::ORDER_BKU_CREATED_AT,
             ),
             'PESANAN' => $this->definition(
                 'PESANAN',
@@ -176,6 +184,7 @@ final class SpjNumberingDocumentRegistry
         string $targetRelation,
         ?string $targetField,
         string $scopeRule,
+        string $orderRule = self::ORDER_EVENT_DATE,
     ): array {
         return [
             'code' => $code,
@@ -193,6 +202,7 @@ final class SpjNumberingDocumentRegistry
                 'field' => $targetField,
             ],
             'scope_rule' => $scopeRule,
+            'order_rule' => $orderRule,
         ];
     }
 }

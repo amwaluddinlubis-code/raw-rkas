@@ -116,6 +116,37 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame($laterPackage->id, $ordered[1]->id);
     }
 
+    public function test_spj_numbers_follow_bku_created_at_even_when_transaction_date_order_is_reversed(): void
+    {
+        $year = $this->year();
+        // Transaksi bertanggal lebih muda dibuat lebih dulu di BKU ARKAS;
+        // transaksi bertanggal lebih tua adalah entri susulan yang dibuat
+        // belakangan. Urutan nomor SPJ wajib mengikuti urutan create
+        // no_bukti (BKU), bukan tanggal transaksi.
+        $createdFirstPackage = $this->package($year, 'B-102', '2026-01-10', '102');
+        $createdLaterPackage = $this->package($year, 'B-101', '2026-01-05', '101');
+
+        $createdFirstPackage->transaction->forceFill([
+            'source_created_at' => Carbon::parse('2026-01-10 09:00:00'),
+            'source_last_updated_at' => Carbon::parse('2026-01-10 09:00:00'),
+        ])->save();
+        $createdLaterPackage->transaction->forceFill([
+            'source_created_at' => Carbon::parse('2026-01-20 10:00:00'),
+            'source_last_updated_at' => Carbon::parse('2026-01-20 10:00:00'),
+        ])->save();
+
+        $workflow = app(SpjNumberingUseCase::class);
+        $numbers = app(SpjDocumentNumberService::class);
+        $ordered = $workflow->orderedPackagesForDocumentType(collect([$createdLaterPackage, $createdFirstPackage]), 'SPJ');
+        $first = $numbers->assign($ordered[0], 'SPJ', $workflow->documentEventDate($ordered[0], 'SPJ'), '10200001');
+        $second = $numbers->assign($ordered[1], 'SPJ', $workflow->documentEventDate($ordered[1], 'SPJ'), '10200001');
+
+        $this->assertSame($createdFirstPackage->id, $ordered[0]->id);
+        $this->assertSame($createdLaterPackage->id, $ordered[1]->id);
+        $this->assertSame(1, $first->sequence_number);
+        $this->assertSame(2, $second->sequence_number);
+    }
+
     public function test_single_numbering_does_not_skip_a_printed_target_and_block_on_a_later_bku_transaction(): void
     {
         $year = $this->year();
