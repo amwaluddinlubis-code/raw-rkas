@@ -87,7 +87,7 @@ Kontrak penting saat ini:
 
 - preview/download tidak boleh membuat nomor secara diam-diam;
 - numbering dilakukan setelah data siap;
-- urutan numbering SPJ harus mengikuti source order canonical ARKAS/BKU, bukan urutan insert lokal;
+- urutan numbering SPJ utama harus mengikuti urutan paket dinyatakan siap dinomori (READY, `spj_packages.ready_at`) — keputusan pengguna 2026-11-09; dokumen pendukung mengikuti tanggal dokumennya masing-masing; canonical order tetap di `SpjNumberingOrderService`;
 - `NUMBERED` terkunci untuk perubahan manual/package, kecuali koreksi `item_description` yang memang diizinkan oleh kontrak aktif;
 - `FINAL` tetap terkunci;
 - cancel individual mempertahankan nomor `CANCELLED` sebagai history permanen dan sequence tidak mundur;

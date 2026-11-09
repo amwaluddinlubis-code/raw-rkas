@@ -125,8 +125,8 @@ class SpjIsolatedNumberingCommandTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->createReadyPackage($fiscalYear->id, 'BPU10', '10');
-        $this->createReadyPackage($fiscalYear->id, 'BPU02', '2');
+        $this->createReadyPackage($fiscalYear->id, 'BPU10', '10', '2026-04-07 09:00:00');
+        $this->createReadyPackage($fiscalYear->id, 'BPU02', '2', '2026-04-07 08:00:00');
 
         DB::purge('school');
         File::copy($this->baselinePath, $this->copyPath);
@@ -141,7 +141,7 @@ class SpjIsolatedNumberingCommandTest extends TestCase
         return $school;
     }
 
-    private function createReadyPackage(int $fiscalYearId, string $noBukti, string $sourceItemId): void
+    private function createReadyPackage(int $fiscalYearId, string $noBukti, string $sourceItemId, string $readyAt): void
     {
         $transaction = $this->mirrorTransaction([
             'fiscal_year_id' => $fiscalYearId,
@@ -184,7 +184,7 @@ class SpjIsolatedNumberingCommandTest extends TestCase
             'bap_date' => '2026-04-07',
             'bast_date' => '2026-04-07',
         ]);
-        $transaction->spjPackage()->create(['status' => 'READY']);
+        $transaction->spjPackage()->create(['status' => 'READY', 'ready_at' => $readyAt]);
     }
 
     private function connectTenant(string $path): void

@@ -37,7 +37,7 @@ class SpjPackageLifecycleUseCase
             return ['success' => false, 'message' => 'Paket belum siap: '.collect($issues)->pluck('message')->implode(' ')];
         }
 
-        $package->forceFill(['status' => 'READY'])->save();
+        $package->forceFill(['status' => 'READY', 'ready_at' => now()])->save();
         $this->audit->record($package->transaction->fiscal_year_id, 'SPJ_PACKAGE', $package->id, 'PAKET_READY', 'Paket dinyatakan siap untuk penomoran triwulan.');
 
         return ['success' => true, 'message' => 'Paket siap dan masuk antrean penomoran.'];

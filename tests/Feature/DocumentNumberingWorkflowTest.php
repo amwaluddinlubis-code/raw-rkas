@@ -35,33 +35,41 @@ class DocumentNumberingWorkflowTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_spj_numbers_follow_transaction_date_even_when_packages_were_created_in_reverse_order(): void
+    public function test_spj_numbers_follow_package_ready_order_not_transaction_date(): void
     {
         $year = $this->year();
-        $laterPackage = $this->package($year, 'B-002', '2026-01-20', '200');
-        $earlierPackage = $this->package($year, 'B-001', '2026-01-05', '900');
+        // Paket bertanggal transaksi lebih muda dinyatakan siap lebih dulu;
+        // nomor SPJ mengikuti urutan siap (ready_at), bukan tanggal transaksi.
+        $readyFirstPackage = $this->package($year, 'B-002', '2026-01-20', '200');
+        $readyLaterPackage = $this->package($year, 'B-001', '2026-01-05', '900');
+        $readyFirstPackage->forceFill(['ready_at' => Carbon::parse('2026-01-21 09:00:00')])->save();
+        $readyLaterPackage->forceFill(['ready_at' => Carbon::parse('2026-01-22 09:00:00')])->save();
         $workflow = app(SpjNumberingUseCase::class);
         $numbers = app(SpjDocumentNumberService::class);
 
-        $ordered = $workflow->orderedPackagesForDocumentType(collect([$laterPackage, $earlierPackage]), 'SPJ');
+        $ordered = $workflow->orderedPackagesForDocumentType(collect([$readyLaterPackage, $readyFirstPackage]), 'SPJ');
         $first = $numbers->assign($ordered[0], 'SPJ', $workflow->documentEventDate($ordered[0], 'SPJ'), '10200001');
         $second = $numbers->assign($ordered[1], 'SPJ', $workflow->documentEventDate($ordered[1], 'SPJ'), '10200001');
 
-        $this->assertSame($earlierPackage->id, $ordered[0]->id);
-        $this->assertSame($laterPackage->id, $ordered[1]->id);
+        $this->assertSame($readyFirstPackage->id, $ordered[0]->id);
+        $this->assertSame($readyLaterPackage->id, $ordered[1]->id);
         $this->assertSame(1, $first->sequence_number);
         $this->assertSame(2, $second->sequence_number);
-        $this->assertSame('B-001', $earlierPackage->transaction->fresh()->sourceValue('no_bukti'));
-        $this->assertSame('B-002', $laterPackage->transaction->fresh()->sourceValue('no_bukti'));
+        $this->assertSame('B-002', $readyFirstPackage->transaction->fresh()->sourceValue('no_bukti'));
+        $this->assertSame('B-001', $readyLaterPackage->transaction->fresh()->sourceValue('no_bukti'));
     }
 
-    public function test_same_date_spj_numbers_follow_stable_bku_source_order_not_local_package_id(): void
+    public function test_spj_order_is_stable_by_bku_source_chain_when_ready_timestamps_tie(): void
     {
         $year = $this->year();
         $laterSourcePackage = $this->package($year, 'B-200', '2026-02-10', '200');
         $earlierSourcePackage = $this->package($year, 'B-100', '2026-02-10', '100');
 
         $this->assertLessThan($earlierSourcePackage->id, $laterSourcePackage->id, 'Test setup must create the later BKU source first so local package IDs point the wrong way.');
+
+        $readyStamp = Carbon::parse('2026-02-11 09:00:00');
+        $laterSourcePackage->forceFill(['ready_at' => $readyStamp, 'updated_at' => $readyStamp])->save();
+        $earlierSourcePackage->forceFill(['ready_at' => $readyStamp, 'updated_at' => $readyStamp])->save();
 
         $workflow = app(SpjNumberingUseCase::class);
         $numbers = app(SpjDocumentNumberService::class);
@@ -75,13 +83,17 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame(2, $second->sequence_number);
     }
 
-    public function test_same_date_source_order_is_stable_when_local_item_insertion_order_differs(): void
+    public function test_spj_source_chain_is_stable_when_ready_timestamps_tie_and_local_item_insertion_order_differs(): void
     {
         $year = $this->year();
         $laterSourcePackage = $this->packageWithSourceItems($year, 'B-900', '2026-02-10', '900', ['900', '800']);
         $earlierSourcePackage = $this->packageWithSourceItems($year, 'B-200', '2026-02-10', '200', ['300', '200']);
 
         $this->assertLessThan($earlierSourcePackage->id, $laterSourcePackage->id, 'Test setup must make local package IDs disagree with BKU source order.');
+
+        $readyStamp = Carbon::parse('2026-02-11 09:00:00');
+        $laterSourcePackage->forceFill(['ready_at' => $readyStamp, 'updated_at' => $readyStamp])->save();
+        $earlierSourcePackage->forceFill(['ready_at' => $readyStamp, 'updated_at' => $readyStamp])->save();
 
         $workflow = app(SpjNumberingUseCase::class);
         $ordered = $workflow->orderedPackagesForDocumentType(collect([$laterSourcePackage, $earlierSourcePackage]), 'SPJ');
@@ -92,19 +104,17 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame('B-900', $ordered[1]->transaction->sourceValue('no_bukti'));
     }
 
-    public function test_same_date_spj_numbers_follow_arkas_created_at_then_last_updated_at(): void
+    public function test_spj_numbers_follow_ready_at_time_within_the_same_day(): void
     {
         $year = $this->year();
         $laterPackage = $this->package($year, 'BPU04', '2026-02-10', '100');
         $earlierPackage = $this->package($year, 'BPU01', '2026-02-10', '900');
 
-        $laterPackage->transaction->forceFill([
-            'source_created_at' => Carbon::parse('2026-02-10 11:00:00'),
-            'source_last_updated_at' => Carbon::parse('2026-02-10 11:30:00'),
+        $laterPackage->forceFill([
+            'ready_at' => Carbon::parse('2026-02-10 11:00:00'),
         ])->save();
-        $earlierPackage->transaction->forceFill([
-            'source_created_at' => Carbon::parse('2026-02-10 09:00:00'),
-            'source_last_updated_at' => Carbon::parse('2026-02-10 10:00:00'),
+        $earlierPackage->forceFill([
+            'ready_at' => Carbon::parse('2026-02-10 09:00:00'),
         ])->save();
 
         $ordered = app(SpjNumberingUseCase::class)->orderedPackagesForDocumentType(
@@ -116,33 +126,34 @@ class DocumentNumberingWorkflowTest extends TestCase
         $this->assertSame($laterPackage->id, $ordered[1]->id);
     }
 
-    public function test_spj_numbers_follow_bku_created_at_even_when_transaction_date_order_is_reversed(): void
+    public function test_spj_numbers_follow_ready_timestamp_even_when_transaction_date_and_bku_creation_run_the_other_way(): void
     {
         $year = $this->year();
-        // Transaksi bertanggal lebih muda dibuat lebih dulu di BKU ARKAS;
-        // transaksi bertanggal lebih tua adalah entri susulan yang dibuat
-        // belakangan. Urutan nomor SPJ wajib mengikuti urutan create
-        // no_bukti (BKU), bukan tanggal transaksi.
-        $createdFirstPackage = $this->package($year, 'B-102', '2026-01-10', '102');
-        $createdLaterPackage = $this->package($year, 'B-101', '2026-01-05', '101');
+        // Kedua sinyal lama menunjuk arah berlawanan: paket ini bertanggal
+        // transaksi lebih muda DAN dibuat belakangan di BKU, tetapi
+        // dinyatakan siap (READY) lebih dulu — urutan siap yang menang.
+        $readyFirstPackage = $this->package($year, 'B-102', '2026-01-10', '102');
+        $readyLaterPackage = $this->package($year, 'B-101', '2026-01-05', '101');
 
-        $createdFirstPackage->transaction->forceFill([
-            'source_created_at' => Carbon::parse('2026-01-10 09:00:00'),
-            'source_last_updated_at' => Carbon::parse('2026-01-10 09:00:00'),
-        ])->save();
-        $createdLaterPackage->transaction->forceFill([
+        $readyFirstPackage->transaction->forceFill([
             'source_created_at' => Carbon::parse('2026-01-20 10:00:00'),
             'source_last_updated_at' => Carbon::parse('2026-01-20 10:00:00'),
         ])->save();
+        $readyLaterPackage->transaction->forceFill([
+            'source_created_at' => Carbon::parse('2026-01-10 09:00:00'),
+            'source_last_updated_at' => Carbon::parse('2026-01-10 09:00:00'),
+        ])->save();
+        $readyFirstPackage->forceFill(['ready_at' => Carbon::parse('2026-01-15 09:00:00')])->save();
+        $readyLaterPackage->forceFill(['ready_at' => Carbon::parse('2026-01-16 09:00:00')])->save();
 
         $workflow = app(SpjNumberingUseCase::class);
         $numbers = app(SpjDocumentNumberService::class);
-        $ordered = $workflow->orderedPackagesForDocumentType(collect([$createdLaterPackage, $createdFirstPackage]), 'SPJ');
+        $ordered = $workflow->orderedPackagesForDocumentType(collect([$readyLaterPackage, $readyFirstPackage]), 'SPJ');
         $first = $numbers->assign($ordered[0], 'SPJ', $workflow->documentEventDate($ordered[0], 'SPJ'), '10200001');
         $second = $numbers->assign($ordered[1], 'SPJ', $workflow->documentEventDate($ordered[1], 'SPJ'), '10200001');
 
-        $this->assertSame($createdFirstPackage->id, $ordered[0]->id);
-        $this->assertSame($createdLaterPackage->id, $ordered[1]->id);
+        $this->assertSame($readyFirstPackage->id, $ordered[0]->id);
+        $this->assertSame($readyLaterPackage->id, $ordered[1]->id);
         $this->assertSame(1, $first->sequence_number);
         $this->assertSame(2, $second->sequence_number);
     }
@@ -154,8 +165,8 @@ class DocumentNumberingWorkflowTest extends TestCase
         $later = $this->package($year, 'BPU04', '2026-02-10', '400');
         $target->forceFill(['status' => 'DICETAK'])->save();
 
-        $target->transaction->forceFill(['source_created_at' => Carbon::parse('2026-02-10 09:00:00')])->save();
-        $later->transaction->forceFill(['source_created_at' => Carbon::parse('2026-02-10 09:01:00')])->save();
+        $target->forceFill(['ready_at' => Carbon::parse('2026-02-10 09:00:00')])->save();
+        $later->forceFill(['ready_at' => Carbon::parse('2026-02-10 09:01:00')])->save();
         session()->put(['active_fiscal_year_id' => $year->id, 'active_fund_source_id' => 1]);
 
         $target = $target->fresh(['transaction.items', 'transaction.goods', 'transaction.workOrder', 'transaction.honors', 'transaction.travels', 'documents']);

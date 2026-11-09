@@ -95,6 +95,11 @@ class SpjNumberingOrderService
                     break;
                 }
                 if ($this->needsAutomaticNumber($candidate, $documentType)) {
+                    $definition = $this->numberingPolicy->numberingDefinition($documentType);
+                    if (($definition['order_rule'] ?? SpjNumberingDocumentRegistry::ORDER_EVENT_DATE) === SpjNumberingDocumentRegistry::ORDER_PACKAGE_READY_AT) {
+                        return 'Penomoran satuan ditolak agar urutan '.$documentType.' mengikuti urutan paket dinyatakan siap (READY). Paket yang lebih dulu siap (bukti '.$candidate->transaction->sourceValue('no_bukti').') belum bernomor. Gunakan penomoran triwulan atau nomori paket yang lebih dulu siap terlebih dahulu.';
+                    }
+
                     return 'Penomoran satuan ditolak agar urutan '.$documentType.' tetap selaras dengan BKU. Transaksi lebih awal (bukti '.$candidate->transaction->sourceValue('no_bukti').') belum bernomor. Gunakan penomoran triwulan atau nomor transaksi yang lebih awal terlebih dahulu.';
                 }
             }
@@ -106,39 +111,30 @@ class SpjNumberingOrderService
     private function numberingOrderKey(SpjPackage $package, string $documentType): string
     {
         $definition = $this->numberingPolicy->numberingDefinition($documentType);
-        if (($definition['order_rule'] ?? SpjNumberingDocumentRegistry::ORDER_EVENT_DATE) === SpjNumberingDocumentRegistry::ORDER_BKU_CREATED_AT) {
-            return $this->bkuOrderKey($package->transaction);
+        if (($definition['order_rule'] ?? SpjNumberingDocumentRegistry::ORDER_EVENT_DATE) === SpjNumberingDocumentRegistry::ORDER_PACKAGE_READY_AT) {
+            return $this->packageReadyOrderKey($package);
         }
 
         return $this->documentEventDate($package, $documentType)->format('Y-m-d').'|'.$this->sourceOrderKey($package->transaction);
     }
 
     /**
-     * Kunci urut mengikuti urutan nomor BKU ARKAS: komponen pertama adalah
-     * datetime create no_bukti (source_created_at, CREATE_DATE kas umum
-     * paling awal pada transaksi), BUKAN tanggal transaksi. Transaksi lama
-     * tanpa timestamp sumber jatuh ke awal hari tanggal transaksinya agar
-     * tetap terurut wajar di antara transaksi bertimestamp. Seri berikutnya
-     * memakai last update sumber lalu rantai identitas sumber yang sama
-     * dengan sourceOrderKey().
+     * Kunci urut mengikuti antrean siap dinomori: komponen pertama adalah
+     * timestamp paket dinyatakan siap (spj_packages.ready_at, dicap saat
+     * transisi DRAFT -> READY). Paket lama yang dibuat sebelum kolom ini
+     * ada (ready_at kosong) jatuh ke updated_at paket — pendekatan momen
+     * siapnya, karena transisi READY adalah penyimpanan terakhir sebelum
+     * paket menunggu penomoran — lalu created_at paket. Semua komponen
+     * waktu dipotong ke detik dan seri berikutnya memakai rantai identitas
+     * sumber yang sama dengan sourceOrderKey(), agar urutan selalu
+     * deterministik dan tidak bergantung pada noise mikrodetik.
      */
-    private function bkuOrderKey(Transaction $transaction): string
+    private function packageReadyOrderKey(SpjPackage $package): string
     {
-        $createdKey = $transaction->source_created_at?->format('Y-m-d H:i:s.u')
-            ?? $this->transactionDateOrderKey($transaction);
-        $updatedKey = $transaction->source_last_updated_at?->format('Y-m-d H:i:s.u')
-            ?? '9999-12-31 23:59:59.999999';
+        $readyAt = $package->ready_at ?? $package->updated_at ?? $package->created_at;
+        $readyKey = $readyAt?->format('Y-m-d H:i:s') ?? '9999-12-31 23:59:59';
 
-        return implode('|', [$createdKey, $updatedKey, $this->sourceChainKey($transaction)]);
-    }
-
-    private function transactionDateOrderKey(Transaction $transaction): string
-    {
-        $date = $transaction->sourceValue('transaction_date');
-
-        return filled($date)
-            ? Carbon::parse($date)->format('Y-m-d').' 00:00:00.000000'
-            : '9999-12-31 23:59:59.999999';
+        return $readyKey.'|'.$this->sourceChainKey($package->transaction);
     }
 
     private function arkasTimestampOrderKey(Transaction $transaction): string

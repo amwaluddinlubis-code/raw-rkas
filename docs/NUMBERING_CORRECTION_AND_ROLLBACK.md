@@ -397,18 +397,18 @@ NUMBERED
 
 ## 11. Source order authoritative
 
-Nomor SPJ tidak mengikuti:
+Nomor SPJ utama mengikuti **waktu Paket dinyatakan siap dinomori (READY)** — lihat aturan `order_rule` di bawah. Nomor SPJ tidak mengikuti:
 
 - local package id;
 - waktu operator membuka Paket;
-- waktu Paket menjadi READY;
-- urutan klik operator.
+- urutan klik operator;
+- tanggal transaksi maupun datetime create no_bukti ARKAS (keduanya pernah menjadi kunci urut SPJ dan diganti keputusan pengguna 2026-11-09).
 
 Canonical order berasal dari `SpjNumberingOrderService`, tetapi pemilihan tanggal event untuk setiap document type berasal dari `event_date_rule` pada registry canonical.
 
-Registry yang sama menyatakan `order_rule` per document type (sejak 2026-11-09, keputusan pengguna):
+Registry yang sama menyatakan `order_rule` per document type (keputusan pengguna 2026-11-09, menggantikan percobaan singkat `BKU_CREATED_AT` pada hari yang sama):
 
-- **SPJ (`BKU_CREATED_AT`)**: urutan nomor mengikuti urutan nomor BKU ARKAS. Komponen pertama kunci urut adalah datetime create no_bukti — `transactions.source_created_at`, yaitu CREATE_DATE paling awal di antara baris kas umum pembentuk transaksi — disusul `source_last_updated_at`, lalu rantai identitas sumber yang sama dengan `sourceOrderKey()`. Tanggal transaksi BUKAN komponen pertama: sebelum perubahan ini tanggal transaksi didahulukan, sehingga entri susulan/backdate (tanggal lama, dibuat belakangan) menerima nomor SPJ lebih kecil daripada transaksi yang lebih dulu tercatat di BKU. Transaksi tanpa timestamp sumber (legacy/lokal) jatuh ke awal hari tanggal transaksinya, lalu rantai identitas sumber. Tanggal dokumen SPJ sendiri tetap tanggal transaksi (event date tidak berubah).
+- **SPJ (`PACKAGE_READY_AT`)**: urutan nomor mengikuti antrean siap dinomori. Komponen pertama kunci urut adalah `spj_packages.ready_at` — dicap `now()` pada transisi DRAFT -> READY di `SpjPackageLifecycleUseCase::markReadyResult` (peristiwa yang sama dengan audit `PAKET_READY`). Paket yang dibuat sebelum kolom `ready_at` ada (nilai kosong) jatuh ke `updated_at` paket — pendekatan momen siapnya — lalu `created_at` paket. Semua komponen waktu dipotong ke detik; seri dipecahkan oleh rantai identitas sumber yang sama dengan `sourceOrderKey()` agar urutan selalu deterministik. Tanggal dokumen SPJ sendiri tetap tanggal transaksi (event date tidak berubah).
 - **Jenis lain (`EVENT_DATE`)**: PESANAN, BAP, BAST, SPK, RAB, dan Surat Tugas tetap diurutkan menurut tanggal dokumennya masing-masing, lalu kunci sumber ARKAS — tidak berubah.
 
 Real-data preflight read-only sudah PASS sebelum mutation QA, dengan baseline SHA-256 tetap tidak berubah.

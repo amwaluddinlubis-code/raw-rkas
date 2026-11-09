@@ -11,8 +11,8 @@ final class SpjNumberingDocumentRegistry
     /** Urutan nomor mengikuti tanggal event dokumen itu sendiri. */
     public const ORDER_EVENT_DATE = 'EVENT_DATE';
 
-    /** Urutan nomor mengikuti urutan BKU ARKAS (datetime create no_bukti). */
-    public const ORDER_BKU_CREATED_AT = 'BKU_CREATED_AT';
+    /** Urutan nomor mengikuti timestamp paket dinyatakan siap dinomori (READY). */
+    public const ORDER_PACKAGE_READY_AT = 'PACKAGE_READY_AT';
 
     /**
      * Canonical numbering registry.
@@ -47,7 +47,7 @@ final class SpjNumberingDocumentRegistry
                 'package',
                 'document_number',
                 'MAIN',
-                self::ORDER_BKU_CREATED_AT,
+                self::ORDER_PACKAGE_READY_AT,
             ),
             'PESANAN' => $this->definition(
                 'PESANAN',
