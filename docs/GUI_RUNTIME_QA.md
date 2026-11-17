@@ -1,6 +1,6 @@
 # GUI Runtime QA — Desktop, Laptop, Mobile, dan Tablet
 
-Terakhir diperbarui: **2026-10-11**
+Terakhir diperbarui: **2026-11-18**
 
 Dokumen ini adalah checklist runtime untuk menutup **GUI-AUDIT-12** dan **GUI-AUDIT-13**. Source-level regression dan CI tidak boleh dipakai sebagai pengganti verifikasi visual/runtime di browser.
 
@@ -264,6 +264,26 @@ RKAS pada `/penganggaran-rkas` tidak sejajar adalah **salah**. Pengukuran
 pada kelima baris (select 152px = spacer 152px). Yang tampak seperti zigzag
 hanya efek grid 2 kolom dengan lima kartu, bukan defect. Tidak ada perubahan
 source untuk temuan itu.
+
+**T6 (sedang) - SUDAH DIPERBAIKAN: dropdown Bahan/Upah PEMELIHARAAN tampak
+mati pada Isian Manual.** Select dinamis dibuat `disabled` oleh
+`spj-package-maintenance-links.js`, lalu diaktifkan setelah kandidat transaksi
+dimuat. `daisy-select-dropdown.js` hanya menyalin `select.disabled` ke
+`trigger.disabled` sekali saat enhancement, sehingga tombol kustom tetap
+`disabled` walau select aslinya aktif (pola sama berlaku untuk select dinamis
+lain). Perbaikan: trigger kini disinkronkan dari `select.disabled` saat init dan
+setiap atribut `disabled` berubah; fieldset induk tetap ditangani native
+karena trigger berada di dalam fieldset yang sama; `open()` memakai guard yang
+sama. Verifikasi desktop focused 2026-11-18 pada SDN 316 Ranto Panjang
+(paket DRAFT): `/spj?tab=paket&package_id=21&package_tab=isian` dan
+`/spj?tab=paket&package_id=66&package_tab=isian` keduanya menampilkan select
+Bahan aktif (`data-editable=1`, native `disabled=false`,
+`trigger.disabled=false`); pada paket 66 select berisi 22 opsi kandidat
+transaksi bahan dan klik trigger membuka menu (`aria-expanded="true"`,
+menu terlihat). Probe DOM terisolasi membuktikan trigger mengikuti perubahan
+`disabled` dinamis (sebelum perbaikan bertahan `true`) dan fieldset induk
+tetap mengunci kontrol secara native lalu melepasnya lagi. Mobile/tablet
+tetap RVR.
 
 ### RVR yang masih terbuka
 

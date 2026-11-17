@@ -106,6 +106,47 @@ class MaintenanceTransactionLinkTest extends TestCase
         $this->assertSame($labor->id, $material->maintenance_labor_transaction_id);
     }
 
+    public function test_labor_transaction_accepts_earlier_material_within_lookback_window(): void
+    {
+        $labor = $this->transaction('BPU-021', '2026-03-20', 'Upah pengecatan ruang kelas');
+        $materialNear = $this->transaction('BPU-016', '2026-03-09', 'Pembelian bahan pengecatan ruang kelas');
+        $this->transaction('BPU-002', '2026-01-15', 'Pembelian semen jauh lebih awal');
+
+        $payload = app(MaintenanceTransactionLinkController::class)
+            ->show((string) $labor->id)
+            ->getData(true);
+
+        $this->assertSame('labor', $payload['current_role']);
+        $this->assertSame([
+            ['id' => $materialNear->id, 'label' => 'BPU-016 - Pembelian bahan pengecatan ruang kelas'],
+        ], $payload['candidates']);
+
+        $request = Request::create('/transaksi/'.$labor->id.'/pemeliharaan/transaksi-terkait', 'PUT', [
+            'material_transaction_id' => $materialNear->id,
+            'labor_transaction_id' => null,
+        ]);
+
+        app(MaintenanceTransactionLinkController::class)->update($request, (string) $labor->id);
+
+        $this->assertSame($materialNear->id, $labor->refresh()->maintenance_material_transaction_id);
+    }
+
+    public function test_material_transaction_still_requires_labor_on_or_after_its_date(): void
+    {
+        $material = $this->transaction('BPU-010', '2026-03-10', 'Pembelian bahan pemeliharaan ruang kelas');
+        $this->transaction('BPU-003', '2026-03-01', 'Upah tukang lebih awal');
+        $laterLabor = $this->transaction('BPU-018', '2026-03-15', 'Upah tukang 3 hari');
+
+        $payload = app(MaintenanceTransactionLinkController::class)
+            ->show((string) $material->id)
+            ->getData(true);
+
+        $this->assertSame('material', $payload['current_role']);
+        $this->assertSame([
+            ['id' => $laterLabor->id, 'label' => 'BPU-018 - Upah tukang 3 hari'],
+        ], $payload['candidates']);
+    }
+
     private function transaction(string $proofNumber, string $date, ?string $paymentDescription): Transaction
     {
         return $this->mirrorTransaction([

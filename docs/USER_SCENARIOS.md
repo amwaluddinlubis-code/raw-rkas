@@ -309,6 +309,16 @@ Jika source menandai SiPLah secara authoritative, UI tidak boleh membaliknya sem
 
 Selector pasangan transaksi bahan/upah boleh ditampilkan di Paket, tetapi relationship state tetap transaction/context-owned dan disimpan melalui jalur linkage khusus.
 
+Kandidat pasangan mengikuti arah peran transaksi aktif:
+
+```text
+transaksi aktif = upah   -> kandidat boleh bertanggal hingga 30 hari sebelumnya
+                            (bahan wajar dibeli lebih dulu)
+transaksi aktif = bahan  -> kandidat hanya pada/setelah tanggal transaksi
+```
+
+Batas 30 hari (`MATERIAL_LOOKBACK_DAYS`) berlaku pada `MaintenanceTransactionLinkController` dan dipakai bersama oleh endpoint daftar kandidat maupun validasi simpan.
+
 Nomor otomatis ditampilkan sebagai informasi, bukan input operator.
 
 ---

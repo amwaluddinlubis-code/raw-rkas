@@ -14,6 +14,12 @@ use Illuminate\Validation\ValidationException;
 
 class MaintenanceTransactionLinkController extends Controller
 {
+    /**
+     * Jendela mundur kandidat bahan saat transaksi yang dibuka adalah upah.
+     * Bahan wajar dibeli lebih dulu, sedangkan upah dibayar setelahnya.
+     */
+    private const MATERIAL_LOOKBACK_DAYS = 30;
+
     public function show(string $transactionId): JsonResponse
     {
         $transaction = $this->findActiveTransaction($transactionId);
@@ -132,12 +138,20 @@ class MaintenanceTransactionLinkController extends Controller
             $date = null;
         }
 
+        // Arah bahan -> upah tetap hanya transaksi pada/setelah tanggal
+        // transaksi aktif. Arah upah -> bahan diberi jendela mundur karena
+        // bahan memang dibeli sebelum upah dibayarkan.
+        $earliestDate = $date;
+        if ($date !== null && $this->currentRole($transaction) === 'labor') {
+            $earliestDate = Carbon::parse($date)->subDays(self::MATERIAL_LOOKBACK_DAYS)->format('Y-m-d');
+        }
+
         $query = Transaction::query()->activeContext();
         ArkasMirrorResolver::joinKasUmum($query);
 
         return $query
             ->where('transactions.id', '!=', $transaction->id)
-            ->when($date, fn (Builder $query) => $query->whereRaw(ArkasMirrorResolver::mirrorDate().' >= ?', [$date]))
+            ->when($earliestDate, fn (Builder $query) => $query->whereRaw(ArkasMirrorResolver::mirrorDate().' >= ?', [$earliestDate]))
             ->where('source_status', 'ACTIVE')
             ->where('requires_reconciliation', false)
             ->whereNotNull('payment_description')

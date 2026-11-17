@@ -103,6 +103,17 @@ const enhanceSelect = (select) => {
         });
     };
 
+    // Select yang dibuat dinamis (mis. pilihan Bahan/Upah pemeliharaan) lahir
+    // dalam keadaan disabled lalu diaktifkan setelah datanya dimuat. Tanpa
+    // sinkronisasi ini trigger kustom tetap disabled walau select aslinya sudah
+    // aktif, sehingga kontrol terlihat mati. Keadaan fieldset induk tidak
+    // disalin ke atribut trigger: tombol berada di dalam fieldset yang sama
+    // sehingga browser sudah menonaktifkannya secara native dan mengaktifkannya
+    // kembali saat fieldset dibuka.
+    const syncDisabledState = () => {
+        trigger.disabled = select.disabled;
+    };
+
     const renderOptions = () => {
         options.replaceChildren();
         optionButtons.length = 0;
@@ -184,7 +195,9 @@ const enhanceSelect = (select) => {
     }, true);
 
     renderOptions();
+    syncDisabledState();
     new MutationObserver(renderOptions).observe(select, { childList: true });
+    new MutationObserver(syncDisabledState).observe(select, { attributes: true, attributeFilter: ['disabled'] });
 };
 
 export const initializeDaisySelectDropdowns = (root = document) => {

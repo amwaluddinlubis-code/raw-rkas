@@ -351,6 +351,8 @@ KONSUMSI, PEMELIHARAAN, HONOR_PEGAWAI, SPPD, dan JASA_LAINNYA memakai pola compa
 
 Selector pasangan transaksi ditampilkan di Paket SPJ, tetapi state relasi tetap dimiliki transaction/context dan disimpan lewat endpoint maintenance-link khusus.
 
+Kandidat mengikuti peran transaksi aktif: bila transaksi yang dibuka adalah upah, kandidat bahan boleh bertanggal sampai 30 hari sebelumnya; bila transaksi yang dibuka adalah bahan, kandidat upah harus pada/setelah tanggal transaksi. Endpoint daftar kandidat dan validasi simpan memakai aturan yang sama.
+
 UI tidak boleh mengubah relasi tersebut menjadi field package form biasa.
 
 ## 17. Dokumen & Template

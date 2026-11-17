@@ -183,7 +183,10 @@ project dan tidak menambah dependency DaisyUI. Initializer tunggal
 mengubah single-select menjadi dropdown custom berbasis JavaScript dengan
 opsi searchable, hover, keyboard focus, dan tanda centang; nilai tetap
 disimpan pada select asli untuk kompatibilitas form dan Livewire.
-Multi-select tetap memakai kontrol khusus.
+Dropdown mengikuti keadaan `disabled` select asli secara dinamis, sehingga
+select yang dibuat terkunci lalu diaktifkan programatis (mis. pilihan
+Bahan/Upah pemeliharaan) tetap dapat dipakai; fieldset induk tetap mengunci
+kontrol secara native. Multi-select tetap memakai kontrol khusus.
 
 Untuk single-select yang membutuhkan pencarian, gunakan komponen Blade
 `<x-ui.searchable-select>` agar trigger, pencarian, opsi, keyboard focus, dan
